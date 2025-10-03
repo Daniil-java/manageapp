@@ -10,4 +10,9 @@ public class WebController {
     public String getResumePage() {
         return "resume";
     }
+
+    @GetMapping("/freelance")
+    public String getFreelancePage() {
+        return "freelance";
+    }
 }
