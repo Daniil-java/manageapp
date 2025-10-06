@@ -123,4 +123,15 @@ public class DishService {
 
         return dishRepository.findAllByUserIdAndCreatedBetween(userId, startOfDay, endOfDay);
     }
+
+    public List<Dish> getWeekDishes(Long userId) {
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startOfDay = LocalDate.now()
+                .minusDays(7)
+                .atStartOfDay();
+        LocalDateTime endOfDay = now;
+
+
+        return dishRepository.findAllByUserIdAndCreatedBetween(userId, startOfDay, endOfDay);
+    }
 }
