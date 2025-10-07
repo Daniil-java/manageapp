@@ -6,6 +6,7 @@ import org.telegram.telegrambots.meta.api.methods.BotApiMethod;
 import org.telegram.telegrambots.meta.api.methods.ParseMode;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.send.SendVoice;
+import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageReplyMarkup;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
 import org.telegram.telegrambots.meta.api.objects.InputFile;
@@ -20,7 +21,7 @@ import java.io.ByteArrayInputStream;
 @Slf4j
 public abstract class TelegramBot extends TelegramLongPollingBot implements TelegramBotClient {
     private String botToken;
-    public static final String DEFAULT_DELIMETER = "[d]";
+    public static final String DEFAULT_DELIMETER = " ";
 
     @Override
     public String getToken() {
@@ -57,6 +58,19 @@ public abstract class TelegramBot extends TelegramLongPollingBot implements Tele
             log.error("Send returned message error!", e);
         }
         return null;
+    }
+
+    public void sendDeleteMessage(long chatId, Integer messageId) {
+        DeleteMessage deleteMessage = DeleteMessage
+                .builder()
+                .chatId(chatId)
+                .messageId(messageId)
+                .build();
+        try {
+            execute(deleteMessage);
+        } catch (TelegramApiException e) {
+            log.error("Не получилось удалить сообщение");
+        }
     }
 
     public Message sendReturnedMessage(long chatId, String text,

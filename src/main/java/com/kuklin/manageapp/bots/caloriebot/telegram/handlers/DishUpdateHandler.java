@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.handlers;
 
+import com.kuklin.manageapp.bots.caloriebot.configurations.TelegramCaloriesBotKeyComponents;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.services.DishService;
@@ -30,6 +31,7 @@ import java.util.List;
 public class DishUpdateHandler implements CalorieBotUpdateHandler{
     private final CalorieTelegramBot calorieTelegramBot;
     private final TelegramService telegramService;
+    private final TelegramCaloriesBotKeyComponents caloriesBotKeyComponents;
     private final DishService dishService;
     private final OpenAiIntegrationService openAiIntegrationService;
     private static final String VOICE_ERROR_MESSAGE =
@@ -103,7 +105,7 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler{
             log.info("Аудиофайла не существует.");
             return null;
         }
-        return openAiIntegrationService.fetchAudioResponse(calorieTelegramBot.getAiKey(), inputAudioFile);
+        return openAiIntegrationService.fetchAudioResponse(caloriesBotKeyComponents.getAiKey(), inputAudioFile);
     }
 
     private Dish processPhotoOrNull(Long userId, Message message) {
