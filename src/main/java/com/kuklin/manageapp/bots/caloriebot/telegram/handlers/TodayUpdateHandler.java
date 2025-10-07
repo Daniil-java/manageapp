@@ -23,11 +23,13 @@ public class TodayUpdateHandler implements CalorieBotUpdateHandler{
         List<Dish> dishes = dishService.getTodayDishes(telegramUser.getTelegramId());
         calorieTelegramBot.sendReturnedMessage(
                 update.getMessage().getChatId(),
-                getTodayDishes(dishes)
+                getDishesString(dishes),
+                StartUpdateHandler.getCommandKeyboard(),
+                null
         );
     }
 
-    private String getTodayDishes(List<Dish> dishes) {
+    public static String getDishesString(List<Dish> dishes) {
         StringBuilder sb = new StringBuilder();
         sb.append("📖 <b>Дневник питания (сегодня)</b>\n\n");
 
@@ -41,11 +43,11 @@ public class TodayUpdateHandler implements CalorieBotUpdateHandler{
         }
 
         sb.append("\n")
-                .append("⚡ <b>ИТОГО:</b>\n")
-                .append("🔥 Ккал: <b>").append(cal).append("</b>\n")
-                .append("🥩 Белки: <b>").append(proteins).append(" г</b>\n")
-                .append("🥑 Жиры: <b>").append(fats).append(" г</b>\n")
-                .append("🍞 Углеводы: <b>").append(carbHyd).append(" г</b>");
+                .append("⚡ <b>ИТОГО:</b> ")
+                .append("🔥 Ккал: <b>").append(cal).append("</b> ")
+                .append("🥩 Б: <b>").append(proteins).append(" г</b> ")
+                .append("🥑 Ж: <b>").append(fats).append(" г</b> ")
+                .append("🍞 У: <b>").append(carbHyd).append(" г</b>");
 
         return sb.toString();
 

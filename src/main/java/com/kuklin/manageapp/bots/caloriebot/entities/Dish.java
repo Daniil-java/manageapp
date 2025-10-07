@@ -40,11 +40,11 @@ public class Dish {
 
     public static String getInfo(Dish dish) {
         StringBuilder sb = new StringBuilder();
-        sb.append("🍽 <b>").append(dish.getName()).append("</b>\n")
-                .append("🔥 Ккал: <b>").append(dish.getCalories()).append("</b>\n")
-                .append("🥩 Белки: <b>").append(dish.getProteins()).append(" г</b>\n")
-                .append("🥑 Жиры: <b>").append(dish.getFats()).append(" г</b>\n")
-                .append("🍞 Углеводы: <b>").append(dish.getCarbohydrates()).append(" г</b>\n");
+        sb.append("🍽 <b>").append(dish.getName()).append("</b> ")
+                .append("🔥 Ккал: <b>").append(dish.getCalories()).append("</b> ")
+                .append("🥩 Б: <b>").append(dish.getProteins()).append(" г</b> ")
+                .append("🥑 Ж: <b>").append(dish.getFats()).append(" г</b> ")
+                .append("🍞 У: <b>").append(dish.getCarbohydrates()).append(" г</b>\n");
 
         return sb.toString();
     }
