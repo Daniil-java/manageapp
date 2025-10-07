@@ -18,6 +18,9 @@
 		<spring-cloud.version>2025.0.0</spring-cloud.version>
 		<lombok.version>1.18.28</lombok.version>
 		<maven.compiler.plugin.version>3.8.1</maven.compiler.plugin.version>
+		<google.calendar.version>v3-rev20220715-2.0.0</google.calendar.version>
+		<google.auth.version>1.24.0</google.auth.version>
+		<google.http.jackson.version>1.43.3</google.http.jackson.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -70,6 +73,28 @@
 			<artifactId>telegrambots-abilities</artifactId>
 			<version>6.9.0</version>
 		</dependency>
+
+		<!-- Google Calendar API (service-specific client) -->
+		<dependency>
+			<groupId>com.google.apis</groupId>
+			<artifactId>google-api-services-calendar</artifactId>
+			<version>${google.calendar.version}</version>
+		</dependency>
+
+		<!-- Google Auth for service accounts -->
+		<dependency>
+			<groupId>com.google.auth</groupId>
+			<artifactId>google-auth-library-oauth2-http</artifactId>
+			<version>${google.auth.version}</version>
+		</dependency>
+
+		<!-- JSON factory for Google HTTP client (Jackson) -->
+		<dependency>
+			<groupId>com.google.http-client</groupId>
+			<artifactId>google-http-client-jackson2</artifactId>
+			<version>${google.http.jackson.version}</version>
+		</dependency>
+
 	</dependencies>
 
 	<dependencyManagement>
