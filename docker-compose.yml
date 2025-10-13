@@ -1,0 +1,21 @@
+version: '3'
+#CMD: docker-compose up -d
+
+services:
+
+  postgres:
+    image: postgres:15.3
+    domainname: postgres
+    ports:
+      - "5453:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=manageapp
+    healthcheck:
+      test: ["CMD", "pg_isready", "-q", "-U", "postgres"]
+      interval: 5s
+      timeout: 1s
+      retries: 2
+
+
