@@ -1,10 +1,12 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.handlers;
 
 import com.kuklin.manageapp.bots.caloriebot.configurations.TelegramCaloriesBotKeyComponents;
+import com.kuklin.manageapp.bots.caloriebot.entities.models.DishDto;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.services.DishService;
 import com.kuklin.manageapp.common.entities.TelegramUser;
+import com.kuklin.manageapp.common.library.models.openai.ChatModel;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.services.OpenAiIntegrationService;
 import com.kuklin.manageapp.common.services.TelegramService;
@@ -24,6 +26,7 @@ import java.io.InputStream;
 import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
@@ -61,7 +64,10 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler{
         Long userId = telegramUser.getTelegramId();
         Dish dish;
         if (update.hasMessage() && update.getMessage().hasPhoto()) {
-            dish = processPhotoOrNull(userId, update.getMessage());
+//            dish = processPhotoOrNull(userId, update.getMessage());
+            Map<ChatModel, DishDto> dishDtos = processPhotoOrNull(userId, update.getMessage());
+            calorieTelegramBot.sendReturnedMessage(update.getMessage().getChatId(), getDishDtoListString(dishDtos));
+            return null;
         } else if (update.hasMessage() && update.getMessage().hasVoice()) {
             String request = processVoiceMessageOrNull(update.getMessage());
             dish = processTextOrNull(userId, request, update.getMessage().getChatId());
@@ -74,6 +80,19 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler{
             return null;
         }
         return dish;
+    }
+
+    private String getDishDtoListString(Map<ChatModel, DishDto> map) {
+        if (map == null || map.isEmpty()) return "";
+        String ls = System.lineSeparator();
+        StringBuilder sb = new StringBuilder();
+        map.forEach((model, dto) -> {
+            if (dto != null) {
+                sb.append(model != null ? model.getName() : "UNKNOWN_MODEL").append(ls)
+                        .append(dto.toString()).append(ls);
+            }
+        });
+        return sb.toString();
     }
 
     private Dish processTextOrNull(Long userId, String message, long chatId) {
@@ -108,7 +127,7 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler{
         return openAiIntegrationService.fetchAudioResponse(caloriesBotKeyComponents.getAiKey(), inputAudioFile);
     }
 
-    private Dish processPhotoOrNull(Long userId, Message message) {
+    private Map<ChatModel, DishDto> processPhotoOrNull(Long userId, Message message) {
         List<PhotoSize> photos = message.getPhoto();
         // Берём самое большое (последний элемент списка)
         PhotoSize photo = photos.get(photos.size() - 1);
@@ -116,13 +135,29 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler{
         InputStream file = new ByteArrayInputStream(
                 telegramService.downloadFileOrNull(calorieTelegramBot, photo.getFileId()));
         try {
-            return dishService.getDishDtoByPhotoOrNull(userId, toBase64(file));
+            return dishService.getDishDtoByPhotoOrNullWithManyModels(toBase64(file));
         } catch (IOException e) {
             log.error("ERROR");
             calorieTelegramBot.sendReturnedMessage(message.getChatId(), PHOTO_ERROR_MESSAGE);
             return null;
         }
     }
+
+//    private Dish processPhotoOrNull(Long userId, Message message) {
+//        List<PhotoSize> photos = message.getPhoto();
+//        // Берём самое большое (последний элемент списка)
+//        PhotoSize photo = photos.get(photos.size() - 1);
+//
+//        InputStream file = new ByteArrayInputStream(
+//                telegramService.downloadFileOrNull(calorieTelegramBot, photo.getFileId()));
+//        try {
+//            return dishService.getDishDtoByPhotoOrNull(userId, toBase64(file));
+//        } catch (IOException e) {
+//            log.error("ERROR");
+//            calorieTelegramBot.sendReturnedMessage(message.getChatId(), PHOTO_ERROR_MESSAGE);
+//            return null;
+//        }
+//    }
 
     private static String toBase64(InputStream inputStream) throws IOException {
         return "data:image/jpeg;base64," + Base64.getEncoder().encodeToString(inputStream.readAllBytes());

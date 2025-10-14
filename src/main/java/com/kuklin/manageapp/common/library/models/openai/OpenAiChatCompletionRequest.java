@@ -32,4 +32,20 @@ public class OpenAiChatCompletionRequest {
                 .setMessages(PhotoMessageWithPrompt.getMessageList(content, imageUrl));
     }
 
+    public static OpenAiChatCompletionRequest makeModelRequest(
+            String content, ChatModel model) {
+
+        return new OpenAiChatCompletionRequest()
+                .setTemperature(TEMPERATURE_DEFAULT)
+                .setModel(model.getName())
+                .setMessages(PhotoMessageWithPrompt.getFirstMessage(content));
+    }
+
+    public static OpenAiChatCompletionRequest makeModelImgRequest(String content, ChatModel model, String imageUrl) {
+        return new OpenAiChatCompletionRequest()
+                .setTemperature(TEMPERATURE_DEFAULT)
+                .setModel(model.getName())
+                .setMessages(PhotoMessageWithPrompt.getMessageList(content, imageUrl));
+    }
+
 }

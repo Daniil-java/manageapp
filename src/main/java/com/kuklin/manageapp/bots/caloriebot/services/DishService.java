@@ -6,6 +6,7 @@ import com.kuklin.manageapp.bots.caloriebot.configurations.TelegramCaloriesBotKe
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.entities.models.DishDto;
 import com.kuklin.manageapp.bots.caloriebot.repository.DishRepository;
+import com.kuklin.manageapp.common.library.models.openai.ChatModel;
 import com.kuklin.manageapp.common.services.OpenAiIntegrationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,7 +15,10 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.Collections;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -94,6 +98,34 @@ public class DishService {
                 String.format(AI_REQUEST, text));
         return getDishByAiResponseOrNull(userId, aiResponse);
     }
+
+    public Map<ChatModel, DishDto> getDishDtoByPhotoOrNullWithManyModels(String imageUrl) {
+
+        Map<ChatModel, String> raw = openAiIntegrationService.fetchResponseFromManyModels(
+                telegramCaloriesBotKeyComponents.getAiKey(),
+                AI_PHOTO_REQUEST,
+                imageUrl
+        );
+
+        if (raw == null || raw.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        Map<ChatModel, DishDto> result = new EnumMap<>(ChatModel.class);
+        for (Map.Entry<ChatModel, String> e : raw.entrySet()) {
+            DishDto dto = null;
+            try {
+                dto = readValue(e.getValue()); // парсим JSON/строку в DishDto
+            } catch (Exception ex) {
+                log.warn("Failed to parse DishDto for model {}: {}", e.getKey(), ex.getMessage());
+            }
+            result.put(e.getKey(), dto); // допускаем null по контракту метода
+        }
+
+        return result;
+
+    }
+
 
     private Dish getDishByAiResponseOrNull(Long userId, String response) {
         DishDto dto = readValue(response).setUserId(userId);
