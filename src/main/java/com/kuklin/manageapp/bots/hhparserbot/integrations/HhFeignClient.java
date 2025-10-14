@@ -13,8 +13,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 public interface HhFeignClient {
 
     @GetMapping("/vacancies/{vacancyId}")
-    HhResponseDto getVacancyById(@PathVariable Long vacancyId);
+    HhResponseDto getVacancyById(@PathVariable(name = "vacancyId") Long vacancyId);
 
     @GetMapping("/employers/{employerId}")
-    HhEmployerDto getEmployerById(@PathVariable Long employerId);
+    HhEmployerDto getEmployerById(@PathVariable(name = "employerId") Long employerId);
 }
