@@ -37,6 +37,11 @@ public class TelegramBotsStarter implements ApplicationListener<ApplicationReady
 
         for (TelegramBot bot : bots) {
             try {
+                if (bot.getBotIdentifier().equals(BotIdentifier.POMIDORO_BOT)) continue;
+                if (bot.getBotIdentifier().equals(BotIdentifier.ASSISTANT_BOT)) continue;
+                if (bot.getBotIdentifier().equals(BotIdentifier.BOOKING_BOT)) continue;
+                if (bot.getBotIdentifier().equals(BotIdentifier.HH_BOT)) continue;
+
                 api.registerBot(bot);
                 log.info("Telegram bot registered: {}", bot.getBotUsername());
             } catch (TelegramApiException e) {
