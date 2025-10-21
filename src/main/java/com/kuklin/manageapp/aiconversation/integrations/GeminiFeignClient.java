@@ -10,12 +10,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 @FeignClient(
         value = "gemini-feign-client",
-        url = "https://generativelanguage.googleapis.com/v1beta/models/"
+        url = "https://generativelanguage.googleapis.com/v1beta/models"
 )
 public interface GeminiFeignClient {
 
-    @PostMapping("/{model}:generateContent")
+    @PostMapping(path = "/{model}:generateContent", consumes = "application/json")
     GeminiResponse generate(@PathVariable("model") String model,
-                            @RequestParam String key,
+                            @RequestParam("key") String apiKey,
                             @RequestBody GeminiRequest request);
 }
