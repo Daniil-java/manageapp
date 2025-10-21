@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 public interface GeminiFeignClient {
 
     @PostMapping("/{model}:generateContent")
-    GeminiResponse generate(@PathVariable String model,
+    GeminiResponse generate(@PathVariable("model") String model,
                             @RequestParam String key,
                             @RequestBody GeminiRequest request);
 }
