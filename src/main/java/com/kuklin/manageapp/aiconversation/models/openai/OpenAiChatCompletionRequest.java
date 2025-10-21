@@ -1,6 +1,8 @@
-package com.kuklin.manageapp.common.library.models.openai;
+package com.kuklin.manageapp.aiconversation.models.openai;
 
-import com.kuklin.manageapp.common.library.models.PhotoMessageWithPrompt;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.kuklin.manageapp.aiconversation.models.PhotoMessageWithPrompt;
+import com.kuklin.manageapp.aiconversation.models.enums.ChatModel;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
@@ -11,7 +13,8 @@ import java.util.List;
 public class OpenAiChatCompletionRequest {
     private String model;
     private List<PhotoMessageWithPrompt> messages;
-    private float temperature;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private Float temperature;
 
     public static final float TEMPERATURE_DEFAULT = 0.1f;
     private static final String MODEL_DEFAULT = "gpt-4o";
@@ -29,6 +32,12 @@ public class OpenAiChatCompletionRequest {
         return new OpenAiChatCompletionRequest()
                 .setTemperature(TEMPERATURE_DEFAULT)
                 .setModel(MODEL_DEFAULT)
+                .setMessages(PhotoMessageWithPrompt.getMessageList(content, imageUrl));
+    }
+
+    public static OpenAiChatCompletionRequest makeDefaultImgRequest(String content, String imageUrl, ChatModel model) {
+        return new OpenAiChatCompletionRequest()
+                .setModel(model.getName())
                 .setMessages(PhotoMessageWithPrompt.getMessageList(content, imageUrl));
     }
 

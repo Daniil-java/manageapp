@@ -1,14 +1,17 @@
-package com.kuklin.manageapp.common.services;
+package com.kuklin.manageapp.aiconversation.providers.impl;
 
-import com.kuklin.manageapp.common.configurations.feignclients.OpenAiFeignClient;
+import com.kuklin.manageapp.aiconversation.integrations.OpenAiFeignClient;
+import com.kuklin.manageapp.aiconversation.models.AiResponse;
+import com.kuklin.manageapp.aiconversation.models.enums.ChatModel;
+import com.kuklin.manageapp.aiconversation.models.enums.ProviderVariant;
+import com.kuklin.manageapp.aiconversation.models.openai.OpenAiChatCompletionRequest;
+import com.kuklin.manageapp.aiconversation.models.openai.OpenAiChatCompletionResponse;
+import com.kuklin.manageapp.aiconversation.providers.ProviderProcessor;
 import com.kuklin.manageapp.common.library.models.ByteArrayMultipartFile;
-import com.kuklin.manageapp.common.library.models.openai.ChatModel;
-import com.kuklin.manageapp.common.library.models.openai.OpenAiChatCompletionRequest;
-import com.kuklin.manageapp.common.library.models.openai.OpenAiChatCompletionResponse;
 import com.kuklin.manageapp.common.library.models.TranscriptionResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
@@ -16,12 +19,24 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@Service
+@Component
 @Slf4j
 @RequiredArgsConstructor
-public class OpenAiIntegrationService {
+public class OpenAiProviderProcessor implements ProviderProcessor {
 
     private final OpenAiFeignClient openAiFeignClient;
+
+    @Override
+    public AiResponse fetchResponsePhotoOrNull(String imagerUrl, String content, ChatModel chatModel, String aiKey) {
+        OpenAiChatCompletionRequest request =
+                OpenAiChatCompletionRequest.makeDefaultImgRequest(content, imagerUrl, chatModel);
+
+        OpenAiChatCompletionResponse response =
+                openAiFeignClient.generate("Bearer " + aiKey, request);
+
+        return response.toAiResponse();
+    }
+
     public String fetchResponse(String aiKey, String content) {
         OpenAiChatCompletionRequest request =
                 OpenAiChatCompletionRequest.makeDefaultRequest(content);
@@ -88,4 +103,8 @@ public class OpenAiIntegrationService {
         return response.getText();
     }
 
+    @Override
+    public ProviderVariant getProviderName() {
+        return ProviderVariant.OPENAI;
+    }
 }

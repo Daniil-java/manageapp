@@ -3,6 +3,7 @@ package com.kuklin.manageapp.bots.pomidorotimer.services;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcessor;
 import com.kuklin.manageapp.bots.pomidorotimer.configurations.TelegramPomidoroTimerBotKeyComponents;
 import com.kuklin.manageapp.bots.pomidorotimer.entities.Task;
 import com.kuklin.manageapp.bots.pomidorotimer.models.TaskDto;
@@ -10,7 +11,6 @@ import com.kuklin.manageapp.bots.pomidorotimer.models.mappers.TaskMapper;
 import com.kuklin.manageapp.bots.pomidorotimer.models.mappers.UserMapper;
 import com.kuklin.manageapp.bots.pomidorotimer.models.task.Status;
 import com.kuklin.manageapp.bots.pomidorotimer.repositories.TaskRepository;
-import com.kuklin.manageapp.common.services.OpenAiIntegrationService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +27,7 @@ public class TaskService {
     private final TaskRepository taskRepository;
     private final TaskMapper taskMapper;
     private final UserMapper userMapper;
-    private final OpenAiIntegrationService openAiIntegrationService;
+    private final OpenAiProviderProcessor openAiProviderProcessor;
     private final TelegramPomidoroTimerBotKeyComponents components;
     private final ObjectMapper objectMapper;
     private static final String AI_REQUEST =
@@ -135,7 +135,7 @@ public class TaskService {
 
     private List<Task> getTaskList(String name, String comment) throws JsonProcessingException {
         String response =
-                openAiIntegrationService.fetchResponse(
+                openAiProviderProcessor.fetchResponse(
                         components.getAiKey(),
                         String.format(AI_REQUEST, name, comment)
                 );

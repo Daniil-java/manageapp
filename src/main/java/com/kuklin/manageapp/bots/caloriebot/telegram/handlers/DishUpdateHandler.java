@@ -1,16 +1,16 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.handlers;
 
+import com.kuklin.manageapp.aiconversation.models.enums.ChatModel;
+import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcessor;
 import com.kuklin.manageapp.bots.caloriebot.configurations.TelegramCaloriesBotKeyComponents;
-import com.kuklin.manageapp.bots.caloriebot.entities.models.DishDto;
-import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
+import com.kuklin.manageapp.bots.caloriebot.entities.models.DishDto;
 import com.kuklin.manageapp.bots.caloriebot.services.DishService;
+import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.common.entities.TelegramUser;
-import com.kuklin.manageapp.common.library.models.openai.ChatModel;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
-import com.kuklin.manageapp.common.services.OpenAiIntegrationService;
-import com.kuklin.manageapp.common.services.TelegramService;
 import com.kuklin.manageapp.common.library.tgutils.Command;
+import com.kuklin.manageapp.common.services.TelegramService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -23,10 +23,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKe
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Base64;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Component
 @RequiredArgsConstructor
@@ -36,7 +33,7 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler{
     private final TelegramService telegramService;
     private final TelegramCaloriesBotKeyComponents caloriesBotKeyComponents;
     private final DishService dishService;
-    private final OpenAiIntegrationService openAiIntegrationService;
+    private final OpenAiProviderProcessor openAiIntegrationService;
     private static final String VOICE_ERROR_MESSAGE =
             "Ошибка! Не получилось обработать голосовое сообщение";
     private static final String PHOTO_ERROR_MESSAGE =
@@ -84,15 +81,16 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler{
 
     private String getDishDtoListString(Map<ChatModel, DishDto> map) {
         if (map == null || map.isEmpty()) return "";
-        String ls = System.lineSeparator();
-        StringBuilder sb = new StringBuilder();
+        StringJoiner sj = new StringJoiner(System.lineSeparator());
+
         map.forEach((model, dto) -> {
             if (dto != null) {
-                sb.append(model != null ? model.getName() : "UNKNOWN_MODEL").append(ls)
-                        .append(dto.toString()).append(ls);
+                String name = (model != null ? model.getName() : "UNKNOWN_MODEL");
+                sj.add("<b>" + name + "</b>\n" + dto); // dto.toString()
             }
         });
-        return sb.toString();
+
+        return sj.toString();
     }
 
     private Dish processTextOrNull(Long userId, String message, long chatId) {
@@ -135,7 +133,7 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler{
         InputStream file = new ByteArrayInputStream(
                 telegramService.downloadFileOrNull(calorieTelegramBot, photo.getFileId()));
         try {
-            return dishService.getDishDtoByPhotoOrNullWithManyModels(toBase64(file));
+            return dishService.getDishDtoByPhotoOrNullWithManyProviders(toBase64(file));
         } catch (IOException e) {
             log.error("ERROR");
             calorieTelegramBot.sendReturnedMessage(message.getChatId(), PHOTO_ERROR_MESSAGE);

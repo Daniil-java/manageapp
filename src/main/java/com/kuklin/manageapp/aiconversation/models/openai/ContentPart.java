@@ -1,4 +1,4 @@
-package com.kuklin.manageapp.common.library.models.openai;
+package com.kuklin.manageapp.aiconversation.models.openai;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;

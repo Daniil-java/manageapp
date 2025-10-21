@@ -1,14 +1,14 @@
 package com.kuklin.manageapp.bots.hhparserbot.services;
 
+import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcessor;
 import com.kuklin.manageapp.bots.hhparserbot.configurations.TelegramHhParserBotKeyComponents;
 import com.kuklin.manageapp.bots.hhparserbot.entities.Vacancy;
-import com.kuklin.manageapp.bots.hhparserbot.models.VacancyStatus;
 import com.kuklin.manageapp.bots.hhparserbot.entities.WorkFilter;
 import com.kuklin.manageapp.bots.hhparserbot.models.HhEmployerDto;
 import com.kuklin.manageapp.bots.hhparserbot.models.HhResponseDto;
 import com.kuklin.manageapp.bots.hhparserbot.models.HhSimpleResponseDto;
+import com.kuklin.manageapp.bots.hhparserbot.models.VacancyStatus;
 import com.kuklin.manageapp.bots.hhparserbot.repositories.VacancyRepository;
-import com.kuklin.manageapp.common.services.OpenAiIntegrationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -22,7 +22,7 @@ import java.util.Optional;
 public class HhVacancyService {
     private final VacancyRepository vacancyRepository;
     private final HhApiService hhApiService;
-    private final OpenAiIntegrationService openAiIntegrationService;
+    private final OpenAiProviderProcessor openAiProviderProcessor;
     private final TelegramHhParserBotKeyComponents components;
     private static final String AI_REQUEST =
             """
@@ -112,7 +112,7 @@ public class HhVacancyService {
     //Сохранение сгенерированного описания вакансии, посредством обращения к OpenAI API
     public void fetchGenerateDescriptionAndUpdateEntity(Vacancy vacancy) {
         //Получение сгенерированного краткого описания, на основе описания полного
-        String generatedDescription = openAiIntegrationService
+        String generatedDescription = openAiProviderProcessor
                 .fetchResponse(components.getAiKey(), String.format(AI_REQUEST, vacancy.getDescription()));
         //Обновление и сохранение данных вакансии
         vacancyRepository.save(vacancy
@@ -128,7 +128,7 @@ public class HhVacancyService {
             //Получение сгенерированного сопроводительного письма, на основе полного описания
             String vacancyDescription = "Ключевые навыки: " + vacancy.getKeySkills() + "\n" + vacancy.getDescription();
             String request = String.format(COVER_LETTER, vacancyDescription, vacancy.getEmployerDescription(), userInfo);
-            return openAiIntegrationService.fetchResponse(components.getAiKey(), request);
+            return openAiProviderProcessor.fetchResponse(components.getAiKey(), request);
         }
         return null;
     }

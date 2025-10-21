@@ -1,4 +1,4 @@
-package com.kuklin.manageapp.common.configurations;
+package com.kuklin.manageapp.aiconversation.configurations;
 
 import feign.codec.Encoder;
 import org.springframework.boot.autoconfigure.http.HttpMessageConverters;
@@ -13,4 +13,5 @@ public class FeignClientConfig {
     public Encoder feignEncoder() {
         return new SpringEncoder(() -> new HttpMessageConverters(new MappingJackson2HttpMessageConverter()));
     }
+
 }

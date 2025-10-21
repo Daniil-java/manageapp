@@ -2,12 +2,15 @@ package com.kuklin.manageapp.bots.caloriebot.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.kuklin.manageapp.aiconversation.models.AiResponse;
+import com.kuklin.manageapp.aiconversation.models.enums.ChatModel;
+import com.kuklin.manageapp.aiconversation.models.enums.ProviderVariant;
+import com.kuklin.manageapp.aiconversation.providers.ProviderProcessorHandler;
+import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcessor;
 import com.kuklin.manageapp.bots.caloriebot.configurations.TelegramCaloriesBotKeyComponents;
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.entities.models.DishDto;
 import com.kuklin.manageapp.bots.caloriebot.repository.DishRepository;
-import com.kuklin.manageapp.common.library.models.openai.ChatModel;
-import com.kuklin.manageapp.common.services.OpenAiIntegrationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -15,8 +18,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.util.Collections;
-import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -25,9 +27,10 @@ import java.util.Map;
 @Slf4j
 public class DishService {
     private final DishRepository dishRepository;
-    private final OpenAiIntegrationService openAiIntegrationService;
+    private final OpenAiProviderProcessor openAiIntegrationService;
     private final TelegramCaloriesBotKeyComponents telegramCaloriesBotKeyComponents;
     private final ObjectMapper objectMapper;
+    private final ProviderProcessorHandler processorHandler;
     private static final String AI_PHOTO_REQUEST =
             """
                     Ты — система, которая анализирует фото.\s
@@ -99,33 +102,40 @@ public class DishService {
         return getDishByAiResponseOrNull(userId, aiResponse);
     }
 
-    public Map<ChatModel, DishDto> getDishDtoByPhotoOrNullWithManyModels(String imageUrl) {
+    public Map<ChatModel, DishDto> getDishDtoByPhotoOrNullWithManyProviders(String imageUrl) {
+        Map<ChatModel, DishDto> map = new HashMap<>();
+        for (ChatModel chatModel: ChatModel.getModels()) {
+            ProviderVariant provider = chatModel.getProviderVariant();
 
-        Map<ChatModel, String> raw = openAiIntegrationService.fetchResponseFromManyModels(
-                telegramCaloriesBotKeyComponents.getAiKey(),
-                AI_PHOTO_REQUEST,
-                imageUrl
-        );
-
-        if (raw == null || raw.isEmpty()) {
-            return Collections.emptyMap();
-        }
-
-        Map<ChatModel, DishDto> result = new EnumMap<>(ChatModel.class);
-        for (Map.Entry<ChatModel, String> e : raw.entrySet()) {
-            DishDto dto = null;
-            try {
-                dto = readValue(e.getValue()); // парсим JSON/строку в DishDto
-            } catch (Exception ex) {
-                log.warn("Failed to parse DishDto for model {}: {}", e.getKey(), ex.getMessage());
+            String aiKey = null;
+            switch (chatModel.getProviderVariant()) {
+                case CLAUDE ->
+                    aiKey = telegramCaloriesBotKeyComponents.getClaudeAiKey();
+                case GEMINI ->
+                    aiKey = telegramCaloriesBotKeyComponents.getGeminiAiKey();
+                case DEEPSEEK ->
+                    aiKey = telegramCaloriesBotKeyComponents.getDeepseekAiKey();
             }
-            result.put(e.getKey(), dto); // допускаем null по контракту метода
+            if (aiKey == null) aiKey = telegramCaloriesBotKeyComponents.getAiKey();
+
+            AiResponse aiResponse = processorHandler.getProvider(provider)
+                    .fetchResponsePhotoOrNull(
+                            imageUrl,
+                            AI_PHOTO_REQUEST,
+                            chatModel,
+                            aiKey
+                    );
+
+            if (aiResponse == null) {
+                log.info(chatModel.getName() + " ошибка при генераации ответа");
+                continue;
+            }
+
+            DishDto dto = readValue(aiResponse.getContent());
+            map.put(chatModel, dto);
         }
-
-        return result;
-
+        return map;
     }
-
 
     private Dish getDishByAiResponseOrNull(Long userId, String response) {
         DishDto dto = readValue(response).setUserId(userId);
@@ -136,13 +146,35 @@ public class DishService {
     }
 
     private DishDto readValue(String value) {
+        if (value.startsWith("```")) {
+            value = stripJsonFence(value);
+        }
         try {
             return objectMapper.readValue(value, DishDto.class);
         } catch (JsonProcessingException e) {
             log.error("Ошибка десериализации");
+            log.info(value);
             return null;
         }
     }
+
+    private static String stripJsonFence(String s) {
+        if (s == null) return null;
+        s = s.replace("\r", "");
+        String lower = s.toLowerCase();
+        if (lower.startsWith("```json\n")) {
+            // с концом на ``` (с \n перед ним необязателен)
+            int end = s.lastIndexOf("```");
+            if (end > 0) {
+                // убираем ведущий ```json\n и хвостовой ```
+                String inner = s.substring("```json\n".length(), end);
+                // срежем крайние перевод строки/пробелы
+                return inner.strip();
+            }
+        }
+        return s;
+    }
+
 
     public void removeByDishId(Long id) {
         dishRepository.deleteById(id);

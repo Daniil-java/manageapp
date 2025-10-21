@@ -1,7 +1,7 @@
-package com.kuklin.manageapp.common.library.models;
+package com.kuklin.manageapp.aiconversation.models;
 
-import com.kuklin.manageapp.common.library.models.openai.ContentPart;
-import com.kuklin.manageapp.common.library.models.openai.ChatRole;
+import com.kuklin.manageapp.aiconversation.models.enums.ChatRole;
+import com.kuklin.manageapp.aiconversation.models.openai.ContentPart;
 import lombok.Data;
 import lombok.experimental.Accessors;
 

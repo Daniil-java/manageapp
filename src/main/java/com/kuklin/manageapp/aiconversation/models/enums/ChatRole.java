@@ -1,4 +1,4 @@
-package com.kuklin.manageapp.common.library.models.openai;
+package com.kuklin.manageapp.aiconversation.models.enums;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

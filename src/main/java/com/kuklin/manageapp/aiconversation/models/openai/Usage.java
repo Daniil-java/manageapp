@@ -1,4 +1,4 @@
-package com.kuklin.manageapp.common.library.models.openai;
+package com.kuklin.manageapp.aiconversation.models.openai;
 
 import lombok.Data;
 import lombok.experimental.Accessors;

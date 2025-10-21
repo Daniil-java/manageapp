@@ -1,8 +1,8 @@
-package com.kuklin.manageapp.common.configurations.feignclients;
+package com.kuklin.manageapp.aiconversation.integrations;
 
-import com.kuklin.manageapp.common.configurations.FeignClientConfig;
-import com.kuklin.manageapp.common.library.models.openai.OpenAiChatCompletionRequest;
-import com.kuklin.manageapp.common.library.models.openai.OpenAiChatCompletionResponse;
+import com.kuklin.manageapp.aiconversation.configurations.FeignClientConfig;
+import com.kuklin.manageapp.aiconversation.models.openai.OpenAiChatCompletionRequest;
+import com.kuklin.manageapp.aiconversation.models.openai.OpenAiChatCompletionResponse;
 import com.kuklin.manageapp.common.library.models.TranscriptionResponse;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.MediaType;
