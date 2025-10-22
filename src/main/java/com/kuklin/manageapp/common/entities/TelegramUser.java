@@ -29,6 +29,7 @@ public class TelegramUser {
     private LocalDateTime updated;
     @CreationTimestamp
     private LocalDateTime created;
+    private Long responseCount;
 
     public static TelegramUser convertFromTelegram(User user) {
         return new TelegramUser()

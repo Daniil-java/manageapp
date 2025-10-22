@@ -11,6 +11,7 @@ import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import com.kuklin.manageapp.common.services.TelegramService;
+import com.kuklin.manageapp.common.services.TelegramUserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -34,6 +35,7 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler{
     private final TelegramCaloriesBotKeyComponents caloriesBotKeyComponents;
     private final DishService dishService;
     private final OpenAiProviderProcessor openAiIntegrationService;
+    private final TelegramUserService telegramUserService;
     private static final String VOICE_ERROR_MESSAGE =
             "Ошибка! Не получилось обработать голосовое сообщение";
     private static final String PHOTO_ERROR_MESSAGE =
@@ -42,8 +44,16 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler{
             "Данное сообщение не поддержтвается";
     private static final String ERROR_CONTENT_MESSAGE =
             "Это не съедобно!";
+    private static final Long RESPONSE_LIMIT = 10L;
+    private static final String ERROR_LIMIT_MSG = "Количество запросов, доступных вам, достигло предела!";
+
+
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
+        if (update.getMessage().hasPhoto() && !checkUserAccess(telegramUser)) {
+            calorieTelegramBot.sendReturnedMessage(update.getMessage().getChatId(), ERROR_LIMIT_MSG);
+            return;
+        }
 
         Dish dish = getDishOrNull(update, telegramUser);
         if (dish == null) return;
@@ -57,6 +67,14 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler{
 
     }
 
+    private boolean checkUserAccess(TelegramUser telegramUser) {
+        if (telegramUser.getTelegramId().equals(425120436L) ||
+        telegramUser.getTelegramId().equals(420478432L)) return true;
+
+        if (telegramUser.getResponseCount() > RESPONSE_LIMIT) return false;
+        return true;
+    }
+
     private Dish getDishOrNull(Update update, TelegramUser telegramUser) {
         Long userId = telegramUser.getTelegramId();
         Dish dish;
@@ -64,6 +82,7 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler{
 //            dish = processPhotoOrNull(userId, update.getMessage());
             Map<ChatModel, DishDto> dishDtos = processPhotoOrNull(userId, update.getMessage());
             calorieTelegramBot.sendReturnedMessage(update.getMessage().getChatId(), getDishDtoListString(dishDtos));
+            telegramUserService.save(telegramUser.setResponseCount(telegramUser.getResponseCount() + 1));
             return null;
         } else if (update.hasMessage() && update.getMessage().hasVoice()) {
             String request = processVoiceMessageOrNull(update.getMessage());
