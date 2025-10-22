@@ -363,6 +363,122 @@
         .icon-btn{ width:32px; height:32px; }
     }
 
+    /* Контакты — как на странице фриланса (mobile tidy) */
+    @media (max-width:560px){
+        #contacts .ct-title small{ display:none; }                       /* убираем подпись */
+        #contacts .ct-head{ min-height:64px; grid-template-columns:38px 1fr auto; }
+        #contacts .pill{ max-width:clamp(160px,62vw,480px); }            /* пилла не обрезается рано */
+    }
+
+    /* 1) Шапка: меню прокручивается по горизонтали, кнопки компактнее */
+    @media (max-width: 560px){
+        .nav-row{ grid-template-columns: auto 1fr auto; gap: 8px; } /* логотип | меню | иконки */
+        nav[aria-label="Основная навигация"]{ min-width: 0; }
+        nav[aria-label="Основная навигация"] ul{
+            flex-wrap: nowrap;
+            white-space: nowrap;
+            overflow-x: auto;
+            padding: 0 8px;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            gap: 12px;
+        }
+        nav[aria-label="Основная навигация"] ul::-webkit-scrollbar{ display: none; }
+
+        .actions{ gap: 8px; }
+        .icon-link{ width: 32px; height: 32px; }
+        .theme-toggle{ padding: 4px 8px; }
+        .theme-toggle .muted{ display: none; } /* слово «Тема» прячем на мобилке */
+    }
+
+    /* 2) Карточки и секции: чуть плотнее на узких экранах */
+    @media (max-width: 560px){
+        .section{ padding: 24px 0; }
+        .card{ padding: 12px; }
+    }
+
+    /* 3) About/Stack/Exp: аккуратная ужимка сеток */
+    @media (max-width: 780px){
+        .about-grid{ grid-template-columns: 1fr; }               /* уже есть, дублим на всякий случай */
+    }
+    @media (max-width: 560px){
+        .stack-grid{ gap: 10px; }
+        .stack-item img{ width: 56px; height: 56px; }
+        .stack-item span{ font-size: .78rem; }
+        .exp .meta{ font-size: 13px; }
+    }
+
+    /* 4) Контакты: мобильный фикс (как на фрилансе) */
+    @media (max-width:560px){
+        #contacts .ct-title small{ display:none; }
+        #contacts .ct-head{ min-height:64px; grid-template-columns:38px 1fr auto; }
+        #contacts .pill{ max-width: clamp(160px, 62vw, 480px); } /* не обрезается рано */
+    }
+
+    /* 5) Кнопки копирования в контактах — компактнее на самых узких */
+    @media (max-width: 420px){
+        .icon-btn{ width:32px; height:32px; }
+    }
+
+    /* ===== Бургер + выезжающее меню (как на фрилансе) ===== */
+    .menu-btn{ display:none; align-items:center; justify-content:center;
+        width:36px; height:36px; border-radius:10px;
+        background:var(--panel); border:1px solid var(--border);
+        box-shadow:0 6px 18px rgba(0,0,0,.08); }
+    .menu-btn svg{ width:18px; height:18px; }
+    .menu-btn:active{ transform:translateY(1px); }
+
+    .drawer{ position:fixed; inset:0; z-index:9999; }
+    .drawer[hidden]{ display:none; }
+    .drawer-backdrop{ position:absolute; inset:0; background:rgba(0,0,0,.15);
+        backdrop-filter:saturate(120%) blur(2px); opacity:0; transition:opacity .22s ease; }
+    .drawer-panel{ position:absolute; top:0; right:0; height:100%; width:min(86vw,360px);
+        background:var(--bg); border-left:1px solid var(--border);
+        box-shadow:-20px 0 40px rgba(0,0,0,.12);
+        transform:translateX(100%); transition:transform .22s ease;
+        padding:16px 16px 24px; overflow:auto; }
+    .drawer.open .drawer-backdrop{ opacity:1; }
+    .drawer.open .drawer-panel{ transform:translateX(0); }
+    .drawer-panel h3{ margin:0 0 12px; font-size:1.05rem; }
+    .drawer-panel ul{ display:flex; flex-direction:column; gap:10px; margin:0; padding:0; list-style:none; }
+    .drawer-panel a{ display:block; padding:12px 14px; border-radius:12px;
+        background:var(--panel); border:1px solid var(--border); color:var(--text); text-decoration:none; }
+    .drawer-panel a:active{ transform:translateY(1px); }
+
+    /* Телефоны: показываем бургер и прячем длинное меню в хедере */
+    @media (max-width:560px){
+        .menu-btn{ display:inline-flex; }
+        nav[aria-label="Основная навигация"]{ display:none; }
+        .actions{ gap:8px; }
+        .actions .icon-link, .actions .menu-btn{ width:32px; height:32px; }
+        .actions .icon-link svg, .actions .menu-btn svg{ width:18px; height:18px; }
+    }
+
+    /* Блокировка прокрутки страницы при открытом меню */
+    body.no-scroll{ overflow:hidden; }
+
+    /* базовый вид — такой же как у .icon-link */
+    .menu-btn{
+        display:none;              /* показываем только на мобилках ниже */
+        align-items:center;
+        justify-content:center;
+        width:36px; height:36px;
+        border-radius:10px;
+        background:var(--panel);
+        border:1px solid var(--border);
+        box-shadow:var(--shadow);
+        cursor:pointer;
+    }
+
+    /* телефоны: показываем бургер и ужимаем иконки */
+    @media (max-width:560px){
+        .menu-btn{ display:inline-flex; }
+        nav[aria-label="Основная навигация"]{ display:none; } /* оглавление прячем — как на фрилансе */
+        .actions{ gap:8px; }
+        .actions .icon-link, .actions .menu-btn{ width:32px; height:32px; }
+        .actions .icon-link svg, .actions .menu-btn svg{ width:18px; height:18px; }
+    }
+
   </style>
 </head>
 <body>
@@ -381,10 +497,20 @@
           <li><a href="#stack" data-nav>Стэк технологий</a></li>
           <li><a href="#experience" data-nav>Опыт работы</a></li>
           <li><a href="#education" data-nav>Образование</a></li>
+            <li><a href="#contacts" data-nav>Контакты</a></li>
         </ul>
       </nav>
 
       <div class="actions">
+
+          <button id="menuToggle" class="menu-btn" aria-label="Открыть меню"
+                  aria-controls="mobileDrawer" aria-expanded="false">
+              <svg viewBox="0 0 24 24" aria-hidden="true" width="20" height="20">
+                  <path d="M4 6h16M4 12h16M4 18h16"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+          </button>
+
         <a class="icon-link" href="mailto:saponembigas@gmail.com" aria-label="Написать на email">
           <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M3.5 7.5 12 13l8.5-5.5M4 6h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z"/></svg>
         </a>
@@ -659,7 +785,7 @@
 
                           <div class="ct-title">
                               <strong>Email</strong>
-                              <small class="muted">Свяжемся по почте</small>
+                              <small class="muted">Почта</small>
                           </div>
 
                           <div class="ct-value" data-state="hidden">
@@ -763,6 +889,13 @@
       </div>
     </div>
   </footer>
+  <aside id="mobileDrawer" class="drawer" hidden aria-hidden="true" aria-label="Меню">
+      <div class="drawer-backdrop" data-close></div>
+      <nav class="drawer-panel">
+          <h3>Оглавление</h3>
+          <ul id="drawerList"></ul>
+      </nav>
+  </aside>
 
   <script>
     // ========= Утилиты =========
@@ -812,6 +945,21 @@
     const navLinks=$$('a[data-nav]'); const map=new Map(navLinks.map(a=>[a.getAttribute('href'),a]));
     const io=new IntersectionObserver((entries)=>{ entries.forEach(en=>{ const id='#'+en.target.id; const link=map.get(id); if(!link) return; if(en.isIntersecting){ navLinks.forEach(x=>x.classList.remove('active')); link.classList.add('active'); if(history.replaceState) history.replaceState(null,'',id); } }); },{ rootMargin:`-${headerH+24}px 0px -60% 0px`, threshold:0.1 });
     ['about','stack','experience','education','contacts'].forEach(id=>{ const s=$('#'+id); if(s) io.observe(s); });
+
+    // 1) Мгновенная подсветка по клику (ещё до срабатывания observer)
+    navLinks.forEach(a => a.addEventListener('click', () => {
+        navLinks.forEach(x => x.classList.remove('active'));
+        a.classList.add('active');
+    }));
+
+    // 2) Если долистали до низа — всегда подсвечиваем «Контакты»
+    addEventListener('scroll', () => {
+        const atBottom = Math.ceil(window.scrollY + window.innerHeight) >= document.documentElement.scrollHeight;
+        if (atBottom) {
+            navLinks.forEach(x => x.classList.remove('active'));
+            map.get('#contacts')?.classList.add('active');
+        }
+    }, { passive: true });
 
     // ====== Фон-канвас «поток» (лёгкий) ======
     (function flow(){
@@ -890,7 +1038,11 @@
             const btn = e.target.closest('.ct-reveal');
             if (btn){
                 const wrap = btn.closest('.ct-value');
-                if (wrap) wrap.setAttribute('data-state', 'shown');
+                if (wrap){
+                    wrap.setAttribute('data-state', 'shown');
+                    // докрутить карточку к центру — значение видно целиком
+                    setTimeout(()=> wrap.closest('.ct-flat')?.scrollIntoView({behavior:'smooth', block:'center'}), 0);
+                }
             }
             const cp = e.target.closest('.ct-copy');
             if (cp){
@@ -898,12 +1050,87 @@
                 navigator.clipboard?.writeText(val).then(()=>{
                     const old = cp.textContent;
                     cp.textContent = 'Скопировано!';
-                    setTimeout(()=>cp.textContent = old, 1200);
+                    setTimeout(()=> cp.textContent = old, 1200);
                 });
             }
         });
     })();
 
+    (function mobileDrawer(){
+        const btn = document.getElementById('menuToggle');
+        const drawer = document.getElementById('mobileDrawer');
+        if (!btn || !drawer) return;
+
+        const panel = drawer.querySelector('.drawer-panel');
+        const backdrop = drawer.querySelector('.drawer-backdrop');
+        const list = drawer.querySelector('#drawerList');
+
+        // Берём пункты из хедера (a[data-nav]) и клонируем в панель без data-nav
+        const headerLinks = Array.from(document.querySelectorAll('header a[data-nav]'));
+        list.innerHTML = headerLinks.map(a =>
+            `<li><a class="drawer-link" href="${a.getAttribute('href')}">${a.textContent.trim()}</a></li>`
+        ).join('');
+
+        const links = drawer.querySelectorAll('.drawer-link');
+
+        const open = () => {
+            drawer.hidden = false;
+            requestAnimationFrame(() => {
+                drawer.classList.add('open');
+                btn.setAttribute('aria-expanded', 'true');
+                drawer.setAttribute('aria-hidden', 'false');
+                document.body.classList.add('no-scroll');
+                panel.focus?.({preventScroll:true});
+            });
+        };
+        const close = () => {
+            drawer.classList.remove('open');
+            btn.setAttribute('aria-expanded', 'false');
+            drawer.setAttribute('aria-hidden', 'true');
+            document.body.classList.remove('no-scroll');
+            setTimeout(() => { drawer.hidden = true; }, 220);
+        };
+
+        btn.addEventListener('click', () =>
+            drawer.classList.contains('open') ? close() : open()
+        );
+        backdrop.addEventListener('click', close);
+        addEventListener('keydown', e => { if (e.key === 'Escape' && drawer.classList.contains('open')) close(); });
+
+        // Плавный скролл к секции (используем твою функцию, если есть)
+        function goTo(hash){
+            const header = document.querySelector('.site-header');
+            const offset = (window.headerH || header?.offsetHeight || 64) + 8;
+            const el = document.querySelector(hash);
+            if (!el) return;
+            const y = el.getBoundingClientRect().top + window.scrollY - offset;
+            window.scrollTo({ top: y, behavior: 'smooth' });
+        }
+
+        // Клик по пунктам панели: закрыть, подсветить пункт в ХЕДЕРЕ и скролльнуть
+        links.forEach(a => a.addEventListener('click', (e) => {
+            e.preventDefault();
+            const hash = a.getAttribute('href');
+            close();
+
+            const headerLink = document.querySelector(`header a[data-nav][href="${hash}"]`);
+            if (headerLink) {
+                document.querySelectorAll('header a[data-nav]').forEach(x => x.classList.remove('active'));
+                headerLink.classList.add('active');
+                history.pushState?.(null, '', hash);
+            }
+
+            if (typeof window.scrollToHash === 'function') window.scrollToHash(hash);
+            else goTo(hash);
+        }));
+
+        // Авто-закрытие при расширении до десктопа
+        addEventListener('resize', () => {
+            if (window.innerWidth > 560 && drawer.classList.contains('open')) close();
+        }, { passive:true });
+    })();
+
   </script>
+
 </body>
 </html>
