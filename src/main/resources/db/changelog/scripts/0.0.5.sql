@@ -1,6 +1,6 @@
 --liquibase formatted sql
 
---changeset DanielK:4
+--changeset DanielK:5
 
 
 -- Таблица объектов бронирования
@@ -25,22 +25,11 @@ CREATE TABLE IF NOT EXISTS rules (
     working BOOLEAN NOT NULL DEFAULT TRUE
     );
 
--- Таблица пользователей Telegram
-CREATE TABLE IF NOT EXISTS telegram_users (
-                                              telegram_id BIGINT NOT NULL PRIMARY KEY,
-                                              username TEXT,
-                                              firstname TEXT,
-                                              lastname TEXT,
-                                              language_code TEXT,
-                                              updated TIMESTAMP,
-                                              created TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
 -- Таблица бронирований
 CREATE TABLE IF NOT EXISTS bookings (
-                                        id BIGSERIAL PRIMARY KEY,
-                                        booking_object_id BIGINT NOT NULL REFERENCES booking_objects(id) ON DELETE CASCADE,
-    telegram_user_id BIGINT NOT NULL REFERENCES telegram_users(telegram_id) ON DELETE CASCADE,
+    id BIGSERIAL PRIMARY KEY,
+    booking_object_id BIGINT NOT NULL REFERENCES booking_objects(id) ON DELETE CASCADE,
+    telegram_user_id BIGINT NOT NULL,
     start_time TIMESTAMP NOT NULL,
     end_time TIMESTAMP NOT NULL,
     status TEXT NOT NULL,
@@ -50,7 +39,7 @@ CREATE TABLE IF NOT EXISTS bookings (
 
 -- Таблица состояний диалога
 CREATE TABLE IF NOT EXISTS states (
-    telegram_id BIGINT NOT NULL PRIMARY KEY REFERENCES telegram_users(telegram_id) ON DELETE CASCADE,
+    telegram_id BIGINT NOT NULL PRIMARY KEY,
     step TEXT NOT NULL,
     updated_at TIMESTAMP
     );

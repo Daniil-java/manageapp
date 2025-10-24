@@ -5,6 +5,7 @@ import com.kuklin.manageapp.bots.bookingbot.services.BookingService;
 import com.kuklin.manageapp.bots.bookingbot.telegram.BookingTelegramBot;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.ScheduleProcessor;
+import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import com.kuklin.manageapp.common.services.TelegramUserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -49,7 +50,10 @@ public class BookingStatusScheduleProcessor implements ScheduleProcessor {
         for (Booking booking : bookings) {
             if (Duration.between(booking.getUpdatedAt(), now).toMinutes() > defaultBookingProcessTime) {
                 bookingService.deleteById(booking.getId());
-                TelegramUser telegramUser = telegramUserService.getTelegramUserByIdOrNull(booking.getTelegramUserId());
+                TelegramUser telegramUser = telegramUserService
+                        .getTelegramUserByTelegramIdAndBotIdentifierOrNull(
+                                booking.getTelegramUserId(), BotIdentifier.BOOKING_BOT);
+
                 bookingTelegramBot.sendReturnedMessage(telegramUser.getTelegramId(), BOOKING_REMOVE);
             }
         }

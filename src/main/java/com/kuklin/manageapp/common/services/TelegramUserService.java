@@ -17,8 +17,11 @@ public class TelegramUserService {
     private static final Long DEFAULT_RESPONSE_COUNT = 0L;
     private final TelegramUserRepository telegramUserRepository;
 
-    public TelegramUser getTelegramUserByIdOrNull(Long telegramId) {
-        return telegramUserRepository.findById(telegramId).orElse(null);
+    public TelegramUser getTelegramUserByTelegramIdAndBotIdentifierOrNull(Long telegramId, BotIdentifier botIdentifier) {
+        return telegramUserRepository
+                .findTelegramUserByBotIdentifierAndTelegramId(botIdentifier, telegramId)
+                .orElse(null)
+                ;
     }
 
     public TelegramUser createOrGetUserByTelegram(
