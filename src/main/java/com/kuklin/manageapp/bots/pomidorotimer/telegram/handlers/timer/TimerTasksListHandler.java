@@ -33,6 +33,7 @@ public class TimerTasksListHandler implements MessageHandler {
     private static final String BACK_MESSAGE = "reply.general.back";
     private static final String DELETE_COMMAND = "command.task.delete";
     private static final String DONE_COMMAND = "command.task.done";
+    private static final String TASK_MSG_TITLE = "\uD83D\uDCCB Tasks";
     @Override
     public BotApiMethod handle(Message message, UserEntity userEntity) {
         String userAnswer = message.getText();
@@ -45,7 +46,7 @@ public class TimerTasksListHandler implements MessageHandler {
         EditMessageText editMessageText = BotApiMethodBuilder.makeEditMessageText(
                 message.getChatId(),
                 timer.getTelegramMessageId(),
-                TimerHandler.getTimerInfo(timer, botState.toString(), taskList)
+                TimerHandler.getTimerInfo(timer, TASK_MSG_TITLE, taskList)
         );
 
         if (BotState.TIMER_TASKS_LIST.equals(botState)) {
@@ -82,8 +83,8 @@ public class TimerTasksListHandler implements MessageHandler {
     public InlineKeyboardMarkup getInlineMessageButtons() {
         InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
 
-        InlineKeyboardButton unbindButton = new InlineKeyboardButton("Отвязать задачу");
-        InlineKeyboardButton doneButton = new InlineKeyboardButton("Отметить выполненым");
+        InlineKeyboardButton unbindButton = new InlineKeyboardButton("Unlink task");
+        InlineKeyboardButton doneButton = new InlineKeyboardButton("Mark as done");
 
         unbindButton.setCallbackData(BotState.TIMER_TASKS_LIST_DELETE.getCommand());
         doneButton.setCallbackData(BotState.TIMER_TASKS_LIST_DONE.getCommand());

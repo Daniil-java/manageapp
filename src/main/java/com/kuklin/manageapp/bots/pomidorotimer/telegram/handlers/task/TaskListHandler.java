@@ -224,7 +224,7 @@ public class TaskListHandler implements MessageHandler {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append(String.format("<strong>[%s] %s</strong>", task.getPriority(), task.getName()));
         stringBuilder.append("\n");
-        stringBuilder.append("\uD83D\uDCC5 <strong>Дата создания: </strong>").append(task.getCreated().format(DateTimeFormatter.ISO_DATE));
+        stringBuilder.append("\uD83D\uDCC5 <strong>Created on: </strong>").append(task.getCreated().format(DateTimeFormatter.ISO_DATE));
         stringBuilder.append("\n");
         if (task.getComment() != null) {
             stringBuilder.append(task.getComment());
@@ -232,7 +232,7 @@ public class TaskListHandler implements MessageHandler {
         }
 
         if (!task.getChildTasks().isEmpty()) {
-            stringBuilder.append("\uD83D\uDCCB <strong>Подзадачи: </strong>");
+            stringBuilder.append("\uD83D\uDCCB <strong>Subtasks: </strong>");
             stringBuilder.append("\n");
             for (Task t: task.getChildTasks()) {
                 stringBuilder.append(String.format("        [%s] %s", t.getPriority(), t.getName()));

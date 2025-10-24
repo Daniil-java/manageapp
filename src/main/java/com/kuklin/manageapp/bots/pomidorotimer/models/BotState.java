@@ -7,7 +7,7 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum BotState {
     START("/start"),
-    TIMER("/timer"), TIMER_START("/timer_start"),
+    TIMER("⏱️ TIMER"), TIMER_START("/timer_start"),
     TIMER_PAUSE("/timer_pause"), TIMER_STATUS("/timer_status"),
     TIMER_STOP("/timer_stop"),
     TIMER_COMPLETE("/timer_complete"),
@@ -23,7 +23,7 @@ public enum BotState {
     TIMER_SETTINGS_AUTOSTART_BREAK("/timer_settings_autostart_break"),
 
     TIMER_PENDING("/timer_pending"),
-    TASK("/task"), TASK_CREATE("/task_create"),
+    TASK("\uD83D\uDCCB MY TASKS"), TASK_CREATE("/task_create"),
     TASK_CREATE_SUBTASK("/task_create_subtask"),
     TASK_CREATE_PRIORITY("/task_create_priority"),
     TASK_CREATE_PRIORITY_SUBTASK("/task_create_priority_subtask"),

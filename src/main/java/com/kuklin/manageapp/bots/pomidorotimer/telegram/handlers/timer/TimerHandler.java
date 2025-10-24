@@ -87,28 +87,28 @@ public class TimerHandler implements MessageHandler {
     public static String getTimerInfo(Timer timer, List<Task> taskList) {
         StringBuilder stringBuilder = new StringBuilder();
 
-        stringBuilder.append("\uD83D\uDCC5 <strong>Дата: </strong>");
+        stringBuilder.append("\uD83D\uDCC5 <strong>Date: </strong>");
         stringBuilder.append(timer.getCreated().format(DateTimeFormatter.ISO_LOCAL_DATE));
         stringBuilder.append("\n");
 
-        stringBuilder.append("\uD83D\uDEA5 <strong>Интервал: </strong>").append((timer.getInterval() / 2) + 1);
+        stringBuilder.append("\uD83D\uDEA5 <strong>Interval: </strong>").append((timer.getInterval() / 2) + 1);
         stringBuilder.append("\n");
         stringBuilder.append(TimerIntervalState.getTextTimerWorkTime(timer));
         stringBuilder.append("⌛ <strong>").append(TimerIntervalState.getTimerState(timer).getState()).append("</strong>");
         stringBuilder.append("\n");
         if (timer.getStatus().equals(TimerStatus.PAUSED)) {
-            stringBuilder.append("\uD83D\uDCE2 <strong>Таймер остановлен</strong>");
+            stringBuilder.append("\uD83D\uDCE2 <strong>Timer paused</strong>");
             stringBuilder.append("\n");
         }
 
         if (!timer.getStatus().equals(TimerStatus.PENDING) && timer.getStopTime() != null) {
             String timeString = timer.getStopTime().format(DateTimeFormatter.ofPattern("HH:mm"));
-            stringBuilder.append("⏱ ").append("<strong>Время остановки: </strong>").append(timeString);
+            stringBuilder.append("⏱ ").append("<strong>Stop time: </strong>").append(timeString);
             stringBuilder.append("\n");
         }
 
         stringBuilder.append("\n");
-        stringBuilder.append("\uD83D\uDCCB <strong>Задачи: </strong>");
+        stringBuilder.append("\uD83D\uDCCB <strong>Tasks: </strong>");
         stringBuilder.append("\n");
         if (taskList != null && !taskList.isEmpty()) {
             for (Task task : taskList) {

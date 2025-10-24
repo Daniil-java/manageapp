@@ -113,10 +113,10 @@ public class TaskHandler implements MessageHandler {
         sendMessage.setChatId(chatId);
 
         if (taskList.isEmpty()) {
-            sendMessage.setText("You don't have any task");
+            sendMessage.setText("You don't have any tasks");
             sendMessage.setReplyMarkup(getInlineMessageButtons());
         } else {
-            sendMessage.setText("\uD83D\uDCCB Выберите задачу:");
+            sendMessage.setText("\uD83D\uDCCB Select a task:");
             sendMessage.setReplyMarkup(
                     getInlineMessageListTaskButtons(taskList, LIST_PAGE_ROW_COUNT, page, isSub));
         }
@@ -151,7 +151,7 @@ public class TaskHandler implements MessageHandler {
         rowList.add(row);
 
         if (!isSub) {
-            InlineKeyboardButton createButton = new InlineKeyboardButton("Создать");
+            InlineKeyboardButton createButton = new InlineKeyboardButton("Create");
             createButton.setCallbackData(BotState.TASK_CREATE.getCommand());
             rowList.add(Arrays.asList(createButton));
         } else {
@@ -171,7 +171,7 @@ public class TaskHandler implements MessageHandler {
     private static InlineKeyboardMarkup getInlineMessageButtons() {
         InlineKeyboardMarkup inlineKeyboardMarkup = new InlineKeyboardMarkup();
 
-        InlineKeyboardButton createButton = new InlineKeyboardButton("Создать");
+        InlineKeyboardButton createButton = new InlineKeyboardButton("Create");
 
         createButton.setCallbackData(BotState.TASK_CREATE.getCommand());
 
