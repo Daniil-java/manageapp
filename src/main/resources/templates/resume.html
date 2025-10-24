@@ -211,6 +211,42 @@
     .exp header{display:flex; flex-wrap:wrap; gap:8px 14px; align-items:baseline}
     .exp .meta{color:var(--muted); font-size:14px}
 
+    /* ОБО МНЕ — единая, ровная раскладка карточек */
+    #about .skills-grid{ align-items: stretch; }
+
+    #about .skill{
+        display: grid;
+        grid-template-rows: auto 1fr;  /* полка под заголовок + текст */
+        min-height: 108px;             /* стабильная высота */
+    }
+
+    /* Заголовок: максимум 2 строки, одинаковая «полка» */
+    #about .skill h3{
+        margin: 0 0 6px;
+        line-height: 1.2;
+        min-height: calc(1.2em * 2);
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    /* Подзаголовок: до 2 строк, без скачков */
+    #about .skill .muted{
+        margin: 0;
+        line-height: 1.3;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    /* Не поднимаем карточку при ховере (чтобы ничего не «уезжало») */
+    .skill:hover{ transform: none; }  /* перекрывает существующее правило */
+
+    @media (max-width:560px){
+        #about .skill{ min-height: 96px; }
+    }
     .stack-item {
       display: flex;
       flex-direction: column; /* картинка сверху, текст снизу */
@@ -269,13 +305,30 @@
       .hero-sub{ margin-top: .18rem; }
     }
 
-    #education .card {
-      margin-bottom: 1rem; /* расстояние между карточками */
+    /* ОБРАЗОВАНИЕ — аккуратные внутренние отступы и ровные промежутки */
+    #education .card{
+        padding: 14px 16px;     /* чуть больше «воздуха», чем 10/12 */
+        border-radius: 10px;
+        box-shadow: none;
+        display: grid;
+        align-content: start;   /* текст от верхней кромки */
+        row-gap: 6px;           /* расстояние между h3 и подписью */
     }
 
-    #education .card:last-child {
-      margin-bottom: 0; /* убираем отступ у последней */
+    #education .card h3{
+        margin: 0;              /* убираем дефолтный нижний отступ */
+        font-weight: 700;       /* полегче заголовок */
+        line-height: 1.25;
     }
+
+    #education .card .muted{
+        margin: 0;              /* гасим отступы абзаца */
+        line-height: 1.35;
+    }
+
+    /* расстояние между карточками, как и было */
+    #education .card{ margin-bottom: .9rem; }
+    #education .card:last-child{ margin-bottom: 0; }
 
     /* Контакты: плоские карточки, фикс-высота шапки */
     .contacts-row{
@@ -362,6 +415,31 @@
     @media (max-width:420px){
         .icon-btn{ width:32px; height:32px; }
     }
+
+    /* Контакты: привести кнопку "Показать" к 38px и без тени */
+    .ct-value .ct-reveal.btn{
+        min-height: 38px;
+        height: 38px;
+        padding: 0 12px;
+        border-radius: 10px;       /* под иконку-кнопку (у неё 10px) */
+        box-shadow: none;          /* тень убираем — внутри карточки лишняя */
+        border-color: var(--border);
+    }
+    /* Контакты: выровнять кнопку копирования справа и зафиксировать высоту строки */
+    .ct-head:has(.ct-value[data-state="shown"]) .ct-value{
+        justify-self: stretch;   /* вместо end — растянуть колонку */
+        width: 100%;
+    }
+
+    .ct-value[data-state="shown"] .ct-real{
+        display: grid;
+        grid-template-columns: 1fr auto;  /* текст тянется, кнопка справа */
+        align-items: center;
+        gap: 10px;
+        width: 100%;
+    }
+
+    .ct-value[data-state="shown"] .pill{ min-width: 0; } /* чтобы работал ellipsis */
 
     /* Контакты — как на странице фриланса (mobile tidy) */
     @media (max-width:560px){
@@ -511,15 +589,15 @@
               </svg>
           </button>
 
-        <a class="icon-link" href="mailto:saponembigas@gmail.com" aria-label="Написать на email">
-          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M3.5 7.5 12 13l8.5-5.5M4 6h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z"/></svg>
-        </a>
-        <a class="icon-link" href="https://t.me/kuklin_daniil" target="_blank" rel="noopener" aria-label="Открыть Telegram">
-          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M9.18 15.42 9 19a1 1 0 0 0 1.64.77l2.35-1.93 3.89 2.86a1.5 1.5 0 0 0 2.35-.95l3.77-16.7a1 1 0 0 0-1.36-1.14L1.45 9.36a1 1 0 0 0 .08 1.88l5.92 1.8 13.68-8.5L9.18 15.42Z"/></svg>
-        </a>
-        <a class="icon-link" href="https://github.com/Daniil-java" target="_blank" rel="noopener" aria-label="Открыть GitHub">
-          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 .5a12 12 0 0 0-3.79 23.4c.6.11.82-.26.82-.58v-2.03c-3.34.73-4.04-1.61-4.04-1.61-.55-1.4-1.36-1.77-1.36-1.77-1.11-.76.08-.74.08-.74 1.23.09 1.88 1.27 1.88 1.27 1.09 1.87 2.86 1.33 3.56 1.02.11-.79.43-1.33.77-1.63-2.66-.3-5.46-1.33-5.46-5.93 0-1.31.47-2.38 1.25-3.22-.13-.31-.54-1.56.12-3.26 0 0 1.02-.33 3.34 1.23a11.6 11.6 0 0 1 6.08 0c2.32-1.56 3.34-1.23 3.34-1.23.66 1.7.25 2.95.12 3.26.78.84 1.25 1.91 1.25 3.22 0 4.61-2.8 5.62-5.48 5.92.44.38.83 1.12.83 2.26v3.35c0 .32.22.69.83.58A12 12 0 0 0 12 .5Z"/></svg>
-        </a>
+<!--        <a class="icon-link" href="mailto:saponembigas@gmail.com" aria-label="Написать на email">-->
+<!--          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M3.5 7.5 12 13l8.5-5.5M4 6h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z"/></svg>-->
+<!--        </a>-->
+<!--        <a class="icon-link" href="https://t.me/kuklin_daniil" target="_blank" rel="noopener" aria-label="Открыть Telegram">-->
+<!--          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M9.18 15.42 9 19a1 1 0 0 0 1.64.77l2.35-1.93 3.89 2.86a1.5 1.5 0 0 0 2.35-.95l3.77-16.7a1 1 0 0 0-1.36-1.14L1.45 9.36a1 1 0 0 0 .08 1.88l5.92 1.8 13.68-8.5L9.18 15.42Z"/></svg>-->
+<!--        </a>-->
+<!--        <a class="icon-link" href="https://github.com/Daniil-java" target="_blank" rel="noopener" aria-label="Открыть GitHub">-->
+<!--          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 .5a12 12 0 0 0-3.79 23.4c.6.11.82-.26.82-.58v-2.03c-3.34.73-4.04-1.61-4.04-1.61-.55-1.4-1.36-1.77-1.36-1.77-1.11-.76.08-.74.08-.74 1.23.09 1.88 1.27 1.88 1.27 1.09 1.87 2.86 1.33 3.56 1.02.11-.79.43-1.33.77-1.63-2.66-.3-5.46-1.33-5.46-5.93 0-1.31.47-2.38 1.25-3.22-.13-.31-.54-1.56.12-3.26 0 0 1.02-.33 3.34 1.23a11.6 11.6 0 0 1 6.08 0c2.32-1.56 3.34-1.23 3.34-1.23.66 1.7.25 2.95.12 3.26.78.84 1.25 1.91 1.25 3.22 0 4.61-2.8 5.62-5.48 5.92.44.38.83 1.12.83 2.26v3.35c0 .32.22.69.83.58A12 12 0 0 0 12 .5Z"/></svg>-->
+<!--        </a>-->
 
         <button id="themeToggle" class="theme-toggle" type="button" aria-pressed="false" aria-label="Переключить тему День/Ночь">
           <span aria-hidden="true">🌓</span><span class="muted">Тема</span>
@@ -540,7 +618,7 @@
         <div class="hero-sub">Backend Developer | Java | Spring Framework</div>
         <div class="hero-actions" role="group" aria-label="Действия">
           <a class="btn btn-primary" href="/static/assets/kuklin.pdf" download aria-label="Скачать резюме PDF">Скачать резюме</a>
-          <a class="btn btn-ghost" href="#about" aria-label="К разделу «Обо мне»">Подробнее ↓</a>
+            <a class="btn btn-ghost" href="https://github.com/Daniil-java" target="_blank" rel="noopener" aria-label="Открыть GitHub"> Посмотреть Github</a>
         </div>
       </div>
     </section>

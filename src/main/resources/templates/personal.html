@@ -374,6 +374,31 @@
       justify-self: end;
     }
 
+    /* Контакты: привести кнопку "Показать" к 38px и без тени */
+    .ct-value .ct-reveal.btn{
+      min-height: 38px;
+      height: 38px;
+      padding: 0 12px;
+      border-radius: 10px;       /* под иконку-кнопку (у неё 10px) */
+      box-shadow: none;          /* тень убираем — внутри карточки лишняя */
+      border-color: var(--border);
+    }
+    /* Контакты: выровнять кнопку копирования справа и зафиксировать высоту строки */
+    .ct-head:has(.ct-value[data-state="shown"]) .ct-value{
+      justify-self: stretch;   /* вместо end — растянуть колонку */
+      width: 100%;
+    }
+
+    .ct-value[data-state="shown"] .ct-real{
+      display: grid;
+      grid-template-columns: 1fr auto;  /* текст тянется, кнопка справа */
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+    }
+
+    .ct-value[data-state="shown"] .pill{ min-width: 0; } /* чтобы работал ellipsis */
+
     /* Мобилки: то же самое, но с компактными размерами */
     @media (max-width: 640px){
       /* по умолчанию на мобилке 3 колонки: 34px | 1fr | max-content */
@@ -599,40 +624,54 @@
         <div class="hscroll" id="portfolioTrack" tabindex="0" aria-label="Примеры работ (горизонтальная прокрутка)">
           <article class="card work" role="listitem">
             <div class="thumb">
-              <img src="images/calory.png" alt="CALORY" loading="lazy" decoding="async">
+              <img
+                      src="images/calory.png"
+                      sizes="(max-width: 600px) 100vw, 600px"
+                      alt="CALORY"
+                      loading="lazy" decoding="async">
             </div>
             <h3>Бот дневник питания. CALORY</h3>
-            <p class="meta">Бот CALORY оценивает КБЖУ блюда по фото или вашему описанию и помогает вести удобный дневник питания.</p>
-            <a class="btn btn-ghost" href="https://t.me/calorydairy_bot">Открыть кейс</a>
+            <p class="meta">Бот CALORY оценивает КБЖУ блюда по фото или вашему описанию и помогает вести удобный дневник питания. Он превращает подсчёт калорий в простой и наглядный процесс, сохраняя все данные в одном месте.</p>
+            <a class="btn btn-ghost" href="https://t.me/calorydairy_bot" target="_blank" rel="noopener" aria-label="Открыть кейс">Открыть кейс</a>
           </article>
 
-          <!-- 2 -->
           <article class="card work" role="listitem">
             <div class="thumb">
-              <img src="images/slot.png" alt="SLOTMANAGER" loading="lazy" decoding="async">
+              <img
+                      src="images/slot.png"
+                      sizes="(max-width: 600px) 100vw, 600px"
+                      alt="SLOTMANAGER"
+                      loading="lazy" decoding="async">
             </div>
             <h3>Бот для бронирования ресурсов</h3>
-            <p class="meta">Быстрое бронирование ресурсов с записью в Google-таблицу и гибкими правилами.</p>
-            <a class="btn btn-ghost" href="https://t.me/booking_bot">Открыть кейс</a>
-          </article>
-
-          <!-- 3 -->
-          <article class="card work" role="listitem">
-            <div class="thumb">
-              <img src="images/calen.png" alt="CALEN" loading="lazy" decoding="async">
-            </div>
-            <h3>ИИ-ассистент с Google Calendar</h3>
-            <p class="meta">Добавляет события голосом/текстом прямо в календарь и экономит время на планирование.</p>
-            <a class="btn btn-ghost" href="https://t.me/personal_calen_bot">Открыть кейс</a>
+            <p class="meta">Бот помогает быстро бронировать ресурсы — от переговорных до рабочих кабинетов — и автоматически фиксирует все записи в Google-таблице. Благодаря гибкой настройке правил он легко подстраивается под любые процессы вашей команды.</p>
+            <a class="btn btn-ghost" href="https://t.me/booking_bot" target="_blank" rel="noopener" aria-label="Открыть кейс">Открыть кейс</a>
           </article>
 
           <article class="card work" role="listitem">
             <div class="thumb">
-              <img src="images/calen.png" alt="CALEN" loading="lazy" decoding="async">
+              <img
+                      src="images/calen.png"
+                      sizes="(max-width: 600px) 100vw, 600px"
+                      alt="CALEN"
+                      loading="lazy" decoding="async">
             </div>
             <h3>ИИ-ассистент с Google Calendar</h3>
-            <p class="meta">Добавляет события голосом/текстом прямо в календарь и экономит время на планирование.</p>
-            <a class="btn btn-ghost" href="https://t.me/personal_calen_bot">Открыть кейс</a>
+            <p class="meta">ИИ-ассистент интегрируется с Google Calendar и позволяет добавлять события простым голосовым или текстовым сообщением. Он автоматически создаёт запись в календаре, экономя время и упрощая планирование.</p>
+            <a class="btn btn-ghost" href="https://t.me/personal_calen_bot" target="_blank" rel="noopener" aria-label="Открыть кейс">Открыть кейс</a>
+          </article>
+
+          <article class="card work" role="listitem">
+            <div class="thumb">
+              <img
+                      src="images/deparr.png"
+                      sizes="(max-width: 600px) 100vw, 600px"
+                      alt="DEPARR"
+                      loading="lazy" decoding="async">
+            </div>
+            <h3>Трекер твоих авиарейсов</h3>
+            <p class="meta">Просто введи номер своего рейса и получай новости о его обновлении.</p>
+            <a class="btn btn-ghost" href="https://t.me/deparr_bot" target="_blank" rel="noopener" aria-label="Открыть кейс">Открыть кейс</a>
           </article>
         </div>
 
@@ -1021,39 +1060,73 @@
   /* ===== Год в футере ===== */
   document.getElementById('year').textContent = new Date().getFullYear();
 
-  (function initHScroll(){
-    document.querySelectorAll('.hscroll-wrap').forEach(wrap=>{
-      const track = wrap.querySelector('.hscroll');
-      const prev  = wrap.querySelector('.scroll-prev');
-      const next  = wrap.querySelector('.scroll-next');
-      if(!track || !prev || !next) return;
+  // drag-to-scroll (фикс клика по ссылкам)
+  let down = false, sx = 0, sl = 0, moved = false;
 
-      const step = () => track.firstElementChild?.getBoundingClientRect().width || track.clientWidth * 0.8;
+  track.addEventListener('pointerdown', e => {
+    // если клик по интерактиву — вообще не стартуем drag
+    if (e.target.closest('a,button,[role="button"],input,textarea,select')) return;
 
-      const update = () => {
-        prev.hidden = track.scrollLeft <= 1;
-        next.hidden = Math.ceil(track.scrollLeft + track.clientWidth) >= track.scrollWidth - 1;
-      };
-      update();
+    down = true; moved = false;
+    sx = e.clientX; sl = track.scrollLeft;
+    track.setPointerCapture(e.pointerId);
+    track.style.cursor = 'grabbing';
+  });
 
-      prev.addEventListener('click', ()=> { track.scrollBy({ left: -(step()+14), behavior:'smooth' }); });
-      next.addEventListener('click', ()=> { track.scrollBy({ left:  (step()+14), behavior:'smooth' }); });
-      track.addEventListener('scroll', update, { passive:true });
-      addEventListener('resize', update, { passive:true });
+  track.addEventListener('pointermove', e => {
+    if (!down) return;
+    const dx = e.clientX - sx;
+    if (Math.abs(dx) > 5) moved = true;      // порог «это уже drag»
+    track.scrollLeft = sl - dx;
+  });
 
-      // drag-to-scroll
-      let down=false, sx=0, sl=0;
-      track.addEventListener('pointerdown', e=>{ down=true; sx=e.clientX; sl=track.scrollLeft; track.setPointerCapture(e.pointerId); track.style.cursor='grabbing'; });
-      track.addEventListener('pointermove', e=>{ if(!down) return; track.scrollLeft = sl - (e.clientX - sx); });
-      track.addEventListener('pointerup',   e=>{ down=false; track.releasePointerCapture(e.pointerId); track.style.cursor=''; });
+  track.addEventListener('pointerup', e => {
+    if (!down) return;
+    down = false;
+    track.releasePointerCapture(e.pointerId);
+    track.style.cursor = '';
+    // если был drag — подавим «ложный» click после отпуска
+    if (moved) {
+      const preventOnce = ev => { ev.stopPropagation(); ev.preventDefault(); track.removeEventListener('click', preventOnce, true); };
+      track.addEventListener('click', preventOnce, true);
+    }
+    moved = false;
+  });
 
-      // клавиатура
-      track.addEventListener('keydown', e=>{
-        if(e.key==='ArrowRight'){ e.preventDefault(); next.click(); }
-        if(e.key==='ArrowLeft' ){ e.preventDefault(); prev.click(); }
-      });
-    });
-  })();
+
+  // (function initHScroll(){
+  //   document.querySelectorAll('.hscroll-wrap').forEach(wrap=>{
+  //     const track = wrap.querySelector('.hscroll');
+  //     const prev  = wrap.querySelector('.scroll-prev');
+  //     const next  = wrap.querySelector('.scroll-next');
+  //     if(!track || !prev || !next) return;
+  //
+  //     const step = () => track.firstElementChild?.getBoundingClientRect().width || track.clientWidth * 0.8;
+  //
+  //     const update = () => {
+  //       prev.hidden = track.scrollLeft <= 1;
+  //       next.hidden = Math.ceil(track.scrollLeft + track.clientWidth) >= track.scrollWidth - 1;
+  //     };
+  //     update();
+  //
+  //     prev.addEventListener('click', ()=> { track.scrollBy({ left: -(step()+14), behavior:'smooth' }); });
+  //     next.addEventListener('click', ()=> { track.scrollBy({ left:  (step()+14), behavior:'smooth' }); });
+  //     track.addEventListener('scroll', update, { passive:true });
+  //     addEventListener('resize', update, { passive:true });
+  //
+  //     // drag-to-scroll
+  //     let down=false, sx=0, sl=0;
+  //     track.addEventListener('pointerdown', e=>{ down=true; sx=e.clientX; sl=track.scrollLeft; track.setPointerCapture(e.pointerId); track.style.cursor='grabbing'; });
+  //     track.addEventListener('pointermove', e=>{ if(!down) return; track.scrollLeft = sl - (e.clientX - sx); });
+  //     track.addEventListener('pointerup',   e=>{ down=false; track.releasePointerCapture(e.pointerId); track.style.cursor=''; });
+  //
+  //     // клавиатура
+  //     track.addEventListener('keydown', e=>{
+  //       if(e.key==='ArrowRight'){ e.preventDefault(); next.click(); }
+  //       if(e.key==='ArrowLeft' ){ e.preventDefault(); prev.click(); }
+  //     });
+  //   });
+  // })();
 
   document.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-reveal]');
