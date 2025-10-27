@@ -26,13 +26,14 @@ public class BookingService {
     /**
      * Создать или обновить бронь
      */
-    public Booking addNewBook(Booking booking) {
+    public Booking addNewBookOrNull(Booking booking) {
         booking = repository.save(booking);
         if (booking.getStatus().equals(Booking.Status.BOOKED)) {
             try {
                 googleSheetsService.appendBooking(booking);
             } catch (IOException e) {
-                log.error("Ну, не получилось");
+                log.error("Google Sheets append booking error!");
+                return null;
             }
         }
         return booking;

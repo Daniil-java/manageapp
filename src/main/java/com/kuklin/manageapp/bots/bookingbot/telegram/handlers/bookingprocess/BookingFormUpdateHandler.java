@@ -31,6 +31,7 @@ public class BookingFormUpdateHandler implements BookingUpdateHandler {
     private static final String ERROR_MSG = "Ошибка! Попробуйте записаться снова или выберите другое время";
     private static final String BACK_TXT = "Вернуться к календарю";
     private static final String BACK_CMD = Command.BOOKING_CALENDAR.getCommandText() + BookingTelegramBot.BOOKING_DELIMETER + "%s";
+    private static final String ERROR_GOOGLE_MSG = "Ошибка! Не получилось добавить данные в гугл-таблицу";
 
     @Override
     /*
@@ -63,11 +64,20 @@ public class BookingFormUpdateHandler implements BookingUpdateHandler {
         conversationStateService.setConversationState(telegramUser.getTelegramId(), ConversationState.Step.COMPLETED);
 
         //Сохранение завершенной записи о бронировании
-        booking = bookingService.addNewBook(booking.setStatus(Booking.Status.BOOKED));
-        bookingTelegramBot.sendReturnedMessage(
-                chatId,
-                getResponseMessage(booking)
-        );
+        booking = bookingService.addNewBookOrNull(booking.setStatus(Booking.Status.BOOKED));
+
+        if (booking != null) {
+            bookingTelegramBot.sendReturnedMessage(
+                    chatId,
+                    getResponseMessage(booking)
+            );
+        } else {
+            bookingTelegramBot.sendReturnedMessage(
+                    chatId,
+                    ERROR_GOOGLE_MSG
+            );
+        }
+
     }
 
     /*

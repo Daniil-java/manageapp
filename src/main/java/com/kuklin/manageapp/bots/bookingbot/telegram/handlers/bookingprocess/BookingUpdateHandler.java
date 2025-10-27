@@ -7,6 +7,7 @@ import com.kuklin.manageapp.bots.bookingbot.services.BookingObjectService;
 import com.kuklin.manageapp.bots.bookingbot.services.BookingService;
 import com.kuklin.manageapp.bots.bookingbot.services.ConversationStateService;
 import com.kuklin.manageapp.bots.bookingbot.telegram.BookingTelegramBot;
+import com.kuklin.manageapp.bots.bookingbot.telegram.BookingTelegramFacade;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.Command;
@@ -104,7 +105,7 @@ public class BookingUpdateHandler implements com.kuklin.manageapp.bots.bookingbo
     Извлечение id бронируемого объекта, из данных
      */
     private Long extractBookingObjectId(String data) {
-        String[] parts = data.split(TelegramBot.DEFAULT_DELIMETER);
+        String[] parts = data.split(BookingTelegramBot.BOOKING_DELIMETER);
         return Long.parseLong(parts[1]);
     }
 
