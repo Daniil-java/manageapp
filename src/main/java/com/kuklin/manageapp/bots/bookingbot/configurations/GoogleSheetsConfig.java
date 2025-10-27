@@ -10,12 +10,17 @@ import com.google.api.services.sheets.v4.SheetsScopes;
 import com.google.auth.Credentials;
 import com.google.auth.http.HttpCredentialsAdapter;
 import com.google.auth.oauth2.ServiceAccountCredentials;
+import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.io.FileInputStream;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.security.GeneralSecurityException;
+import java.util.Base64;
+import java.util.List;
 import java.util.Optional;
 
 @Configuration
@@ -35,54 +40,52 @@ public class GoogleSheetsConfig {
                     .orElse(request -> { /* NO-AUTH */ });
 
             if (credsOpt.isEmpty()) {
-                log.warn("credentials.json не найден. Создаю NO-AUTH клиент Google Sheets. " +
-                        "Приложение поднимется, но запросы к API вернут 401/403.");
+                log.warn("Google creds not found. Sheets client will be NO-AUTH (401/403 on calls).");
             }
 
             return new Sheets.Builder(httpTransport, jsonFactory, requestInitializer)
-                    .setApplicationName(credsOpt.isPresent()
-                            ? "ManageApp Sheets Client"
+                    .setApplicationName(credsOpt.isPresent() ? "ManageApp Sheets Client"
                             : "ManageApp Sheets Client (NO-AUTH STUB)")
                     .build();
 
         } catch (Exception e) {
-            // Жёсткий фолбэк — вообще без авторизации, чтобы контекст не упал
-            log.error("Не удалось инициализировать Google Sheets клиент, создаю HARD STUB", e);
-            NetHttpTransport transport = new NetHttpTransport();
-            JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
-            return new Sheets.Builder(transport, jsonFactory, request -> { /* NO-AUTH */ })
+            log.error("Failed to init Google Sheets client, creating HARD STUB", e);
+            return new Sheets.Builder(new NetHttpTransport(), JacksonFactory.getDefaultInstance(),
+                    request -> { /* NO-AUTH */ })
                     .setApplicationName("ManageApp Sheets Client (HARD STUB)")
                     .build();
         }
     }
 
-    /**
-     * Пытается загрузить креды сервисного аккаунта из
-     * 1) переменной окружения GOOGLE_APPLICATION_CREDENTIALS (путь к JSON)
-     * 2) classpath:/credentials.json
-     * Если не найдено/ошибка — Optional.empty()
-     */
     private Optional<Credentials> loadServiceAccountCredentialsOptional() {
-        try {
-            String path = System.getenv("GOOGLE_APPLICATION_CREDENTIALS");
-            InputStream in;
+        try (InputStream in = resolveCredentialsInputStream()) {
+            if (in == null) return Optional.empty();
 
-            if (path != null && !path.isBlank()) {
-                in = new FileInputStream(path);
-            } else {
-                in = getClass().getResourceAsStream("/credentials.json");
-                if (in == null) return Optional.empty();
-            }
+            // Нужные скоупы: листы + (опционально) доступ к файлу в Drive, если пишешь/создаешь
+            List<String> scopes = List.of(SheetsScopes.SPREADSHEETS /*, SheetsScopes.DRIVE */);
 
-            try (in) {
-                return Optional.of(
-                        ServiceAccountCredentials.fromStream(in)
-                                .createScoped(SheetsScopes.SPREADSHEETS)
-                );
-            }
+            ServiceAccountCredentials sac = (ServiceAccountCredentials)
+                    ServiceAccountCredentials.fromStream(in).createScoped(SheetsScopes.SPREADSHEETS);
+
+            sac.refreshIfExpired(); // получить токен
+            var token = sac.getAccessToken();
+            log.info("Google SA loaded: email={} token_exp={}", sac.getClientEmail(),
+                    token != null ? token.getExpirationTime() : "null");
+            return Optional.of(sac);
         } catch (Exception ex) {
-            log.warn("Не удалось загрузить credentials.json: {}", ex.getMessage());
+            log.warn("Cannot load Google credentials: {}", ex.getMessage());
             return Optional.empty();
         }
+    }
+
+    private InputStream resolveCredentialsInputStream() throws IOException, GeneralSecurityException {
+        String b64 = System.getenv("GOOGLE_CREDENTIALS_B64");
+        if (b64 != null && !b64.isBlank()) {
+            log.info("Load Google creds from GOOGLE_CREDENTIALS_B64");
+            byte[] decoded = Base64.getDecoder().decode(b64);
+            return new ByteArrayInputStream(decoded);
+        }
+        log.error(BotIdentifier.BOOKING_BOT.getBotUsername() + ": Google credentials error!  ");
+        return null;
     }
 }
