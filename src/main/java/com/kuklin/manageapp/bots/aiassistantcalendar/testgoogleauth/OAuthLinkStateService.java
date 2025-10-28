@@ -38,8 +38,8 @@ public class OAuthLinkStateService {
     public OAuthLinkStateService(Environment environment) {
         this.baseUrl = "https://kuklin.dev";
         this.clientId = "1054896629464-fqd0bnpb5uao8f0khphkvd84i443q8jg.apps.googleusercontent.com";
-        this.clientSecret = "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";
-        this.redirectUri = environment.getProperty("GOOGLE_CALENDAR_KEY");
+        this.clientSecret = environment.getProperty("GOOGLE_CALENDAR_KEY");
+        this.redirectUri = "https://kuklin.dev/auth/google/callback";
     }
 
     /** Одноразовая ссылка: UUID -> chatId (удаляем при использовании) */
