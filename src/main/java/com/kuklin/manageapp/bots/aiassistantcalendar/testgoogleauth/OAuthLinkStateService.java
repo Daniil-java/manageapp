@@ -1,7 +1,7 @@
 package com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth;
 
 import lombok.Getter;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
 import java.security.MessageDigest;
@@ -35,11 +35,11 @@ public class OAuthLinkStateService {
     @Getter
     private final String redirectUri;
 
-    public OAuthLinkStateService() {
+    public OAuthLinkStateService(Environment environment) {
         this.baseUrl = "https://kuklin.dev";
         this.clientId = "1054896629464-fqd0bnpb5uao8f0khphkvd84i443q8jg.apps.googleusercontent.com";
         this.clientSecret = "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";
-        this.redirectUri = "https://kuklin.dev/auth/google/callback";
+        this.redirectUri = environment.getProperty("GOOGLE_CALENDAR_KEY");
     }
 
     /** Одноразовая ссылка: UUID -> chatId (удаляем при использовании) */
