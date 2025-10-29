@@ -6,17 +6,23 @@ import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.service.Goog
 import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.service.LinkStateService;
 import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.service.TokenService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestClientResponseException;
 
 import java.net.URI;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/auth/google")
 @RequiredArgsConstructor
+@Slf4j
 public class GoogleOAuthController {
 
     private final GoogleOAuthProperties props;
@@ -24,59 +30,112 @@ public class GoogleOAuthController {
     private final GoogleOAuthHttpClient google;
     private final TokenService tokenService;
 
-    /** Пример: бот шлет пользователю ссылку: https://your.app.com/auth/google/start?linkId=<UUID> */
+    /**
+     * Бот шлёт ссылку вида:
+     *   https://<host>/auth/google/start?linkId=<UUID>
+     * Для диагностики можно добавить &debug=true и получить JSON с параметрами вместо редиректа.
+     */
     @GetMapping("/start")
-    public ResponseEntity<Void> start(@RequestParam("linkId") UUID linkId) {
+    public ResponseEntity<?> start(@RequestParam("linkId") UUID linkId,
+                                   @RequestParam(value = "debug", required = false, defaultValue = "false") boolean debug) {
         var consumed = linkState.consumeLinkAndMakeState(linkId);
-        var state = consumed.state();      // UUID
-        var verifier = consumed.verifier();// PKCE verifier
-
+        var state = consumed.state();        // UUID
+        var verifier = consumed.verifier();  // PKCE verifier
         var challenge = CodeVerifierUtil.toS256Challenge(verifier);
 
-        // Схлопываем в URL авторизации
         String scope = String.join(" ", props.getScopes());
-        var uri = URI.create(props.getAuthUri()
-                + "?response_type=code"
-                + "&client_id=" + url(props.getClientId())
-                + "&redirect_uri=" + url(props.getRedirectUri())
-                + "&scope=" + url(scope)
-                + "&state=" + url(state.toString())
-                + "&code_challenge=" + url(challenge)
-                + "&code_challenge_method=S256"
-                + "&access_type=offline"
-                + "&include_granted_scopes=true"
-                + "&prompt=consent" // чтобы получить refresh_token стабильно
-        );
 
-        // Версификатор (verifier) хранится в БД в OAuthState (мы сохранили его там)
-        return ResponseEntity.status(302).location(uri).build();
+        // Собираем параметры, чтобы и в логах, и в debug их видеть как есть
+        var p = new LinkedHashMap<String, String>();
+        p.put("response_type", "code");
+        p.put("client_id", props.getClientId());
+        p.put("redirect_uri", props.getRedirectUri());
+        p.put("scope", scope);
+        p.put("state", state.toString());
+        p.put("code_challenge", challenge);
+        p.put("code_challenge_method", "S256");
+        p.put("access_type", "offline");
+        p.put("include_granted_scopes", "true");
+        p.put("prompt", "consent");
+
+        String authUrl = buildUrl(props.getAuthUri(), p);
+
+        // Лог — самое важное для 400 на шаге авторизации
+        log.info("OAUTH START chatId={} state={} clientId={} redirectUri={} authUrl={}",
+                consumed.chatId(),
+                p.get("state"),
+                mask(props.getClientId()),
+                props.getRedirectUri(),
+                authUrl);
+
+        if (debug) {
+            // Удобно открыть в браузере /auth/google/start?linkId=...&debug=true
+            return ResponseEntity.ok(Map.of("params", p, "authUrl", authUrl));
+        }
+        return ResponseEntity.status(302).location(URI.create(authUrl)).build();
     }
 
-    /** Колбэк с code+state от Google */
+    /**
+     * Колбэк Google: может прийти как (code,state), так и (error,error_description,state).
+     */
     @GetMapping("/callback")
-    public ResponseEntity<?> callback(@RequestParam("code") String code,
-                                      @RequestParam("state") UUID state) {
+    public ResponseEntity<?> callback(@RequestParam(value = "code", required = false) String code,
+                                      @RequestParam("state") UUID state,
+                                      @RequestParam(value = "error", required = false) String error,
+                                      @RequestParam(value = "error_description", required = false) String errorDescription) {
+        log.info("OAUTH CALLBACK state={} codePresent={} error={}",
+                state, code != null, error);
+
+        // 0) Если Google вернул ошибку вместо кода — отдадим ясный ответ
+        if (error != null) {
+            // state все равно «поглотим», чтобы его нельзя было переиспользовать
+            try { linkState.consumeState(state); } catch (Exception ignore) {}
+            return ResponseEntity.badRequest().body(Map.of(
+                    "status", "error",
+                    "error", error,
+                    "error_description", errorDescription != null ? errorDescription : ""
+            ));
+        }
+
         // 1) Проверяем и "поглощаем" state (получаем chatId + verifier)
         var cb = linkState.consumeState(state);
 
-        // 2) Обмениваем code на токены
-        var tokens = google.exchangeCode(code, cb.verifier());
+        try {
+            // 2) Обмен кода на токены
+            var tokens = google.exchangeCode(code, cb.verifier());
 
-        // 3) Юзер-инфо по access_token
-        var userInfo = google.getUserInfo(tokens.access_token());
+            // 3) Юзер-инфо по access_token
+            var userInfo = google.getUserInfo(tokens.access_token());
 
-        // 4) Сохраняем все в БД (refresh шифруем)
-        tokenService.saveFromAuthCallback(cb.chatId(), tokens, userInfo, Instant.now());
+            // 4) Сохранение в БД
+            tokenService.saveFromAuthCallback(cb.chatId(), tokens, userInfo, Instant.now());
 
-        // 5) Можно показать пользователю HTML "Успешно" или сделать редирект в Телеграм-диплинк
-        return ResponseEntity.ok(Map.of(
-                "status", "connected",
-                "email", userInfo.email(),
-                "sub", userInfo.sub()
-        ));
+            // 5) Успех (можно редиректнуть в tg: https://t.me/<bot>?start=connected)
+            return ResponseEntity.ok(Map.of(
+                    "status", "connected",
+                    "email", userInfo.email(),
+                    "sub", userInfo.sub()
+            ));
+        } catch (RestClientResponseException ex) {
+            // Здесь поймаем тело от Google (invalid_grant/redirect_uri_mismatch/etc)
+            log.warn("OAUTH TOKEN EXCHANGE FAILED: status={} body={}", ex.getRawStatusCode(), ex.getResponseBodyAsString());
+            return ResponseEntity.status(ex.getRawStatusCode()).body(Map.of(
+                    "status", "error",
+                    "google_status", ex.getRawStatusCode(),
+                    "google_body", ex.getResponseBodyAsString()
+            ));
+        }
     }
 
-    private static String url(String s) {
-        return java.net.URLEncoder.encode(s, java.nio.charset.StandardCharsets.UTF_8);
+    private static String buildUrl(String base, Map<String, String> params) {
+        var q = params.entrySet().stream()
+                .map(e -> URLEncoder.encode(e.getKey(), StandardCharsets.UTF_8) + "=" +
+                        URLEncoder.encode(e.getValue(), StandardCharsets.UTF_8))
+                .collect(java.util.stream.Collectors.joining("&"));
+        return base + "?" + q;
+    }
+
+    private static String mask(String s) {
+        return (s == null) ? "null" : s.replaceAll("(^.{6}).*(.{6}$)", "$1...$2");
     }
 }
