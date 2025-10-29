@@ -2,15 +2,19 @@ package com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.service;
 
 import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.configurations.GoogleOAuthProperties;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
 
 import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class GoogleOAuthHttpClient {
     private final GoogleOAuthProperties props;
     private final RestClient rest = RestClient.create();
@@ -26,12 +30,14 @@ public class GoogleOAuthHttpClient {
         form.add("redirect_uri", props.getRedirectUri());
         form.add("code_verifier", codeVerifier);
 
-        return rest.post()
-                .uri(props.getTokenUri())
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .body(form)
-                .retrieve()
-                .body(TokenResponse.class);
+        return postForm(props.getTokenUri(), form, TokenResponse.class);
+
+//        return rest.post()
+//                .uri(props.getTokenUri())
+//                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+//                .body(form)
+//                .retrieve()
+//                .body(TokenResponse.class);
     }
 
     public TokenResponse refresh(String refreshToken) {
@@ -43,12 +49,13 @@ public class GoogleOAuthHttpClient {
         }
         form.add("refresh_token", refreshToken);
 
-        return rest.post()
-                .uri(props.getTokenUri())
-                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                .body(form)
-                .retrieve()
-                .body(TokenResponse.class);
+        return postForm(props.getTokenUri(), form, TokenResponse.class);
+//        return rest.post()
+//                .uri(props.getTokenUri())
+//                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+//                .body(form)
+//                .retrieve()
+//                .body(TokenResponse.class);
     }
 
     public void revoke(String refreshToken) {
@@ -60,6 +67,17 @@ public class GoogleOAuthHttpClient {
                 .body(form)
                 .retrieve()
                 .toBodilessEntity();
+    }
+
+    private <T> T postForm(String uri, MultiValueMap<String,String> form, Class<T> type) {
+        try {
+            return rest.post().uri(uri)
+                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                    .body(form).retrieve().body(type);
+        } catch (RestClientResponseException ex) {
+            log.warn("Google POST {} failed: status={} body={}", uri, ex.getRawStatusCode(), ex.getResponseBodyAsString());
+            throw ex;
+        }
     }
 
     public UserInfo getUserInfo(String accessToken) {
