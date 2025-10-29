@@ -15,7 +15,8 @@ public class TelegramAiAssistantCalendarBotKeyComponents {
 
     @Autowired
     public TelegramAiAssistantCalendarBotKeyComponents(Environment environment) {
-        this.key = environment.getProperty("CALEN_BOT_TOKEN");
+//        this.key = environment.getProperty("CALEN_BOT_TOKEN");
+        this.key = "8436872808:AAE9KCNXrVLDaD-nhmB-OYDYMnATW59JnjE";
         log.info("Generation key initiated (CALEN_BOT_TOKEN)");
         this.aiKey = environment.getProperty("GENERATION_TOKEN");
         log.info("Ai key initiated (CALEN_BOT_TOKEN)");
