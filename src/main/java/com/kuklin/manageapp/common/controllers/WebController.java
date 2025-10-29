@@ -1,4 +1,4 @@
-package com.kuklin.manageapp.controllers;
+package com.kuklin.manageapp.common.controllers;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,5 +14,15 @@ public class WebController {
     @GetMapping("/freelance")
     public String getFreelancePage() {
         return "freelance";
+    }
+
+    @GetMapping
+    public String getPersonalPage() {
+        return "personal";
+    }
+
+    @GetMapping("/pomidorotimer")
+    public String getPomidoro() {
+        return "timer";
     }
 }
