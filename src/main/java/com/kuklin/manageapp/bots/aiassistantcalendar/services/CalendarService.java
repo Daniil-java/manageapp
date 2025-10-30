@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.time.*;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -44,14 +45,37 @@ public class CalendarService {
                                         
                     Правила:
                     1. Верни только JSON‑массив строк без лишнего текста, обрамлений или комментариев.
-                    2. Нужно найти все события, у которых summary или description (или их комбинация) максимально совпадают со строкой поиска.
+                    2. Нужно найти все события, у которых summary или description или дата (или их комбинация) максимально совпадают со строкой поиска.
                     3. Ответ должен быть в формате:
                     [
                       "eventId1",
                       "eventId2"
                     ]
                     4. Если совпадений нет — верни пустой массив [].
+                                       
+                    ВЕРНИ ТОЛЬКО JSON, БЕЗ ЛИШНЕГО ТЕКСТА, КАВЫЧЕК, ОБРАМЛЕНИЙ ИЛИ КОММЕНТАРИЕВ.!!!
+                    Запрещено добавлять Markdown, кодовые блоки (```), подсветку json, комментарии, пояснения, преамбулы.
+                     
+                    """;
+
+    private static final String AI_EDIT_REQUEST =
+            """
+                    Проанализируй список событий и строку поиска.
                                         
+                    Список событий:
+                    "%s"
+                                        
+                    Строка поиска:
+                    "%s"
+                                        
+                    Правила:
+                    1. Верни только строку с eventId без лишнего текста, обрамлений или комментариев.
+                    2. Нужно найти только одно событие из всего списка, подходящее под строку поиска.
+                    3. Если совпадений нет — верни пустую строку "".
+                                       
+                    ВЕРНИ ТОЛЬКО СТРОКУ, БЕЗ ЛИШНЕГО ТЕКСТА, КАВЫЧЕК, ОБРАМЛЕНИЙ ИЛИ КОММЕНТАРИЕВ.!!!
+                    Запрещено добавлять Markdown, кодовые блоки (```), подсветку json, комментарии, пояснения, преамбулы.
+                     
                     """;
 
     public Event addEventInCalendar(CalendarEventAiResponse request, String calendarId) throws IOException {
@@ -90,6 +114,23 @@ public class CalendarService {
         ZoneId zoneId = ZoneId.of(timeZone);
         ZonedDateTime now = ZonedDateTime.now(zoneId);
 
+        if (request.getEnd() == null || request.getEnd().isBlank()) {
+            LocalDate startDate = (request.getStart() != null && !request.getStart().isBlank())
+                    ? parseWithZone(request.getStart(), zoneId).toLocalDate()
+                    : now.toLocalDate(); // сегодня в TZ календаря
+
+            EventDateTime startAllDay = new EventDateTime()
+                    .setDate(new com.google.api.client.util.DateTime(startDate.toString())); // YYYY-MM-DD
+            EventDateTime endAllDay = new EventDateTime()
+                    .setDate(new com.google.api.client.util.DateTime(startDate.plusDays(1).toString())); // end эксклюзивно
+
+            return new Event()
+                    .setSummary(request.getSummary())
+                    .setDescription(request.getDescription())
+                    .setStart(startAllDay)
+                    .setEnd(endAllDay);
+        }
+
         ZonedDateTime start = (request.getStart() != null && !request.getStart().isBlank())
                 ? parseWithZone(request.getStart(), zoneId)
                 : now;
@@ -97,7 +138,6 @@ public class CalendarService {
         ZonedDateTime end = (request.getEnd() != null && !request.getEnd().isBlank())
                 ? parseWithZone(request.getEnd(), zoneId)
                 : now.plusHours(defaultPlusTime);
-
 
         // приводим к зоне календаря
         start = start.withZoneSameInstant(zoneId);
@@ -140,7 +180,7 @@ public class CalendarService {
         }
     }
 
-    private String getTimeZoneInCalendar(String calendarId) throws IOException {
+    public String getTimeZoneInCalendar(String calendarId) throws IOException {
         com.google.api.services.calendar.model.Calendar calendar =
                 calendarService.calendars().get(calendarId).execute();
 
@@ -174,34 +214,86 @@ public class CalendarService {
         return events.getItems();
     }
 
-    public List<Event> removeEventInCalendarByMessage(String calendarId, ActionKnot actionKnot) throws IOException {
-        List<Event> todayEvents = getTodayEvents(calendarId);
+    public List<Event> getNextYearEvents(String calendarId) throws IOException {
+        ZoneId zoneId = ZoneId.of(getTimeZoneInCalendar(calendarId));
 
-        String aiResponse = openAiProviderProcessor.fetchResponse(
-                components.getAiKey(),
-                String.format(
-                        AI_REMOVE_REQUEST,
-                        getRemoveRequestByEventsList(todayEvents),
-                        actionKnot.getCalendarEventAiResponse().getSummary()
-                        + actionKnot.getCalendarEventAiResponse().getDescription()
-                )
+        // Старт: начало сегодняшнего дня в TZ календаря
+        ZonedDateTime start = LocalDate.now(zoneId).atStartOfDay(zoneId);
+        // Конец окна: ровно через год
+        ZonedDateTime end = start.plusYears(1);
+
+        int tzShiftStart = start.getOffset().getTotalSeconds() / 60;
+        int tzShiftEnd   = end.getOffset().getTotalSeconds() / 60;
+
+        DateTime timeMin = new DateTime(start.toInstant().toEpochMilli(), tzShiftStart);
+        DateTime timeMax = new DateTime(end.toInstant().toEpochMilli(), tzShiftEnd);
+
+        List<Event> all = new ArrayList<>();
+        String pageToken = null;
+
+        do {
+            Events events = calendarService.events().list(calendarId)
+                    .setTimeMin(timeMin)
+                    .setTimeMax(timeMax)
+                    .setSingleEvents(true)        // разворачиваем повторяющиеся
+                    .setOrderBy("startTime")
+                    .setMaxResults(2500)          // максимум на страницу у Calendar API
+                    .setPageToken(pageToken)
+                    .execute();
+
+            if (events.getItems() != null) {
+                all.addAll(events.getItems());
+            }
+            pageToken = events.getNextPageToken();
+        } while (pageToken != null);
+
+        return all;
+    }
+
+    public List<Event> findCoincidedRemoveEventsForYear(String calendarId, ActionKnot actionKnot) throws IOException {
+        List<Event> yearEvents = getNextYearEvents(calendarId);
+
+        String request = String.format(
+                AI_REMOVE_REQUEST,
+                getRequestByEventsList(yearEvents),
+                actionKnot.getCalendarEventAiResponse().getSummary()
+                        + ". Описание: " + actionKnot.getCalendarEventAiResponse().getDescription()
+                        + ". Дата: " + actionKnot.getCalendarEventAiResponse().getStart()
         );
+        String aiResponse = openAiProviderProcessor.fetchResponse(
+                components.getAiKey(), request);
         List<String> eventIds = objectMapper.readValue(aiResponse, new TypeReference<List<String>>() {});
 
         // Используем Set для быстрого поиска
-        Set<String> idsToRemove = new HashSet<>(eventIds);
+        Set<String> idsСoincided = new HashSet<>(eventIds);
 
-        return todayEvents.stream()
-                .filter(event -> idsToRemove.contains(event.getId()))
+        return yearEvents.stream()
+                .filter(event -> idsСoincided.contains(event.getId()))
                 .collect(Collectors.toList());
     }
 
-    private String getRemoveRequestByEventsList(List<Event> events) {
+    public String findCoincidedEditEventsForYear(String calendarId, ActionKnot actionKnot) throws IOException {
+        List<Event> yearEvents = getNextYearEvents(calendarId);
+
+        String request = String.format(
+                AI_EDIT_REQUEST,
+                getRequestByEventsList(yearEvents),
+                actionKnot.getCalendarEventAiResponse().getSummary()
+                        + ". Описание: " + actionKnot.getCalendarEventAiResponse().getDescription()
+                        + ". Дата: " + actionKnot.getCalendarEventAiResponse().getStart()
+        );
+        String aiResponse = openAiProviderProcessor.fetchResponse(
+                components.getAiKey(), request);
+        return aiResponse;
+    }
+
+    private String getRequestByEventsList(List<Event> events) {
         StringBuilder sb = new StringBuilder();
         for (Event event: events) {
             sb.append("eventId: ").append(event.getId()).append("\n");
             sb.append("summary: ").append(event.getSummary()).append("\n");
             sb.append("description: ").append(event.getDescription()).append("\n");
+            sb.append("date: ").append(event.getStart()).append("\n");
         }
         return sb.toString();
     }
@@ -210,5 +302,61 @@ public class CalendarService {
          calendarService.events()
                 .delete(calendarId, eventId)
                 .execute();
+    }
+
+    public Event editEventInCalendar(String targetId, String calendarId, ActionKnot actionKnot) throws IOException {
+        Event target = calendarService.events().get(calendarId, targetId).execute();
+
+        String tz = getTimeZoneInCalendar(calendarId);
+        Event patch = buildPatchFromRequest(actionKnot.getCalendarEventAiResponse(), tz);
+
+        Event updated = calendarService.events()
+                .patch(calendarId, target.getId(), patch)
+                .setSendUpdates("all") // при необходимости уведомляем участников
+                .execute();
+
+        log.info("Обновлён ивент: id={}, summary={}, start={}, end={}",
+                updated.getId(), updated.getSummary(), updated.getStart(), updated.getEnd());
+
+        return updated;
+    }
+
+    private Event buildPatchFromRequest(CalendarEventAiResponse req, String timeZone) {
+        Event patch = new Event();
+
+        if (req.getSummary() != null && !req.getSummary().isBlank()) {
+            patch.setSummary(req.getSummary());
+        }
+        if (req.getDescription() != null && !req.getDescription().isBlank()) {
+            patch.setDescription(req.getDescription());
+        }
+
+        // Время
+        ZoneId zoneId = ZoneId.of(timeZone);
+
+        boolean hasStart = req.getStart() != null && !req.getStart().isBlank();
+        boolean hasEnd   = req.getEnd()   != null && !req.getEnd().isBlank();
+
+        if (hasStart && hasEnd) {
+            ZonedDateTime start = parseWithZone(req.getStart(), zoneId).withZoneSameInstant(zoneId);
+            ZonedDateTime end   = parseWithZone(req.getEnd(),   zoneId).withZoneSameInstant(zoneId);
+
+            EventDateTime startDT = new EventDateTime()
+                    .setDateTime(new DateTime(start.toInstant().toEpochMilli(), start.getOffset().getTotalSeconds() / 60))
+                    .setTimeZone(timeZone);
+            EventDateTime endDT = new EventDateTime()
+                    .setDateTime(new DateTime(end.toInstant().toEpochMilli(), end.getOffset().getTotalSeconds() / 60))
+                    .setTimeZone(timeZone);
+
+            patch.setStart(startDT);
+            patch.setEnd(endDT);
+        } else if (hasStart && !hasEnd) {
+            // Трактуем как «сделать целодневным на указанную дату»
+            LocalDate d = parseWithZone(req.getStart(), zoneId).toLocalDate();
+            patch.setStart(new EventDateTime().setDate(new com.google.api.client.util.DateTime(d.toString())));
+            patch.setEnd(new EventDateTime().setDate(new com.google.api.client.util.DateTime(d.plusDays(1).toString())));
+        }
+
+        return patch;
     }
 }
