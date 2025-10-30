@@ -15,59 +15,67 @@ public class TokenService {
     private final AssistantGoogleOAuthRepository repo;
     private final GoogleOAuthHttpClient google;
     private final CryptoService crypto;
+    private static final Long DEFAULT_EXPIRES_TIME = 3600L;
 
     @Transactional
-    public void saveFromAuthCallback(long chatId, GoogleOAuthHttpClient.TokenResponse t, GoogleOAuthHttpClient.UserInfo u, Instant now) {
-        var e = repo.findById(chatId).orElseGet(() ->
-                AssistantGoogleOAuth.builder().telegramId(chatId).build());
+    public void saveFromAuthCallback(Long telegramId, GoogleOAuthHttpClient.TokenResponse tokenResponse, GoogleOAuthHttpClient.UserInfo userInfo, Instant now) {
+        AssistantGoogleOAuth auth = repo.findById(telegramId).orElseGet(() ->
+                AssistantGoogleOAuth.builder().telegramId(telegramId).build());
 
-        e.setGoogleSub(u.sub());
-        e.setEmail(u.email());
-        e.setScope(t.scope());
-        e.setAccessToken(t.access_token());
-        e.setAccessExpiresAt(now.plusSeconds(Optional.ofNullable(t.expires_in()).orElse(3600L)));
-        if (t.refresh_token() != null && !t.refresh_token().isBlank()) {
-            e.setRefreshTokenEnc(crypto.encrypt(t.refresh_token()));
+        auth
+                .setGoogleSub(userInfo.sub())
+                .setEmail(userInfo.email())
+                .setScope(tokenResponse.scope())
+                .setScope(tokenResponse.scope())
+                .setAccessToken(tokenResponse.access_token())
+                .setAccessExpiresAt(now.plusSeconds(Optional.ofNullable(tokenResponse.expires_in()).orElse(DEFAULT_EXPIRES_TIME)))
+                .setLastRefreshAt(now)
+        ;
+
+        if (tokenResponse.refresh_token() != null && !tokenResponse.refresh_token().isBlank()) {
+            auth.setRefreshTokenEnc(crypto.encrypt(tokenResponse.refresh_token()));
         }
-        e.setLastRefreshAt(now);
-        repo.save(e);
+        repo.save(auth);
     }
 
     @Transactional
-    public String ensureAccessToken(long chatId) {
-        var e = repo.findById(chatId)
+    public String ensureAccessToken(long telegramId) {
+        AssistantGoogleOAuth auth = repo.findById(telegramId)
                 .orElseThrow(() -> new IllegalStateException("Not authorized"));
-        if (e.getAccessExpiresAt() != null
-                && e.getAccessExpiresAt().isAfter(Instant.now().plusSeconds(60))) {
-            return e.getAccessToken();
+
+        if (auth.getAccessExpiresAt() != null
+                && auth.getAccessExpiresAt().isAfter(Instant.now().plusSeconds(60))) {
+            return auth.getAccessToken();
         }
-        var rt = crypto.decrypt(e.getRefreshTokenEnc());
-        var r = google.refresh(rt);
-        e.setAccessToken(r.access_token());
-        e.setAccessExpiresAt(Instant.now().plusSeconds(r.expires_in() == null ? 3600 : r.expires_in()));
-        e.setLastRefreshAt(Instant.now());
-        repo.save(e);
-        return e.getAccessToken();
+        String rt = crypto.decrypt(auth.getRefreshTokenEnc());
+        GoogleOAuthHttpClient.TokenResponse r = google.refresh(rt);
+
+        auth
+                .setAccessToken(r.access_token())
+                .setAccessExpiresAt(Instant.now().plusSeconds(r.expires_in() == null ? DEFAULT_EXPIRES_TIME : r.expires_in()))
+                .setLastRefreshAt(Instant.now());
+
+        repo.save(auth);
+        return auth.getAccessToken();
     }
 
     @Transactional
-    public void revokeAndDelete(long chatId) {
-        var e = repo.findById(chatId).orElse(null);
-        if (e != null && e.getRefreshTokenEnc() != null) {
-            google.revoke(crypto.decrypt(e.getRefreshTokenEnc()));
+    public void revokeAndDelete(long telegramId) {
+        AssistantGoogleOAuth auth = repo.findById(telegramId).orElse(null);
+        if (auth != null && auth.getRefreshTokenEnc() != null) {
+            google.revoke(crypto.decrypt(auth.getRefreshTokenEnc()));
         }
-        if (e != null) repo.delete(e);
+        if (auth != null) repo.delete(auth);
     }
 
     @Transactional(readOnly = true)
-    public AssistantGoogleOAuth get(long chatId) {
-        return repo.findById(chatId).orElseThrow();
+    public AssistantGoogleOAuth get(long telegramId) {
+        return repo.findById(telegramId).orElseThrow();
     }
 
     @Transactional
-    public void setDefaultCalendar(long chatId, String calendarId) {
-        var e = repo.findById(chatId).orElseThrow();
-        e.setDefaultCalendarId(calendarId);
-        repo.save(e);
+    public void setDefaultCalendar(long telegramId, String calendarId) {
+        AssistantGoogleOAuth auth = repo.findById(telegramId).orElseThrow();
+        repo.save(auth.setDefaultCalendarId(calendarId));
     }
 }

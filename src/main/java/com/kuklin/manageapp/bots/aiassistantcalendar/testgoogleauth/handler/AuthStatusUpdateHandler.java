@@ -27,7 +27,7 @@ public class AuthStatusUpdateHandler implements AssistantUpdateHandler {
                 ? update.getMessage().getChatId()
                 : update.getCallbackQuery().getMessage().getChatId();
         try {
-            AssistantGoogleOAuth acc = tokenService.get(chatId);
+            AssistantGoogleOAuth acc = tokenService.get(telegramUser.getTelegramId());
             Instant exp = Optional.ofNullable(acc.getAccessExpiresAt()).orElse(Instant.EPOCH);
             long leftSec = Math.max(0, Duration.between(Instant.now(), exp).getSeconds());
 

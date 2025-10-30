@@ -22,8 +22,8 @@ public class OAuthLink {
     @Column(name = "id")
     private UUID id;
 
-    @Column(name = "chat_id")
-    private Long chatId;
+    @Column(name = "telegram_id")
+    private Long telegramId;
 
     @Column(name = "expire_at")
     private Instant expireAt;

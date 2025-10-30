@@ -2,6 +2,7 @@ package com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.handler;
 
 import com.kuklin.manageapp.bots.aiassistantcalendar.telegram.AssistantTelegramBot;
 import com.kuklin.manageapp.bots.aiassistantcalendar.telegram.handlers.AssistantUpdateHandler;
+import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.service.GoogleOAuthService;
 import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.service.LinkStateService;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgutils.Command;
@@ -17,6 +18,9 @@ public class GoogleAuthHandler implements AssistantUpdateHandler {
 
     private final LinkStateService linkStateService;
     private final AssistantTelegramBot telegramBot;
+    private final GoogleOAuthService oAuthService;
+    // TTL одноразовой ссылки:
+    private static final Integer TTL_TIME_MINUTES = 15;
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
@@ -24,8 +28,7 @@ public class GoogleAuthHandler implements AssistantUpdateHandler {
                 ? update.getMessage().getChatId()
                 : update.getCallbackQuery().getMessage().getChatId();
 
-        // TTL одноразовой ссылки: 15 минут
-        UUID linkId = linkStateService.createLink(chatId, 15);
+        UUID linkId = linkStateService.createLink(chatId, TTL_TIME_MINUTES);
         String url = "https://kuklin.dev/auth/google/start?linkId=" + linkId;
 
         telegramBot.sendReturnedMessage(chatId, """

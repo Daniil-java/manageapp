@@ -27,7 +27,6 @@ import java.util.Optional;
 public class GoogleApiConfig {
 
     private static final String ENV = "CAL_ASSISTANT_GOOGLE_CREDENTIALS_B64";
-
     @Bean
     public Calendar assistantCalendarService() {
         try {

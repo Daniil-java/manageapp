@@ -32,12 +32,6 @@ public class GoogleOAuthHttpClient {
 
         return postForm(props.getTokenUri(), form, TokenResponse.class);
 
-//        return rest.post()
-//                .uri(props.getTokenUri())
-//                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-//                .body(form)
-//                .retrieve()
-//                .body(TokenResponse.class);
     }
 
     public TokenResponse refresh(String refreshToken) {
@@ -50,12 +44,6 @@ public class GoogleOAuthHttpClient {
         form.add("refresh_token", refreshToken);
 
         return postForm(props.getTokenUri(), form, TokenResponse.class);
-//        return rest.post()
-//                .uri(props.getTokenUri())
-//                .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-//                .body(form)
-//                .retrieve()
-//                .body(TokenResponse.class);
     }
 
     public void revoke(String refreshToken) {

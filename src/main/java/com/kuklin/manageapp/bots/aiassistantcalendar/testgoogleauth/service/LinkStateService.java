@@ -22,49 +22,49 @@ public class LinkStateService {
 
     /** Вызываешь из бота при /auth — создаешь одноразовую ссылку */
     @Transactional
-    public UUID createLink(long chatId, int ttlMinutes) {
-        var link = OAuthLink.builder()
-                .id(UUID.randomUUID())
-                .chatId(chatId)
-                .expireAt(Instant.now().plus(ttlMinutes, ChronoUnit.MINUTES))
-                .build();
-        linkRepo.save(link);
-        return link.getId();
+    public UUID createLink(long telegramId, int ttlMinutes) {
+        OAuthLink oAuthLink = new OAuthLink()
+                .setId(UUID.randomUUID())
+                .setTelegramId(telegramId)
+                .setExpireAt(Instant.now().plus(ttlMinutes, ChronoUnit.MINUTES));
+
+        linkRepo.save(oAuthLink);
+        return oAuthLink.getId();
     }
 
     /** На старте веб-флоу: потребляем ссылку и создаем state+verifier */
     @Transactional
     public ConsumedLink consumeLinkAndMakeState(UUID linkId) {
-        var link = linkRepo.findById(linkId)
+        OAuthLink link = linkRepo.findById(linkId)
                 .filter(l -> l.getExpireAt().isAfter(Instant.now()))
                 .orElseThrow(() -> new IllegalStateException("Link is invalid or expired"));
 
         linkRepo.deleteById(linkId); // одноразово
 
         String verifier = CodeVerifierUtil.generateVerifier();
-        var state = OAuthState.builder()
-                .id(UUID.randomUUID())
-                .chatId(link.getChatId())
-                .verifier(verifier)
-                .expireAt(Instant.now().plus(15, ChronoUnit.MINUTES))
-                .build();
+        OAuthState state = new OAuthState()
+                .setId(UUID.randomUUID())
+                .setTelegramId(link.getTelegramId())
+                .setVerifier(verifier)
+                .setExpireAt(Instant.now().plus(15, ChronoUnit.MINUTES))
+                ;
         stateRepo.save(state);
 
-        return new ConsumedLink(state.getId(), verifier, link.getChatId());
+        return new ConsumedLink(state.getId(), verifier, link.getTelegramId());
     }
 
     /** В колбэке: получить и атомарно удалить state */
     @Transactional
     public CallbackState consumeState(UUID stateId) {
-        var opt = stateRepo.findById(stateId)
+        Optional<OAuthState> opt = stateRepo.findById(stateId)
                 .filter(s -> s.getExpireAt().isAfter(Instant.now()));
         if (opt.isEmpty()) throw new IllegalStateException("State invalid/expired");
 
-        var s = opt.get();
+        OAuthState s = opt.get();
         stateRepo.deleteById(stateId); // одноразово
-        return new CallbackState(s.getChatId(), s.getVerifier());
+        return new CallbackState(s.getTelegramId(), s.getVerifier());
     }
 
-    public record ConsumedLink(UUID state, String verifier, long chatId) { }
-    public record CallbackState(long chatId, String verifier) { }
+    public record ConsumedLink(UUID state, String verifier, long telegramId) { }
+    public record CallbackState(long telegramId, String verifier) { }
 }

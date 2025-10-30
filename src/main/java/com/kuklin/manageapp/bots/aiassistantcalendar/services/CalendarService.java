@@ -2,20 +2,28 @@ package com.kuklin.manageapp.bots.aiassistantcalendar.services;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.api.client.auth.oauth2.BearerToken;
+import com.google.api.client.auth.oauth2.ClientParametersAuthentication;
+import com.google.api.client.auth.oauth2.Credential;
+import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.client.http.GenericUrl;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.DateTime;
 import com.google.api.services.calendar.Calendar;
-import com.google.api.services.calendar.model.Event;
-import com.google.api.services.calendar.model.EventDateTime;
-import com.google.api.services.calendar.model.Events;
+import com.google.api.services.calendar.model.*;
 import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcessor;
+import com.kuklin.manageapp.bots.aiassistantcalendar.configurations.GoogleComponents;
 import com.kuklin.manageapp.bots.aiassistantcalendar.configurations.TelegramAiAssistantCalendarBotKeyComponents;
 import com.kuklin.manageapp.bots.aiassistantcalendar.models.ActionKnot;
 import com.kuklin.manageapp.bots.aiassistantcalendar.models.CalendarEventAiResponse;
+import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.service.TokenService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.time.*;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -32,6 +40,10 @@ public class CalendarService {
     private final ObjectMapper objectMapper;
     private final Calendar calendarService;
     private final TelegramAiAssistantCalendarBotKeyComponents components;
+    private final UserGoogleCalendarService userGoogleCalendarService;
+    private final TokenService tokenService;
+    private final JacksonFactory jsonFactory = JacksonFactory.getDefaultInstance();
+    private final GoogleComponents googleComponents;
 
     private static final String AI_REMOVE_REQUEST =
             """
@@ -358,5 +370,45 @@ public class CalendarService {
         }
 
         return patch;
+    }
+
+    public List<String> listUserCalendars(Long telegramId) throws IOException, GeneralSecurityException {
+        // Предполагаем, что у UserGoogleCalendar есть либо refreshToken, либо accessToken
+        String accessToken = tokenService.ensureAccessToken(telegramId);
+
+        if (accessToken == null) {
+            throw new IllegalStateException("Нет токенов: user не авторизован");
+        }
+
+        NetHttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
+        Credential credential = buildCredential(accessToken, httpTransport);
+
+        Calendar service = new Calendar.Builder(httpTransport, jsonFactory, credential)
+                .setApplicationName("ManageApp")
+                .build();
+
+        CalendarList calendarList = service.calendarList().list().execute();
+        List<CalendarListEntry> items = calendarList.getItems();
+
+        return items.stream()
+                .map(e -> e.getId() + " — " + e.getSummary())
+                .collect(Collectors.toList());
+    }
+
+    private Credential buildCredential(String accessToken, NetHttpTransport httpTransport) throws IOException {
+        // Собираем минимальный Credential с client auth, чтобы можно было рефрешить токен
+        String clientId = googleComponents.getClientId();
+        String clientSecret = googleComponents.getClientSecret();
+        Credential.Builder builder = new Credential.Builder(BearerToken.authorizationHeaderAccessMethod())
+                .setTransport(httpTransport)
+                .setJsonFactory(jsonFactory)
+                .setTokenServerUrl(new GenericUrl("https://oauth2.googleapis.com/token")) //TODO Взять из переменной
+                .setClientAuthentication(new ClientParametersAuthentication(clientId, clientSecret));
+
+        Credential credential = builder.build();
+
+        credential.setAccessToken(accessToken);
+
+        return credential;
     }
 }

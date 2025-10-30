@@ -23,8 +23,8 @@ public class OAuthState {
     @Column(name = "state", nullable = false)
     private UUID id;
 
-    @Column(name = "chat_id", nullable = false)
-    private Long chatId;
+    @Column(name = "telegram_id", nullable = false)
+    private Long telegramId;
 
     @Column(name = "verifier", nullable = false, length = 256)
     private String verifier;
