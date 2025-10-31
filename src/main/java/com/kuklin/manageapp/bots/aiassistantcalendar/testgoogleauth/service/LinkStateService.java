@@ -59,14 +59,13 @@ public class LinkStateService {
     }
 
     /** В колбэке: получить и атомарно удалить state */
-    @Transactional
     public CallbackState consumeState(UUID stateId) {
         Optional<OAuthState> opt = stateRepo.findById(stateId)
                 .filter(s -> s.getExpireAt().isAfter(Instant.now()));
         if (opt.isEmpty()) throw new IllegalStateException("State invalid/expired");
 
         OAuthState s = opt.get();
-        stateRepo.deleteById(stateId); // одноразово
+//        stateRepo.deleteById(stateId); // одноразово
         return new CallbackState(s.getTelegramId(), s.getVerifier());
     }
 
