@@ -6,6 +6,7 @@ import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.entities.OAu
 import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.repositories.OAuthLinkRepository;
 import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.repositories.OAuthStateRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,12 +17,13 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class LinkStateService {
     private final OAuthLinkRepository linkRepo;
     private final OAuthStateRepository stateRepo;
 
     /** Вызываешь из бота при /auth — создаешь одноразовую ссылку */
-    @Transactional
+
     public UUID createLink(Long telegramId, int ttlMinutes) {
         OAuthLink oAuthLink = new OAuthLink()
                 .setId(UUID.randomUUID())
@@ -29,7 +31,9 @@ public class LinkStateService {
                 .setExpireAt(Instant.now().plus(ttlMinutes, ChronoUnit.MINUTES));
 
 
-        linkRepo.save(oAuthLink);
+        log.info("Saving oauth link: telegramId={}, id={}", telegramId, oAuthLink.getId());
+        oAuthLink = linkRepo.save(oAuthLink);
+        log.info("Saved link id={} successfully", oAuthLink.getId());
         return oAuthLink.getId();
     }
 
