@@ -1,16 +1,15 @@
 package com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.handler;
 
-import com.google.api.services.calendar.model.CalendarListEntry;
 import com.kuklin.manageapp.bots.aiassistantcalendar.services.CalendarService;
 import com.kuklin.manageapp.bots.aiassistantcalendar.telegram.AssistantTelegramBot;
 import com.kuklin.manageapp.bots.aiassistantcalendar.telegram.handlers.AssistantUpdateHandler;
 import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.entities.AssistantGoogleOAuth;
-import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.models.TokenRefreshException;
+import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.entities.GoogleCacheableCalendar;
+import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.service.GoogleCacheableCalendarService;
 import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.service.TokenService;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;
-import com.kuklin.manageapp.common.services.TelegramUserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -28,7 +27,7 @@ public class AssistantCalendarChooseUpdateHandler implements AssistantUpdateHand
     private final CalendarService calendarService;
     private final AssistantTelegramBot telegramBot;
     private final TokenService tokenService;
-    private final TelegramUserService telegramUserService;
+    private final GoogleCacheableCalendarService cacheableCalendarService;
     private static final String DEL = AssistantTelegramBot.DELIMETER;
     public static final String PREV_CMD = Command.ASSISTANT_CHOOSE_CALENDAR.getCommandText() + DEL + "/prev" + DEL;
     //Команда навигации календаря
@@ -56,7 +55,7 @@ public class AssistantCalendarChooseUpdateHandler implements AssistantUpdateHand
 
     public void handleGoogleCallback(AssistantGoogleOAuth auth) {
         try {
-            List<CalendarListEntry> calendarList = calendarService
+            List<GoogleCacheableCalendar> calendarList = calendarService
                     .listUserCalendarsOrNull(auth.getTelegramId());
 
             String response = """
@@ -74,26 +73,26 @@ public class AssistantCalendarChooseUpdateHandler implements AssistantUpdateHand
         Long chatId = update.getMessage().getChatId();
 
         try {
-            List<CalendarListEntry> calendarList = calendarService
+            List<GoogleCacheableCalendar> calendarList = calendarService
                     .listUserCalendarsOrNull(telegramUser.getTelegramId());
             //TODO
-//            List<CalendarListEntry> calendarList = List.of(
-//                    new CalendarListEntry().setId("id1").setSummary("calendar1"),
-//                    new CalendarListEntry().setId("id1").setSummary("calendar1"),
-//                    new CalendarListEntry().setId("id1").setSummary("calendar1")
+//            List<GoogleCacheableCalendar> calendarList = List.of(
+//                    new GoogleCacheableCalendar().setId(1L).setSummary("calendar1"),
+//                    new GoogleCacheableCalendar().setId(1L).setSummary("calendar1"),
+//                    new GoogleCacheableCalendar().setId(1L).setSummary("calendar1")
 //            );
 
             StringBuilder sb = new StringBuilder();
-            for (CalendarListEntry calendar : calendarList) {
+            for (GoogleCacheableCalendar calendar : calendarList) {
                 sb.append(calendar.getSummary()).append("\n");
             }
             telegramBot.sendReturnedMessage(chatId, sb.toString(), getCalendarListKeyboard(calendarList), null);
-        } catch (TokenRefreshException e) {
-            if (e.getReason().equals(TokenRefreshException.Reason.INVALID_GRANT)) {
-                telegramBot.sendReturnedMessage(chatId, GOOGLE_AUTH_ERROR_MESSAGE);
-            } else {
-                telegramBot.sendReturnedMessage(chatId, GOOGLE_OTHER_ERROR_MESSAGE);
-            }
+//        } catch (TokenRefreshException e) {
+//            if (e.getReason().equals(TokenRefreshException.Reason.INVALID_GRANT)) {
+//                telegramBot.sendReturnedMessage(chatId, GOOGLE_AUTH_ERROR_MESSAGE);
+//            } else {
+//                telegramBot.sendReturnedMessage(chatId, GOOGLE_OTHER_ERROR_MESSAGE);
+//            }
         } catch (Exception e) {
             telegramBot.sendReturnedMessage(chatId, "Ошибка получения календаря");
             log.error("Не получилось получить список календарей");
@@ -107,7 +106,12 @@ public class AssistantCalendarChooseUpdateHandler implements AssistantUpdateHand
 
         if (response.startsWith(CHOOSE_CMD)) {
             String id = response.substring(CHOOSE_CMD.length());
-            var auth = tokenService.setDefaultCalendarOrNull(telegramUser.getTelegramId(), id);
+
+            GoogleCacheableCalendar googleCacheableCalendar = cacheableCalendarService
+                    .findCalendarByIdAndTelegramIdOrNull(Long.valueOf(id), telegramUser.getTelegramId());
+
+            var auth = tokenService.setDefaultCalendarOrNull(
+                    telegramUser.getTelegramId(), googleCacheableCalendar.getCalendarId());
             if (auth == null) {
                 telegramBot.sendReturnedMessage(chatId, CHOOSE_ERROR_MSG);
             }
@@ -115,15 +119,15 @@ public class AssistantCalendarChooseUpdateHandler implements AssistantUpdateHand
         }
     }
 
-    public InlineKeyboardMarkup getCalendarListKeyboard(List<CalendarListEntry> calendarList) {
+    public InlineKeyboardMarkup getCalendarListKeyboard(List<GoogleCacheableCalendar> calendarList) {
         TelegramKeyboard.TelegramKeyboardBuilder builder = TelegramKeyboard.builder();
 
         for (int i = 0; i < calendarList.size(); i += 2) {
-            CalendarListEntry c1 = calendarList.get(i);
+            GoogleCacheableCalendar c1 = calendarList.get(i);
             InlineKeyboardButton btn1 = TelegramKeyboard.button(c1.getSummary(), CHOOSE_CMD + c1.getId());
 
             if (i + 1 < calendarList.size()) {
-                CalendarListEntry c2 = calendarList.get(i + 1);
+                GoogleCacheableCalendar c2 = calendarList.get(i + 1);
                 InlineKeyboardButton btn2 = TelegramKeyboard.button(c2.getSummary(), CHOOSE_CMD + c2.getId());
                 // Если row принимает два аргумента
                 builder.row(btn1, btn2);

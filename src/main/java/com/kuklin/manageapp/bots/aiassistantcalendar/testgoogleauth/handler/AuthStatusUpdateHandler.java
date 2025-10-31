@@ -1,5 +1,7 @@
 package com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.handler;
 
+import com.google.api.services.calendar.model.CalendarListEntry;
+import com.kuklin.manageapp.bots.aiassistantcalendar.services.CalendarService;
 import com.kuklin.manageapp.bots.aiassistantcalendar.telegram.AssistantTelegramBot;
 import com.kuklin.manageapp.bots.aiassistantcalendar.telegram.handlers.AssistantUpdateHandler;
 import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.entities.AssistantGoogleOAuth;
@@ -17,6 +19,7 @@ import java.util.Optional;
 @Slf4j
 public class AuthStatusUpdateHandler implements AssistantUpdateHandler {
     private final TokenService tokenService;
+    private final CalendarService calendarService;
     private final AssistantTelegramBot telegramBot;
 
     @Override
@@ -25,12 +28,16 @@ public class AuthStatusUpdateHandler implements AssistantUpdateHandler {
                 ? update.getMessage().getChatId()
                 : update.getCallbackQuery().getMessage().getChatId();
         try {
+            CalendarListEntry calendarListEntry = calendarService.getCalendarOrNull(telegramUser.getTelegramId());
             AssistantGoogleOAuth acc = tokenService.findByTelegramIdOrNull(telegramUser.getTelegramId());
             telegramBot.sendReturnedMessage(chatId, """
                     ✅ Google подключён
                     Email: %s
+                    Календарь: %s
                     """.formatted(
-                    Optional.ofNullable(acc.getEmail()).orElse("—"))
+                    Optional.ofNullable(acc.getEmail()).orElse("—"),
+                    Optional.ofNullable(calendarListEntry.getSummary()).orElse("-")
+                    )
             );
 
             // Дополнительно можно «протестировать» refresh прямо тут:

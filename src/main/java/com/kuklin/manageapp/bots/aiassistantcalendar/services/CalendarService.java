@@ -20,7 +20,9 @@ import com.kuklin.manageapp.bots.aiassistantcalendar.configurations.TelegramAiAs
 import com.kuklin.manageapp.bots.aiassistantcalendar.models.ActionKnot;
 import com.kuklin.manageapp.bots.aiassistantcalendar.models.CalendarEventAiResponse;
 import com.kuklin.manageapp.bots.aiassistantcalendar.services.utils.CalendarServiceUtils;
+import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.entities.GoogleCacheableCalendar;
 import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.models.TokenRefreshException;
+import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.service.GoogleCacheableCalendarService;
 import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.service.TokenService;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -48,6 +50,7 @@ public class CalendarService {
     private final TelegramAiAssistantCalendarBotKeyComponents components;
     private final UserGoogleCalendarService userGoogleCalendarService;
     private final TokenService tokenService;
+    private final GoogleCacheableCalendarService cacheableCalendarService;
     private final JacksonFactory jsonFactory = JacksonFactory.getDefaultInstance();
     private final GoogleComponents googleComponents;
 
@@ -149,12 +152,26 @@ public class CalendarService {
         return updated;
     }
 
-    public List<CalendarListEntry> listUserCalendarsOrNull(Long telegramId) throws TokenRefreshException {
+    public List<GoogleCacheableCalendar> listUserCalendarsOrNull(Long telegramId) throws TokenRefreshException {
         String accessToken = tokenService.ensureAccessTokenOrNull(telegramId);
         Calendar service = getCalendarService(accessToken);
 
         try {
-            return service.calendarList().list().execute().getItems();
+            List<CalendarListEntry> list = service.calendarList().list().execute().getItems();
+            cacheableCalendarService.saveListOfCalendarsAndRemoveAllOfAnother(list, telegramId);
+            return cacheableCalendarService.findAllByTelegramId(telegramId);
+        } catch (IOException e) {
+            log.error("Google service execute error!", e);
+            return null;
+        }
+    }
+
+    public CalendarListEntry getCalendarOrNull(Long telegramId) throws TokenRefreshException {
+        CalendarContext calendarContext = getCalendarContext(telegramId);
+        Calendar service = getCalendarService(calendarContext.getAccessToken());
+
+        try {
+            return service.calendarList().get(calendarContext.getCalendarId()).execute();
         } catch (IOException e) {
             log.error("Google service execute error!", e);
             return null;
