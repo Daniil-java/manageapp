@@ -44,7 +44,7 @@ public class LinkStateService {
                 .filter(l -> l.getExpireAt().isAfter(Instant.now()))
                 .orElseThrow(() -> new IllegalStateException("Link is invalid or expired"));
 
-        linkRepo.deleteById(linkId); // одноразово
+//        linkRepo.deleteById(linkId); // одноразово
 
         String verifier = CodeVerifierUtil.generateVerifier();
         OAuthState state = new OAuthState()
