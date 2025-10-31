@@ -11,21 +11,27 @@ import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.jackson2.JacksonFactory;
 import com.google.api.client.util.DateTime;
 import com.google.api.services.calendar.Calendar;
-import com.google.api.services.calendar.model.*;
+import com.google.api.services.calendar.model.CalendarListEntry;
+import com.google.api.services.calendar.model.Event;
+import com.google.api.services.calendar.model.Events;
 import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcessor;
 import com.kuklin.manageapp.bots.aiassistantcalendar.configurations.GoogleComponents;
 import com.kuklin.manageapp.bots.aiassistantcalendar.configurations.TelegramAiAssistantCalendarBotKeyComponents;
 import com.kuklin.manageapp.bots.aiassistantcalendar.models.ActionKnot;
 import com.kuklin.manageapp.bots.aiassistantcalendar.models.CalendarEventAiResponse;
+import com.kuklin.manageapp.bots.aiassistantcalendar.services.utils.CalendarServiceUtils;
+import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.models.TokenRefreshException;
 import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.service.TokenService;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
+import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
-import java.security.GeneralSecurityException;
-import java.time.*;
-import java.time.format.DateTimeParseException;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -90,11 +96,14 @@ public class CalendarService {
                      
                     """;
 
-    public Event addEventInCalendar(CalendarEventAiResponse request, String calendarId) throws IOException {
-        Event event = normalizeEventRequest(request, getTimeZoneInCalendar(calendarId));
+    public Event addEventInCalendar(CalendarEventAiResponse request, Long telegramId) throws IOException, TokenRefreshException {
+        CalendarContext calendarContext = getCalendarContext(telegramId);
 
-        Event inserted = calendarService.events()
-                .insert(calendarId, event)
+        Event event = CalendarServiceUtils.normalizeEventRequest(
+                request, getTimeZoneInCalendar(calendarContext.getCalendarId()));
+
+        Event inserted = calendarContext.getCalendar().events()
+                .insert(calendarContext.getCalendarId(), event)
                 .execute();
 
         log.info("Запрос на создание эвента в GOOGLE: \nМероприятие {},\nОписание {},\nНачало {},\nКонец {},\nТаймзона {}",
@@ -108,95 +117,171 @@ public class CalendarService {
         return inserted;
     }
 
-    private EventDateTime buildEventDateTime(LocalDateTime local, String calendarTimeZone) {
-        ZoneId zoneId = ZoneId.of(calendarTimeZone);
-        ZonedDateTime zoned = local.atZone(zoneId);
+    public void removeEventInCalendar(String eventId, Long telegramId) throws IOException, TokenRefreshException {
+        CalendarContext calendarContext = getCalendarContext(telegramId);
 
-        return new EventDateTime()
-                .setDateTime(new DateTime(
-                        zoned.toInstant().toEpochMilli(),
-                        zoned.getOffset().getTotalSeconds() / 60
-                ))
-                .setTimeZone(zoneId.toString());
+        calendarContext.getCalendar().events()
+                .delete(calendarContext.getCalendarId(), eventId)
+                .execute();
     }
 
-    private Event normalizeEventRequest(CalendarEventAiResponse request, String timeZone) {
-        int defaultPlusTime = 1;
+    public Event editEventInCalendar(String targetId, ActionKnot actionKnot, Long telegramId) throws IOException, TokenRefreshException {
+        CalendarContext calendarContext = getCalendarContext(telegramId);
+        Calendar calendar = calendarContext.getCalendar();
+        String calendarId = calendarContext.getCalendarId();
 
-        ZoneId zoneId = ZoneId.of(timeZone);
-        ZonedDateTime now = ZonedDateTime.now(zoneId);
+        Event target = calendar
+                .events()
+                .get(calendarId, targetId)
+                .execute();
 
-        if (request.getEnd() == null || request.getEnd().isBlank()) {
-            LocalDate startDate = (request.getStart() != null && !request.getStart().isBlank())
-                    ? parseWithZone(request.getStart(), zoneId).toLocalDate()
-                    : now.toLocalDate(); // сегодня в TZ календаря
+        String tz = getTimeZoneInCalendar(calendarId);
+        Event patch = CalendarServiceUtils.buildPatchFromRequest(actionKnot.getCalendarEventAiResponse(), tz);
 
-            EventDateTime startAllDay = new EventDateTime()
-                    .setDate(new com.google.api.client.util.DateTime(startDate.toString())); // YYYY-MM-DD
-            EventDateTime endAllDay = new EventDateTime()
-                    .setDate(new com.google.api.client.util.DateTime(startDate.plusDays(1).toString())); // end эксклюзивно
+        Event updated = calendar.events()
+                .patch(calendarId, target.getId(), patch)
+                .setSendUpdates("all") // при необходимости уведомляем участников
+                .execute();
 
-            return new Event()
-                    .setSummary(request.getSummary())
-                    .setDescription(request.getDescription())
-                    .setStart(startAllDay)
-                    .setEnd(endAllDay);
-        }
+        log.info("Обновлён ивент: id={}, summary={}, start={}, end={}",
+                updated.getId(), updated.getSummary(), updated.getStart(), updated.getEnd());
 
-        ZonedDateTime start = (request.getStart() != null && !request.getStart().isBlank())
-                ? parseWithZone(request.getStart(), zoneId)
-                : now;
-
-        ZonedDateTime end = (request.getEnd() != null && !request.getEnd().isBlank())
-                ? parseWithZone(request.getEnd(), zoneId)
-                : now.plusHours(defaultPlusTime);
-
-        // приводим к зоне календаря
-        start = start.withZoneSameInstant(zoneId);
-        end = end.withZoneSameInstant(zoneId);
-
-        EventDateTime startDT = new EventDateTime()
-                .setDateTime(new DateTime(
-                        start.toInstant().toEpochMilli(),
-                        start.getOffset().getTotalSeconds() / 60
-                ))
-                .setTimeZone(timeZone);
-
-        EventDateTime endDT = new EventDateTime()
-                .setDateTime(new DateTime(
-                        end.toInstant().toEpochMilli(),
-                        end.getOffset().getTotalSeconds() / 60
-                ))
-                .setTimeZone(timeZone);
-
-        return new Event()
-                .setSummary(request.getSummary())
-                .setDescription(request.getDescription())
-                .setStart(startDT)
-                .setEnd(endDT);
+        return updated;
     }
 
-    private ZonedDateTime parseWithZone(String input, ZoneId zoneId) {
+    public List<CalendarListEntry> listUserCalendarsOrNull(Long telegramId) throws TokenRefreshException {
+        String accessToken = tokenService.ensureAccessTokenOrNull(telegramId);
+        Calendar service = getCalendarService(accessToken);
+
         try {
-            // если в строке уже есть смещение или зона
-            return ZonedDateTime.parse(input);
-        } catch (DateTimeParseException e1) {
-            try {
-                // если есть смещение, но нет зоны
-                return OffsetDateTime.parse(input).atZoneSameInstant(zoneId);
-            } catch (DateTimeParseException e2) {
-                // если вообще "голое" время без смещения
-                LocalDateTime ldt = LocalDateTime.parse(input);
-                return ldt.atZone(zoneId);
-            }
+            return service.calendarList().list().execute().getItems();
+        } catch (IOException e) {
+            log.error("Google service execute error!", e);
+            return null;
         }
     }
 
-    public String getTimeZoneInCalendar(String calendarId) throws IOException {
-        com.google.api.services.calendar.model.Calendar calendar =
-                calendarService.calendars().get(calendarId).execute();
+    /**
+     * Провеяем уведомляли ли мы пользователя, об определенной задаче
+     * @return List<Event> список мероприятий за год
+     * @return null - если у пользователя не установлен календарь
+     * @throws TokenRefreshException - авторизация просрочена или ошибка на стороне гугла
+     */
+    public List<Event> findEventsToRemoveForNextYear(ActionKnot actionKnot, Long telegramId) throws IOException, TokenRefreshException {
+        String accessToken = tokenService.ensureAccessTokenOrNull(telegramId);
+        String calendarId = getCalendarIdOrNull(telegramId, accessToken);
+        if (calendarId == null) {
+            return null;
+        }
 
-        return calendar.getTimeZone();
+        List<Event> yearEvents = getNextYearEvents(calendarId);
+
+        String request = String.format(
+                AI_REMOVE_REQUEST,
+                CalendarServiceUtils.getRequestByEventsList(yearEvents),
+                actionKnot.getCalendarEventAiResponse().getSummary()
+                        + ". Описание: " + actionKnot.getCalendarEventAiResponse().getDescription()
+                        + ". Дата: " + actionKnot.getCalendarEventAiResponse().getStart()
+        );
+        String aiResponse = openAiProviderProcessor.fetchResponse(
+                components.getAiKey(), request);
+        List<String> eventIds = objectMapper.readValue(aiResponse, new TypeReference<List<String>>() {});
+
+        // Используем Set для быстрого поиска
+        Set<String> idsСoincided = new HashSet<>(eventIds);
+
+        return yearEvents.stream()
+                .filter(event -> idsСoincided.contains(event.getId()))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Провеяем уведомляли ли мы пользователя, об определенной задаче
+     * @return String eventId возвращает идентификатор мероприятия
+     * @return null - если у пользователя не установлен календарь
+     * @throws TokenRefreshException - авторизация просрочена или ошибка на стороне гугла
+     */
+    public String findEventIdForEditInYear(Long telegramId, ActionKnot actionKnot) throws IOException, TokenRefreshException {
+        String accessToken = tokenService.ensureAccessTokenOrNull(telegramId);
+        String calendarId = getCalendarIdOrNull(telegramId, accessToken);
+        if (calendarId == null) {
+            return null;
+        }
+        List<Event> yearEvents = getNextYearEvents(calendarId);
+
+        String request = String.format(
+                AI_EDIT_REQUEST,
+                CalendarServiceUtils.getRequestByEventsList(yearEvents),
+                actionKnot.getCalendarEventAiResponse().getSummary()
+                        + ". Описание: " + actionKnot.getCalendarEventAiResponse().getDescription()
+                        + ". Дата: " + actionKnot.getCalendarEventAiResponse().getStart()
+        );
+        String aiResponse = openAiProviderProcessor.fetchResponse(
+                components.getAiKey(), request);
+        return aiResponse;
+    }
+
+    /**
+     * Провеяем уведомляли ли мы пользователя, об определенной задаче
+     * @return String calendarId - если у пользователя есть календарь
+     * @return null - если у пользователя не установлен календарь
+     */
+    private String getCalendarIdOrNull(Long telegramId, String accessToken) {
+        boolean isAuth = accessToken != null;
+        if (isAuth) {
+            return tokenService.findByTelegramIdOrNull(telegramId).getDefaultCalendarId();
+        }
+        String calendarId = userGoogleCalendarService.getUserCalendarIdByTelegramIdOrNull(telegramId);
+        if (calendarId != null) {
+            return calendarId;
+        }
+        return null;
+    }
+
+    private Calendar getCalendarService(String accessToken) {
+        return accessToken != null ?
+                createCalendarServiceOrNull(accessToken):
+                calendarService;
+    }
+
+    private Calendar createCalendarServiceOrNull(String accessToken) {
+        try {
+            NetHttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
+            Credential credential = buildCredential(accessToken, httpTransport);
+
+            return new Calendar.Builder(httpTransport, jsonFactory, credential)
+                    .setApplicationName("ManageApp")
+                    .build();
+        } catch (Exception e) {
+            log.error("Calendar service error!", e);
+            return null;
+        }
+    }
+
+    private CalendarContext getCalendarContext(Long telegramId) throws TokenRefreshException {
+        String accessToken = tokenService.ensureAccessTokenOrNull(telegramId);
+        return new CalendarContext()
+                .setAccessToken(accessToken)
+                .setCalendar(getCalendarService(accessToken))
+                .setCalendarId(getCalendarIdOrNull(telegramId, accessToken))
+                ;
+    }
+
+    private Credential buildCredential(String accessToken, NetHttpTransport httpTransport) {
+        // Собираем минимальный Credential с client auth, чтобы можно было рефрешить токен
+        String clientId = googleComponents.getClientId();
+        String clientSecret = googleComponents.getClientSecret();
+        Credential.Builder builder = new Credential.Builder(BearerToken.authorizationHeaderAccessMethod())
+                .setTransport(httpTransport)
+                .setJsonFactory(jsonFactory)
+                .setTokenServerUrl(new GenericUrl("https://oauth2.googleapis.com/token")) //TODO Взять из переменной
+                .setClientAuthentication(new ClientParametersAuthentication(clientId, clientSecret));
+
+        Credential credential = builder.build();
+
+        credential.setAccessToken(accessToken);
+
+        return credential;
     }
 
     public List<Event> getTodayEvents(String calendarId) throws IOException {
@@ -228,21 +313,18 @@ public class CalendarService {
 
     public List<Event> getNextYearEvents(String calendarId) throws IOException {
         ZoneId zoneId = ZoneId.of(getTimeZoneInCalendar(calendarId));
-
         // Старт: начало сегодняшнего дня в TZ календаря
         ZonedDateTime start = LocalDate.now(zoneId).atStartOfDay(zoneId);
         // Конец окна: ровно через год
         ZonedDateTime end = start.plusYears(1);
-
         int tzShiftStart = start.getOffset().getTotalSeconds() / 60;
         int tzShiftEnd   = end.getOffset().getTotalSeconds() / 60;
-
         DateTime timeMin = new DateTime(start.toInstant().toEpochMilli(), tzShiftStart);
         DateTime timeMax = new DateTime(end.toInstant().toEpochMilli(), tzShiftEnd);
 
+
         List<Event> all = new ArrayList<>();
         String pageToken = null;
-
         do {
             Events events = calendarService.events().list(calendarId)
                     .setTimeMin(timeMin)
@@ -262,153 +344,19 @@ public class CalendarService {
         return all;
     }
 
-    public List<Event> findCoincidedRemoveEventsForYear(String calendarId, ActionKnot actionKnot) throws IOException {
-        List<Event> yearEvents = getNextYearEvents(calendarId);
+    public String getTimeZoneInCalendar(String calendarId) throws IOException {
+        com.google.api.services.calendar.model.Calendar calendar =
+                calendarService.calendars().get(calendarId).execute();
 
-        String request = String.format(
-                AI_REMOVE_REQUEST,
-                getRequestByEventsList(yearEvents),
-                actionKnot.getCalendarEventAiResponse().getSummary()
-                        + ". Описание: " + actionKnot.getCalendarEventAiResponse().getDescription()
-                        + ". Дата: " + actionKnot.getCalendarEventAiResponse().getStart()
-        );
-        String aiResponse = openAiProviderProcessor.fetchResponse(
-                components.getAiKey(), request);
-        List<String> eventIds = objectMapper.readValue(aiResponse, new TypeReference<List<String>>() {});
-
-        // Используем Set для быстрого поиска
-        Set<String> idsСoincided = new HashSet<>(eventIds);
-
-        return yearEvents.stream()
-                .filter(event -> idsСoincided.contains(event.getId()))
-                .collect(Collectors.toList());
+        return calendar.getTimeZone();
     }
 
-    public String findCoincidedEditEventsForYear(String calendarId, ActionKnot actionKnot) throws IOException {
-        List<Event> yearEvents = getNextYearEvents(calendarId);
-
-        String request = String.format(
-                AI_EDIT_REQUEST,
-                getRequestByEventsList(yearEvents),
-                actionKnot.getCalendarEventAiResponse().getSummary()
-                        + ". Описание: " + actionKnot.getCalendarEventAiResponse().getDescription()
-                        + ". Дата: " + actionKnot.getCalendarEventAiResponse().getStart()
-        );
-        String aiResponse = openAiProviderProcessor.fetchResponse(
-                components.getAiKey(), request);
-        return aiResponse;
-    }
-
-    private String getRequestByEventsList(List<Event> events) {
-        StringBuilder sb = new StringBuilder();
-        for (Event event: events) {
-            sb.append("eventId: ").append(event.getId()).append("\n");
-            sb.append("summary: ").append(event.getSummary()).append("\n");
-            sb.append("description: ").append(event.getDescription()).append("\n");
-            sb.append("date: ").append(event.getStart()).append("\n");
-        }
-        return sb.toString();
-    }
-
-    public void removeEventInCalendar(String eventId, String calendarId) throws IOException {
-         calendarService.events()
-                .delete(calendarId, eventId)
-                .execute();
-    }
-
-    public Event editEventInCalendar(String targetId, String calendarId, ActionKnot actionKnot) throws IOException {
-        Event target = calendarService.events().get(calendarId, targetId).execute();
-
-        String tz = getTimeZoneInCalendar(calendarId);
-        Event patch = buildPatchFromRequest(actionKnot.getCalendarEventAiResponse(), tz);
-
-        Event updated = calendarService.events()
-                .patch(calendarId, target.getId(), patch)
-                .setSendUpdates("all") // при необходимости уведомляем участников
-                .execute();
-
-        log.info("Обновлён ивент: id={}, summary={}, start={}, end={}",
-                updated.getId(), updated.getSummary(), updated.getStart(), updated.getEnd());
-
-        return updated;
-    }
-
-    private Event buildPatchFromRequest(CalendarEventAiResponse req, String timeZone) {
-        Event patch = new Event();
-
-        if (req.getSummary() != null && !req.getSummary().isBlank()) {
-            patch.setSummary(req.getSummary());
-        }
-        if (req.getDescription() != null && !req.getDescription().isBlank()) {
-            patch.setDescription(req.getDescription());
-        }
-
-        // Время
-        ZoneId zoneId = ZoneId.of(timeZone);
-
-        boolean hasStart = req.getStart() != null && !req.getStart().isBlank();
-        boolean hasEnd   = req.getEnd()   != null && !req.getEnd().isBlank();
-
-        if (hasStart && hasEnd) {
-            ZonedDateTime start = parseWithZone(req.getStart(), zoneId).withZoneSameInstant(zoneId);
-            ZonedDateTime end   = parseWithZone(req.getEnd(),   zoneId).withZoneSameInstant(zoneId);
-
-            EventDateTime startDT = new EventDateTime()
-                    .setDateTime(new DateTime(start.toInstant().toEpochMilli(), start.getOffset().getTotalSeconds() / 60))
-                    .setTimeZone(timeZone);
-            EventDateTime endDT = new EventDateTime()
-                    .setDateTime(new DateTime(end.toInstant().toEpochMilli(), end.getOffset().getTotalSeconds() / 60))
-                    .setTimeZone(timeZone);
-
-            patch.setStart(startDT);
-            patch.setEnd(endDT);
-        } else if (hasStart && !hasEnd) {
-            // Трактуем как «сделать целодневным на указанную дату»
-            LocalDate d = parseWithZone(req.getStart(), zoneId).toLocalDate();
-            patch.setStart(new EventDateTime().setDate(new com.google.api.client.util.DateTime(d.toString())));
-            patch.setEnd(new EventDateTime().setDate(new com.google.api.client.util.DateTime(d.plusDays(1).toString())));
-        }
-
-        return patch;
-    }
-
-    public List<String> listUserCalendars(Long telegramId) throws IOException, GeneralSecurityException {
-        // Предполагаем, что у UserGoogleCalendar есть либо refreshToken, либо accessToken
-        String accessToken = tokenService.ensureAccessToken(telegramId);
-
-        if (accessToken == null) {
-            throw new IllegalStateException("Нет токенов: user не авторизован");
-        }
-
-        NetHttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
-        Credential credential = buildCredential(accessToken, httpTransport);
-
-        Calendar service = new Calendar.Builder(httpTransport, jsonFactory, credential)
-                .setApplicationName("ManageApp")
-                .build();
-
-        CalendarList calendarList = service.calendarList().list().execute();
-        List<CalendarListEntry> items = calendarList.getItems();
-
-        return items.stream()
-                .map(e -> e.getId() + " — " + e.getSummary())
-                .collect(Collectors.toList());
-    }
-
-    private Credential buildCredential(String accessToken, NetHttpTransport httpTransport) throws IOException {
-        // Собираем минимальный Credential с client auth, чтобы можно было рефрешить токен
-        String clientId = googleComponents.getClientId();
-        String clientSecret = googleComponents.getClientSecret();
-        Credential.Builder builder = new Credential.Builder(BearerToken.authorizationHeaderAccessMethod())
-                .setTransport(httpTransport)
-                .setJsonFactory(jsonFactory)
-                .setTokenServerUrl(new GenericUrl("https://oauth2.googleapis.com/token")) //TODO Взять из переменной
-                .setClientAuthentication(new ClientParametersAuthentication(clientId, clientSecret));
-
-        Credential credential = builder.build();
-
-        credential.setAccessToken(accessToken);
-
-        return credential;
+    @Data
+    @Accessors(chain = true)
+    @RequiredArgsConstructor
+    public class CalendarContext {
+        private String accessToken;
+        private Calendar calendar;
+        private String calendarId;
     }
 }

@@ -1,6 +1,7 @@
 package com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.service;
 
 import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.configurations.GoogleOAuthProperties;
+import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.models.TokenRefreshException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
@@ -34,7 +35,7 @@ public class GoogleOAuthHttpClient {
 
     }
 
-    public TokenResponse refresh(String refreshToken) {
+    public TokenResponse refresh(String refreshToken) throws TokenRefreshException {
         var form = new LinkedMultiValueMap<String, String>();
         form.add("grant_type", "refresh_token");
         form.add("client_id", props.getClientId());
@@ -43,7 +44,27 @@ public class GoogleOAuthHttpClient {
         }
         form.add("refresh_token", refreshToken);
 
-        return postForm(props.getTokenUri(), form, TokenResponse.class);
+        try {
+            return postForm(props.getTokenUri(), form, TokenResponse.class);
+        } catch (RestClientResponseException ex) {
+            // HTTP 4xx/5xx - тело может содержать JSON { "error": "invalid_grant", ... }
+            String body = ex.getResponseBodyAsString();
+            if (isInvalidGrant(body)) {
+                log.error("Google invalid grant error! Check auth!");
+                throw new TokenRefreshException(TokenRefreshException.Reason.INVALID_GRANT,
+                        "Refresh failed: invalid_grant", ex.getRawStatusCode(), body, ex);
+            }
+            // остальные 4xx/5xx — считаем OTHER
+            log.error("HTTP error!", ex);
+            throw new TokenRefreshException(TokenRefreshException.Reason.OTHER,
+                    "HTTP error on token endpoint", ex.getRawStatusCode(), body, ex);
+        } catch (Exception ex) {
+            log.error("HTTP error!", ex);
+            // всё остальное
+            throw new TokenRefreshException(TokenRefreshException.Reason.OTHER,
+                    "Unexpected error while calling token endpoint", -1, null, ex);
+        }
+
     }
 
     public void revoke(String refreshToken) {
@@ -66,6 +87,17 @@ public class GoogleOAuthHttpClient {
             log.warn("Google POST {} failed: status={} body={}", uri, ex.getRawStatusCode(), ex.getResponseBodyAsString());
             throw ex;
         }
+    }
+
+    // вспомогательный метод: проверяем тело ответа на поле error == "invalid_grant"
+    private boolean isInvalidGrant(String body) {
+        if (body == null || body.isBlank()) return false;
+        try {
+            com.fasterxml.jackson.databind.JsonNode node = new com.fasterxml.jackson.databind.ObjectMapper().readTree(body);
+            if (node.has("error") && "invalid_grant".equals(node.get("error").asText())) return true;
+            // иногда Google даёт описание в error_description
+        } catch (Exception ignored) {}
+        return false;
     }
 
     public UserInfo getUserInfo(String accessToken) {

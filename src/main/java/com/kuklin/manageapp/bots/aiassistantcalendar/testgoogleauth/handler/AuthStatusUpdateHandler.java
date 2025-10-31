@@ -10,8 +10,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
-import java.time.Duration;
-import java.time.Instant;
 import java.util.Optional;
 
 @Component
@@ -27,23 +25,17 @@ public class AuthStatusUpdateHandler implements AssistantUpdateHandler {
                 ? update.getMessage().getChatId()
                 : update.getCallbackQuery().getMessage().getChatId();
         try {
-            AssistantGoogleOAuth acc = tokenService.get(telegramUser.getTelegramId());
-            Instant exp = Optional.ofNullable(acc.getAccessExpiresAt()).orElse(Instant.EPOCH);
-            long leftSec = Math.max(0, Duration.between(Instant.now(), exp).getSeconds());
-
+            AssistantGoogleOAuth acc = tokenService.findByTelegramIdOrNull(telegramUser.getTelegramId());
             telegramBot.sendReturnedMessage(chatId, """
                     ✅ Google подключён
                     Email: %s
-                    Scope: %s
-                    Access token истекает через ~%d сек.
                     """.formatted(
-                    Optional.ofNullable(acc.getEmail()).orElse("—"),
-                    Optional.ofNullable(acc.getScope()).orElse("—"),
-                    leftSec));
+                    Optional.ofNullable(acc.getEmail()).orElse("—"))
+            );
 
             // Дополнительно можно «протестировать» refresh прямо тут:
             try {
-                tokenService.ensureAccessToken(chatId);
+                tokenService.ensureAccessTokenOrNull(chatId);
             } catch (Exception e) {
                 telegramBot.sendReturnedMessage(chatId, "⚠️ Не удалось обновить access_token: " + e.getMessage());
             }

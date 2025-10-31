@@ -13,12 +13,12 @@ public class AccountController {
 
     @GetMapping("/status/{telegram_id}")
     public AssistantGoogleOAuth status(@PathVariable Long telegram_id) {
-        return tokenService.get(telegram_id);
+        return tokenService.findByTelegramIdOrNull(telegram_id);
     }
 
     @PostMapping("/calendar/{telegram_id}")
     public void setDefaultCalendar(@PathVariable Long telegram_id, @RequestParam String calendarId) {
-        tokenService.setDefaultCalendar(telegram_id, calendarId);
+        tokenService.setDefaultCalendarOrNull(telegram_id, calendarId);
     }
 
     @DeleteMapping("/disconnect/{telegram_id}")

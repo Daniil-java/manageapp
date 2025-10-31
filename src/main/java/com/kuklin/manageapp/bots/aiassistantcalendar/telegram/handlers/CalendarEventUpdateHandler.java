@@ -10,6 +10,8 @@ import com.kuklin.manageapp.bots.aiassistantcalendar.services.ActionKnotService;
 import com.kuklin.manageapp.bots.aiassistantcalendar.services.CalendarService;
 import com.kuklin.manageapp.bots.aiassistantcalendar.services.UserGoogleCalendarService;
 import com.kuklin.manageapp.bots.aiassistantcalendar.telegram.AssistantTelegramBot;
+import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.models.TokenRefreshException;
+import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.service.TokenService;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.Command;
@@ -40,6 +42,7 @@ public class CalendarEventUpdateHandler implements AssistantUpdateHandler {
     private final CalendarService calendarService;
     private final ActionKnotService actionKnotService;
     private final TelegramService telegramService;
+    private final TokenService tokenService;
     private final TelegramAiAssistantCalendarBotKeyComponents components;
     private final UserGoogleCalendarService userGoogleCalendarService;
     private static final String VOICE_ERROR_MESSAGE =
@@ -52,6 +55,12 @@ public class CalendarEventUpdateHandler implements AssistantUpdateHandler {
             "Ваше сообщение слишком длинное!";
     private static final String EVENT_NOT_FOUND_ERROR_MESSAGE =
             "Не получилось найти собитие";
+    private static final String GOOGLE_AUTH_ERROR_MESSAGE =
+            "Вам нужно пройти авторизацию заново!";
+    private static final String GOOGLE_OTHER_ERROR_MESSAGE =
+            "Попробуйте обратиться позже!";
+    private static final String CALENDAR_NOT_SET_ERROR_MESSAGE =
+            "Вам необходимо установить календарь!";
 
     private static final Locale RU = new Locale("ru");
     private static final DateTimeFormatter DATE_TIME_FMT =
@@ -66,11 +75,6 @@ public class CalendarEventUpdateHandler implements AssistantUpdateHandler {
     public void handle(Update update, TelegramUser telegramUser) {
         Message message = update.getMessage();
         Long chatId = message.getChatId();
-        String calendarId = userGoogleCalendarService.getUserCalendarIdByTelegramIdOrNull(telegramUser.getTelegramId());
-        if (calendarId == null) {
-            assistantTelegramBot.sendReturnedMessage(chatId, SetCalendarIdUpdateHandler.CALENDAR_IS_NULL_MSG);
-            return;
-        }
 
         //Проверка на количество символов в текстовом сообщении
         int l = message.getText().length();
@@ -88,13 +92,18 @@ public class CalendarEventUpdateHandler implements AssistantUpdateHandler {
                 CalendarEventAiResponse calendarRequest = actionKnot.getCalendarEventAiResponse();
 
                 Event event = calendarService.addEventInCalendar(
-                        calendarRequest, calendarId);
+                        calendarRequest, telegramUser.getTelegramId());
                 sendEventMessage(chatId, event);
 
             } else if (actionKnot.getAction() == ActionKnot.Action.EVENT_DELETE) {
-                List<Event> eventsForRemoving =
-                        calendarService.findCoincidedRemoveEventsForYear(calendarId, actionKnot);
+                List<Event> eventsForRemoving = calendarService
+                        .findEventsToRemoveForNextYear(
+                                actionKnot, telegramUser.getTelegramId());
 
+                if (eventsForRemoving == null) {
+                    assistantTelegramBot.sendReturnedMessage(chatId, CALENDAR_NOT_SET_ERROR_MESSAGE);
+                    return;
+                }
                 if (eventsForRemoving.isEmpty()) {
                     assistantTelegramBot.sendReturnedMessage(chatId, EVENT_NOT_FOUND_ERROR_MESSAGE);
                     return;
@@ -105,9 +114,13 @@ public class CalendarEventUpdateHandler implements AssistantUpdateHandler {
                     ThreadUtil.sleep(100);
                 });
             } else if (actionKnot.getAction() == ActionKnot.Action.EVENT_EDIT) {
-                String eventId =
-                        calendarService.findCoincidedEditEventsForYear(calendarId, actionKnot);
+                String eventId = calendarService.findEventIdForEditInYear(
+                        telegramUser.getTelegramId(), actionKnot);
 
+                if (eventId == null) {
+                    assistantTelegramBot.sendReturnedMessage(chatId, CALENDAR_NOT_SET_ERROR_MESSAGE);
+                    return;
+                }
                 if (eventId.isEmpty() || eventId.isBlank()) {
                     assistantTelegramBot.sendReturnedMessage(chatId, EVENT_NOT_FOUND_ERROR_MESSAGE);
                     return;
@@ -115,12 +128,18 @@ public class CalendarEventUpdateHandler implements AssistantUpdateHandler {
 
                 ActionKnot newActionKnot = actionKnotService.getActionKnotForEditMessageOrNull(request);
 
-                Event event = calendarService.editEventInCalendar(eventId, calendarId, newActionKnot);
+                Event event = calendarService.editEventInCalendar(eventId, newActionKnot, telegramUser.getTelegramId());
                 sendEventMessage(chatId, event);
             }
         } catch (IOException e) {
             log.error(ERROR_MESSAGE, e);
             assistantTelegramBot.sendReturnedMessage(chatId, ERROR_MESSAGE);
+        } catch (TokenRefreshException e) {
+            if (e.getReason().equals(TokenRefreshException.Reason.INVALID_GRANT)) {
+                assistantTelegramBot.sendReturnedMessage(chatId, GOOGLE_AUTH_ERROR_MESSAGE);
+            } else {
+                assistantTelegramBot.sendReturnedMessage(chatId, GOOGLE_OTHER_ERROR_MESSAGE);
+            }
         }
 
     }

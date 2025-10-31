@@ -2,6 +2,8 @@ package com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.service;
 
 import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.configurations.CodeVerifierUtil;
 import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.configurations.GoogleOAuthProperties;
+import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.entities.AssistantGoogleOAuth;
+import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.handler.AssistantCalendarChooseUpdateHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -24,6 +26,7 @@ public class GoogleOAuthService {
     private final LinkStateService linkState;
     private final GoogleOAuthHttpClient google;
     private final TokenService tokenService;
+    private final AssistantCalendarChooseUpdateHandler handler;
 
     public String start(UUID linkId) {
         var consumed = linkState.consumeLinkAndMakeState(linkId);
@@ -67,7 +70,9 @@ public class GoogleOAuthService {
         // 0) Если Google вернул ошибку вместо кода — отдадим ясный ответ
         if (error != null) {
             // state все равно «поглотим», чтобы его нельзя было переиспользовать
-            try { linkState.consumeState(state); } catch (Exception ignore) {}
+            try {
+                linkState.consumeState(state);
+            } catch (Exception ignore) {}
             return ResponseEntity.badRequest().body(Map.of(
                     "status", "error",
                     "error", error,
@@ -76,7 +81,7 @@ public class GoogleOAuthService {
         }
 
         // 1) Проверяем и "поглощаем" state (получаем telegramId + verifier)
-        var cb = linkState.consumeState(state);
+        LinkStateService.CallbackState cb = linkState.consumeState(state);
 
         try {
             // 2) Обмен кода на токены
@@ -86,9 +91,12 @@ public class GoogleOAuthService {
             GoogleOAuthHttpClient.UserInfo userInfo = google.getUserInfo(tokens.access_token());
 
             // 4) Сохранение в БД
-            tokenService.saveFromAuthCallback(cb.telegramId(), tokens, userInfo, Instant.now());
+            AssistantGoogleOAuth auth = tokenService
+                    .saveFromAuthCallback(cb.telegramId(), tokens, userInfo, Instant.now());
 
-            // 5) Успех (можно редиректнуть в tg: https://t.me/<bot>?start=connected)
+            // 5) Отправка уведомления пользователю
+            handler.handleGoogleCallback(auth);
+            // 6) Успех (можно редиректнуть в tg: https://t.me/<bot>?start=connected)
             return ResponseEntity.ok(Map.of(
                     "status", "connected",
                     "email", userInfo.email(),

@@ -17,6 +17,7 @@ public enum Command {
     ASSISTANT_SET_CALENDARID("/set", BotIdentifier.ASSISTANT_BOT),
     ASSISTANT_DELETE("/delete", BotIdentifier.ASSISTANT_BOT),
     ASSISTANT_AUTH("/auth", BotIdentifier.ASSISTANT_BOT),
+    ASSISTANT_CHOOSE_CALENDAR("/choosecalendar", BotIdentifier.ASSISTANT_BOT),
     KWORK_START("/start", BotIdentifier.KWORK),
     KWORK_URL("/url", BotIdentifier.KWORK),
     BOOKING_START("/start", BotIdentifier.BOOKING_BOT),

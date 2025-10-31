@@ -1,6 +1,7 @@
 package com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.service;
 
 import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.entities.AssistantGoogleOAuth;
+import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.models.TokenRefreshException;
 import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.repositories.AssistantGoogleOAuthRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -18,7 +19,7 @@ public class TokenService {
     private static final Long DEFAULT_EXPIRES_TIME = 3600L;
 
     @Transactional
-    public void saveFromAuthCallback(Long telegramId, GoogleOAuthHttpClient.TokenResponse tokenResponse, GoogleOAuthHttpClient.UserInfo userInfo, Instant now) {
+    public AssistantGoogleOAuth saveFromAuthCallback(Long telegramId, GoogleOAuthHttpClient.TokenResponse tokenResponse, GoogleOAuthHttpClient.UserInfo userInfo, Instant now) {
         AssistantGoogleOAuth auth = repo.findById(telegramId).orElseGet(() ->
                 AssistantGoogleOAuth.builder().telegramId(telegramId).build());
 
@@ -35,20 +36,31 @@ public class TokenService {
         if (tokenResponse.refresh_token() != null && !tokenResponse.refresh_token().isBlank()) {
             auth.setRefreshTokenEnc(crypto.encrypt(tokenResponse.refresh_token()));
         }
-        repo.save(auth);
+        return repo.save(auth);
     }
 
     @Transactional
-    public String ensureAccessToken(long telegramId) {
+    public String ensureAccessTokenOrNull(long telegramId) throws TokenRefreshException {
         AssistantGoogleOAuth auth = repo.findById(telegramId)
-                .orElseThrow(() -> new IllegalStateException("Not authorized"));
+                .orElse(null);
 
         if (auth.getAccessExpiresAt() != null
                 && auth.getAccessExpiresAt().isAfter(Instant.now().plusSeconds(60))) {
             return auth.getAccessToken();
         }
+
         String rt = crypto.decrypt(auth.getRefreshTokenEnc());
-        GoogleOAuthHttpClient.TokenResponse r = google.refresh(rt);
+
+        GoogleOAuthHttpClient.TokenResponse r = null;
+        try {
+            r = google.refresh(rt);
+        } catch (TokenRefreshException e) {
+            if (e.getReason().equals(TokenRefreshException.Reason.INVALID_GRANT)) {
+                //Удаляем запись, т.к. мы больше не можем обновить токен.
+                revokeAndDelete(telegramId);
+            }
+            throw e;
+        }
 
         auth
                 .setAccessToken(r.access_token())
@@ -69,13 +81,14 @@ public class TokenService {
     }
 
     @Transactional(readOnly = true)
-    public AssistantGoogleOAuth get(long telegramId) {
-        return repo.findById(telegramId).orElseThrow();
+    public AssistantGoogleOAuth findByTelegramIdOrNull(long telegramId) {
+        return repo.findById(telegramId).orElse(null);
     }
 
     @Transactional
-    public void setDefaultCalendar(long telegramId, String calendarId) {
-        AssistantGoogleOAuth auth = repo.findById(telegramId).orElseThrow();
-        repo.save(auth.setDefaultCalendarId(calendarId));
+    public AssistantGoogleOAuth setDefaultCalendarOrNull(long telegramId, String calendarId) {
+        AssistantGoogleOAuth auth = repo.findById(telegramId).orElse(null);
+        if (auth == null) return null;
+        return repo.save(auth.setDefaultCalendarId(calendarId));
     }
 }

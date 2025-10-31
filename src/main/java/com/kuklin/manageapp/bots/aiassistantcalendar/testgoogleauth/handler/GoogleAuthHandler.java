@@ -21,26 +21,50 @@ public class GoogleAuthHandler implements AssistantUpdateHandler {
     private final GoogleOAuthService oAuthService;
     // TTL одноразовой ссылки:
     private static final Integer TTL_TIME_MINUTES = 15;
+    private static final String START_MSG =
+            """
+                    🔐 Подключение Google:
+                    1) Открой ссылку: %s
+                    2) Выбери аккаунт и выдай доступ
+                    После этого вернись в чат и набери /auth_status
+                    """;
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
-        Long chatId = update.getMessage() != null
-                ? update.getMessage().getChatId()
-                : update.getCallbackQuery().getMessage().getChatId();
+        if (update.hasCallbackQuery()) {
+            processCallback(update, telegramUser);
+        } else {
+            processMessage(update, telegramUser);
+        }
+    }
 
-        UUID linkId = linkStateService.createLink(chatId, TTL_TIME_MINUTES);
-        String url = "https://kuklin.dev/auth/google/start?linkId=" + linkId;
+    private void processCallback(Update update, TelegramUser telegramUser) {
+        Long chatId = update.getCallbackQuery().getMessage().getChatId();
+        Integer messageId = update.getCallbackQuery().getMessage().getMessageId();
 
-        telegramBot.sendReturnedMessage(chatId, """
-                🔐 Подключение Google:
-                1) Открой ссылку: %s
-                2) Выбери аккаунт и выдай доступ
-                После этого вернись в чат и набери /auth_status
-                """.formatted(url));
+        telegramBot.sendEditMessage(
+                chatId,
+                START_MSG.formatted(getUrl(telegramUser.getTelegramId())),
+                messageId,
+                null
+        );
+    }
+
+    private void processMessage(Update update, TelegramUser telegramUser) {
+        Long chatId = update.getMessage().getChatId();
+
+        telegramBot.sendReturnedMessage(
+                chatId,
+                START_MSG.formatted(getUrl(telegramUser.getTelegramId())));
+    }
+
+    private String getUrl(Long telegramId) {
+        UUID linkId = linkStateService.createLink(telegramId, TTL_TIME_MINUTES);
+        return "https://kuklin.dev/auth/google/start?linkId=" + linkId; //TODO Заменить на переменную окружения
     }
 
     @Override
     public String getHandlerListName() {
-        return Command.ASSISTANT_AUTH.getCommandText(); // например "/auth"
+        return Command.ASSISTANT_AUTH.getCommandText();
     }
 }
