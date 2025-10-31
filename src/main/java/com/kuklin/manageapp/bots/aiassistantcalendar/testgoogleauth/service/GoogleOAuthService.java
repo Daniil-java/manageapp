@@ -89,7 +89,18 @@ public class GoogleOAuthService {
         }
 
         // 1) Проверяем и "поглощаем" state (получаем telegramId + verifier)
-        LinkStateService.CallbackState cb = linkState.consumeState(state);
+        LinkStateService.CallbackState cb;
+        try {
+            cb = linkState.consumeState(state);
+        } catch (Exception e) {
+            log.error("OAUTH CALLBACK state consume failed: state={}, msg={}, class={}",
+                    state, e.getMessage(), e.getClass().getSimpleName(), e);
+            return ResponseEntity.badRequest().body(Map.of(
+                    "status", "error",
+                    "stage", "consume_state",
+                    "message", e.getMessage()
+            ));
+        }
 
         try {
             // 2) Обмен кода на токены

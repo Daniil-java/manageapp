@@ -53,7 +53,7 @@ public class LinkStateService {
                 .setVerifier(verifier)
                 .setExpireAt(Instant.now().plus(15, ChronoUnit.MINUTES))
                 ;
-        stateRepo.save(state);
+        stateRepo.saveAndFlush(state);
 
         return new ConsumedLink(state.getId(), verifier, link.getTelegramId());
     }
