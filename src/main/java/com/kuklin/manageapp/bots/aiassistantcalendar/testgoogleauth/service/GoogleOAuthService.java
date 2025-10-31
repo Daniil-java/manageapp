@@ -6,9 +6,11 @@ import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.entities.Ass
 import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.handler.AssistantCalendarChooseUpdateHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientResponseException;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -29,37 +31,43 @@ public class GoogleOAuthService {
     private final AssistantCalendarChooseUpdateHandler handler;
 
     public String start(UUID linkId) {
-        var consumed = linkState.consumeLinkAndMakeState(linkId);
-        var state = consumed.state();        // UUID
-        var verifier = consumed.verifier();  // PKCE verifier
-        var challenge = CodeVerifierUtil.toS256Challenge(verifier);
+        try {
+            var consumed = linkState.consumeLinkAndMakeState(linkId);
+            var state = consumed.state();        // UUID
+            var verifier = consumed.verifier();  // PKCE verifier
+            var challenge = CodeVerifierUtil.toS256Challenge(verifier);
 
-        String scope = String.join(" ", props.getScopes());
+            String scope = String.join(" ", props.getScopes());
 
-        // Собираем параметры
-        var p = new LinkedHashMap<String, String>();
-        p.put("response_type", "code");
-        p.put("client_id", props.getClientId());
-        p.put("redirect_uri", props.getRedirectUri());
-        p.put("scope", scope);
-        p.put("state", state.toString());
-        p.put("code_challenge", challenge);
-        p.put("code_challenge_method", "S256");
-        p.put("access_type", "offline");
-        p.put("include_granted_scopes", "true");
-        p.put("prompt", "consent");
+            // Собираем параметры
+            var p = new LinkedHashMap<String, String>();
+            p.put("response_type", "code");
+            p.put("client_id", props.getClientId());
+            p.put("redirect_uri", props.getRedirectUri());
+            p.put("scope", scope);
+            p.put("state", state.toString());
+            p.put("code_challenge", challenge);
+            p.put("code_challenge_method", "S256");
+            p.put("access_type", "offline");
+            p.put("include_granted_scopes", "true");
+            p.put("prompt", "consent");
 
-        String authUrl = buildUrl(props.getAuthUri(), p);
+            String authUrl = buildUrl(props.getAuthUri(), p);
 
-        // Лог — самое важное для 400 на шаге авторизации
-        log.info("OAUTH START telegram_id={} state={} clientId={} redirectUri={} authUrl={}",
-                consumed.telegramId(),
-                p.get("state"),
-                mask(props.getClientId()),
-                props.getRedirectUri(),
-                authUrl);
+            // Лог — самое важное для 400 на шаге авторизации
+            log.info("OAUTH START telegram_id={} state={} clientId={} redirectUri={} authUrl={}",
+                    consumed.telegramId(),
+                    p.get("state"),
+                    mask(props.getClientId()),
+                    props.getRedirectUri(),
+                    authUrl);
 
-        return authUrl;
+            return authUrl;
+        } catch (IllegalStateException ex) {
+            log.warn("Invalid link {}: {}", linkId, ex.getMessage());
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Link is invalid or expired");
+        }
+
     }
 
     public ResponseEntity<?> callback(String code, UUID state, String error, String errorDescription) {

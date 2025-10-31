@@ -22,7 +22,7 @@ public class LinkStateService {
 
     /** Вызываешь из бота при /auth — создаешь одноразовую ссылку */
     @Transactional
-    public UUID createLink(long telegramId, int ttlMinutes) {
+    public UUID createLink(Long telegramId, int ttlMinutes) {
         OAuthLink oAuthLink = new OAuthLink()
                 .setId(UUID.randomUUID())
                 .setTelegramId(telegramId)
