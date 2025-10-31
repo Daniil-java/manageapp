@@ -28,7 +28,9 @@ public class LinkStateService {
                 .setTelegramId(telegramId)
                 .setExpireAt(Instant.now().plus(ttlMinutes, ChronoUnit.MINUTES));
 
-        return linkRepo.save(oAuthLink).getId();
+
+        linkRepo.save(oAuthLink);
+        return oAuthLink.getId();
     }
 
     /** На старте веб-флоу: потребляем ссылку и создаем state+verifier */
