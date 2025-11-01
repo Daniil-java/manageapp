@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -30,7 +31,7 @@ public class GoogleOAuthService {
     private final TokenService tokenService;
     private final AssistantCalendarChooseUpdateHandler handler;
 
-    public String start(UUID linkId) {
+    public ResponseEntity<?> start(UUID linkId) {
         try {
             var consumed = linkState.consumeLinkAndMakeState(linkId);
             var state = consumed.state();        // UUID
@@ -62,7 +63,8 @@ public class GoogleOAuthService {
                     props.getRedirectUri(),
                     authUrl);
 
-            return authUrl;
+            return ResponseEntity.status(302).location(URI.create(authUrl)).build();
+//            return authUrl;
         } catch (IllegalStateException ex) {
             log.warn("Invalid link {}: {}", linkId, ex.getMessage());
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Link is invalid or expired");

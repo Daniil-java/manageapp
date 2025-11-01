@@ -1,12 +1,12 @@
 package com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.handler;
 
-import com.google.api.services.calendar.model.CalendarListEntry;
 import com.kuklin.manageapp.bots.aiassistantcalendar.services.CalendarService;
 import com.kuklin.manageapp.bots.aiassistantcalendar.telegram.AssistantTelegramBot;
 import com.kuklin.manageapp.bots.aiassistantcalendar.telegram.handlers.AssistantUpdateHandler;
 import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.entities.AssistantGoogleOAuth;
 import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.service.TokenService;
 import com.kuklin.manageapp.common.entities.TelegramUser;
+import com.kuklin.manageapp.common.library.tgutils.Command;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -30,13 +30,11 @@ public class AuthStatusUpdateHandler implements AssistantUpdateHandler {
         try {
             AssistantGoogleOAuth acc = tokenService.findByTelegramIdOrNull(telegramUser.getTelegramId());
 
-//            CalendarListEntry calendarListEntry =  calendarService.getCalendarOrNull(telegramUser.getTelegramId());
             telegramBot.sendReturnedMessage(chatId, """
                     ✅ Google подключён
                     Email: %s
                     """.formatted(
                     Optional.ofNullable(acc.getEmail()).orElse("—")
-//                    Optional.ofNullable(calendarListEntry.getSummary()).orElse("-")
                     )
             );
 
@@ -55,6 +53,6 @@ public class AuthStatusUpdateHandler implements AssistantUpdateHandler {
 
     @Override
     public String getHandlerListName() {
-        return "/auth_status";
+        return Command.ASSISTANT_AUTH.getCommandText();
     }
 }

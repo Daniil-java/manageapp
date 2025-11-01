@@ -43,7 +43,6 @@ public class TokenService {
 
     @Transactional
     public String ensureAccessTokenOrNull(long telegramId) throws TokenRefreshException {
-        log.info("ensureAccessTokenOrNull started");
         AssistantGoogleOAuth auth = repo.findById(telegramId)
                 .orElse(null);
         if (auth == null) return null;
@@ -63,7 +62,6 @@ public class TokenService {
         try {
             log.info("refresh token");
             r = google.refresh(rt);
-            log.info("token updated");
         } catch (TokenRefreshException e) {
             if (e.getReason().equals(TokenRefreshException.Reason.INVALID_GRANT)) {
                 //Удаляем запись, т.к. мы больше не можем обновить токен.
@@ -78,7 +76,6 @@ public class TokenService {
                 .setAccessExpiresAt(Instant.now().plusSeconds(r.expires_in() == null ? DEFAULT_EXPIRES_TIME : r.expires_in()))
                 .setLastRefreshAt(Instant.now());
 
-        log.info("auth save");
         repo.save(auth);
         log.info("auth saved");
         return auth.getAccessToken();

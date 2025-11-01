@@ -77,12 +77,6 @@ public class AssistantCalendarChooseUpdateHandler implements AssistantUpdateHand
             log.info("handler listUserCalendarsOrNull");
             List<GoogleCacheableCalendar> calendarList = calendarService
                     .listUserCalendarsOrNull(telegramUser.getTelegramId());
-            //TODO
-//            List<GoogleCacheableCalendar> calendarList = List.of(
-//                    new GoogleCacheableCalendar().setId(1L).setSummary("calendar1"),
-//                    new GoogleCacheableCalendar().setId(1L).setSummary("calendar1"),
-//                    new GoogleCacheableCalendar().setId(1L).setSummary("calendar1")
-//            );
 
             log.info("calendarList.size(): " + calendarList.size());
             StringBuilder sb = new StringBuilder();

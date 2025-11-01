@@ -27,8 +27,7 @@ public class GoogleOAuthController {
      *   https://<host>/auth/google/start?linkId=<UUID>
      */
     @GetMapping("/start")
-    public String start(@RequestParam("linkId") UUID linkId) {
-        log.info("4");
+    public ResponseEntity<?> start(@RequestParam("linkId") UUID linkId) {
         return googleOAuthService.start(linkId);
     }
 
@@ -41,7 +40,6 @@ public class GoogleOAuthController {
                                       @RequestParam(value = "error", required = false) String error,
                                       @RequestParam(value = "error_description", required = false) String errorDescription) {
 
-        log.info("13");
         return googleOAuthService.callback(code, state, error, errorDescription);
     }
 }

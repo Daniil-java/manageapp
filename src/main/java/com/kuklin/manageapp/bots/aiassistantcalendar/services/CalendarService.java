@@ -160,20 +160,14 @@ public class CalendarService {
 
     public List<GoogleCacheableCalendar> listUserCalendarsOrNull(Long telegramId) throws TokenRefreshException {
         String accessToken = tokenService.ensureAccessTokenOrNull(telegramId);
-        log.info("access token returned");
-        log.info("calendar service");
         Calendar service = getCalendarService(accessToken);
 
         try {
-            log.info("before calendar list google request");
             List<CalendarListEntry> list = service.calendarList().list().execute().getItems();
 
             //TODO
-//            List<CalendarListEntry> list = List.of(new CalendarListEntry().setId("id1").setSummary("summary"), new CalendarListEntry().setId("id2").setSummary("summary"), new CalendarListEntry().setId("id3").setSummary("summary"));
-            log.info("after calendar list google request");
             log.info("cacheableCalendarService saveList");
             cacheableCalendarService.saveListOfCalendarsAndRemoveAllOfAnother(list, telegramId);
-            log.info("cacheableCalendarService saved");
             return cacheableCalendarService.findAllByTelegramId(telegramId);
         } catch (IOException e) {
             log.error("Google service execute error!", e);
@@ -294,9 +288,6 @@ public class CalendarService {
             log.info("CALENDAR INSTANCE: NO-AUTH");
             return calendarService;
         }
-//        return accessToken != null ?
-//                createCalendarServiceOrNull(accessToken):
-//                calendarService;
     }
 
     private Calendar createCalendarServiceOrNull(String accessToken) {
@@ -415,13 +406,6 @@ public class CalendarService {
 
         return calendar.getTimeZone();
     }
-
-//    public String getTimeZoneInCalendar(String calendarId) throws IOException {
-//        com.google.api.services.calendar.model.Calendar calendar =
-//                calendarService.calendars().get(calendarId).execute();
-//
-//        return calendar.getTimeZone();
-//    }
 
     @Data
     @Accessors(chain = true)
