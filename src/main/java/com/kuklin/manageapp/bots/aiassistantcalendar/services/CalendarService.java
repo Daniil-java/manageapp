@@ -154,11 +154,17 @@ public class CalendarService {
 
     public List<GoogleCacheableCalendar> listUserCalendarsOrNull(Long telegramId) throws TokenRefreshException {
         String accessToken = tokenService.ensureAccessTokenOrNull(telegramId);
+        log.info("access token returned");
+        log.info("calendar service");
         Calendar service = getCalendarService(accessToken);
 
         try {
+            log.info("before calendar list google request");
             List<CalendarListEntry> list = service.calendarList().list().execute().getItems();
+            log.info("after calendar list google request");
+            log.info("cacheableCalendarService saveList");
             cacheableCalendarService.saveListOfCalendarsAndRemoveAllOfAnother(list, telegramId);
+            log.info("cacheableCalendarService saved");
             return cacheableCalendarService.findAllByTelegramId(telegramId);
         } catch (IOException e) {
             log.error("Google service execute error!", e);
@@ -257,16 +263,20 @@ public class CalendarService {
     }
 
     private Calendar getCalendarService(String accessToken) {
+        log.info("getCalendarService");
         return accessToken != null ?
                 createCalendarServiceOrNull(accessToken):
                 calendarService;
     }
 
     private Calendar createCalendarServiceOrNull(String accessToken) {
+        log.info("createCalendarServiceOrNull");
         try {
+            log.info("httpTransport");
             NetHttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
+            log.info("buildCredential");
             Credential credential = buildCredential(accessToken, httpTransport);
-
+            log.info("builded Credential");
             return new Calendar.Builder(httpTransport, jsonFactory, credential)
                     .setApplicationName("ManageApp")
                     .build();
@@ -287,8 +297,12 @@ public class CalendarService {
 
     private Credential buildCredential(String accessToken, NetHttpTransport httpTransport) {
         // Собираем минимальный Credential с client auth, чтобы можно было рефрешить токен
+        log.info("buildCredential");
         String clientId = googleComponents.getClientId();
+        log.info("clientId: " + clientId.substring(0, 10) + "...");
         String clientSecret = googleComponents.getClientSecret();
+        log.info("clientSecret: " + clientSecret.substring(0, 10) + "...");
+
         Credential.Builder builder = new Credential.Builder(BearerToken.authorizationHeaderAccessMethod())
                 .setTransport(httpTransport)
                 .setJsonFactory(jsonFactory)

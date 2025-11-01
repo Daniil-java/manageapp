@@ -74,6 +74,7 @@ public class AssistantCalendarChooseUpdateHandler implements AssistantUpdateHand
         Long chatId = update.getMessage().getChatId();
 
         try {
+            log.info("handler listUserCalendarsOrNull");
             List<GoogleCacheableCalendar> calendarList = calendarService
                     .listUserCalendarsOrNull(telegramUser.getTelegramId());
             //TODO
@@ -83,6 +84,7 @@ public class AssistantCalendarChooseUpdateHandler implements AssistantUpdateHand
 //                    new GoogleCacheableCalendar().setId(1L).setSummary("calendar1")
 //            );
 
+            log.info("calendarList.size(): " + calendarList.size());
             StringBuilder sb = new StringBuilder();
             for (GoogleCacheableCalendar calendar : calendarList) {
                 sb.append(calendar.getSummary()).append("\n");
