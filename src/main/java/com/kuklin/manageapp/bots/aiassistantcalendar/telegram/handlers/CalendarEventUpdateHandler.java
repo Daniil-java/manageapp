@@ -77,7 +77,6 @@ public class CalendarEventUpdateHandler implements AssistantUpdateHandler {
         Long chatId = message.getChatId();
 
         //Проверка на количество символов в текстовом сообщении
-        int l = message.getText().length();
         if (message.getText() != null && message.getText().length() > MAX_TEXT_CHARS) {
             assistantTelegramBot.sendReturnedMessage(chatId, TEXT_TO_LONG_ERROR_MESSAGE);
             return;

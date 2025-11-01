@@ -46,6 +46,7 @@ public class TokenService {
         log.info("ensureAccessTokenOrNull started");
         AssistantGoogleOAuth auth = repo.findById(telegramId)
                 .orElse(null);
+        if (auth == null) return null;
 
         log.info("Auth access: " + auth.getEmail());
 
