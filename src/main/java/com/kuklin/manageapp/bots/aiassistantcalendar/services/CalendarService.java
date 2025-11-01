@@ -161,12 +161,18 @@ public class CalendarService {
         try {
             log.info("before calendar list google request");
             List<CalendarListEntry> list = service.calendarList().list().execute().getItems();
+
+            //TODO
+//            List<CalendarListEntry> list = List.of(new CalendarListEntry().setId("id1").setSummary("summary"), new CalendarListEntry().setId("id2").setSummary("summary"), new CalendarListEntry().setId("id3").setSummary("summary"));
             log.info("after calendar list google request");
             log.info("cacheableCalendarService saveList");
             cacheableCalendarService.saveListOfCalendarsAndRemoveAllOfAnother(list, telegramId);
             log.info("cacheableCalendarService saved");
             return cacheableCalendarService.findAllByTelegramId(telegramId);
         } catch (IOException e) {
+            log.error("Google service execute error!", e);
+            return null;
+        } catch (Exception e) {
             log.error("Google service execute error!", e);
             return null;
         }

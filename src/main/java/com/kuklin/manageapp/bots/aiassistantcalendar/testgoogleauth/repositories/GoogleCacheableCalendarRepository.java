@@ -13,5 +13,5 @@ public interface GoogleCacheableCalendarRepository extends JpaRepository<GoogleC
 
     List<GoogleCacheableCalendar> findAllByTelegramId(Long telegramId);
 
-    void removeAllByTelegramId(Long telegramId);
+    void deleteAllByTelegramId(Long telegramId);
 }
