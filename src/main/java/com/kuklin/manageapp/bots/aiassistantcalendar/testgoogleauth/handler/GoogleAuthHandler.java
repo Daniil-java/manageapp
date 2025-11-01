@@ -53,7 +53,6 @@ public class GoogleAuthHandler implements AssistantUpdateHandler {
     }
 
     private void processMessage(Update update, TelegramUser telegramUser) {
-        log.info("1");
         Long chatId = update.getMessage().getChatId();
         String link = getUrl(telegramUser.getTelegramId());
         telegramBot.sendReturnedMessage(

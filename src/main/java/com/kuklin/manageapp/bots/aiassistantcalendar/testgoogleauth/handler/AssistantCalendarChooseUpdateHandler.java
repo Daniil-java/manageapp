@@ -66,7 +66,7 @@ public class AssistantCalendarChooseUpdateHandler implements AssistantUpdateHand
             telegramBot.sendReturnedMessage(auth.getTelegramId(), response, getCalendarListKeyboard(calendarList), null);
         } catch (Exception ignore) {
             telegramBot.sendReturnedMessage(auth.getTelegramId(),
-                    GOOGLE_AUTH_CALLBACK_ERROR_MESSAGE+ Command.ASSISTANT_CHOOSE_CALENDAR.getCommandText());
+                    GOOGLE_AUTH_CALLBACK_ERROR_MESSAGE + Command.ASSISTANT_CHOOSE_CALENDAR.getCommandText());
         }
     }
 

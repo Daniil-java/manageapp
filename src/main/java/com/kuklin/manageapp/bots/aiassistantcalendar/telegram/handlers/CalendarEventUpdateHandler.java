@@ -82,7 +82,9 @@ public class CalendarEventUpdateHandler implements AssistantUpdateHandler {
             return;
         }
 
-        String request = message.hasVoice() ? processVoiceMessageOrSendError(message) : message.getText();
+        String request = message.hasVoice()
+                ? processVoiceMessageOrSendError(message)
+                : message.getText();
         if (request == null) return;
 
         ActionKnot actionKnot = actionKnotService.getActionKnotOrNull(request);
