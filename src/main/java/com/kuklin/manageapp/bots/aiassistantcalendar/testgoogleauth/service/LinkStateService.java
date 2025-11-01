@@ -34,6 +34,7 @@ public class LinkStateService {
         log.info("Saving oauth link: telegramId={}, id={}", telegramId, oAuthLink.getId());
         oAuthLink = linkRepo.save(oAuthLink);
         log.info("Saved link id={} successfully", oAuthLink.getId());
+        log.info("Saved link {}", oAuthLink);
         return oAuthLink.getId();
     }
 
