@@ -20,6 +20,7 @@ import com.kuklin.manageapp.bots.aiassistantcalendar.configurations.TelegramAiAs
 import com.kuklin.manageapp.bots.aiassistantcalendar.models.ActionKnot;
 import com.kuklin.manageapp.bots.aiassistantcalendar.models.CalendarEventAiResponse;
 import com.kuklin.manageapp.bots.aiassistantcalendar.services.utils.CalendarServiceUtils;
+import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.entities.AssistantGoogleOAuth;
 import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.entities.GoogleCacheableCalendar;
 import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.models.TokenRefreshException;
 import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.service.GoogleCacheableCalendarService;
@@ -178,18 +179,18 @@ public class CalendarService {
         }
     }
 
-    public CalendarListEntry getCalendarOrNull(Long telegramId, String accessToken) throws TokenRefreshException {
-        //TODO не вызывать календарь
-        CalendarContext calendarContext = getCalendarContext(telegramId);
-        Calendar service = getCalendarService(accessToken);
-
-        try {
-            return service.calendarList().get(calendarContext.getCalendarId()).execute();
-        } catch (IOException e) {
-            log.error("Google service execute error!", e);
-            return null;
-        }
-    }
+//    public CalendarListEntry getCalendarOrNull(Long telegramId, String accessToken) throws TokenRefreshException {
+//        //TODO не вызывать календарь
+//        CalendarContext calendarContext = getCalendarContext(telegramId);
+//        Calendar service = getCalendarService(accessToken);
+//
+//        try {
+//            return service.calendarList().get(calendarContext.getCalendarId()).execute();
+//        } catch (IOException e) {
+//            log.error("Google service execute error!", e);
+//            return null;
+//        }
+//    }
 
     /**
      * Провеяем уведомляли ли мы пользователя, об определенной задаче
@@ -259,10 +260,15 @@ public class CalendarService {
     private String getCalendarIdOrNull(Long telegramId, String accessToken) {
         boolean isAuth = accessToken != null;
         if (isAuth) {
-            return tokenService.findByTelegramIdOrNull(telegramId).getDefaultCalendarId();
+            log.info("authCalendar:");
+
+            AssistantGoogleOAuth auth = tokenService.findByTelegramIdOrNull(telegramId);
+            log.info(auth.getDefaultCalendarId());
+            return auth.getDefaultCalendarId();
         }
         String calendarId = userGoogleCalendarService.getUserCalendarIdByTelegramIdOrNull(telegramId);
         if (calendarId != null) {
+            log.info("userGoogleCalendarService: setter calendar");
             return calendarId;
         }
         return null;
@@ -270,9 +276,17 @@ public class CalendarService {
 
     private Calendar getCalendarService(String accessToken) {
         log.info("getCalendarService");
-        return accessToken != null ?
-                createCalendarServiceOrNull(accessToken):
-                calendarService;
+
+        if (accessToken != null) {
+            log.info("CALENDAR INSTANCE: AUTH");
+            return createCalendarServiceOrNull(accessToken);
+        } else {
+            log.info("CALENDAR INSTANCE: NO-AUTH");
+            return calendarService;
+        }
+//        return accessToken != null ?
+//                createCalendarServiceOrNull(accessToken):
+//                calendarService;
     }
 
     private Calendar createCalendarServiceOrNull(String accessToken) {
@@ -313,7 +327,8 @@ public class CalendarService {
                 .setTransport(httpTransport)
                 .setJsonFactory(jsonFactory)
                 .setTokenServerUrl(new GenericUrl("https://oauth2.googleapis.com/token")) //TODO Взять из переменной
-                .setClientAuthentication(new ClientParametersAuthentication(clientId, clientSecret));
+                .setClientAuthentication(new ClientParametersAuthentication(clientId, clientSecret)
+                );
 
         Credential credential = builder.build();
 
