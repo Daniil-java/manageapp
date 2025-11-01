@@ -1,16 +1,15 @@
 package com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.handler;
 
-        import com.kuklin.manageapp.bots.aiassistantcalendar.telegram.AssistantTelegramBot;
-        import com.kuklin.manageapp.bots.aiassistantcalendar.telegram.handlers.AssistantUpdateHandler;
-        import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.service.GoogleOAuthService;
-        import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.service.LinkStateService;
-        import com.kuklin.manageapp.common.entities.TelegramUser;
-        import com.kuklin.manageapp.common.library.tgutils.Command;
-        import lombok.RequiredArgsConstructor;
-        import org.springframework.stereotype.Component;
-        import org.telegram.telegrambots.meta.api.objects.Update;
+import com.kuklin.manageapp.bots.aiassistantcalendar.telegram.AssistantTelegramBot;
+import com.kuklin.manageapp.bots.aiassistantcalendar.telegram.handlers.AssistantUpdateHandler;
+import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.service.LinkStateService;
+import com.kuklin.manageapp.common.entities.TelegramUser;
+import com.kuklin.manageapp.common.library.tgutils.Command;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+import org.telegram.telegrambots.meta.api.objects.Update;
 
-        import java.util.UUID;
+import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
@@ -18,7 +17,7 @@ public class GoogleAuthHandler implements AssistantUpdateHandler {
 
     private final LinkStateService linkStateService;
     private final AssistantTelegramBot telegramBot;
-    private final GoogleOAuthService oAuthService;
+//    private final GoogleOAuthService oAuthService;
     // TTL одноразовой ссылки:
     private static final Integer TTL_TIME_MINUTES = 15;
     private static final String START_MSG =
