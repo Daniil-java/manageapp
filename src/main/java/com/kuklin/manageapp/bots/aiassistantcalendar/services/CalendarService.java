@@ -102,16 +102,15 @@ public class CalendarService {
 
     public Event addEventInCalendar(CalendarEventAiResponse request, Long telegramId) throws IOException, TokenRefreshException {
         CalendarContext calendarContext = getCalendarContext(telegramId);
-        log.info("LOG CALENDAR ID");
-        log.info(calendarContext.getCalendarId());
+
         Event event = CalendarServiceUtils.normalizeEventRequest(
-                request, getTimeZoneInCalendar(calendarContext.getCalendarId()));
+                request, getTimeZoneInCalendar(calendarContext));
 
         var entry = getCalendarOrNull(telegramId);
         log.info(entry.getId());
 
         Event inserted = calendarContext.getCalendar().events()
-                .insert(entry.getId(), event)
+                .insert(calendarContext.getCalendarId(), event)
                 .execute();
 
         log.info("Запрос на создание эвента в GOOGLE: \nМероприятие {},\nОписание {},\nНачало {},\nКонец {},\nТаймзона {}",
@@ -143,7 +142,7 @@ public class CalendarService {
                 .get(calendarId, targetId)
                 .execute();
 
-        String tz = getTimeZoneInCalendar(calendarId);
+        String tz = getTimeZoneInCalendar(calendarContext);
         Event patch = CalendarServiceUtils.buildPatchFromRequest(actionKnot.getCalendarEventAiResponse(), tz);
 
         Event updated = calendar.events()
@@ -213,7 +212,7 @@ public class CalendarService {
             return null;
         }
 
-        List<Event> yearEvents = getNextYearEvents(calendarId);
+        List<Event> yearEvents = getNextYearEvents(telegramId);
 
         String request = String.format(
                 AI_REMOVE_REQUEST,
@@ -246,7 +245,7 @@ public class CalendarService {
         if (calendarId == null) {
             return null;
         }
-        List<Event> yearEvents = getNextYearEvents(calendarId);
+        List<Event> yearEvents = getNextYearEvents(telegramId);
 
         String request = String.format(
                 AI_EDIT_REQUEST,
@@ -314,7 +313,7 @@ public class CalendarService {
         }
     }
 
-    private CalendarContext getCalendarContext(Long telegramId) throws TokenRefreshException {
+    public CalendarContext getCalendarContext(Long telegramId) throws TokenRefreshException {
         String accessToken = tokenService.ensureAccessTokenOrNull(telegramId);
         return new CalendarContext()
                 .setAccessToken(accessToken)
@@ -345,9 +344,10 @@ public class CalendarService {
         return credential;
     }
 
-    public List<Event> getTodayEvents(String calendarId) throws IOException {
+    public List<Event> getTodayEvents(Long telegramId) throws IOException, TokenRefreshException {
+        CalendarContext context = getCalendarContext(telegramId);
         // Конвертируем в UTC для Google API
-        ZoneId zoneId = ZoneId.of(getTimeZoneInCalendar(calendarId));
+        ZoneId zoneId = ZoneId.of(getTimeZoneInCalendar(context));
 
         //Начало дня
         ZonedDateTime startOfDay = LocalDate.now(zoneId).atStartOfDay(zoneId);
@@ -362,7 +362,7 @@ public class CalendarService {
         DateTime timeMax = new DateTime(endOfDay.toInstant().toEpochMilli(), tzShiftEnd);
 
         // Запрос к Google Calendar API
-        Events events = calendarService.events().list(calendarId)
+        Events events = calendarService.events().list(context.getCalendarId())
                 .setTimeMin(timeMin)
                 .setTimeMax(timeMax)
                 .setSingleEvents(true)
@@ -372,8 +372,9 @@ public class CalendarService {
         return events.getItems();
     }
 
-    public List<Event> getNextYearEvents(String calendarId) throws IOException {
-        ZoneId zoneId = ZoneId.of(getTimeZoneInCalendar(calendarId));
+    public List<Event> getNextYearEvents(Long telegramId) throws IOException, TokenRefreshException {
+        CalendarContext context = getCalendarContext(telegramId);
+        ZoneId zoneId = ZoneId.of(getTimeZoneInCalendar(context));
         // Старт: начало сегодняшнего дня в TZ календаря
         ZonedDateTime start = LocalDate.now(zoneId).atStartOfDay(zoneId);
         // Конец окна: ровно через год
@@ -387,7 +388,7 @@ public class CalendarService {
         List<Event> all = new ArrayList<>();
         String pageToken = null;
         do {
-            Events events = calendarService.events().list(calendarId)
+            Events events = calendarService.events().list(context.getCalendarId())
                     .setTimeMin(timeMin)
                     .setTimeMax(timeMax)
                     .setSingleEvents(true)        // разворачиваем повторяющиеся
@@ -405,12 +406,19 @@ public class CalendarService {
         return all;
     }
 
-    public String getTimeZoneInCalendar(String calendarId) throws IOException {
+    public String getTimeZoneInCalendar(CalendarContext context) throws IOException {
         com.google.api.services.calendar.model.Calendar calendar =
-                calendarService.calendars().get(calendarId).execute();
+                context.getCalendar().calendars().get(context.getCalendarId()).execute();
 
         return calendar.getTimeZone();
     }
+
+//    public String getTimeZoneInCalendar(String calendarId) throws IOException {
+//        com.google.api.services.calendar.model.Calendar calendar =
+//                calendarService.calendars().get(calendarId).execute();
+//
+//        return calendar.getTimeZone();
+//    }
 
     @Data
     @Accessors(chain = true)

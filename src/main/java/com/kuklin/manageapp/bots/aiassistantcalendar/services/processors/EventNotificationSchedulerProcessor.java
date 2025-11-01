@@ -9,6 +9,7 @@ import com.kuklin.manageapp.bots.aiassistantcalendar.services.NotifiedEventServi
 import com.kuklin.manageapp.bots.aiassistantcalendar.services.UserGoogleCalendarService;
 import com.kuklin.manageapp.bots.aiassistantcalendar.telegram.AssistantTelegramBot;
 import com.kuklin.manageapp.bots.aiassistantcalendar.telegram.handlers.CalendarEventUpdateHandler;
+import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.models.TokenRefreshException;
 import com.kuklin.manageapp.common.library.ScheduleProcessor;
 import com.kuklin.manageapp.common.library.tgutils.ThreadUtil;
 import lombok.AllArgsConstructor;
@@ -42,9 +43,12 @@ public class EventNotificationSchedulerProcessor implements ScheduleProcessor {
         for (UserGoogleCalendar userCalendar: userGoogleCalendarList) {
 
             try {
-                String tz = calendarService.getTimeZoneInCalendar(userCalendar.getCalendarId());
+                CalendarService.CalendarContext context = calendarService
+                        .getCalendarContext(userCalendar.getTelegramId());
 
-                List<Event> events = calendarService.getTodayEvents(userCalendar.getCalendarId());
+                String tz = calendarService.getTimeZoneInCalendar(context);
+
+                List<Event> events = calendarService.getTodayEvents(userCalendar.getTelegramId());
                 if (events.isEmpty()) continue;
 
                 List<Event> soonEvents = getEventsLessThanTime(events, ZoneId.of(tz));
@@ -52,6 +56,8 @@ public class EventNotificationSchedulerProcessor implements ScheduleProcessor {
 
             } catch (IOException e) {
                 log.error("Google execute request error!", e);
+            } catch (TokenRefreshException ignore) {
+
             }
         }
     }
