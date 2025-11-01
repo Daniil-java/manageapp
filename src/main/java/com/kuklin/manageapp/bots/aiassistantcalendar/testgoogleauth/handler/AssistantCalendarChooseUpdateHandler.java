@@ -59,10 +59,10 @@ public class AssistantCalendarChooseUpdateHandler implements AssistantUpdateHand
             List<GoogleCacheableCalendar> calendarList = calendarService
                     .listUserCalendarsOrNull(auth.getTelegramId());
 
-            String response = """
-                    Успешная авторизация!
-                    email: %s
-                    """.formatted(auth.getEmail());
+            String response =
+                    """
+                    ✅ Подключение успешно! Теперь просто выбери календарь и отправляй мне задачи текстом или голосом — я добавлю их в календарь.
+                    """;
             telegramBot.sendReturnedMessage(auth.getTelegramId(), response, getCalendarListKeyboard(calendarList), null);
         } catch (Exception ignore) {
             telegramBot.sendReturnedMessage(auth.getTelegramId(),

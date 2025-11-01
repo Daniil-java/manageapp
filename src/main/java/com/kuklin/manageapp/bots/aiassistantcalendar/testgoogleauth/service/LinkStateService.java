@@ -25,7 +25,6 @@ public class LinkStateService {
     /** Вызываешь из бота при /auth — создаешь одноразовую ссылку */
 
     public UUID createLink(Long telegramId, int ttlMinutes) {
-        log.info("2");
         OAuthLink oAuthLink = new OAuthLink()
                 .setId(UUID.randomUUID())
                 .setTelegramId(telegramId)
@@ -34,7 +33,6 @@ public class LinkStateService {
 
         log.info("Saving oauth link: telegramId={}, id={}", telegramId, oAuthLink.getId());
         oAuthLink = linkRepo.save(oAuthLink);
-        log.info("3");
         log.info("Saved link id={} successfully", oAuthLink.getId());
         return oAuthLink.getId();
     }

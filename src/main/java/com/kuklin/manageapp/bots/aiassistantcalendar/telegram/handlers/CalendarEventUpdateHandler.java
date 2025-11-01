@@ -42,15 +42,13 @@ public class CalendarEventUpdateHandler implements AssistantUpdateHandler {
     private final CalendarService calendarService;
     private final ActionKnotService actionKnotService;
     private final TelegramService telegramService;
-    private final TokenService tokenService;
     private final TelegramAiAssistantCalendarBotKeyComponents components;
-    private final UserGoogleCalendarService userGoogleCalendarService;
     private static final String VOICE_ERROR_MESSAGE =
             "Ошибка! Не получилось обработать голосовое сообщение";
     private static final String VOICE_DURATION_ERROR_MESSAGE =
             "Ошибка! Голосовое сообщение слишком долгое!";
     private static final String ERROR_MESSAGE =
-            "Не получилось добавить мероприятие в календарь!";
+            "Не получилось выполнить действие";
     private static final String TEXT_TO_LONG_ERROR_MESSAGE =
             "Ваше сообщение слишком длинное!";
     private static final String EVENT_NOT_FOUND_ERROR_MESSAGE =
