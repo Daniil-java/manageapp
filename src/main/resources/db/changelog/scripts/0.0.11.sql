@@ -4,7 +4,7 @@
 
 
 CREATE TABLE ai_message_log (
-                                id BIGINT PRIMARY KEY,
+                                id BIGSERIAL PRIMARY KEY,
                                 request TEXT,
                                 response TEXT
 );
