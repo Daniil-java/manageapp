@@ -32,11 +32,13 @@ public class GoogleOAuthService {
 
     public String start(UUID linkId) {
         try {
+            log.info("5");
             var consumed = linkState.consumeLinkAndMakeState(linkId);
             var state = consumed.state();        // UUID
             var verifier = consumed.verifier();  // PKCE verifier
             var challenge = CodeVerifierUtil.toS256Challenge(verifier);
 
+            log.info("11");
             String scope = String.join(" ", props.getScopes());
 
             // Собираем параметры
@@ -54,6 +56,7 @@ public class GoogleOAuthService {
 
             String authUrl = buildUrl(props.getAuthUri(), p);
 
+            log.info("12");
             // Лог — самое важное для 400 на шаге авторизации
             log.info("OAUTH START telegram_id={} state={} clientId={} redirectUri={} authUrl={}",
                     consumed.telegramId(),
@@ -74,6 +77,7 @@ public class GoogleOAuthService {
 
         log.info("OAUTH CALLBACK state={} codePresent={} error={}",
                 state, code != null, error);
+        log.info("14");
 
         // 0) Если Google вернул ошибку вместо кода — отдадим ясный ответ
         if (error != null) {
@@ -89,6 +93,7 @@ public class GoogleOAuthService {
             ));
         }
 
+        log.info("15");
         // 1) Проверяем и "поглощаем" state (получаем telegramId + verifier)
         LinkStateService.CallbackState cb;
         try {
@@ -103,19 +108,23 @@ public class GoogleOAuthService {
             ));
         }
 
+        log.info("16");
         try {
             // 2) Обмен кода на токены
             GoogleOAuthHttpClient.TokenResponse tokens = google.exchangeCode(code, cb.verifier());
 
+            log.info("17");
             // 3) Юзер-инфо по access_token
             GoogleOAuthHttpClient.UserInfo userInfo = google.getUserInfo(tokens.access_token());
 
+            log.info("18");
             // 4) Сохранение в БД
             AssistantGoogleOAuth auth = tokenService
                     .saveFromAuthCallback(cb.telegramId(), tokens, userInfo, Instant.now());
 
+            log.info("19");
             // 5) Отправка уведомления пользователю
-            handler.handleGoogleCallback(auth);
+//            handler.handleGoogleCallback(auth);
             // 6) Успех (можно редиректнуть в tg: https://t.me/<bot>?start=connected)
             return ResponseEntity.ok(Map.of(
                     "status", "connected",

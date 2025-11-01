@@ -54,14 +54,17 @@ public class AssistantCalendarChooseUpdateHandler implements AssistantUpdateHand
     }
 
     public void handleGoogleCallback(AssistantGoogleOAuth auth) {
+        log.info("20");
         try {
             List<GoogleCacheableCalendar> calendarList = calendarService
                     .listUserCalendarsOrNull(auth.getTelegramId());
 
+            log.info("21");
             String response = """
                     Успешная авторизация!
                     email: %s
                     """.formatted(auth.getEmail());
+            log.info("22");
             telegramBot.sendReturnedMessage(auth.getTelegramId(), response, getCalendarListKeyboard(calendarList), null);
         } catch (Exception ignore) {
             telegramBot.sendReturnedMessage(auth.getTelegramId(),

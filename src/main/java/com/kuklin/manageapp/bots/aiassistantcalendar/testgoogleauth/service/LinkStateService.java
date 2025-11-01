@@ -25,6 +25,7 @@ public class LinkStateService {
     /** Вызываешь из бота при /auth — создаешь одноразовую ссылку */
 
     public UUID createLink(Long telegramId, int ttlMinutes) {
+        log.info("2");
         OAuthLink oAuthLink = new OAuthLink()
                 .setId(UUID.randomUUID())
                 .setTelegramId(telegramId)
@@ -33,6 +34,7 @@ public class LinkStateService {
 
         log.info("Saving oauth link: telegramId={}, id={}", telegramId, oAuthLink.getId());
         oAuthLink = linkRepo.save(oAuthLink);
+        log.info("3");
         log.info("Saved link id={} successfully", oAuthLink.getId());
         return oAuthLink.getId();
     }
@@ -40,12 +42,15 @@ public class LinkStateService {
     /** На старте веб-флоу: потребляем ссылку и создаем state+verifier */
     @Transactional
     public ConsumedLink consumeLinkAndMakeState(UUID linkId) {
+        log.info("6");
         OAuthLink link = linkRepo.findById(linkId)
                 .filter(l -> l.getExpireAt().isAfter(Instant.now()))
                 .orElseThrow(() -> new IllegalStateException("Link is invalid or expired"));
 
-//        linkRepo.deleteById(linkId); // одноразово
+        log.info("7");
+        linkRepo.deleteById(linkId); // одноразово
 
+        log.info("8");
         String verifier = CodeVerifierUtil.generateVerifier();
         OAuthState state = new OAuthState()
                 .setId(UUID.randomUUID())
@@ -53,19 +58,26 @@ public class LinkStateService {
                 .setVerifier(verifier)
                 .setExpireAt(Instant.now().plus(15, ChronoUnit.MINUTES))
                 ;
+        log.info("9");
         stateRepo.saveAndFlush(state);
 
+        log.info("10");
         return new ConsumedLink(state.getId(), verifier, link.getTelegramId());
     }
 
     /** В колбэке: получить и атомарно удалить state */
     public CallbackState consumeState(UUID stateId) {
+        log.info("14-1");
         Optional<OAuthState> opt = stateRepo.findById(stateId)
                 .filter(s -> s.getExpireAt().isAfter(Instant.now()));
+        log.info("14-2");
         if (opt.isEmpty()) throw new IllegalStateException("State invalid/expired");
 
+        log.info("14-3");
         OAuthState s = opt.get();
-//        stateRepo.deleteById(stateId); // одноразово
+        log.info("14-4");
+        stateRepo.deleteById(stateId); // одноразово
+        log.info("14-5");
         return new CallbackState(s.getTelegramId(), s.getVerifier());
     }
 
