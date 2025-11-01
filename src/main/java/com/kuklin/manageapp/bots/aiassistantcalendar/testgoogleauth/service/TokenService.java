@@ -4,6 +4,7 @@ import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.entities.Ass
 import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.models.TokenRefreshException;
 import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.repositories.AssistantGoogleOAuthRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,6 +13,7 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class TokenService {
     private final AssistantGoogleOAuthRepository repo;
     private final GoogleOAuthHttpClient google;
@@ -44,16 +46,21 @@ public class TokenService {
         AssistantGoogleOAuth auth = repo.findById(telegramId)
                 .orElse(null);
 
+        log.info("Auth access: " + auth.getEmail());
+
         if (auth.getAccessExpiresAt() != null
                 && auth.getAccessExpiresAt().isAfter(Instant.now().plusSeconds(60))) {
             return auth.getAccessToken();
         }
+        log.info("Токен не просрочен");
 
         String rt = crypto.decrypt(auth.getRefreshTokenEnc());
 
         GoogleOAuthHttpClient.TokenResponse r = null;
         try {
+            log.info("Обновление токена");
             r = google.refresh(rt);
+            log.info("Токен обновлен");
         } catch (TokenRefreshException e) {
             if (e.getReason().equals(TokenRefreshException.Reason.INVALID_GRANT)) {
                 //Удаляем запись, т.к. мы больше не можем обновить токен.
@@ -67,7 +74,9 @@ public class TokenService {
                 .setAccessExpiresAt(Instant.now().plusSeconds(r.expires_in() == null ? DEFAULT_EXPIRES_TIME : r.expires_in()))
                 .setLastRefreshAt(Instant.now());
 
+        log.info("Сохранение состояния авторизации");
         repo.save(auth);
+        log.info("Сохранение произошло");
         return auth.getAccessToken();
     }
 

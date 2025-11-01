@@ -30,6 +30,7 @@ public class AuthStatusUpdateHandler implements AssistantUpdateHandler {
         try {
             CalendarListEntry calendarListEntry = calendarService.getCalendarOrNull(telegramUser.getTelegramId());
             AssistantGoogleOAuth acc = tokenService.findByTelegramIdOrNull(telegramUser.getTelegramId());
+
             telegramBot.sendReturnedMessage(chatId, """
                     ✅ Google подключён
                     Email: %s
@@ -48,6 +49,7 @@ public class AuthStatusUpdateHandler implements AssistantUpdateHandler {
             }
 
         } catch (Exception notAuthorized) {
+            log.error(notAuthorized.getMessage());
             telegramBot.sendReturnedMessage(chatId, "❌ Google ещё не подключен. Набери /auth для начала авторизации.");
         }
     }
