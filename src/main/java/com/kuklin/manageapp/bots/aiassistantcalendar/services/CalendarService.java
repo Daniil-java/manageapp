@@ -362,7 +362,7 @@ public class CalendarService {
         DateTime timeMax = new DateTime(endOfDay.toInstant().toEpochMilli(), tzShiftEnd);
 
         // Запрос к Google Calendar API
-        Events events = calendarService.events().list(context.getCalendarId())
+        Events events = context.getCalendar().events().list(context.getCalendarId())
                 .setTimeMin(timeMin)
                 .setTimeMax(timeMax)
                 .setSingleEvents(true)
@@ -388,7 +388,7 @@ public class CalendarService {
         List<Event> all = new ArrayList<>();
         String pageToken = null;
         do {
-            Events events = calendarService.events().list(context.getCalendarId())
+            Events events = context.getCalendar().events().list(context.getCalendarId())
                     .setTimeMin(timeMin)
                     .setTimeMax(timeMax)
                     .setSingleEvents(true)        // разворачиваем повторяющиеся
