@@ -102,10 +102,13 @@ public class CalendarService {
 
     public Event addEventInCalendar(CalendarEventAiResponse request, Long telegramId) throws IOException, TokenRefreshException {
         CalendarContext calendarContext = getCalendarContext(telegramId);
-
+        log.info("LOG CALENDAR ID");
+        log.info(calendarContext.getCalendarId());
         Event event = CalendarServiceUtils.normalizeEventRequest(
                 request, getTimeZoneInCalendar(calendarContext.getCalendarId()));
 
+        var entry = getCalendarOrNull(telegramId);
+        log.info("EQUALS: " + entry.getId().equals(calendarContext.getCalendarId()));
         Event inserted = calendarContext.getCalendar().events()
                 .insert(calendarContext.getCalendarId(), event)
                 .execute();
@@ -179,18 +182,22 @@ public class CalendarService {
         }
     }
 
-//    public CalendarListEntry getCalendarOrNull(Long telegramId, String accessToken) throws TokenRefreshException {
-//        //TODO не вызывать календарь
-//        CalendarContext calendarContext = getCalendarContext(telegramId);
+    public CalendarListEntry getCalendarOrNull(Long telegramId) throws TokenRefreshException {
+        //TODO не вызывать календарь
+        CalendarContext calendarContext = getCalendarContext(telegramId);
 //        Calendar service = getCalendarService(accessToken);
-//
-//        try {
-//            return service.calendarList().get(calendarContext.getCalendarId()).execute();
-//        } catch (IOException e) {
-//            log.error("Google service execute error!", e);
-//            return null;
-//        }
-//    }
+
+        try {
+            CalendarListEntry entry = calendarContext.getCalendar()
+                    .calendarList().get(calendarContext.getCalendarId()).execute();
+            log.info(entry.getSummary());
+            log.info(entry.getId());
+            return entry;
+        } catch (IOException e) {
+            log.error("Google service execute error!", e);
+            return null;
+        }
+    }
 
     /**
      * Провеяем уведомляли ли мы пользователя, об определенной задаче
@@ -263,7 +270,7 @@ public class CalendarService {
             log.info("authCalendar:");
 
             AssistantGoogleOAuth auth = tokenService.findByTelegramIdOrNull(telegramId);
-            log.info(auth.getDefaultCalendarId());
+            log.info(auth.getDefaultCalendarId()    );
             return auth.getDefaultCalendarId();
         }
         String calendarId = userGoogleCalendarService.getUserCalendarIdByTelegramIdOrNull(telegramId);
