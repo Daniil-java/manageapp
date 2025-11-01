@@ -18,7 +18,6 @@ public class Housekeeping {
 
     @Scheduled(fixedDelay = 600_000) // каждые 10 минут
     public void cleanup() {
-        log.info("Scheduler run");
         var now = Instant.now();
         linkRepo.findAll().stream()
                 .filter(l -> l.getExpireAt().isBefore(now))

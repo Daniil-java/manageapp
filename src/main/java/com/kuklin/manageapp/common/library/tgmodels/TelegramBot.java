@@ -137,6 +137,7 @@ public abstract class TelegramBot extends TelegramLongPollingBot implements Tele
                 .messageId(messageId)
                 .replyMarkup(inlineKeyboardMarkup)
                 .parseMode(ParseMode.HTML)
+                .disableWebPagePreview(true)
                 .build();
     }
 }
