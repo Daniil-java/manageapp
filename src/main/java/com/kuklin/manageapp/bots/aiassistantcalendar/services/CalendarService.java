@@ -23,6 +23,7 @@ import com.kuklin.manageapp.bots.aiassistantcalendar.services.utils.CalendarServ
 import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.entities.AssistantGoogleOAuth;
 import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.entities.GoogleCacheableCalendar;
 import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.models.TokenRefreshException;
+import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.service.AiMessageLogService;
 import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.service.GoogleCacheableCalendarService;
 import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.service.TokenService;
 import lombok.Data;
@@ -46,6 +47,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class CalendarService {
     private final OpenAiProviderProcessor openAiProviderProcessor;
+    private final AiMessageLogService aiMessageLogService;
     private final ObjectMapper objectMapper;
     private final Calendar calendarService;
     private final TelegramAiAssistantCalendarBotKeyComponents components;
@@ -222,6 +224,7 @@ public class CalendarService {
         );
         String aiResponse = openAiProviderProcessor.fetchResponse(
                 components.getAiKey(), request);
+        aiMessageLogService.saveLog(request, aiResponse);
         List<String> eventIds = objectMapper.readValue(aiResponse, new TypeReference<List<String>>() {});
 
         // Используем Set для быстрого поиска
@@ -255,6 +258,7 @@ public class CalendarService {
         );
         String aiResponse = openAiProviderProcessor.fetchResponse(
                 components.getAiKey(), request);
+        aiMessageLogService.saveLog(request, aiResponse);
         return aiResponse;
     }
 

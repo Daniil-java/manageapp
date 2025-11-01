@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcessor;
 import com.kuklin.manageapp.bots.aiassistantcalendar.configurations.TelegramAiAssistantCalendarBotKeyComponents;
 import com.kuklin.manageapp.bots.aiassistantcalendar.models.ActionKnot;
+import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.service.AiMessageLogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,6 +19,7 @@ public class ActionKnotService {
     private final OpenAiProviderProcessor aiService;
     private final ObjectMapper objectMapper;
     private final TelegramAiAssistantCalendarBotKeyComponents components;
+    private final AiMessageLogService aiMessageLogService;
 
     private static final String AI_REQUEST =
             """
@@ -91,7 +93,7 @@ public class ActionKnotService {
         String aiResponse = aiService.fetchResponse(
                 components.getAiKey(),
                 String.format(AI_REQUEST, message, LocalDate.now()));
-        log.info(aiResponse);
+        aiMessageLogService.saveLog(message, aiResponse);
         try {
             return objectMapper.readValue(aiResponse, ActionKnot.class);
         } catch (JsonProcessingException e) {
@@ -104,6 +106,7 @@ public class ActionKnotService {
         String aiResponse = aiService.fetchResponse(
                 components.getAiKey(),
                 String.format(AI_EDIT_REQUEST, message, LocalDate.now()));
+        aiMessageLogService.saveLog(message, aiResponse);
         log.info(aiResponse);
         try {
             return objectMapper.readValue(aiResponse, ActionKnot.class);
