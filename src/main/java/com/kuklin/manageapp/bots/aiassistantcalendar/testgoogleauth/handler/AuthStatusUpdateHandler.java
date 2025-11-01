@@ -34,7 +34,6 @@ public class AuthStatusUpdateHandler implements AssistantUpdateHandler {
             telegramBot.sendReturnedMessage(chatId, """
                     ✅ Google подключён
                     Email: %s
-                    Календарь: %s
                     """.formatted(
                     Optional.ofNullable(acc.getEmail()).orElse("—")
 //                    Optional.ofNullable(calendarListEntry.getSummary()).orElse("-")
