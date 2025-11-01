@@ -108,9 +108,10 @@ public class CalendarService {
                 request, getTimeZoneInCalendar(calendarContext.getCalendarId()));
 
         var entry = getCalendarOrNull(telegramId);
-        log.info("EQUALS: " + entry.getId().equals(calendarContext.getCalendarId()));
+        log.info(entry.getId());
+
         Event inserted = calendarContext.getCalendar().events()
-                .insert(calendarContext.getCalendarId(), event)
+                .insert(entry.getId(), event)
                 .execute();
 
         log.info("Запрос на создание эвента в GOOGLE: \nМероприятие {},\nОписание {},\nНачало {},\nКонец {},\nТаймзона {}",
