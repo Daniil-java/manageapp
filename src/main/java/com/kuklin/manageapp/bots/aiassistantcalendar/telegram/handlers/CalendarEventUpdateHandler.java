@@ -62,9 +62,9 @@ public class CalendarEventUpdateHandler implements AssistantUpdateHandler {
 
     private static final Locale RU = new Locale("ru");
     private static final DateTimeFormatter DATE_TIME_FMT =
-            DateTimeFormatter.ofPattern("d MMMM yyyy 'года', HH:mm", RU);
+            DateTimeFormatter.ofPattern("d MMMM, HH:mm", RU);
     private static final DateTimeFormatter DATE_ONLY_FMT =
-            DateTimeFormatter.ofPattern("d MMMM yyyy 'года'", RU);
+            DateTimeFormatter.ofPattern("d MMMM", RU);
 
     private static final int MAX_VOICE_SECONDS = 60;
     private static final int MAX_TEXT_CHARS = 2000;
@@ -92,7 +92,12 @@ public class CalendarEventUpdateHandler implements AssistantUpdateHandler {
 
                 Event event = calendarService.addEventInCalendar(
                         calendarRequest, telegramUser.getTelegramId());
-                sendEventMessage(chatId, event);
+                assistantTelegramBot.sendReturnedMessage(
+                        chatId,
+                        getResponseAddEventString(event),
+                        getInlineDeleteMessage(event.getId()),
+                        null
+                );
 
             } else if (actionKnot.getAction() == ActionKnot.Action.EVENT_DELETE) {
                 List<Event> eventsForRemoving = calendarService
@@ -152,6 +157,15 @@ public class CalendarEventUpdateHandler implements AssistantUpdateHandler {
         );
     }
 
+    public static String getResponseAddEventString(Event event) {
+        StringBuilder stringBuilder = new StringBuilder();
+
+        stringBuilder.append("<b>✅ Задача добавлена в календарь: </b> ").append(event.getSummary())
+        .append("<b>Начало:</b> ").append(formatHumanReadable(event.getStart())).append("\n");
+
+        return stringBuilder.toString();
+    }
+
     public static String getResponseString(Event event) {
 
         StringBuilder stringBuilder = new StringBuilder();
@@ -159,11 +173,10 @@ public class CalendarEventUpdateHandler implements AssistantUpdateHandler {
                 ? event.getDescription()
                 : "Не указано";
 
-        stringBuilder.append("<b>ID:</b> ").append(event.getId()).append("\n");
-        stringBuilder.append("<b>Мероприятие:</b> ").append(event.getSummary()).append("\n");
-        stringBuilder.append("<b>Описание:</b> ").append(description).append("\n");
-        stringBuilder.append("<b>Начало:</b> ").append(formatHumanReadable(event.getStart())).append("\n");
-        stringBuilder.append("<b>Конец:</b> ").append(formatHumanReadable(event.getEnd()));
+        stringBuilder.append("\uD83D\uDCC5 <b>Мероприятие:</b> ").append(event.getSummary()).append("\n");
+        stringBuilder.append("\uD83D\uDCDD <b>Описание:</b> ").append(description).append("\n");
+        stringBuilder.append("⏰ <b>Начало:</b> ").append(formatHumanReadable(event.getStart())).append("\n");
+        stringBuilder.append("\uD83C\uDFC1 <b>Конец:</b> ").append(formatHumanReadable(event.getEnd()));
 
         return stringBuilder.toString();
     }

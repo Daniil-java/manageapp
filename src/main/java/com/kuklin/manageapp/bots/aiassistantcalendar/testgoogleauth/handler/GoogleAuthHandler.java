@@ -27,7 +27,9 @@ public class GoogleAuthHandler implements AssistantUpdateHandler {
             """
                     🔐 Подключение Google:
                     1) Открой ссылку: %s
+                    Ссылка одноразовая!
                     2) Выбери аккаунт и выдай доступ
+                    
                     После этого вернись в чат и набери /auth_status
                     """;
 
@@ -43,6 +45,7 @@ public class GoogleAuthHandler implements AssistantUpdateHandler {
     private void processCallback(Update update, TelegramUser telegramUser) {
         Long chatId = update.getCallbackQuery().getMessage().getChatId();
         Integer messageId = update.getCallbackQuery().getMessage().getMessageId();
+
         String link = getUrl(telegramUser.getTelegramId());
         telegramBot.sendEditMessage(
                 chatId,
@@ -54,6 +57,7 @@ public class GoogleAuthHandler implements AssistantUpdateHandler {
 
     private void processMessage(Update update, TelegramUser telegramUser) {
         Long chatId = update.getMessage().getChatId();
+
         String link = getUrl(telegramUser.getTelegramId());
         telegramBot.sendReturnedMessage(
                 chatId,
