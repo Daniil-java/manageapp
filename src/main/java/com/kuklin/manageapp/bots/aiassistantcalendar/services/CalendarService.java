@@ -166,9 +166,10 @@ public class CalendarService {
         }
     }
 
-    public CalendarListEntry getCalendarOrNull(Long telegramId) throws TokenRefreshException {
+    public CalendarListEntry getCalendarOrNull(Long telegramId, String accessToken) throws TokenRefreshException {
+        //TODO не вызывать календарь
         CalendarContext calendarContext = getCalendarContext(telegramId);
-        Calendar service = getCalendarService(calendarContext.getAccessToken());
+        Calendar service = getCalendarService(accessToken);
 
         try {
             return service.calendarList().get(calendarContext.getCalendarId()).execute();
