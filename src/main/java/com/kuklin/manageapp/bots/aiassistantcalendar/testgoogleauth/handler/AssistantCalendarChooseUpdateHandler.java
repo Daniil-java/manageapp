@@ -5,6 +5,7 @@ import com.kuklin.manageapp.bots.aiassistantcalendar.telegram.AssistantTelegramB
 import com.kuklin.manageapp.bots.aiassistantcalendar.telegram.handlers.AssistantUpdateHandler;
 import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.entities.AssistantGoogleOAuth;
 import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.entities.GoogleCacheableCalendar;
+import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.models.TokenRefreshException;
 import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.service.GoogleCacheableCalendarService;
 import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.service.TokenService;
 import com.kuklin.manageapp.common.entities.TelegramUser;
@@ -54,17 +55,14 @@ public class AssistantCalendarChooseUpdateHandler implements AssistantUpdateHand
     }
 
     public void handleGoogleCallback(AssistantGoogleOAuth auth) {
-        log.info("20");
         try {
             List<GoogleCacheableCalendar> calendarList = calendarService
                     .listUserCalendarsOrNull(auth.getTelegramId());
 
-            log.info("21");
             String response = """
                     Успешная авторизация!
                     email: %s
                     """.formatted(auth.getEmail());
-            log.info("22");
             telegramBot.sendReturnedMessage(auth.getTelegramId(), response, getCalendarListKeyboard(calendarList), null);
         } catch (Exception ignore) {
             telegramBot.sendReturnedMessage(auth.getTelegramId(),
@@ -90,15 +88,15 @@ public class AssistantCalendarChooseUpdateHandler implements AssistantUpdateHand
                 sb.append(calendar.getSummary()).append("\n");
             }
             telegramBot.sendReturnedMessage(chatId, sb.toString(), getCalendarListKeyboard(calendarList), null);
-//        } catch (TokenRefreshException e) {
-//            if (e.getReason().equals(TokenRefreshException.Reason.INVALID_GRANT)) {
-//                telegramBot.sendReturnedMessage(chatId, GOOGLE_AUTH_ERROR_MESSAGE);
-//            } else {
-//                telegramBot.sendReturnedMessage(chatId, GOOGLE_OTHER_ERROR_MESSAGE);
-//            }
+        } catch (TokenRefreshException e) {
+            if (e.getReason().equals(TokenRefreshException.Reason.INVALID_GRANT)) {
+                telegramBot.sendReturnedMessage(chatId, GOOGLE_AUTH_ERROR_MESSAGE);
+            } else {
+                telegramBot.sendReturnedMessage(chatId, GOOGLE_OTHER_ERROR_MESSAGE);
+            }
         } catch (Exception e) {
             telegramBot.sendReturnedMessage(chatId, "Ошибка получения календаря");
-            log.error("Не получилось получить список календарей");
+            log.error("Failed to get list of calendars");
         }
     }
 

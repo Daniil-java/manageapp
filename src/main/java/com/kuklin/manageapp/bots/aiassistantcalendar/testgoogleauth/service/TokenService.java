@@ -43,6 +43,7 @@ public class TokenService {
 
     @Transactional
     public String ensureAccessTokenOrNull(long telegramId) throws TokenRefreshException {
+        log.info("ensureAccessTokenOrNull started");
         AssistantGoogleOAuth auth = repo.findById(telegramId)
                 .orElse(null);
 
@@ -50,20 +51,22 @@ public class TokenService {
 
         if (auth.getAccessExpiresAt() != null
                 && auth.getAccessExpiresAt().isAfter(Instant.now().plusSeconds(60))) {
+            log.info("token exist!");
             return auth.getAccessToken();
         }
-        log.info("Токен не просрочен");
+        log.info("token expired");
 
         String rt = crypto.decrypt(auth.getRefreshTokenEnc());
 
         GoogleOAuthHttpClient.TokenResponse r = null;
         try {
-            log.info("Обновление токена");
+            log.info("refresh token");
             r = google.refresh(rt);
-            log.info("Токен обновлен");
+            log.info("token updated");
         } catch (TokenRefreshException e) {
             if (e.getReason().equals(TokenRefreshException.Reason.INVALID_GRANT)) {
                 //Удаляем запись, т.к. мы больше не можем обновить токен.
+                log.info("delete auth");
                 revokeAndDelete(telegramId);
             }
             throw e;
@@ -74,9 +77,9 @@ public class TokenService {
                 .setAccessExpiresAt(Instant.now().plusSeconds(r.expires_in() == null ? DEFAULT_EXPIRES_TIME : r.expires_in()))
                 .setLastRefreshAt(Instant.now());
 
-        log.info("Сохранение состояния авторизации");
+        log.info("auth save");
         repo.save(auth);
-        log.info("Сохранение произошло");
+        log.info("auth saved");
         return auth.getAccessToken();
     }
 
