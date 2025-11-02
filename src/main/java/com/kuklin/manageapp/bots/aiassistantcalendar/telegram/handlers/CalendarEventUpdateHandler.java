@@ -4,12 +4,14 @@ import com.google.api.services.calendar.model.Event;
 import com.google.api.services.calendar.model.EventDateTime;
 import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcessor;
 import com.kuklin.manageapp.bots.aiassistantcalendar.configurations.TelegramAiAssistantCalendarBotKeyComponents;
+import com.kuklin.manageapp.bots.aiassistantcalendar.entities.UserGoogleCalendar;
 import com.kuklin.manageapp.bots.aiassistantcalendar.models.ActionKnot;
 import com.kuklin.manageapp.bots.aiassistantcalendar.models.CalendarEventAiResponse;
 import com.kuklin.manageapp.bots.aiassistantcalendar.services.ActionKnotService;
 import com.kuklin.manageapp.bots.aiassistantcalendar.services.CalendarService;
 import com.kuklin.manageapp.bots.aiassistantcalendar.services.UserGoogleCalendarService;
 import com.kuklin.manageapp.bots.aiassistantcalendar.telegram.AssistantTelegramBot;
+import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.entities.AssistantGoogleOAuth;
 import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.models.TokenRefreshException;
 import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.service.TokenService;
 import com.kuklin.manageapp.common.entities.TelegramUser;
@@ -42,6 +44,8 @@ public class CalendarEventUpdateHandler implements AssistantUpdateHandler {
     private final CalendarService calendarService;
     private final ActionKnotService actionKnotService;
     private final TelegramService telegramService;
+    private final TokenService tokenService;
+    private final UserGoogleCalendarService userGoogleCalendarService;
     private final TelegramAiAssistantCalendarBotKeyComponents components;
     private static final String VOICE_ERROR_MESSAGE =
             "Ошибка! Не получилось обработать голосовое сообщение";
@@ -85,13 +89,20 @@ public class CalendarEventUpdateHandler implements AssistantUpdateHandler {
                 : message.getText();
         if (request == null) return;
 
-        ActionKnot actionKnot = actionKnotService.getActionKnotOrNull(request);
         try {
+            CalendarService.CalendarContext calendarContext =
+                    calendarService.getCalendarContext(telegramUser.getTelegramId());
+
+            if (!checkAuthOrCalendar(calendarContext, chatId)) return;
+
+            String tz = calendarService.getTimeZoneInCalendar(calendarContext);
+            ActionKnot actionKnot = actionKnotService.getActionKnotOrNull(request, tz);
+
             if (actionKnot.getAction() == ActionKnot.Action.EVENT_ADD) {
                 CalendarEventAiResponse calendarRequest = actionKnot.getCalendarEventAiResponse();
 
                 Event event = calendarService.addEventInCalendar(
-                        calendarRequest, telegramUser.getTelegramId());
+                        calendarContext, calendarRequest, telegramUser.getTelegramId());
                 assistantTelegramBot.sendReturnedMessage(
                         chatId,
                         getResponseAddEventString(event),
@@ -132,7 +143,7 @@ public class CalendarEventUpdateHandler implements AssistantUpdateHandler {
 
                 ActionKnot newActionKnot = actionKnotService.getActionKnotForEditMessageOrNull(request);
 
-                Event event = calendarService.editEventInCalendar(eventId, newActionKnot, telegramUser.getTelegramId());
+                Event event = calendarService.editEventInCalendar(calendarContext, eventId, newActionKnot, telegramUser.getTelegramId());
                 sendEventMessage(chatId, event);
             }
         } catch (IOException e) {
@@ -148,6 +159,27 @@ public class CalendarEventUpdateHandler implements AssistantUpdateHandler {
 
     }
 
+    private boolean checkAuthOrCalendar(CalendarService.CalendarContext context, Long chatId) {
+        if (context.getAccessToken() == null) {
+
+            if (context.getCalendarId() == null) {
+                assistantTelegramBot.sendReturnedMessage(chatId,
+                        "Авторизуйтесь или установите календарь в ручную! "
+                                + Command.ASSISTANT_HELP);
+                return false;
+            }
+        } else {
+
+            if (context.getCalendarId() == null) {
+                assistantTelegramBot.sendReturnedMessage(chatId,
+                        "Вам нужно выбрать свой календарь. \nИспользуйте комманду: "
+                                + Command.ASSISTANT_CHOOSE_CALENDAR.getCommandText());
+                return false;
+            }
+        }
+        return true;
+    }
+
     private void sendEventMessage(Long chatId, Event event) {
         assistantTelegramBot.sendReturnedMessage(
                 chatId,
@@ -161,7 +193,7 @@ public class CalendarEventUpdateHandler implements AssistantUpdateHandler {
         StringBuilder stringBuilder = new StringBuilder();
 
         stringBuilder.append("<b>✅ Задача добавлена в календарь: </b> ").append(event.getSummary())
-        .append(" " + formatHumanReadable(event.getStart())).append("\n");
+                .append(" " + formatHumanReadable(event.getStart())).append("\n");
 
         return stringBuilder.toString();
     }
@@ -174,7 +206,10 @@ public class CalendarEventUpdateHandler implements AssistantUpdateHandler {
                 : "Не указано";
 
         stringBuilder.append("\uD83D\uDCC5 <b>Мероприятие:</b> ").append(event.getSummary()).append("\n");
-        stringBuilder.append("\uD83D\uDCDD <b>Описание:</b> ").append(description).append("\n");
+        if (!description.equals("Добавлено через Telegram-бота")) {
+            stringBuilder.append("\uD83D\uDCDD <b>Описание:</b> ").append(description).append("\n");
+
+        }
         stringBuilder.append("⏰ <b>Начало:</b> ").append(formatHumanReadable(event.getStart())).append("\n");
         stringBuilder.append("\uD83C\uDFC1 <b>Конец:</b> ").append(formatHumanReadable(event.getEnd()));
 

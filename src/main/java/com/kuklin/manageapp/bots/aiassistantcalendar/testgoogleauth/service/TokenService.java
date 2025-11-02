@@ -107,4 +107,9 @@ public class TokenService {
     public List<AssistantGoogleOAuth> getAll() {
         return repo.findAll();
     }
+
+    public AssistantGoogleOAuth getByTelegramIdOrNull(Long telegramId) {
+        return repo.findByTelegramId(telegramId).orElse(null);
+
+    }
 }

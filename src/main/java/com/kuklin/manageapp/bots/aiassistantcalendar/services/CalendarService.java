@@ -102,9 +102,7 @@ public class CalendarService {
                      
                     """;
 
-    public Event addEventInCalendar(CalendarEventAiResponse request, Long telegramId) throws IOException, TokenRefreshException {
-        CalendarContext calendarContext = getCalendarContext(telegramId);
-
+    public Event addEventInCalendar(CalendarContext calendarContext, CalendarEventAiResponse request, Long telegramId) throws IOException, TokenRefreshException {
         Event event = CalendarServiceUtils.normalizeEventRequest(
                 request, getTimeZoneInCalendar(calendarContext));
 
@@ -134,8 +132,7 @@ public class CalendarService {
                 .execute();
     }
 
-    public Event editEventInCalendar(String targetId, ActionKnot actionKnot, Long telegramId) throws IOException, TokenRefreshException {
-        CalendarContext calendarContext = getCalendarContext(telegramId);
+    public Event editEventInCalendar(CalendarContext calendarContext, String targetId, ActionKnot actionKnot, Long telegramId) throws IOException, TokenRefreshException {
         Calendar calendar = calendarContext.getCalendar();
         String calendarId = calendarContext.getCalendarId();
 
@@ -405,6 +402,19 @@ public class CalendarService {
                 context.getCalendar().calendars().get(context.getCalendarId()).execute();
 
         return calendar.getTimeZone();
+    }
+
+    //Используется без авторизации пользователя.
+    //Используется для верификации календаря
+    public boolean existConnectionCalendarWithNoAuth(String calendarId) {
+        try {
+            com.google.api.services.calendar.model.Calendar calendar =
+                    calendarService.calendars().get(calendarId).execute();
+
+            return calendar != null;
+        } catch (IOException e) {
+            return false;
+        }
     }
 
     @Data
