@@ -26,7 +26,6 @@ public class GoogleCacheableCalendarService {
     public void saveListOfCalendarsAndRemoveAllOfAnother(List<CalendarListEntry> list, Long telegramId) {
         List<GoogleCacheableCalendar> cacheableCalendars = new ArrayList<>();
 
-        log.info("saveListOfCalendarsAndRemoveAllOfAnother start");
         for (CalendarListEntry entry: list) {
             cacheableCalendars.add(
                     new GoogleCacheableCalendar()

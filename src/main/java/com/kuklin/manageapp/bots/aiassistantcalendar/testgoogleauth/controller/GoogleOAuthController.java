@@ -1,10 +1,6 @@
 package com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.controller;
 
-import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.configurations.GoogleOAuthProperties;
-import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.service.GoogleOAuthHttpClient;
 import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.service.GoogleOAuthService;
-import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.service.LinkStateService;
-import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.service.TokenService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;

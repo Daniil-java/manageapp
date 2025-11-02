@@ -47,7 +47,6 @@ public class GoogleApiConfig {
                     .build();
 
         } catch (Exception e) {
-            log.error("Assistant Calendar: init failed, fallback NO-AUTH", e);
             return new Calendar.Builder(new NetHttpTransport(), JacksonFactory.getDefaultInstance(), req -> {})
                     .setApplicationName("ManageApp Assistant Calendar (NO-AUTH)")
                     .build();
@@ -65,11 +64,8 @@ public class GoogleApiConfig {
             GoogleCredentials scoped = sa.createScoped(Collections.singleton(CalendarScopes.CALENDAR));
 
             // Логнем email сервис-аккаунта (берём из исходного sa)
-            log.info("Assistant Calendar SA loaded: email={}", sa.getClientEmail());
-
             return Optional.of(scoped); // возвращаем как Credentials
         } catch (Exception e) {
-            log.warn("Assistant Calendar: cannot load credentials from {}: {}", ENV, e.getMessage());
             return Optional.empty();
         }
     }

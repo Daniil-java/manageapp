@@ -13,6 +13,7 @@ public class GoogleOAuthProperties {
     private String clientId;
     private String clientSecret;   // опционально
     private String redirectUri;
+    private String startUri;
     private String authUri;
     private String tokenUri;
     private String revokeUri;

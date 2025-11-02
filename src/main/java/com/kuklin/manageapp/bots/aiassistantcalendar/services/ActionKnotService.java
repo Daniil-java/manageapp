@@ -90,12 +90,10 @@ public class ActionKnotService {
                     """;
 
     public ActionKnot getActionKnotOrNull(String message, String tz) {
-//9. Время нужно назвать в таймзоне %s,
-// но это сообщение было отправлено в этом время: %s.
-// Это на тот случай, если пользователь назовет не точное время, а скажет "через ... минут, часов и т.д"
         String aiResponse = aiService.fetchResponse(
                 components.getAiKey(),
                 String.format(AI_REQUEST, message, LocalDate.now(), tz, OffsetDateTime.now()));
+        aiResponse = extractResponse(aiResponse);
         aiMessageLogService.saveLog(message, aiResponse);
         try {
             return objectMapper.readValue(aiResponse, ActionKnot.class);
@@ -109,13 +107,26 @@ public class ActionKnotService {
         String aiResponse = aiService.fetchResponse(
                 components.getAiKey(),
                 String.format(AI_EDIT_REQUEST, message, LocalDate.now()));
+        aiResponse = extractResponse(aiResponse);
         aiMessageLogService.saveLog(message, aiResponse);
-        log.info(aiResponse);
         try {
             return objectMapper.readValue(aiResponse, ActionKnot.class);
         } catch (JsonProcessingException e) {
             log.error("Не получилось распознать сообщение", e);
             return null;
         }
+    }
+
+    private String extractResponse(String response) {
+        if (response != null) {
+            if (response.startsWith("```json")) {
+                response = response.substring("```json".length()).trim();
+            }
+
+            if (response.endsWith("```")) {
+                response = response.substring(0, response.length() - 3).trim();
+            }
+        }
+        return response;
     }
 }

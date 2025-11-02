@@ -48,25 +48,19 @@ public class TokenService {
                 .orElse(null);
         if (auth == null) return null;
 
-        log.info("Auth access: " + auth.getEmail());
-
         if (auth.getAccessExpiresAt() != null
                 && auth.getAccessExpiresAt().isAfter(Instant.now().plusSeconds(60))) {
-            log.info("token exist!");
             return auth.getAccessToken();
         }
-        log.info("token expired");
 
         String rt = crypto.decrypt(auth.getRefreshTokenEnc());
 
         GoogleOAuthHttpClient.TokenResponse r = null;
         try {
-            log.info("refresh token");
             r = google.refresh(rt);
         } catch (TokenRefreshException e) {
             if (e.getReason().equals(TokenRefreshException.Reason.INVALID_GRANT)) {
                 //Удаляем запись, т.к. мы больше не можем обновить токен.
-                log.info("delete auth");
                 revokeAndDelete(telegramId);
             }
             throw e;
@@ -78,7 +72,6 @@ public class TokenService {
                 .setLastRefreshAt(Instant.now());
 
         repo.save(auth);
-        log.info("auth saved");
         return auth.getAccessToken();
     }
 

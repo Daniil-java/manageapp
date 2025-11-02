@@ -44,6 +44,7 @@ google:
     client-id: ${GOOGLE_OAUTH_CLIENT_ID}
     client-secret: ${GOOGLE_CALENDAR_KEY}   # опционально (для PKCE можно пустым)
     redirect-uri: https://kuklin.dev/auth/google/callback
+    start-uri: https://kuklin.dev/auth/google/start?linkId=
     auth-uri: https://accounts.google.com/o/oauth2/v2/auth
     token-uri: https://oauth2.googleapis.com/token
     revoke-uri: https://oauth2.googleapis.com/revoke

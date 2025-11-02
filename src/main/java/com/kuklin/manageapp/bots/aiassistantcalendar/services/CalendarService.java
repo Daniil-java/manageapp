@@ -107,7 +107,6 @@ public class CalendarService {
                 request, getTimeZoneInCalendarOrNull(calendarContext));
 
         var entry = getCalendarOrNull(telegramId);
-        log.info(entry.getId());
 
         Event inserted = calendarContext.getCalendar().events()
                 .insert(calendarContext.getCalendarId(), event)
@@ -162,8 +161,6 @@ public class CalendarService {
         try {
             List<CalendarListEntry> list = service.calendarList().list().execute().getItems();
 
-            //TODO
-            log.info("cacheableCalendarService saveList");
             cacheableCalendarService.saveListOfCalendarsAndRemoveAllOfAnother(list, telegramId);
             return cacheableCalendarService.findAllByTelegramId(telegramId);
         } catch (IOException e) {
@@ -176,15 +173,11 @@ public class CalendarService {
     }
 
     public CalendarListEntry getCalendarOrNull(Long telegramId) throws TokenRefreshException {
-        //TODO не вызывать календарь
         CalendarContext calendarContext = getCalendarContext(telegramId);
-//        Calendar service = getCalendarService(accessToken);
 
         try {
             CalendarListEntry entry = calendarContext.getCalendar()
                     .calendarList().get(calendarContext.getCalendarId()).execute();
-            log.info(entry.getSummary());
-            log.info(entry.getId());
             return entry;
         } catch (IOException e) {
             log.error("Google service execute error!", e);
@@ -261,8 +254,6 @@ public class CalendarService {
     private String getCalendarIdOrNull(Long telegramId, String accessToken) {
         boolean isAuth = accessToken != null;
         if (isAuth) {
-            log.info("authCalendar:");
-
             AssistantGoogleOAuth auth = tokenService.findByTelegramIdOrNull(telegramId);
             log.info(auth.getDefaultCalendarId());
             if (auth.getDefaultCalendarId() != null) {
@@ -271,15 +262,12 @@ public class CalendarService {
         }
         String calendarId = userGoogleCalendarService.getUserCalendarIdByTelegramIdOrNull(telegramId);
         if (calendarId != null) {
-            log.info("userGoogleCalendarService: setter calendar");
             return calendarId;
         }
         return null;
     }
 
     private Calendar getCalendarService(String accessToken) {
-        log.info("getCalendarService");
-
         if (accessToken != null) {
             log.info("CALENDAR INSTANCE: AUTH");
             return createCalendarServiceOrNull(accessToken);
@@ -290,13 +278,9 @@ public class CalendarService {
     }
 
     private Calendar createCalendarServiceOrNull(String accessToken) {
-        log.info("createCalendarServiceOrNull");
         try {
-            log.info("httpTransport");
             NetHttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
-            log.info("buildCredential");
             Credential credential = buildCredential(accessToken, httpTransport);
-            log.info("builded Credential");
             return new Calendar.Builder(httpTransport, jsonFactory, credential)
                     .setApplicationName("ManageApp")
                     .build();
@@ -317,11 +301,8 @@ public class CalendarService {
 
     private Credential buildCredential(String accessToken, NetHttpTransport httpTransport) {
         // Собираем минимальный Credential с client auth, чтобы можно было рефрешить токен
-        log.info("buildCredential");
         String clientId = googleComponents.getClientId();
-        log.info("clientId: " + clientId.substring(0, 10) + "...");
         String clientSecret = googleComponents.getClientSecret();
-        log.info("clientSecret: " + clientSecret.substring(0, 10) + "...");
 
         Credential.Builder builder = new Credential.Builder(BearerToken.authorizationHeaderAccessMethod())
                 .setTransport(httpTransport)

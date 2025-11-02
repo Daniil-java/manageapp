@@ -2,6 +2,7 @@ package com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.handler;
 
 import com.kuklin.manageapp.bots.aiassistantcalendar.telegram.AssistantTelegramBot;
 import com.kuklin.manageapp.bots.aiassistantcalendar.telegram.handlers.AssistantUpdateHandler;
+import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.configurations.GoogleOAuthProperties;
 import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.service.GoogleOAuthService;
 import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.service.LinkStateService;
 import com.kuklin.manageapp.common.entities.TelegramUser;
@@ -20,7 +21,7 @@ public class GoogleAuthHandler implements AssistantUpdateHandler {
 
     private final LinkStateService linkStateService;
     private final AssistantTelegramBot telegramBot;
-    private final GoogleOAuthService oAuthService;
+    private final GoogleOAuthProperties props;
     // TTL одноразовой ссылки:
     private static final Integer TTL_TIME_MINUTES = 15;
     private static final String START_MSG =
@@ -66,7 +67,7 @@ public class GoogleAuthHandler implements AssistantUpdateHandler {
 
     private String getUrl(Long telegramId) {
         UUID linkId = linkStateService.createLink(telegramId, TTL_TIME_MINUTES);
-        return "https://kuklin.dev/auth/google/start?linkId=" + linkId; //TODO Заменить на переменную окружения
+        return props.getStartUri() + linkId;
     }
 
     @Override

@@ -41,20 +41,18 @@ public class EventNotificationSchedulerProcessor implements ScheduleProcessor {
 
     @Override
     public void process() {
-        noAuthProccess();
-        authProccess();
+        noAuthProcess();
+        authProcess();
     }
 
-    private void noAuthProccess() {
-        log.info("NO-AUTH SCHEDULE");
+    private void noAuthProcess() {
         List<UserGoogleCalendar> userGoogleCalendarList = userGoogleCalendarService.findAll();
         for (UserGoogleCalendar userCalendar: userGoogleCalendarList) {
             processUserCalendar(userCalendar.getTelegramId());
         }
     }
 
-    private void authProccess() {
-        log.info("AUTH SCHEDULE");
+    private void authProcess() {
         List<AssistantGoogleOAuth> oAuthList = tokenService.getAll();
         for (AssistantGoogleOAuth auth: oAuthList) {
             processUserCalendar(auth.getTelegramId());
@@ -62,7 +60,6 @@ public class EventNotificationSchedulerProcessor implements ScheduleProcessor {
     }
 
     private void processUserCalendar(Long telegramId) {
-        log.info("SCHEDULE CORE METHOD");
         try {
             CalendarService.CalendarContext context = calendarService
                     .getCalendarContext(telegramId);
@@ -83,7 +80,7 @@ public class EventNotificationSchedulerProcessor implements ScheduleProcessor {
     }
 
     private void notificateUser(List<Event> events, Long telegramId, String calendarId) {
-        log.info("NOTIFICATE: " + telegramId);
+        log.info("user notificated: " + telegramId);
         for (Event event: events) {
 
             //Если уже уведомляли, то пропускаем

@@ -31,26 +31,19 @@ public class LinkStateService {
                 .setTelegramId(telegramId)
                 .setExpireAt(Instant.now().plus(ttlMinutes, ChronoUnit.MINUTES));
 
-
-        log.info("Saving oauth link: telegramId={}, id={}", telegramId, oAuthLink.getId());
         oAuthLink = linkRepo.save(oAuthLink);
-        log.info("Saved link id={} successfully", oAuthLink.getId());
-        log.info("Saved link {}", oAuthLink);
         return oAuthLink.getId();
     }
 
     /** На старте веб-флоу: потребляем ссылку и создаем state+verifier */
     @Transactional
     public ConsumedLink consumeLinkAndMakeState(UUID linkId) {
-        log.info("6");
         OAuthLink link = linkRepo.findById(linkId)
                 .filter(l -> l.getExpireAt().isAfter(Instant.now()))
                 .orElseThrow(() -> new IllegalStateException("Link is invalid or expired"));
 
-        log.info("7");
         linkRepo.deleteById(linkId); // одноразово
 
-        log.info("8");
         String verifier = CodeVerifierUtil.generateVerifier();
         OAuthState state = new OAuthState()
                 .setId(UUID.randomUUID())
@@ -58,10 +51,8 @@ public class LinkStateService {
                 .setVerifier(verifier)
                 .setExpireAt(Instant.now().plus(15, ChronoUnit.MINUTES))
                 ;
-        log.info("9");
         stateRepo.saveAndFlush(state);
 
-        log.info("10");
         return new ConsumedLink(state.getId(), verifier, link.getTelegramId());
     }
 
