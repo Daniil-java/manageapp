@@ -67,7 +67,8 @@ public class EventNotificationSchedulerProcessor implements ScheduleProcessor {
             CalendarService.CalendarContext context = calendarService
                     .getCalendarContext(telegramId);
 
-            String tz = calendarService.getTimeZoneInCalendar(context);
+            String tz = calendarService.getTimeZoneInCalendarOrNull(context);
+            if (tz == null) return;
 
             List<Event> events = calendarService.getTodayEvents(telegramId);
             if (events.isEmpty()) return;

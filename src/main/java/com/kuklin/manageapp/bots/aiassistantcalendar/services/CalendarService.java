@@ -104,7 +104,7 @@ public class CalendarService {
 
     public Event addEventInCalendar(CalendarContext calendarContext, CalendarEventAiResponse request, Long telegramId) throws IOException, TokenRefreshException {
         Event event = CalendarServiceUtils.normalizeEventRequest(
-                request, getTimeZoneInCalendar(calendarContext));
+                request, getTimeZoneInCalendarOrNull(calendarContext));
 
         var entry = getCalendarOrNull(telegramId);
         log.info(entry.getId());
@@ -141,7 +141,7 @@ public class CalendarService {
                 .get(calendarId, targetId)
                 .execute();
 
-        String tz = getTimeZoneInCalendar(calendarContext);
+        String tz = getTimeZoneInCalendarOrNull(calendarContext);
         Event patch = CalendarServiceUtils.buildPatchFromRequest(actionKnot.getCalendarEventAiResponse(), tz);
 
         Event updated = calendar.events()
@@ -338,7 +338,7 @@ public class CalendarService {
     public List<Event> getTodayEvents(Long telegramId) throws IOException, TokenRefreshException {
         CalendarContext context = getCalendarContext(telegramId);
         // Конвертируем в UTC для Google API
-        ZoneId zoneId = ZoneId.of(getTimeZoneInCalendar(context));
+        ZoneId zoneId = ZoneId.of(getTimeZoneInCalendarOrNull(context));
 
         //Начало дня
         ZonedDateTime startOfDay = LocalDate.now(zoneId).atStartOfDay(zoneId);
@@ -365,7 +365,7 @@ public class CalendarService {
 
     public List<Event> getNextYearEvents(Long telegramId) throws IOException, TokenRefreshException {
         CalendarContext context = getCalendarContext(telegramId);
-        ZoneId zoneId = ZoneId.of(getTimeZoneInCalendar(context));
+        ZoneId zoneId = ZoneId.of(getTimeZoneInCalendarOrNull(context));
         // Старт: начало сегодняшнего дня в TZ календаря
         ZonedDateTime start = LocalDate.now(zoneId).atStartOfDay(zoneId);
         // Конец окна: ровно через год
@@ -397,7 +397,8 @@ public class CalendarService {
         return all;
     }
 
-    public String getTimeZoneInCalendar(CalendarContext context) throws IOException {
+    public String getTimeZoneInCalendarOrNull(CalendarContext context) throws IOException {
+        if (context.getCalendarId() == null) return null;
         com.google.api.services.calendar.model.Calendar calendar =
                 context.getCalendar().calendars().get(context.getCalendarId()).execute();
 

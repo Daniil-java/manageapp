@@ -3,7 +3,6 @@ package com.kuklin.manageapp.bots.aiassistantcalendar.telegram.handlers;
 import com.kuklin.manageapp.bots.aiassistantcalendar.services.CalendarService;
 import com.kuklin.manageapp.bots.aiassistantcalendar.services.UserGoogleCalendarService;
 import com.kuklin.manageapp.bots.aiassistantcalendar.telegram.AssistantTelegramBot;
-import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.entities.AssistantGoogleOAuth;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.Command;
@@ -42,6 +41,7 @@ public class SetCalendarIdUpdateHandler implements AssistantUpdateHandler{
     private boolean checkCalendarConnection(Long telegramId) {
         String calendarId = userGoogleCalendarService
                 .getUserCalendarIdByTelegramIdOrNull(telegramId);
+        if (calendarId == null) return false;
         return calendarService.existConnectionCalendarWithNoAuth(calendarId);
     }
 

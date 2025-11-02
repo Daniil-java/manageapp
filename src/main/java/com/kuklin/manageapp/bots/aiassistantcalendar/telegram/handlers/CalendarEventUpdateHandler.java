@@ -4,14 +4,12 @@ import com.google.api.services.calendar.model.Event;
 import com.google.api.services.calendar.model.EventDateTime;
 import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcessor;
 import com.kuklin.manageapp.bots.aiassistantcalendar.configurations.TelegramAiAssistantCalendarBotKeyComponents;
-import com.kuklin.manageapp.bots.aiassistantcalendar.entities.UserGoogleCalendar;
 import com.kuklin.manageapp.bots.aiassistantcalendar.models.ActionKnot;
 import com.kuklin.manageapp.bots.aiassistantcalendar.models.CalendarEventAiResponse;
 import com.kuklin.manageapp.bots.aiassistantcalendar.services.ActionKnotService;
 import com.kuklin.manageapp.bots.aiassistantcalendar.services.CalendarService;
 import com.kuklin.manageapp.bots.aiassistantcalendar.services.UserGoogleCalendarService;
 import com.kuklin.manageapp.bots.aiassistantcalendar.telegram.AssistantTelegramBot;
-import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.entities.AssistantGoogleOAuth;
 import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.models.TokenRefreshException;
 import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.service.TokenService;
 import com.kuklin.manageapp.common.entities.TelegramUser;
@@ -95,7 +93,7 @@ public class CalendarEventUpdateHandler implements AssistantUpdateHandler {
 
             if (!checkAuthOrCalendar(calendarContext, chatId)) return;
 
-            String tz = calendarService.getTimeZoneInCalendar(calendarContext);
+            String tz = calendarService.getTimeZoneInCalendarOrNull(calendarContext);
             ActionKnot actionKnot = actionKnotService.getActionKnotOrNull(request, tz);
 
             if (actionKnot.getAction() == ActionKnot.Action.EVENT_ADD) {
@@ -165,7 +163,7 @@ public class CalendarEventUpdateHandler implements AssistantUpdateHandler {
             if (context.getCalendarId() == null) {
                 assistantTelegramBot.sendReturnedMessage(chatId,
                         "Авторизуйтесь или установите календарь в ручную! "
-                                + Command.ASSISTANT_HELP);
+                                + Command.ASSISTANT_HELP.getCommandText());
                 return false;
             }
         } else {
