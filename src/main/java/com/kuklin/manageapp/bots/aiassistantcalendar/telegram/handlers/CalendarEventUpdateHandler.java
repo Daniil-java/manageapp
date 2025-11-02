@@ -190,7 +190,11 @@ public class CalendarEventUpdateHandler implements AssistantUpdateHandler {
     public static String getResponseAddEventString(Event event) {
         StringBuilder stringBuilder = new StringBuilder();
 
-        stringBuilder.append("<b>✅ Задача добавлена в календарь: </b> ").append(event.getSummary())
+        String summary = event.getSummary();
+        if (summary == null) {
+            summary = "Без названия";
+        }
+        stringBuilder.append("<b>✅ Задача добавлена в календарь: </b> ").append(summary)
                 .append(" " + formatHumanReadable(event.getStart())).append("\n");
 
         return stringBuilder.toString();
@@ -203,7 +207,11 @@ public class CalendarEventUpdateHandler implements AssistantUpdateHandler {
                 ? event.getDescription()
                 : "Не указано";
 
-        stringBuilder.append("\uD83D\uDCC5 <b>Мероприятие:</b> ").append(event.getSummary()).append("\n");
+        String summary = event.getSummary();
+        if (summary == null) {
+            summary = "Без названия";
+        }
+        stringBuilder.append("\uD83D\uDCC5 <b>Мероприятие:</b> ").append(summary).append("\n");
         if (!description.equals("Добавлено через Telegram-бота")) {
             stringBuilder.append("\uD83D\uDCDD <b>Описание:</b> ").append(description).append("\n");
 
