@@ -264,8 +264,10 @@ public class CalendarService {
             log.info("authCalendar:");
 
             AssistantGoogleOAuth auth = tokenService.findByTelegramIdOrNull(telegramId);
-            log.info(auth.getDefaultCalendarId()    );
-            return auth.getDefaultCalendarId();
+            log.info(auth.getDefaultCalendarId());
+            if (auth.getDefaultCalendarId() != null) {
+                return auth.getDefaultCalendarId();
+            }
         }
         String calendarId = userGoogleCalendarService.getUserCalendarIdByTelegramIdOrNull(telegramId);
         if (calendarId != null) {
