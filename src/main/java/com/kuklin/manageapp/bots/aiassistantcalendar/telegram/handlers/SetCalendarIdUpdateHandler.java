@@ -29,18 +29,18 @@ public class SetCalendarIdUpdateHandler implements AssistantUpdateHandler{
         String calendarId = extractCalendarId(message.getText());
         if (calendarId == null) {
             assistantTelegramBot.sendReturnedMessage(chatId, ERROR_MSG);
+            return;
         }
-        if (!checkCalendarConnection(telegramUser.getTelegramId())) {
+        if (!checkCalendarConnection(telegramUser.getTelegramId(), calendarId)) {
             assistantTelegramBot.sendReturnedMessage(chatId, "Календарь или не существует, или к нему не установлен доступ!");
+            return;
         }
 
         userGoogleCalendarService.setCalendarIdByTelegramId(telegramUser.getTelegramId(), calendarId);
         assistantTelegramBot.sendReturnedMessage(chatId, SUCCESS_MSG);
     }
 
-    private boolean checkCalendarConnection(Long telegramId) {
-        String calendarId = userGoogleCalendarService
-                .getUserCalendarIdByTelegramIdOrNull(telegramId);
+    private boolean checkCalendarConnection(Long telegramId, String calendarId) {
         if (calendarId == null) return false;
         return calendarService.existConnectionCalendarWithNoAuth(calendarId);
     }
