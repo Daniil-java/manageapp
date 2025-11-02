@@ -9,7 +9,9 @@ import com.kuklin.manageapp.bots.aiassistantcalendar.services.NotifiedEventServi
 import com.kuklin.manageapp.bots.aiassistantcalendar.services.UserGoogleCalendarService;
 import com.kuklin.manageapp.bots.aiassistantcalendar.telegram.AssistantTelegramBot;
 import com.kuklin.manageapp.bots.aiassistantcalendar.telegram.handlers.CalendarEventUpdateHandler;
+import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.entities.AssistantGoogleOAuth;
 import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.models.TokenRefreshException;
+import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.service.TokenService;
 import com.kuklin.manageapp.common.library.ScheduleProcessor;
 import com.kuklin.manageapp.common.library.tgutils.ThreadUtil;
 import lombok.AllArgsConstructor;
@@ -30,6 +32,7 @@ import java.util.List;
 @Slf4j
 public class EventNotificationSchedulerProcessor implements ScheduleProcessor {
     private final CalendarService calendarService;
+    private final TokenService tokenService;
     private final UserGoogleCalendarService userGoogleCalendarService;
     private final AssistantTelegramBot telegramBot;
     private final NotifiedEventService notifiedEventService;
@@ -38,44 +41,61 @@ public class EventNotificationSchedulerProcessor implements ScheduleProcessor {
 
     @Override
     public void process() {
+        noAuthProccess();
+        authProccess();
+    }
+
+    private void noAuthProccess() {
+        log.info("NO-AUTH SCHEDULE");
         List<UserGoogleCalendar> userGoogleCalendarList = userGoogleCalendarService.findAll();
-
         for (UserGoogleCalendar userCalendar: userGoogleCalendarList) {
-
-            try {
-                CalendarService.CalendarContext context = calendarService
-                        .getCalendarContext(userCalendar.getTelegramId());
-
-                String tz = calendarService.getTimeZoneInCalendar(context);
-
-                List<Event> events = calendarService.getTodayEvents(userCalendar.getTelegramId());
-                if (events.isEmpty()) continue;
-
-                List<Event> soonEvents = getEventsLessThanTime(events, ZoneId.of(tz));
-                notificateUser(userCalendar, soonEvents);
-
-            } catch (IOException e) {
-                log.error("Google execute request error!", e);
-            } catch (TokenRefreshException ignore) {
-
-            }
+            processUserCalendar(userCalendar.getTelegramId());
         }
     }
 
-    private void notificateUser(UserGoogleCalendar userGoogleCalendar, List<Event> events) {
+    private void authProccess() {
+        log.info("AUTH SCHEDULE");
+        List<AssistantGoogleOAuth> oAuthList = tokenService.getAll();
+        for (AssistantGoogleOAuth auth: oAuthList) {
+            processUserCalendar(auth.getTelegramId());
+        }
+    }
+
+    private void processUserCalendar(Long telegramId) {
+        log.info("SCHEDULE CORE METHOD");
+        try {
+            CalendarService.CalendarContext context = calendarService
+                    .getCalendarContext(telegramId);
+
+            String tz = calendarService.getTimeZoneInCalendar(context);
+
+            List<Event> events = calendarService.getTodayEvents(telegramId);
+            if (events.isEmpty()) return;
+
+            List<Event> soonEvents = getEventsLessThanTime(events, ZoneId.of(tz));
+            notificateUser(soonEvents, telegramId, context.getCalendarId());
+        } catch (IOException e) {
+            log.error("Google execute request error!", e);
+        } catch (TokenRefreshException ignore) {
+
+        }
+    }
+
+    private void notificateUser(List<Event> events, Long telegramId, String calendarId) {
+        log.info("NOTIFICATE: " + telegramId);
         for (Event event: events) {
 
             //Если уже уведомляли, то пропускаем
-            if (notifiedEventService.isNotified(userGoogleCalendar.getCalendarId(), event.getId(), userGoogleCalendar.getTelegramId())) {
+            if (notifiedEventService.isNotified(calendarId, event.getId(), telegramId)) {
                 continue;
             }
 
             //Отправляем сообщение в телеграм
-            Message message = telegramBot.sendReturnedMessage(userGoogleCalendar.getTelegramId(),
+            Message message = telegramBot.sendReturnedMessage(telegramId,
                     CalendarEventUpdateHandler.getResponseString(event));
             //Поемячем, что уведомили о мероприятии
             if (message != null) {
-                notifiedEventService.markAsNotified(userGoogleCalendar.getCalendarId(), event.getId(), userGoogleCalendar.getTelegramId());
+                notifiedEventService.markAsNotified(calendarId, event.getId(), telegramId);
             }
             ThreadUtil.sleep(100);
         }

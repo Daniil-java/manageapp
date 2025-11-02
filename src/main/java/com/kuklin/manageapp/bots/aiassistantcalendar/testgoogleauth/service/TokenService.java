@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -100,5 +101,10 @@ public class TokenService {
         AssistantGoogleOAuth auth = repo.findById(telegramId).orElse(null);
         if (auth == null) return null;
         return repo.save(auth.setDefaultCalendarId(calendarId));
+    }
+
+    @Transactional
+    public List<AssistantGoogleOAuth> getAll() {
+        return repo.findAll();
     }
 }

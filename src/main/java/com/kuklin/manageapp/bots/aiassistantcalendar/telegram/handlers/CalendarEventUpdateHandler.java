@@ -161,7 +161,7 @@ public class CalendarEventUpdateHandler implements AssistantUpdateHandler {
         StringBuilder stringBuilder = new StringBuilder();
 
         stringBuilder.append("<b>✅ Задача добавлена в календарь: </b> ").append(event.getSummary())
-        .append("<b>Начало:</b> ").append(formatHumanReadable(event.getStart())).append("\n");
+        .append(" " + formatHumanReadable(event.getStart())).append("\n");
 
         return stringBuilder.toString();
     }
