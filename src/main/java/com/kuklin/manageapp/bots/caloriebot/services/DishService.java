@@ -33,13 +33,37 @@ public class DishService {
     private final ProviderProcessorHandler processorHandler;
     private static final String AI_PHOTO_REQUEST =
             """
-                    Ты — система, которая анализирует фото.\s
-                    На фото должно быть блюдо.\s
-                    Если это не блюдо, верни JSON с полем "isDish": false, а остальные поля сделай null.\s
+                    Ты — экспертная система анализа изображений еды и напитков на фото. \s
+                                                Твоя задача — определить, есть ли на фото что-то съедобное (блюдо, продукт, напиток, упаковка готовой еды, снэк, конфета и т.п.), и если да — оценить состав и калорийность.
+                                                
+                                                Инструкции:
+                                                
+                                                1. Если на фото нет ничего, что можно съесть или выпить (пейзаж, человек, предмет, животное и т.д.) —\s
+                                                   верни JSON:
+                                                   {
+                                                     "name": null,
+                                                     "calories": null,
+                                                     "proteins": null,
+                                                     "fats": null,
+                                                     "carbohydrates": null,
+                                                     "userId": null,
+                                                     "isDish": false
+                                                   }
+                                                
+                                                2. Если на фото есть еда (в любой форме):
+                                                   - Укажи **точное или ближайшее название продукта** (если виден бренд — укажи его, например "Coca-Cola 0.5L", "Burger King Whopper", "Snickers").
+                                                   - Определи, является ли это:
+                                                     - а) домашним/рестораным блюдом (оцени по внешнему виду);
+                                                     - б) упакованным продуктом (если виден бренд, упаковка, логотип, этикетка и т.п.);
+                                                   - Если это **упаковка или брендовый продукт**, оцени калорийность и БЖУ **на всю упаковку**, если возможно (например, если на фото бутылка 0.5L — рассчитай для всего объёма).
+                                                   - Если это **готовое блюдо без упаковки**, оцени значения исходя из типичной порции, видимой на изображении.
+                                                   - Все значения (калории, белки, жиры, углеводы) возвращай как **приблизительные целые числа** (без единиц измерения).
+                                                   - Если ты не уверен, оцени по наиболее вероятному типичному варианту.
                                         
+                    Если это не блюдо, верни JSON с полем "isDish": false, а остальные поля сделай null.\s      
                     Если это блюдо или любая другая еда(напитки, снэки, конфеты и все съедобное), то дай ему имя, оцени примерное количество калорий, белков, жиров и углеводов. "isDish" : true\s
-                    Верни JSON строго в формате:
                                         
+                    Верни JSON строго в формате:                
                     {
                       "name": <String или null>
                       "calories": <Integer или null>,
@@ -53,7 +77,7 @@ public class DishService {
                     ⚠️ Отвечай строго в формате JSON.
                        Не используй Markdown‑блоки, не добавляй ```json или ``` в начале и конце.
                        Не добавляй пояснений, текста или комментариев — только валидный JSON‑объект.
-                       
+                       Значения должны быть **адекватно оценены** на основании визуальной информации (включая бренды, упаковку, порцию и тип продукта).
                                         
                     """;
 
@@ -75,7 +99,7 @@ public class DishService {
                       "userId": <Integer или null>,
                       "isDish": <true|false>
                     }
-                    
+                                        
                     Описание: %s
                                         
                     ⚠️ Отвечай строго в формате JSON.
@@ -83,6 +107,7 @@ public class DishService {
                        Не добавляй пояснений, текста или комментариев — только валидный JSON‑объект.
                        
                     """;
+
     public Dish createDishOrNull(DishDto dto) {
         if (dto.getUserId() == null) return null;
         return dishRepository.save(Dish.toEntity(dto));
@@ -104,17 +129,14 @@ public class DishService {
 
     public Map<ChatModel, DishDto> getDishDtoByPhotoOrNullWithManyProviders(String imageUrl) {
         Map<ChatModel, DishDto> map = new HashMap<>();
-        for (ChatModel chatModel: ChatModel.getModels()) {
+        for (ChatModel chatModel : ChatModel.getModels()) {
             ProviderVariant provider = chatModel.getProviderVariant();
 
             String aiKey = null;
             switch (chatModel.getProviderVariant()) {
-                case CLAUDE ->
-                    aiKey = telegramCaloriesBotKeyComponents.getClaudeAiKey();
-                case GEMINI ->
-                    aiKey = telegramCaloriesBotKeyComponents.getGeminiAiKey();
-                case DEEPSEEK ->
-                    aiKey = telegramCaloriesBotKeyComponents.getDeepseekAiKey();
+                case CLAUDE -> aiKey = telegramCaloriesBotKeyComponents.getClaudeAiKey();
+                case GEMINI -> aiKey = telegramCaloriesBotKeyComponents.getGeminiAiKey();
+                case DEEPSEEK -> aiKey = telegramCaloriesBotKeyComponents.getDeepseekAiKey();
             }
             if (aiKey == null) aiKey = telegramCaloriesBotKeyComponents.getAiKey();
 
