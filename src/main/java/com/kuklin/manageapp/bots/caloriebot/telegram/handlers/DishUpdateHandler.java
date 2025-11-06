@@ -110,7 +110,7 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler{
             if (dto != null) {
                 String name = (model != null ? model.getName() : "UNKNOWN_MODEL");
                 sj.add("<b>" + name + "</b>\n" + dto.toStringSpecial()); // dto.toString()
-                sj.add("<br>");
+                sj.add("\r\n");
             }
         }
 
