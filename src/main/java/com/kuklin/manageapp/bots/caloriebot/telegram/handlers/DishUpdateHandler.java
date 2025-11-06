@@ -25,6 +25,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
+import java.util.Map.Entry;
 
 @Component
 @RequiredArgsConstructor
@@ -103,12 +104,15 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler{
         if (map == null || map.isEmpty()) return "";
         StringJoiner sj = new StringJoiner(System.lineSeparator());
 
-        map.forEach((model, dto) -> {
+        for (Entry<ChatModel, DishDto> entry : map.entrySet()) {
+            ChatModel model = entry.getKey();
+            DishDto dto = entry.getValue();
             if (dto != null) {
                 String name = (model != null ? model.getName() : "UNKNOWN_MODEL");
-                sj.add("<b>" + name + "</b>\n" + dto); // dto.toString()
+                sj.add("<b>" + name + "</b>\n" + dto.toStringSpecial()); // dto.toString()
+                sj.add("<br>");
             }
-        });
+        }
 
         return sj.toString();
     }
