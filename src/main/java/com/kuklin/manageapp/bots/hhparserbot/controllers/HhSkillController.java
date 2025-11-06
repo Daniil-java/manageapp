@@ -5,6 +5,7 @@ import com.kuklin.manageapp.bots.hhparserbot.models.SkillSource;
 import com.kuklin.manageapp.bots.hhparserbot.models.SkillSummaryRow;
 import com.kuklin.manageapp.bots.hhparserbot.services.HhSkillService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -12,6 +13,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/hhbot/skills")
 @RequiredArgsConstructor
+@Slf4j
 public class HhSkillController {
     private final HhSkillService hhSkillService;
 
@@ -22,8 +24,9 @@ public class HhSkillController {
     }
 
     @GetMapping(value = "/stats/summary", produces = "application/json")
-    public List<SkillSummaryRow> summary(@RequestParam(defaultValue = "3") long minTotal,
-                                         @RequestParam(defaultValue = "50") int limit) {
+    public List<SkillSummaryRow> summary(@RequestParam(name = "minTotal", defaultValue = "3") long minTotal,
+                                         @RequestParam(name = "limit",    defaultValue = "50") int limit) {
+        log.info("HH BOT: skills metrics controller request: " + minTotal + " " + limit);
         return hhSkillService.getSummary(minTotal, limit);
     }
 }
