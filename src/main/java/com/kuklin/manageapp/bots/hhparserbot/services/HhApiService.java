@@ -32,7 +32,7 @@ public class HhApiService {
             Document document = Jsoup.connect(url) .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118 Safari/537.36")
                     .header("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8")
                     .header("Accept-Language", "ru-RU,ru;q=0.9")
-                    .timeout(1500)
+                    .timeout(15000)
                     .get();
             //Выборка необходимых элементов(вакансий) страницы
             Elements elements = document.select("a[data-qa='serp-item__title']");

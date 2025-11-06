@@ -1,6 +1,6 @@
 --liquibase formatted sql
 
---changeset DanielK:5
+--changeset DanielK:6
 
 -- Пользователи
 CREATE TABLE hh_user_info (

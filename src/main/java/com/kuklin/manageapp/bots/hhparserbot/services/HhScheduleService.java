@@ -19,6 +19,7 @@ public class HhScheduleService {
     private final HhNotificationScheduleProcessor hhNotificationScheduleProcessor;
 
     @Scheduled(cron = "0 */5 * * * *")
+//    @Scheduled(cron = "0 */1 * * * *")
     public void workFilterScheduleProcess() {
         getInfo(hhWorkFilterScheduleProcessor.getSchedulerName());
         hhWorkFilterScheduleProcessor.process();

@@ -1,8 +1,16 @@
 package com.kuklin.manageapp.bots.hhparserbot.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.AccessLevel;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Data
 public class HhResponseDto {
@@ -24,6 +32,27 @@ public class HhResponseDto {
     private Salary salary;
     private Schedule schedule;
     private HhEmployerDto employer;
+
+    public List<String> getKeySkills() {
+        if (keySkillsItems == null) return Collections.emptyList();
+        return keySkillsItems.stream()
+                .map(KeySkillItem::getName)      // берём name
+                .filter(Objects::nonNull)         // пропускаем пустые {}
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toList());
+    }
+
+    @Getter(AccessLevel.NONE)
+    @Setter(AccessLevel.NONE)
+    @JsonProperty("key_skills")
+    private List<KeySkillItem> keySkillsItems;
+
+    @Data
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class KeySkillItem {
+        private String name;
+    }
 
     @Data
     public static class Contacts {

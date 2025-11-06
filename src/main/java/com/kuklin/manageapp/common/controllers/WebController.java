@@ -25,4 +25,9 @@ public class WebController {
     public String getPomidoro() {
         return "timer";
     }
+
+    @GetMapping("/hhbot/skills")
+    public String getSkillPage() {
+        return "skillsdata";
+    }
 }

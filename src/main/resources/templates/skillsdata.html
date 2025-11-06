@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8" />
+    <title>Статистика навыков — HH Skills Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- Chart.js (+ плагин можно оставить, он не мешает) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+
+    <style>
+        :root{
+            --bg:#ffffff; --text:#0f172a; --muted:#475569; --card:#f8fafc;
+            --accent:#0ea5e9; --accent-2:#22c55e; --ring:rgba(14,165,233,.35);
+            --border:#e2e8f0; --shadow:0 10px 30px rgba(2,8,23,.06); --shadow-sm:0 6px 18px rgba(2,8,23,.05);
+            --warn:#f59e0b; --danger:#ef4444;
+        }
+        *{box-sizing:border-box} html,body{height:100%}
+        body{margin:0; font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Helvetica Neue,Arial}
+        header{position:sticky; top:0; z-index:10; background:linear-gradient(180deg,rgba(248,250,252,.9),rgba(248,250,252,.75),rgba(248,250,252,0)); backdrop-filter:saturate(1.2) blur(6px); border-bottom:1px solid var(--border)}
+        .container{max-width:1200px; margin:0 auto; padding:16px 20px}
+        .title{font-size:20px; font-weight:800; letter-spacing:.2px; display:flex; gap:12px; align-items:center}
+        .subtitle{color:var(--muted); font-size:14px}
+        .controls{display:grid; grid-template-columns: repeat(12,1fr); gap:12px; margin-top:12px; align-items:end}
+        .control{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:12px; box-shadow:var(--shadow-sm)}
+        .control label{display:block; font-size:12px; color:var(--muted); margin-bottom:6px}
+        .control input[type="number"], .control input[type="text"], .control input[type="range"], .control select{width:100%; padding:10px 12px; border-radius:10px; border:1px solid var(--border); outline:none; background:#fff; color:var(--text)}
+        .btn{appearance:none; border:1px solid var(--accent); background:var(--accent); color:#fff; font-weight:700; padding:10px 14px; border-radius:12px; cursor:pointer; box-shadow:var(--shadow); transition:.2s transform ease,.2s box-shadow ease,.2s background ease}
+        .btn.secondary{background:#fff; color:var(--accent)}
+        .btn.ghost{background:#fff; color:var(--text); border-color:var(--border)}
+        .btn:hover{transform:translateY(-1px)} .btn:active{transform:translateY(0)} .btn[disabled]{opacity:.6; cursor:not-allowed}
+        .grid{display:grid; gap:16px; margin:18px 0 24px}
+        .grid.cols-4{grid-template-columns: repeat(4,1fr)}
+        .card{background:#fff; border:1px solid var(--border); border-radius:16px; padding:16px; box-shadow:var(--shadow)}
+        .metric{display:flex; flex-direction:column; gap:8px}
+        .metric .label{font-size:12px; color:var(--muted)} .metric .value{font-size:28px; font-weight:900} .metric .hint{font-size:12px; color:var(--muted)}
+        .section-title{font-size:16px; font-weight:800; margin:0 0 8px; display:flex; align-items:center; gap:8px}
+        .canvas-wrap{height:380px}
+        .caption{margin-top:8px; font-size:12px; color:var(--muted)}
+        .legend{display:flex; gap:10px; flex-wrap:wrap}
+        .badge{display:inline-flex; align-items:center; gap:6px; font-size:12px; border-radius:999px; padding:4px 10px; border:1px solid var(--border); background:var(--card); color:var(--muted)}
+        .badge.ai{border-color:#bae6fd; background:#f0f9ff; color:#0369a1}
+        .badge.api{border-color:#bbf7d0; background:#f0fdf4; color:#166534}
+        .badge.warn{border-color:#fde68a; background:#fffbeb; color:#92400e}
+        .help{background:#f8fafc; border:1px dashed var(--border); border-radius:14px; padding:12px}
+        .table-wrap{overflow:auto; border:1px solid var(--border); border-radius:14px; background:#fff; box-shadow:var(--shadow)}
+        table{width:100%; border-collapse:separate; border-spacing:0}
+        thead th{position:sticky; top:0; background:var(--card); text-align:left; font-size:13px; color:var(--muted); padding:10px 12px; border-bottom:1px solid var(--border); cursor:pointer; user-select:none; white-space:nowrap}
+        tbody td{padding:12px; border-bottom:1px solid var(--border)} tbody tr:hover{background:#fafcff}
+        .tabs{display:flex; gap:8px; margin-bottom:12px} .tab-btn{padding:8px 12px; border-radius:10px; border:1px solid var(--border); background:#fff; cursor:pointer} .tab-btn.active{border-color:var(--accent); box-shadow:0 0 0 3px var(--ring)}
+        .sr{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; padding:0; margin:-1px}
+        .callout{background:#ecfeff; border:1px solid #a5f3fc; color:#155e75; padding:10px 12px; border-radius:10px}
+        @media (max-width: 960px){ .grid.cols-4{grid-template-columns:1fr 1fr} }
+        @media (max-width: 640px){ .grid.cols-4{grid-template-columns:1fr} .controls{grid-template-columns: repeat(2,1fr)} }
+        /* simple tooltip */
+        .tt{position:relative} .tt:hover .ttc{opacity:1; transform:translateY(0); pointer-events:auto}
+        .ttc{position:absolute; z-index:20; left:0; top:125%; min-width:220px; max-width:360px; background:#111827; color:#fff; font-size:12px; padding:8px 10px; border-radius:8px; box-shadow:0 6px 18px rgba(0,0,0,.25); opacity:0; transform:translateY(-4px); transition:.15s; pointer-events:none}
+    </style>
+</head>
+<body>
+<header>
+    <div class="container">
+        <div class="title">Статистика навыков HH <span class="subtitle">AI vs API · доли · пояснения внутри</span></div>
+
+        <div class="controls">
+            <div class="control" style="grid-column:span 3;">
+                <label for="minTotal">Мин. встречаемость навыка (minTotal): <strong id="minTotalVal">3</strong></label>
+                <input id="minTotal" type="range" min="1" max="20" step="1" value="3" />
+            </div>
+            <div class="control" style="grid-column:span 2;">
+                <label for="limit">Лимит навыков (по total)</label>
+                <select id="limit"><option>25</option><option selected>50</option><option>100</option><option>200</option></select>
+            </div>
+            <div class="control" style="grid-column:span 3;">
+                <label for="search">Поиск по навыку (в таблицах)</label>
+                <input id="search" type="text" placeholder="например: spring, confluence, k8s" />
+            </div>
+            <div class="control" style="grid-column:span 2;">
+                <label for="aiBias">Порог AI-biased (≥)</label>
+                <input id="aiBias" type="number" min="0" max="1" step="0.05" value="0.8" />
+            </div>
+            <div class="control" style="grid-column:span 2;">
+                <label for="apiBias">Порог API-biased (≤)</label>
+                <input id="apiBias" type="number" min="0" max="1" step="0.05" value="0.2" />
+            </div>
+
+            <div style="grid-column:span 12; display:flex; gap:10px; align-items:center; flex-wrap:wrap">
+                <button id="refresh" class="btn">Обновить данные</button>
+                <button id="exportCsv" class="btn secondary">Экспорт CSV</button>
+                <button id="openHowto" class="btn ghost">Как читать эту страницу</button>
+                <span class="legend">
+          <span class="badge ai">AI — извлечено ИИ из описаний</span>
+          <span class="badge api">API — ключевые навыки из API</span>
+          <span class="badge warn">aiShare = AI / (AI + API)</span>
+        </span>
+                <span id="status" class="subtitle"></span>
+            </div>
+        </div>
+
+        <div id="howto" class="help" style="margin-top:12px; display:none">
+            <strong>Коротко:</strong> столбчатый график «Вклад источников (AI vs API)» показывает общий вклад по каждому навыку.
+            В таблицах — те же данные с сортировкой и поиском. Порогами сверху можно подсветить AI-biased / API-biased.
+        </div>
+    </div>
+</header>
+
+<main class="container">
+    <!-- Метрики -->
+    <section class="grid cols-4">
+        <div class="card metric">
+            <div class="label">Навыков в срезе</div>
+            <div class="value" id="m_skills">—</div>
+            <div class="hint">Строк в summary после фильтров</div>
+        </div>
+        <div class="card metric">
+            <div class="label">Доля топ-10</div>
+            <div class="value" id="m_top10">—</div>
+            <div class="hint">Сумма top-10 / сумма всех (по total)</div>
+        </div>
+        <div class="card metric">
+            <div class="label">Корреляция AI vs API (Spearman)</div>
+            <div class="value" id="m_corr">—</div>
+            <div class="hint">0 — нет связи, 1 — ранги совпадают</div>
+        </div>
+        <div class="card metric">
+            <div class="label">Средняя AI-доля</div>
+            <div class="value" id="m_aiShare">—</div>
+            <div class="hint">Среднее aiShare по навыкам</div>
+        </div>
+    </section>
+
+    <!-- ОСТАВЛЯЕМ ТОЛЬКО STACKED -->
+    <section class="card">
+        <div class="section-title">
+            Вклад источников (AI vs API), топ-15 (stacked)
+            <span class="tt info"><span class="dot">i</span><span class="ttc">Навык разбит на сегменты по источникам: AI и API. Высота столбца = total.</span></span>
+        </div>
+        <div class="canvas-wrap"><canvas id="chartStack"></canvas></div>
+        <div class="caption">Столбец = total; сегменты показывают вклад AI и API (для топ-15 навыков).</div>
+    </section>
+
+    <!-- Таблицы -->
+    <section class="card">
+        <div class="section-title">Таблицы</div>
+        <div class="callout" style="margin-bottom:10px">
+            <strong>Подсказка:</strong> кликай по заголовкам, чтобы сортировать. Поле поиска фильтрует строки по названию навыка.
+        </div>
+
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="tabTop">Топ (все)</button>
+            <button class="tab-btn" data-tab="tabAi">AI-biased</button>
+            <button class="tab-btn" data-tab="tabApi">API-biased</button>
+        </div>
+
+        <div id="tabTop" class="table-wrap" role="region" aria-label="Таблица — все навыки">
+            <table id="tblTop">
+                <thead>
+                <tr>
+                    <th data-key="skillName">Навык <span class="tt info"><span class="dot">i</span><span class="ttc">Нормализованное имя навыка (lowercase)</span></span></th>
+                    <th data-key="aiCount">AI <span class="tt info"><span class="dot">i</span><span class="ttc">Сколько раз навык извлёк ИИ из описания вакансии</span></span></th>
+                    <th data-key="apiCount">API <span class="tt info"><span class="dot">i</span><span class="ttc">Сколько раз навык пришёл как ключевой из API</span></span></th>
+                    <th data-key="total" class="sorted">Всего <span class="tt info"><span class="dot">i</span><span class="ttc">total = AI + API</span></span></th>
+                    <th data-key="aiShare">AI-доля <span class="tt info"><span class="dot">i</span><span class="ttc">aiShare = AI / (AI + API)</span></span></th>
+                    <th data-key="bias">Bias <span class="tt info"><span class="dot">i</span><span class="ttc">AI-biased ≥ порога; API-biased ≤ порога</span></span></th>
+                </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <div id="tabAi" class="table-wrap" hidden role="region" aria-label="Таблица — AI-biased">
+            <table id="tblAi">
+                <thead>
+                <tr>
+                    <th data-key="skillName">Навык</th>
+                    <th data-key="aiCount">AI</th>
+                    <th data-key="apiCount">API</th>
+                    <th data-key="total">Всего</th>
+                    <th data-key="aiShare" class="sorted">AI-доля</th>
+                    <th data-key="bias">Bias</th>
+                </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <div id="tabApi" class="table-wrap" hidden role="region" aria-label="Таблица — API-biased">
+            <table id="tblApi">
+                <thead>
+                <tr>
+                    <th data-key="skillName">Навык</th>
+                    <th data-key="aiCount">AI</th>
+                    <th data-key="apiCount">API</th>
+                    <th data-key="total">Всего</th>
+                    <th data-key="aiShare">AI-доля</th>
+                    <th data-key="bias" class="sorted">Bias</th>
+                </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="card">
+        <div class="section-title">Определения и логика расчётов</div>
+        <ul style="margin:8px 0 0 18px; color:var(--muted); line-height:1.4">
+            <li><strong>AI</strong> — навык найден ИИ в тексте описания вакансии.</li>
+            <li><strong>API</strong> — навык пришёл из поля ключевых навыков HeadHunter API.</li>
+            <li><strong>total</strong> = AI + API (по одному навыку).</li>
+            <li><strong>aiShare</strong> = AI / total (0…1). Чем выше, тем чаще навык появляется в тексте, а не в явном списке.</li>
+            <li><strong>AI-biased / API-biased</strong> — определяются порогами вверху страницы.</li>
+        </ul>
+    </section>
+</main>
+
+<script>
+    (function(){
+        // Плагин зарегистрирован — не мешает, даже если не используется
+        Chart.register(ChartDataLabels);
+
+        const els = {
+            minTotal: document.getElementById('minTotal'),
+            minTotalVal: document.getElementById('minTotalVal'),
+            limit: document.getElementById('limit'),
+            search: document.getElementById('search'),
+            aiBias: document.getElementById('aiBias'),
+            apiBias: document.getElementById('apiBias'),
+            refresh: document.getElementById('refresh'),
+            exportCsv: document.getElementById('exportCsv'),
+            status: document.getElementById('status'),
+            howtoBtn: document.getElementById('openHowto'),
+            howto: document.getElementById('howto'),
+            m_skills: document.getElementById('m_skills'),
+            m_top10: document.getElementById('m_top10'),
+            m_corr: document.getElementById('m_corr'),
+            m_aiShare: document.getElementById('m_aiShare'),
+            tabs: document.querySelectorAll('.tab-btn'),
+            tabTop: document.getElementById('tabTop'),
+            tabAi: document.getElementById('tabAi'),
+            tabApi: document.getElementById('tabApi'),
+            tblTop: document.querySelector('#tblTop tbody'),
+            tblAi: document.querySelector('#tblAi tbody'),
+            tblApi: document.querySelector('#tblApi tbody'),
+            chartStackEl: document.getElementById('chartStack')
+        };
+
+        // persist
+        ['minTotal','limit','aiBias','apiBias'].forEach(k=>{
+            const v = localStorage.getItem('skills_'+k);
+            if(v!==null) els[k].value = v;
+        });
+        els.minTotalVal.textContent = els.minTotal.value;
+
+        els.minTotal.addEventListener('input', ()=>{
+            els.minTotalVal.textContent = els.minTotal.value;
+            localStorage.setItem('skills_minTotal', els.minTotal.value);
+        });
+        els.limit.addEventListener('change', ()=>localStorage.setItem('skills_limit', els.limit.value));
+        els.aiBias.addEventListener('change', ()=>localStorage.setItem('skills_aiBias', els.aiBias.value));
+        els.apiBias.addEventListener('change', ()=>localStorage.setItem('skills_apiBias', els.apiBias.value));
+
+        // how-to
+        els.howtoBtn.addEventListener('click', ()=>{
+            const v = els.howto.style.display !== 'none';
+            els.howto.style.display = v ? 'none' : 'block';
+            els.howtoBtn.textContent = v ? 'Как читать эту страницу' : 'Скрыть пояснения';
+        });
+
+        // tabs
+        els.tabs.forEach(btn=>{
+            btn.addEventListener('click', ()=>{
+                els.tabs.forEach(b=>b.classList.remove('active'));
+                btn.classList.add('active');
+                [els.tabTop,els.tabAi,els.tabApi].forEach(el=>el.hidden=true);
+                document.getElementById(btn.dataset.tab).hidden=false;
+            });
+        });
+
+        // state
+        let summary = []; // [{skillName, aiCount, apiCount, total, aiShare}]
+        let chartStack;
+
+        function formatNum(n){ return n.toLocaleString('ru-RU'); }
+        function pct(x){ return (x*100).toFixed(1)+'%'; }
+
+        function spearman(xs, ys){
+            function rank(arr){
+                const indexed = arr.map((v,i)=>({v,i})).sort((a,b)=>a.v-b.v);
+                const ranks = new Array(arr.length);
+                for(let i=0;i<indexed.length;i++){
+                    let j=i; while(j+1<indexed.length && indexed[j+1].v===indexed[i].v) j++;
+                    const r = (i+j+2)/2; for(let k=i;k<=j;k++) ranks[indexed[k].i]=r; i=j;
+                }
+                return ranks;
+            }
+            if(xs.length!==ys.length || xs.length===0) return NaN;
+            const rx = rank(xs), ry = rank(ys), n=xs.length;
+            let d2=0; for(let i=0;i<n;i++){ const d=rx[i]-ry[i]; d2+=d*d; }
+            return 1 - (6*d2)/(n*(n*n-1));
+        }
+
+        async function fetchJSON(url){
+            const res = await fetch(url, {headers:{'Accept':'application/json'}});
+            if(!res.ok) throw new Error('HTTP '+res.status+' '+url);
+            return res.json();
+        }
+
+        function setStatus(msg){ els.status.textContent = msg; }
+
+        async function loadData(){
+            const minTotal = Number(els.minTotal.value);
+            const limit = Number(els.limit.value);
+            const aiBias = Number(els.aiBias.value);
+            const apiBias = Number(els.apiBias.value);
+
+            setStatus('Загрузка…');
+            try{
+                summary = await fetchJSON(`/hhbot/skills/stats/summary?minTotal=${minTotal}&limit=${limit}`);
+                summary = summary.map(s=>{
+                    let bias='—';
+                    if(s.aiShare>=aiBias) bias='AI-biased';
+                    else if(s.aiShare<=apiBias) bias='API-biased';
+                    return {...s, bias};
+                });
+
+                renderAll();
+                setStatus(`Готово: ${summary.length} навыков`);
+            }catch(e){
+                console.error(e);
+                setStatus('Ошибка: '+e.message);
+            }
+        }
+
+        function computeMetrics(items){
+            const totalAll = items.reduce((a,b)=>a+b.total,0);
+            const top10 = items.slice(0,10).reduce((a,b)=>a+b.total,0);
+            const corr = spearman(items.map(x=>x.aiCount), items.map(x=>x.apiCount));
+            const avgShare = items.reduce((a,b)=>a+b.aiShare,0) / (items.length||1);
+            return { totalAll, top10Share: totalAll? (top10/totalAll):0, corr, avgShare };
+        }
+
+        function renderMetrics(items){
+            const m = computeMetrics(items);
+            els.m_skills.textContent = formatNum(items.length);
+            els.m_top10.textContent = pct(m.top10Share);
+            els.m_corr.textContent = (isFinite(m.corr)? m.corr.toFixed(3): '—');
+            els.m_aiShare.textContent = pct(m.avgShare);
+        }
+
+        function buildStackChart(items){
+            const top = items.slice(0, Math.min(15, items.length));
+            const labels = top.map(x=>x.skillName);
+            const ai = top.map(x=>x.aiCount);
+            const api = top.map(x=>x.apiCount);
+
+            const data = { labels,
+                datasets:[ {label:'AI', data: ai}, {label:'API', data: api} ]
+            };
+            const opts = {
+                maintainAspectRatio:false,
+                plugins:{ legend:{position:'bottom'},
+                    tooltip:{callbacks:{footer(ctx){
+                                const i=ctx[0].dataIndex; const s=top[i];
+                                return `total: ${formatNum(s.total)} | aiShare: ${pct(s.aiShare)}`;
+                            }}} },
+                scales:{
+                    x:{ stacked:true, grid:{color:'rgba(148,163,184,.25)'} },
+                    y:{ stacked:true, grid:{color:'rgba(148,163,184,.25)'} }
+                }
+            };
+            if(chartStack){ chartStack.destroy(); }
+            chartStack = new Chart(els.chartStackEl, {type:'bar', data, options: opts});
+        }
+
+        function renderTables(items){
+            const aiBias = Number(els.aiBias.value);
+            const apiBias = Number(els.apiBias.value);
+            const q = els.search.value.trim().toLowerCase();
+
+            const all = q ? items.filter(s=>s.skillName.includes(q)) : items.slice();
+            const aiBiased = all.filter(s=>s.aiShare>=aiBias);
+            const apiBiased = all.filter(s=>s.aiShare<=apiBias);
+
+            fillTable(els.tblTop, all, {sortKey:'total', desc:true});
+            fillTable(els.tblAi, aiBiased, {sortKey:'aiShare', desc:true});
+            fillTable(els.tblApi, apiBiased, {sortKey:'bias', desc:false});
+        }
+
+        function fillTable(tbody, rows, sort){
+            if(sort && sort.sortKey){
+                rows = rows.slice().sort((a,b)=>{
+                    const k=sort.sortKey; const da=a[k], db=b[k];
+                    if(typeof da==='string') return sort.desc ? db.localeCompare(da) : da.localeCompare(db);
+                    return sort.desc ? (db-da):(da-db);
+                });
+            }
+            tbody.innerHTML = rows.map(r=>`
+      <tr>
+        <td>${escapeHtml(r.skillName)}</td>
+        <td><span class="badge ai">AI: ${formatNum(r.aiCount)}</span></td>
+        <td><span class="badge api">API: ${formatNum(r.apiCount)}</span></td>
+        <td>${formatNum(r.total)}</td>
+        <td>${pct(r.aiShare)}</td>
+        <td>${renderBias(r.bias)}</td>
+      </tr>`).join('');
+
+            const table = tbody.closest('table');
+            attachSorting(table, rows);
+        }
+
+        function attachSorting(table, cacheRows){
+            const head = table.querySelector('thead');
+            if(!head) return;
+            head.querySelectorAll('th').forEach(th=>{
+                th.onclick = ()=>{
+                    const key = th.dataset.key; if(!key) return;
+                    const currentlySorted = th.classList.contains('sorted');
+                    head.querySelectorAll('th').forEach(x=>x.classList.remove('sorted'));
+                    th.classList.add('sorted');
+                    const desc = !currentlySorted;
+                    const rows = cacheRows.slice().sort((a,b)=>{
+                        const da=a[key], db=b[key];
+                        if(typeof da==='string' && typeof db==='string') return desc ? db.localeCompare(da) : da.localeCompare(db);
+                        return desc ? (db-da):(da-db);
+                    });
+                    const tbody = table.querySelector('tbody');
+                    tbody.innerHTML = rows.map(r=>`
+          <tr>
+            <td>${escapeHtml(r.skillName)}</td>
+            <td><span class="badge ai">AI: ${formatNum(r.aiCount)}</span></td>
+            <td><span class="badge api">API: ${formatNum(r.apiCount)}</span></td>
+            <td>${formatNum(r.total)}</td>
+            <td>${pct(r.aiShare)}</td>
+            <td>${renderBias(r.bias)}</td>
+          </tr>`).join('');
+                };
+            });
+        }
+
+        function renderBias(b){
+            if(b==='AI-biased') return `<span class="badge ai">AI-biased</span>`;
+            if(b==='API-biased') return `<span class="badge api">API-biased</span>`;
+            return `<span class="badge">—</span>`;
+        }
+        function escapeHtml(s){ return s.replace(/[&<>'"]/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
+
+        function renderAll(){
+            if(!summary.length){
+                document.body.insertAdjacentHTML('beforeend', `<div class="container"><div class="card" style="margin:12px 0"><strong>Данных нет.</strong> Увеличь лимит или уменьши minTotal.</div></div>`);
+                return;
+            }
+            renderMetrics(summary);
+            buildStackChart(summary);   // <-- оставили только этот график
+            renderTables(summary);
+        }
+
+        // export CSV (активная вкладка)
+        function exportCSV(){
+            const active = document.querySelector('.tab-btn.active')?.dataset.tab || 'tabTop';
+            const map = { tabTop:'#tblTop', tabAi:'#tblAi', tabApi:'#tblApi' };
+            const table = document.querySelector(map[active]);
+            if(!table) return;
+            const headers = Array.from(table.querySelectorAll('thead th')).map(th=>th.childNodes[0].textContent.trim());
+            const rows = Array.from(table.querySelectorAll('tbody tr')).map(tr=>{
+                return Array.from(tr.children).map(td=>{
+                    const t = td.textContent.replace(/\s+/g,' ').trim();
+                    return `"${t.replace(/"/g,'""')}"`;
+                }).join(',');
+            });
+            const csv = [headers.join(','), ...rows].join('\r\n');
+            const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'skills_stats.csv'; a.click();
+            URL.revokeObjectURL(a.href);
+        }
+
+        els.refresh.addEventListener('click', loadData);
+        els.exportCsv.addEventListener('click', exportCSV);
+        els.search.addEventListener('input', ()=>renderTables(summary));
+
+        // init
+        loadData();
+    })();
+</script>
+</body>
+</html>

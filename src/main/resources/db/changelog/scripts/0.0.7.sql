@@ -1,6 +1,6 @@
 --liquibase formatted sql
 
---changeset DanielK:6
+--changeset DanielK:7
 
 -- Пользователи
 CREATE TABLE pomidoro_users (

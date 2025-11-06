@@ -1,13 +1,12 @@
 package com.kuklin.manageapp.bots.hhparserbot.services;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcessor;
 import com.kuklin.manageapp.bots.hhparserbot.configurations.TelegramHhParserBotKeyComponents;
 import com.kuklin.manageapp.bots.hhparserbot.entities.Vacancy;
 import com.kuklin.manageapp.bots.hhparserbot.entities.WorkFilter;
-import com.kuklin.manageapp.bots.hhparserbot.models.HhEmployerDto;
-import com.kuklin.manageapp.bots.hhparserbot.models.HhResponseDto;
-import com.kuklin.manageapp.bots.hhparserbot.models.HhSimpleResponseDto;
-import com.kuklin.manageapp.bots.hhparserbot.models.VacancyStatus;
+import com.kuklin.manageapp.bots.hhparserbot.models.*;
 import com.kuklin.manageapp.bots.hhparserbot.repositories.VacancyRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,14 +21,34 @@ import java.util.Optional;
 public class HhVacancyService {
     private final VacancyRepository vacancyRepository;
     private final HhApiService hhApiService;
+    private final HhSkillService hhSkillService;
     private final OpenAiProviderProcessor openAiProviderProcessor;
     private final TelegramHhParserBotKeyComponents components;
+    private final ObjectMapper objectMapper = new ObjectMapper();
     private static final String AI_REQUEST =
             """
                     Я отправляю тебе описание вакансии. 
                     Сократи описание, передай основные моменты.
                     Составляй сообщение от лица компании: \n %s
                     """;
+
+    private static final String AI_JSON_REQUEST = """
+            Ты — помощник по разбору вакансий. На вход ты получаешь текст вакансии.
+
+            Требуется сформировать объект JSON со строго следующими полями:
+            - generatedDescription: краткое резюме вакансии (3–5 предложений на русском), передай основные моменты.
+            - keySkills: массив строк — только hard skills (языки, фреймворки, технологии, инструменты). Все элементы в нижнем регистре, без дублей, без софт-скиллов.
+            - strictlyRequiredSkills: массив строк — только hard skills, которые явно помечены как строго обязательные. Признаки: формулировки вида «обязательно», «must have», «необходим опыт», «обязательные требования», «без этого не рассматриваем», разделы «Требования», «Must have» и т.п. Все элементы в нижнем регистре, без дублей.
+
+            Правила вывода:
+            - Ответь ТОЛЬКО валидным JSON-объектом без какого-либо дополнительного текста до или после.
+            - Имена полей строго: generatedDescription, keySkills, strictlyRequiredSkills.
+            - Если подходящих навыков нет — верни пустой массив [] (не null).
+            - НЕ ДОБАВЛЯЙ MARKDOWN, ТРОЙНЫЕ КАВЫЧКИ, ЦИТАТЫб ПОЯСНЕНИЯ.
+
+            Текст вакансии:
+            %s
+            """;
 
     private static final String COVER_LETTER =
             """
@@ -43,7 +62,7 @@ public class HhVacancyService {
                     ""\"
                     %s
                     ""\"
-                    
+                                        
                     Описание компании:
                     ""\"
                     %s
@@ -102,6 +121,7 @@ public class HhVacancyService {
     public List<Vacancy> getAllByVacancyStatus(VacancyStatus vacancyStatus) {
         return vacancyRepository.findAllByStatus(vacancyStatus);
     }
+
     public List<Vacancy> getAllUnprocessedVacancies() {
         return vacancyRepository.findAllByNameIsNull();
     }
@@ -120,7 +140,7 @@ public class HhVacancyService {
 
     public void parseHhVacancies(List<HhSimpleResponseDto> hhSimpleResponseDtos, WorkFilter workFilter) {
         //Обработка полученного списка ДТО-вакансий
-        for (HhSimpleResponseDto dto: hhSimpleResponseDtos) {
+        for (HhSimpleResponseDto dto : hhSimpleResponseDtos) {
             //Проверка на наличие уже существующих дубликатов в БД
             if (!vacancyRepository.findByHhIdAndWorkFilterId(dto.getHhId(), workFilter.getId())
                     .isPresent()) {
@@ -144,7 +164,7 @@ public class HhVacancyService {
         //Конвертация keySkills в String
         StringBuilder builder = new StringBuilder();
         if (responseDto.getKeySkills() != null) {
-            for (String skill: responseDto.getKeySkills()) {
+            for (String skill : responseDto.getKeySkills()) {
                 builder.append(skill).append("|");
             }
         }
@@ -159,18 +179,31 @@ public class HhVacancyService {
                 .setEmployerDescription(hhEmployerDto.getDescription())
                 .setStatus(VacancyStatus.PARSED)
         );
+
+        if (responseDto.getKeySkills() != null) {
+            hhSkillService.saveSkills(responseDto.getKeySkills(), SkillSource.API);
+        }
     }
 
     //Сохранение сгенерированного описания вакансии, посредством обращения к OpenAI API
     public void fetchGenerateDescriptionAndUpdateEntity(Vacancy vacancy) {
         //Получение сгенерированного краткого описания, на основе описания полного
-        String generatedDescription = openAiProviderProcessor
-                .fetchResponse(components.getAiKey(), String.format(AI_REQUEST, vacancy.getDescription()));
-        //Обновление и сохранение данных вакансии
-        vacancyRepository.save(vacancy
-                .setGeneratedDescription(generatedDescription)
-                .setStatus(VacancyStatus.PROCESSED)
-        );
+        String response = openAiProviderProcessor
+                .fetchResponse(components.getAiKey(), String.format(AI_JSON_REQUEST, vacancy.getDescription()));
+
+        try {
+            HhAiResponse hhAiResponse = objectMapper.readValue(response, HhAiResponse.class);
+
+            //Обновление и сохранение данных вакансии
+            vacancyRepository.save(vacancy
+                    .setGeneratedDescription(hhAiResponse.getGeneratedDescription())
+                    .setStatus(VacancyStatus.PROCESSED)
+            );
+
+            hhSkillService.saveSkills(hhAiResponse.getKeySkills(), SkillSource.AI);
+        } catch (JsonProcessingException e) {
+            log.error("Generate description deserialization error!");
+        }
     }
 
     public String fetchGenerateCoverLetter(Long vacancyId, String userInfo) {
@@ -192,4 +225,6 @@ public class HhVacancyService {
     public void vacancyRejectById(long vacancyId) {
         vacancyRepository.updateStatusById(vacancyId, VacancyStatus.REJECTED);
     }
+
+
 }

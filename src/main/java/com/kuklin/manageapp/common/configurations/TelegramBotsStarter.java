@@ -92,7 +92,6 @@ public class TelegramBotsStarter implements SmartLifecycle {
 
     private boolean isEnabled(TelegramBot bot) {
         var id = bot.getBotIdentifier();
-        if (id.equals(BotIdentifier.HH_BOT))      return false;
         if (id.equals(BotIdentifier.ASSISTANT_BOT)) return false;
         return true;
     }
