@@ -226,5 +226,7 @@ public class HhVacancyService {
         vacancyRepository.updateStatusById(vacancyId, VacancyStatus.REJECTED);
     }
 
-
+    public Long getCount() {
+        return vacancyRepository.count();
+    }
 }

@@ -60,7 +60,7 @@
 <body>
 <header>
     <div class="container">
-        <div class="title">Статистика навыков HH <span class="subtitle">AI vs API · доли · пояснения внутри</span></div>
+        <div class="title">Статистика навыков HH <span class="subtitle">Описание vs Указанные навыки · доли · пояснения внутри</span></div>
 
         <div class="controls">
             <div class="control" style="grid-column:span 3;">
@@ -76,7 +76,7 @@
                 <input id="search" type="text" placeholder="например: spring, confluence, k8s" />
             </div>
             <div class="control" style="grid-column:span 2;">
-                <label for="aiBias">Порог AI-biased (≥)</label>
+                <label for="aiBias">Порог Description-biased (≥)</label>
                 <input id="aiBias" type="number" min="0" max="1" step="0.05" value="0.8" />
             </div>
             <div class="control" style="grid-column:span 2;">
@@ -89,17 +89,20 @@
                 <button id="exportCsv" class="btn secondary">Экспорт CSV</button>
                 <button id="openHowto" class="btn ghost">Как читать эту страницу</button>
                 <span class="legend">
-          <span class="badge ai">AI — извлечено ИИ из описаний</span>
-          <span class="badge api">API — ключевые навыки из API</span>
-          <span class="badge warn">aiShare = AI / (AI + API)</span>
+          <span class="badge ai">Навыки из описания извлекаются при помощи ИИ</span>
+          <span class="badge api">Также извлекаются навыки указанные работодателем напрямую</span>
+          <span class="badge warn">descShare = Навыки из описания / (Навыки из описания + Навыки из поля)</span>
         </span>
-                <span id="status" class="subtitle"></span>
+                <div><span id="status" class="subtitle"></span><br>
+                    <span id="vacancy" class="subtitle"></span>
+                </div>
             </div>
+            <div id="vacancyCount"></div>
         </div>
 
         <div id="howto" class="help" style="margin-top:12px; display:none">
-            <strong>Коротко:</strong> столбчатый график «Вклад источников (AI vs API)» показывает общий вклад по каждому навыку.
-            В таблицах — те же данные с сортировкой и поиском. Порогами сверху можно подсветить AI-biased / API-biased.
+            <strong>Коротко:</strong> столбчатый график «Вклад источников (Описание vs API)» показывает общий вклад по каждому навыку.
+            В таблицах — те же данные с сортировкой и поиском. Порогами сверху можно подсветить Description-biased / API-biased.
         </div>
     </div>
 </header>
@@ -118,12 +121,12 @@
             <div class="hint">Сумма top-10 / сумма всех (по total)</div>
         </div>
         <div class="card metric">
-            <div class="label">Корреляция AI vs API (Spearman)</div>
+            <div class="label">Корреляция Описание vs API (Spearman)</div>
             <div class="value" id="m_corr">—</div>
             <div class="hint">0 — нет связи, 1 — ранги совпадают</div>
         </div>
         <div class="card metric">
-            <div class="label">Средняя AI-доля</div>
+            <div class="label">Средняя Description-доля</div>
             <div class="value" id="m_aiShare">—</div>
             <div class="hint">Среднее aiShare по навыкам</div>
         </div>
@@ -132,11 +135,11 @@
     <!-- ОСТАВЛЯЕМ ТОЛЬКО STACKED -->
     <section class="card">
         <div class="section-title">
-            Вклад источников (AI vs API), топ-15 (stacked)
+            Вклад источников (Описание vs API), топ-15 (stacked)
             <span class="tt info"><span class="dot">i</span><span class="ttc">Навык разбит на сегменты по источникам: AI и API. Высота столбца = total.</span></span>
         </div>
         <div class="canvas-wrap"><canvas id="chartStack"></canvas></div>
-        <div class="caption">Столбец = total; сегменты показывают вклад AI и API (для топ-15 навыков).</div>
+        <div class="caption">Столбец = total; сегменты показывают вклад Описание и API (для топ-15 навыков).</div>
     </section>
 
     <!-- Таблицы -->
@@ -148,8 +151,8 @@
 
         <div class="tabs">
             <button class="tab-btn active" data-tab="tabTop">Топ (все)</button>
-            <button class="tab-btn" data-tab="tabAi">AI-biased</button>
-            <button class="tab-btn" data-tab="tabApi">API-biased</button>
+            <button class="tab-btn" data-tab="tabAi">Из описания</button>
+            <button class="tab-btn" data-tab="tabApi">Из API</button>
         </div>
 
         <div id="tabTop" class="table-wrap" role="region" aria-label="Таблица — все навыки">
@@ -157,11 +160,11 @@
                 <thead>
                 <tr>
                     <th data-key="skillName">Навык <span class="tt info"><span class="dot">i</span><span class="ttc">Нормализованное имя навыка (lowercase)</span></span></th>
-                    <th data-key="aiCount">AI <span class="tt info"><span class="dot">i</span><span class="ttc">Сколько раз навык извлёк ИИ из описания вакансии</span></span></th>
+                    <th data-key="aiCount">Описание <span class="tt info"><span class="dot">i</span><span class="ttc">Сколько раз навык извлёк ИИ из описания вакансии</span></span></th>
                     <th data-key="apiCount">API <span class="tt info"><span class="dot">i</span><span class="ttc">Сколько раз навык пришёл как ключевой из API</span></span></th>
-                    <th data-key="total" class="sorted">Всего <span class="tt info"><span class="dot">i</span><span class="ttc">total = AI + API</span></span></th>
-                    <th data-key="aiShare">AI-доля <span class="tt info"><span class="dot">i</span><span class="ttc">aiShare = AI / (AI + API)</span></span></th>
-                    <th data-key="bias">Bias <span class="tt info"><span class="dot">i</span><span class="ttc">AI-biased ≥ порога; API-biased ≤ порога</span></span></th>
+                    <th data-key="total" class="sorted">Всего <span class="tt info"><span class="dot">i</span><span class="ttc">total = Описание + API</span></span></th>
+                    <th data-key="aiShare">Description-доля <span class="tt info"><span class="dot">i</span><span class="ttc">aiShare = Описание / (Описание + API)</span></span></th>
+                    <th data-key="bias">Bias <span class="tt info"><span class="dot">i</span><span class="ttc">Description-biased ≥ порога; API-biased ≤ порога</span></span></th>
                 </tr>
                 </thead>
                 <tbody></tbody>
@@ -176,7 +179,7 @@
                     <th data-key="aiCount">AI</th>
                     <th data-key="apiCount">API</th>
                     <th data-key="total">Всего</th>
-                    <th data-key="aiShare" class="sorted">AI-доля</th>
+                    <th data-key="aiShare" class="sorted">Description-доля</th>
                     <th data-key="bias">Bias</th>
                 </tr>
                 </thead>
@@ -192,7 +195,7 @@
                     <th data-key="aiCount">AI</th>
                     <th data-key="apiCount">API</th>
                     <th data-key="total">Всего</th>
-                    <th data-key="aiShare">AI-доля</th>
+                    <th data-key="aiShare">Description-доля</th>
                     <th data-key="bias" class="sorted">Bias</th>
                 </tr>
                 </thead>
@@ -206,9 +209,9 @@
         <ul style="margin:8px 0 0 18px; color:var(--muted); line-height:1.4">
             <li><strong>AI</strong> — навык найден ИИ в тексте описания вакансии.</li>
             <li><strong>API</strong> — навык пришёл из поля ключевых навыков HeadHunter API.</li>
-            <li><strong>total</strong> = AI + API (по одному навыку).</li>
-            <li><strong>aiShare</strong> = AI / total (0…1). Чем выше, тем чаще навык появляется в тексте, а не в явном списке.</li>
-            <li><strong>AI-biased / API-biased</strong> — определяются порогами вверху страницы.</li>
+            <li><strong>total</strong> = Описание + API (по одному навыку).</li>
+            <li><strong>aiShare</strong> = Описание / total (0…1). Чем выше, тем чаще навык появляется в тексте, а не в явном списке.</li>
+            <li><strong>Description-biased / API-biased</strong> — определяются порогами вверху страницы.</li>
         </ul>
     </section>
 </main>
@@ -226,8 +229,10 @@
             aiBias: document.getElementById('aiBias'),
             apiBias: document.getElementById('apiBias'),
             refresh: document.getElementById('refresh'),
+            vacancies: document.getElementById('vacancies'),
             exportCsv: document.getElementById('exportCsv'),
             status: document.getElementById('status'),
+            vacancy: document.getElementById('vacancy'),
             howtoBtn: document.getElementById('openHowto'),
             howto: document.getElementById('howto'),
             m_skills: document.getElementById('m_skills'),
@@ -306,6 +311,7 @@
         }
 
         function setStatus(msg){ els.status.textContent = msg; }
+        function setVacancy(msg){ els.vacancy.textContent = msg; }
 
         async function loadData(){
             const minTotal = Number(els.minTotal.value);
@@ -318,7 +324,7 @@
                 summary = await fetchJSON(`/hhbot/skills/stats/summary?minTotal=${minTotal}&limit=${limit}`);
                 summary = summary.map(s=>{
                     let bias='—';
-                    if(s.aiShare>=aiBias) bias='AI-biased';
+                    if(s.aiShare>=aiBias) bias='Description-biased';
                     else if(s.aiShare<=apiBias) bias='API-biased';
                     return {...s, bias};
                 });
@@ -328,6 +334,18 @@
             }catch(e){
                 console.error(e);
                 setStatus('Ошибка: '+e.message);
+            }
+        }
+
+        async function loadVacancyCount() {
+            setStatus('Загрузка…');
+            try {
+                const count = await fetchJSON(`/hhbot/vacancy/count`);
+                document.getElementById('vacancyCount').textContent = count;
+                setVacancy(`Вакансий: ${count}`);
+            } catch (e) {
+                console.error(e);
+                setVacancy('Ошибка: ' + e.message);
             }
         }
 
@@ -438,7 +456,7 @@
         }
 
         function renderBias(b){
-            if(b==='AI-biased') return `<span class="badge ai">AI-biased</span>`;
+            if(b==='Description-biased') return `<span class="badge ai">Description-biased</span>`;
             if(b==='API-biased') return `<span class="badge api">API-biased</span>`;
             return `<span class="badge">—</span>`;
         }
@@ -479,6 +497,7 @@
 
         // init
         loadData();
+        loadVacancyCount();
     })();
 </script>
 </body>
