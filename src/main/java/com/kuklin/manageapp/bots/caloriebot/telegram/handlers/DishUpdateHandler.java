@@ -2,6 +2,8 @@ package com.kuklin.manageapp.bots.caloriebot.telegram.handlers;
 
 import com.kuklin.manageapp.aiconversation.models.enums.ChatModel;
 import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcessor;
+import com.kuklin.manageapp.bots.aiassistantcalendar.telegram.AssistantTelegramBot;
+import com.kuklin.manageapp.bots.bookingbot.entities.BookingObject;
 import com.kuklin.manageapp.bots.caloriebot.configurations.TelegramCaloriesBotKeyComponents;
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.entities.models.DishDto;
@@ -10,6 +12,7 @@ import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.Command;
+import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;
 import com.kuklin.manageapp.common.services.TelegramService;
 import com.kuklin.manageapp.common.services.TelegramUserService;
 import lombok.RequiredArgsConstructor;
@@ -83,7 +86,12 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler{
             dish = processPhotoOrNull(userId, update.getMessage());
 
             Map<ChatModel, DishDto> dishDtos = processPhotoOrNull(update.getMessage());
-            calorieTelegramBot.sendReturnedMessage(update.getMessage().getChatId(), getDishDtoListString(dishDtos));
+            calorieTelegramBot.sendReturnedMessage(
+                    update.getMessage().getChatId(),
+                    getDishDtoListString(dishDtos),
+                    getModelChooseListKeyboard(dishDtos, dish.getId()),
+                    null
+            );
 
             telegramUserService.save(telegramUser.setResponseCount(telegramUser.getResponseCount() + 1));
         } else if (update.hasMessage() && update.getMessage().hasVoice()) {
@@ -197,6 +205,45 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler{
         markup.setKeyboard(Collections.singletonList(Collections.singletonList(button)));
 
         return markup;
+    }
+
+    public InlineKeyboardMarkup getModelChooseListKeyboard(
+            Map<ChatModel, DishDto> dishDtos, Long dishId
+    ) {
+        TelegramKeyboard.TelegramKeyboardBuilder builder = TelegramKeyboard.builder();
+
+        dishDtos.forEach((chatModel, dishDto) -> {
+            builder.row(
+                    TelegramKeyboard.button(
+                            chatModel.getName(),
+                            getCallbackData(dishDto, chatModel, dishId)
+                    )
+            );
+        });
+
+        return builder.build();
+    }
+
+    private String getCallbackData(DishDto dto, ChatModel chatModel, Long dishId) {
+        StringBuilder sb = new StringBuilder();
+
+        sb
+                .append(Command.CALORIE_CHOICE.getCommandText())
+                .append(TelegramBot.DEFAULT_DELIMETER)
+                .append(dishId)
+                .append(TelegramBot.DEFAULT_DELIMETER)
+                .append(chatModel)
+                .append(TelegramBot.DEFAULT_DELIMETER)
+                .append(dto.getCalories())
+                .append(TelegramBot.DEFAULT_DELIMETER)
+                .append(dto.getProteins())
+                .append(TelegramBot.DEFAULT_DELIMETER)
+                .append(dto.getFats())
+                .append(TelegramBot.DEFAULT_DELIMETER)
+                .append(dto.getCarbohydrates())
+                ;
+
+        return sb.toString();
     }
 
     @Override

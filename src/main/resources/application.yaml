@@ -23,12 +23,12 @@ feign:
   client:
     config:
       default:
-        connectTimeout: 5000
+        connectTimeout: 15000
         readTimeout: 1000000
         loggerLevel: basic
 
 integrations:
-  connect-timeout: 5000
+  connect-timeout: 15000
   read-timeout: 1000000
   write-timeout: 5000
   openai-api:

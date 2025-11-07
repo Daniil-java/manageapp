@@ -36,10 +36,10 @@ public class TodayUpdateHandler implements CalorieBotUpdateHandler{
         int cal = 0, fats = 0, proteins = 0, carbHyd = 0;
         for (Dish dish : dishes) {
             sb.append("🍽 ").append(Dish.getInfo(dish)).append("\n");
-            cal += dish.getCalories();
-            fats += dish.getFats();
-            proteins += dish.getProteins();
-            carbHyd += dish.getCarbohydrates();
+            cal += dish.getCalories() != null ? dish.getCalories() : 0;
+            fats += dish.getFats() != null ? dish.getFats() : 0;
+            proteins += dish.getProteins() != null ? dish.getProteins() : 0;
+            carbHyd += dish.getCarbohydrates() != null ? dish.getCarbohydrates() : 0;
         }
 
         sb.append("\n")
