@@ -31,6 +31,7 @@ public class DishService {
     private final TelegramCaloriesBotKeyComponents telegramCaloriesBotKeyComponents;
     private final ObjectMapper objectMapper;
     private final ProviderProcessorHandler processorHandler;
+    private final DishChoiceChatModelService dishChoiceChatModelService;
     private static final String AI_PHOTO_REQUEST =
             """
                     Ты — экспертная система анализа изображений еды и напитков на фото. \s

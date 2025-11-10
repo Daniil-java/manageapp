@@ -53,7 +53,7 @@ public abstract class TelegramBot extends TelegramLongPollingBot implements Tele
     }
 
     @Override
-    public void sendVoiceMessage(SendVoice message) throws TelegramApiException{
+    public void sendVoiceMessage(SendVoice message) throws TelegramApiException {
         execute(message);
     }
 
@@ -193,29 +193,34 @@ public abstract class TelegramBot extends TelegramLongPollingBot implements Tele
     }
 
     protected boolean doAsync(AsyncService asyncService, Update update, Consumer<Update> runnable) {
-        if (update.hasCallbackQuery()) {
-            asyncService.executeAsyncCustom(this, update, runnable);
-            return true;
-        }
+        try {
+            if (update.hasCallbackQuery()) {
+                asyncService.executeAsyncCustom(this, update, runnable);
+                return true;
+            }
 
-        User user = getUserFromUpdate(update);
-        if (user == null) {
-            log.error("Not a message or callback {}", update);
+            User user = getUserFromUpdate(update);
+            if (user == null) {
+                log.error("Not a message or callback {}", update);
+                return false;
+            }
+
+            Long tgUserId = user.getId();
+            if (inProcess.add(tgUserId)) {
+                try {
+                    asyncService.executeAsyncCustom(this, update, runnable);
+                } catch (Exception ex) {
+                    inProcess.remove(tgUserId);
+                    log.error("Parallel execution failed", ex);
+                }
+                return true;
+            }
+
+            return false;
+        } catch (Exception ex) {
+            sendReturnedMessage(425120436, ex.getMessage());
             return false;
         }
-
-        Long tgUserId = user.getId();
-        if (inProcess.add(tgUserId)) {
-            try {
-                asyncService.executeAsyncCustom(this, update, runnable);
-            } catch (Exception ex) {
-                inProcess.remove(tgUserId);
-                log.error( "Parallel execution failed", ex);
-            }
-            return true;
-        }
-
-        return false;
     }
 }
 

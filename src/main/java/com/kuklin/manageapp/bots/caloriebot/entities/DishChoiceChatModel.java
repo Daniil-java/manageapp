@@ -23,4 +23,5 @@ public class DishChoiceChatModel {
     private Integer proteins;
     private Integer fats;
     private Integer carbohydrates;
+    private Boolean isChoosed;
 }
