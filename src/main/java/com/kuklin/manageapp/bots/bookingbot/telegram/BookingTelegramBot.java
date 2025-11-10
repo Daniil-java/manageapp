@@ -3,6 +3,7 @@ package com.kuklin.manageapp.bots.bookingbot.telegram;
 import com.kuklin.manageapp.bots.bookingbot.configurations.TelegramBookingBotKeyComponents;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.services.AsyncService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Update;
@@ -11,6 +12,8 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 public class BookingTelegramBot extends TelegramBot {
     @Autowired
     private BookingTelegramFacade bookingTelegramFacade;
+    @Autowired
+    private AsyncService asyncService;
 
     public static final String BOOKING_DELIMETER = "&";
 
@@ -20,7 +23,11 @@ public class BookingTelegramBot extends TelegramBot {
 
     @Override
     public void onUpdateReceived(Update update) {
-        bookingTelegramFacade.handleUpdate(update);
+        boolean result = doAsync(asyncService, update, u -> bookingTelegramFacade.handleUpdate(update));
+
+        if (!result) {
+            notifyAlreadyInProcess(update);
+        }
     }
 
     @Override

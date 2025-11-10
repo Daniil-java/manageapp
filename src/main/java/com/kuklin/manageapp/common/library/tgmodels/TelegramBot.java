@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.common.library.tgmodels;
 
+import com.kuklin.manageapp.common.services.AsyncService;
 import lombok.extern.slf4j.Slf4j;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.BotApiMethod;
@@ -12,16 +13,21 @@ import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageTe
 import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.objects.User;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboard;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import java.io.ByteArrayInputStream;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.function.Consumer;
 
 @Slf4j
 public abstract class TelegramBot extends TelegramLongPollingBot implements TelegramBotClient {
     private String botToken;
     public static final String DEFAULT_DELIMETER = " ";
+    private final Set<Long> inProcess;
 
     @Override
     public String getToken() {
@@ -31,6 +37,7 @@ public abstract class TelegramBot extends TelegramLongPollingBot implements Tele
     public TelegramBot(String key) {
         super(key);
         botToken = key;
+        inProcess = new HashSet<>();
     }
 
     @Override
@@ -151,6 +158,64 @@ public abstract class TelegramBot extends TelegramLongPollingBot implements Tele
         } catch (TelegramApiException e) {
             log.error("Не получилось изменить клавиатуру");
         }
+    }
+
+    public void notifyAlreadyInProcess(Update update) {
+        Long chatId = update.hasCallbackQuery()
+                ? update.getCallbackQuery().getMessage().getChatId()
+                : update.getMessage().getChatId();
+
+        sendReturnedMessage(chatId, "Предыдущее сообщение обрабатывается, вам необходимо дождаться его завершения.");
+    }
+
+    public void notifyAsyncDone(Update update) {
+        if (update.hasCallbackQuery()) {
+            return;
+        }
+
+        User user = getUserFromUpdate(update);
+        if (user == null) {
+            log.error("Not a message or callback {} in async done", update);
+            return;
+        }
+        Long tgUserId = user.getId();
+        inProcess.remove(tgUserId);
+    }
+
+    protected static User getUserFromUpdate(Update update) {
+        if (update.hasMessage()) {
+            return update.getMessage().getFrom();
+        } else if (update.hasCallbackQuery()) {
+            return update.getCallbackQuery().getFrom();
+        }
+
+        return null;
+    }
+
+    protected boolean doAsync(AsyncService asyncService, Update update, Consumer<Update> runnable) {
+        if (update.hasCallbackQuery()) {
+            asyncService.executeAsyncCustom(this, update, runnable);
+            return true;
+        }
+
+        User user = getUserFromUpdate(update);
+        if (user == null) {
+            log.error("Not a message or callback {}", update);
+            return false;
+        }
+
+        Long tgUserId = user.getId();
+        if (inProcess.add(tgUserId)) {
+            try {
+                asyncService.executeAsyncCustom(this, update, runnable);
+            } catch (Exception ex) {
+                inProcess.remove(tgUserId);
+                log.error( "Parallel execution failed", ex);
+            }
+            return true;
+        }
+
+        return false;
     }
 }
 
