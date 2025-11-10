@@ -5,6 +5,9 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
+import org.hibernate.annotations.CreationTimestamp;
+
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "dish_choice_chat_model")
@@ -24,4 +27,6 @@ public class DishChoiceChatModel {
     private Integer fats;
     private Integer carbohydrates;
     private Boolean isChoosed;
+    @CreationTimestamp
+    private LocalDateTime created;
 }
