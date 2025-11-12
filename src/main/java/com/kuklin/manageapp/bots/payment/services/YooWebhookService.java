@@ -2,16 +2,14 @@ package com.kuklin.manageapp.bots.payment.services;
 
 import com.kuklin.manageapp.bots.payment.entities.Payment;
 import com.kuklin.manageapp.bots.payment.entities.WebhookEvent;
+import com.kuklin.manageapp.bots.payment.integrations.YooKassaFeignClient;
 import com.kuklin.manageapp.bots.payment.models.YooWebhook;
 import com.kuklin.manageapp.bots.payment.repositories.WebhookEventRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.reactive.function.client.WebClient;
 
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.Map;
 import java.util.Optional;
 
@@ -20,7 +18,7 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 public class YooWebhookService {
-    private final WebClient yooWebClient;
+    private final YooKassaFeignClient yooKassaFeignClient;
     private final WebhookEventRepository webhookEventRepository;
     private final PaymentService paymentService;
 
@@ -61,11 +59,7 @@ public class YooWebhookService {
             }
 
             // 2) (опционально) подтверждаем статус у ЮKassa — GET /v3/payments/{id}
-            Map<?, ?> paymentApi = yooWebClient.get()
-                    .uri("/v3/payments/{id}", objectId)
-                    .retrieve()
-                    .bodyToMono(Map.class)
-                    .block();
+            Map<?, ?> paymentApi = yooKassaFeignClient.getPayment(objectId);
 
             String apiStatus = Optional.ofNullable(paymentApi)
                     .map(m -> (String) m.get("status"))
