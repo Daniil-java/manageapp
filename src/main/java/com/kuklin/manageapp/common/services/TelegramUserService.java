@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.common.services;
 
+import com.kuklin.manageapp.bots.payment.services.GenerationBalanceService;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import com.kuklin.manageapp.common.repositories.TelegramUserRepository;
@@ -16,6 +17,7 @@ import java.util.Optional;
 public class TelegramUserService {
     private static final Long DEFAULT_RESPONSE_COUNT = 0L;
     private final TelegramUserRepository telegramUserRepository;
+    private final GenerationBalanceService generationBalanceService;
 
     public TelegramUser getTelegramUserByTelegramIdAndBotIdentifierOrNull(Long telegramId, BotIdentifier botIdentifier) {
         return telegramUserRepository
@@ -33,12 +35,16 @@ public class TelegramUserService {
                 );
 
         if (optionalTelegramUser.isPresent()) {
+            generationBalanceService.createNewBalanceIfNotExist(optionalTelegramUser.get().getTelegramId());
             return optionalTelegramUser.get();
         }
         TelegramUser tgUser = TelegramUser.convertFromTelegram(telegramUser)
                 .setBotIdentifier(botIdentifier)
                 .setResponseCount(DEFAULT_RESPONSE_COUNT);
-        return telegramUserRepository.save(tgUser);
+        tgUser = telegramUserRepository.save(tgUser);
+        generationBalanceService.createNewBalanceIfNotExist(optionalTelegramUser.get().getTelegramId());
+
+        return tgUser;
     }
 
     public TelegramUser save(TelegramUser telegramUser) {

@@ -163,6 +163,8 @@ public abstract class TelegramBot extends TelegramLongPollingBot implements Tele
     public void notifyAlreadyInProcess(Update update) {
         Long chatId = update.hasCallbackQuery()
                 ? update.getCallbackQuery().getMessage().getChatId()
+                : update.hasPreCheckoutQuery()
+                ? update.getPreCheckoutQuery().getFrom().getId()
                 : update.getMessage().getChatId();
 
         sendReturnedMessage(chatId, "Предыдущее сообщение обрабатывается, вам необходимо дождаться его завершения.");
