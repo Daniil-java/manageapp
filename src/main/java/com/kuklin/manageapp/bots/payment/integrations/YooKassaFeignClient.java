@@ -1,5 +1,7 @@
 package com.kuklin.manageapp.bots.payment.integrations;
 
+import com.kuklin.manageapp.bots.payment.models.yookassa.YookassaCreatePaymentRequest;
+import com.kuklin.manageapp.bots.payment.models.yookassa.YookassaPaymentResponse;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
 
@@ -11,6 +13,11 @@ import java.util.Map;
         configuration = com.kuklin.manageapp.bots.payment.configurations.YooKassaClientConfig.class
 )
 public interface YooKassaFeignClient {
+    // Создание платежа. ВАЖНО: прокидываем заголовок идемпотентности.
+    @PostMapping(value = "/v3/payments", consumes = "application/json", produces = "application/json")
+    YookassaPaymentResponse createPayment(@RequestBody YookassaCreatePaymentRequest body,
+                                          @RequestHeader("Idempotence-Key") String idempotenceKey);
+
     @GetMapping(value = "/v3/payments/{id}", produces = "application/json")
     Map<String, Object> getPayment(@PathVariable("id") String id);
 }

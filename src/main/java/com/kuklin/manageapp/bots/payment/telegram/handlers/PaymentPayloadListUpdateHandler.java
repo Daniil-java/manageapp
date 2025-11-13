@@ -44,6 +44,11 @@ public class PaymentPayloadListUpdateHandler implements PaymentUpdateHandler {
                     payload.getDescription(),
                     nextHandler.getHandlerListName() + TelegramBot.DEFAULT_DELIMETER + payload.name()
             ));
+            builder.row(
+                    TelegramKeyboard.button(
+                            payload.getDescription() + " ОПЛАТА ССЫЛКОЙ",
+                            Command.PAYMENT_YOOKASSA_URL_CREATE.getCommandText() + TelegramBot.DEFAULT_DELIMETER + payload.name()
+                    ));
         }
         return builder.build();
     }
