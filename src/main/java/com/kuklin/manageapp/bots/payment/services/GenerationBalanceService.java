@@ -31,22 +31,22 @@ public class GenerationBalanceService {
         );
     }
 
-//    public boolean increaseBalanceByPayment(SuccessfulPayment success, Long telegramId) {
-//        Payment.PaymentPayload payload = paymentService
-//                .getPlanByTelegramInvoiceOrNull(success);
-//
-//        if (payload.equals(Payment.PaymentPayload.PACK_10)) {
-//            GenerationBalance generationBalance = generationBalanceRepository
-//                    .findByTelegramId(telegramId).orElse(null);
-//
-//            if (generationBalance == null) return false;
-//            generationBalance = generationBalanceRepository.save(generationBalance.setGenerationRequests(
-//                    generationBalance.getGenerationRequests() + 10
-//            ));
-//            return generationBalance != null;
-//        }
-//        return false;
-//    }
+    public GenerationBalance increaseBalanceByPaymentOrNull(Payment payment, Long telegramId) {
+        Payment.PaymentPayload payload = payment.getPayload();
+
+        if (payload.equals(Payment.PaymentPayload.PACK_10)) {
+            GenerationBalance generationBalance = generationBalanceRepository
+                    .findByTelegramId(telegramId).orElse(null);
+
+            if (generationBalance == null) return null;
+
+            generationBalance = generationBalanceRepository.save(generationBalance.setGenerationRequests(
+                    generationBalance.getGenerationRequests() + 10
+            ));
+            return generationBalance;
+        }
+        return null;
+    }
 
     public GenerationBalance increaseBalanceByPayment(Payment payment) {
         GenerationBalance generationBalance = generationBalanceRepository

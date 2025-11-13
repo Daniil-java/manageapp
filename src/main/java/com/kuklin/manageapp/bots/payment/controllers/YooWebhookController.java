@@ -21,6 +21,7 @@ public class YooWebhookController {
     public ResponseEntity<Void> handle(@RequestBody YooWebhook payload, HttpServletRequest req) {
         // 1) сразу 200 — ЮKassa этого ждёт
         // 2) обработку делегируем в сервис (он сам разрулит идемпотентность/ошибки)
+        log.info("YooKassa webhook request!");
         service.handle(payload, req.getRemoteAddr());
         return ResponseEntity.ok().build();
     }

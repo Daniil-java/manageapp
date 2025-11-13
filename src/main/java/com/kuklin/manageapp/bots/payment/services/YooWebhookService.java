@@ -59,11 +59,6 @@ public class YooWebhookService {
             }
 
             // 2) (опционально) подтверждаем статус у ЮKassa — GET /v3/payments/{id}
-            Map<?, ?> paymentApi = yooKassaFeignClient.getPayment(objectId);
-
-            String apiStatus = Optional.ofNullable(paymentApi)
-                    .map(m -> (String) m.get("status"))
-                    .orElse(hook.getObject().getStatus());
 
             // 3) Находим наш Payment
             // ВАЖНО: при оплате в Telegram сохраняй providerPaymentChargeId в поле, по которому ты ищешь.
@@ -90,7 +85,7 @@ public class YooWebhookService {
             }
 
             // 5) Обновляем статус по событию (строки → енамы)
-            paymentService.setStatus(payment, eventType, hook, apiStatus, objectId);
+            paymentService.setStatus(payment, eventType, hook, objectId);
 
             saved.markProcessed();
             webhookEventRepository.save(saved);
@@ -100,6 +95,33 @@ public class YooWebhookService {
             saved.markError(e.getClass().getSimpleName() + ": " + e.getMessage());
             webhookEventRepository.save(saved);
             // 200 мы уже отдали — это нормально; ретраи не страшны, у нас идемпотентность
+        }
+    }
+
+    public WebhookEvent.WebhookEventType getPaymentFromYooKassaOrNull(String paymentId) {
+        try {
+            Map<?, ?> paymentApi = yooKassaFeignClient.getPayment(paymentId);
+            if (paymentApi == null) return null;
+
+            String apiStatus = (String) paymentApi.get("status");
+            if (apiStatus == null) return null;
+
+            switch (apiStatus) {
+                case "succeeded":
+                    return WebhookEvent.WebhookEventType.PAYMENT_SUCCEEDED;
+                case "canceled":
+                    return WebhookEvent.WebhookEventType.PAYMENT_CANCELED;
+                case "waiting_for_capture":
+                    return WebhookEvent.WebhookEventType.PAYMENT_WAITING_FOR_CAPTURE;
+                // ЮKassa ещё даёт pending/authorized/etc. — маппируй при необходимости
+                default:
+                    return WebhookEvent.WebhookEventType.UNKNOWN;
+            }
+        } catch (feign.FeignException.NotFound e) {
+            return null;
+        } catch (Exception e) {
+            log.warn("YooKassa getPayment failed for id={}", paymentId, e);
+            return null;
         }
     }
 
