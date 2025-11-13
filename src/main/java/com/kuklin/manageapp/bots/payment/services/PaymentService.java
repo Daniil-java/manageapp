@@ -5,8 +5,7 @@ import com.kuklin.manageapp.bots.payment.entities.WebhookEvent;
 import com.kuklin.manageapp.bots.payment.models.YooWebhook;
 import com.kuklin.manageapp.bots.payment.repositories.PaymentRepository;
 import com.kuklin.manageapp.bots.payment.entities.Payment;
-import com.kuklin.manageapp.bots.payment.telegram.PaymentTelegramBot;
-import com.kuklin.manageapp.bots.payment.telegram.handlers.SuccessfulPaymentUpdateHandler;
+import com.kuklin.manageapp.bots.payment.telegram.handlers.WebhookSuccessfulPaymentUpdateHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -23,8 +22,7 @@ import java.util.Optional;
 public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final GenerationBalanceService generationBalanceService;
-    private final PaymentTelegramBot paymentTelegramBot;
-    private final SuccessfulPaymentUpdateHandler successfulPaymentUpdateHandler;
+    private final WebhookSuccessfulPaymentUpdateHandler webhookSuccessfulPaymentUpdateHandler;
 
     public Payment createNewPaymentYooKassa(Long telegramId, Payment.PaymentPayload payload) {
         Payment payment = paymentRepository.save(new Payment()
@@ -75,18 +73,18 @@ public class PaymentService {
         return true;
     }
 
-    public Boolean processSuccessfulPayment(SuccessfulPayment successfulPayment, Long telegramId) {
+    public Payment processSuccessfulPaymentAndGetOrNull(SuccessfulPayment successfulPayment, Long telegramId) {
         Payment payment = paymentRepository.findByTelegramInvoicePayload(successfulPayment.getInvoicePayload()).orElse(null);
-        if (payment == null) return false;
+        if (payment == null) return null;
 
-        if (!payment.getTelegramId().equals(telegramId)) return false;
-        if (!successfulPayment.getInvoicePayload().equals(payment.getTelegramInvoicePayload())) return false;
-        if (!successfulPayment.getCurrency().equals(payment.getCurrency().name())) return false;
-        if (!successfulPayment.getTotalAmount().equals(payment.getAmount())) return false;
+        if (!payment.getTelegramId().equals(telegramId)) return null;
+        if (!successfulPayment.getInvoicePayload().equals(payment.getTelegramInvoicePayload())) return null;
+        if (!successfulPayment.getCurrency().equals(payment.getCurrency().name())) return null;
+        if (!successfulPayment.getTotalAmount().equals(payment.getAmount())) return null;
 
         return paymentRepository.save(
                 payment.setStatus(Payment.PaymentStatus.SUCCESS)
-        ) != null;
+        );
     }
 
     public Payment.PaymentPayload getPlanByTelegramInvoiceOrNull(SuccessfulPayment successfulPayment) {
@@ -124,7 +122,6 @@ public class PaymentService {
     public void setStatus(Payment payment,
                           WebhookEvent.WebhookEventType webhookEventType,
                           YooWebhook hook,
-                          String apiStatus,
                           String objectId) {
         switch (webhookEventType) {
 //            case PAYMENT_WAITING_FOR_CAPTURE: {
@@ -144,7 +141,7 @@ public class PaymentService {
                 payment = paymentRepository.save(payment);
 
                 GenerationBalance balance = generationBalanceService.increaseBalanceByPayment(payment);
-                successfulPaymentUpdateHandler.handleYooKassaSuccess(payment, balance);
+                webhookSuccessfulPaymentUpdateHandler.handleYooKassaSuccess(payment, balance);
                 break;
             }
             case PAYMENT_CANCELED: {
@@ -163,7 +160,7 @@ public class PaymentService {
                 break;
             }
             case UNKNOWN: {
-                log.info("Unhandled YooKassa event: {} (apiStatus={})", hook.getEvent(), apiStatus);
+                log.info("Unhandled YooKassa event: {}", hook.getEvent());
                 break;
             }
         }
