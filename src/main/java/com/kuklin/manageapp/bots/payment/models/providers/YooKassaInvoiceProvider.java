@@ -1,6 +1,6 @@
 package com.kuklin.manageapp.bots.payment.models.providers;
 
-import com.kuklin.manageapp.bots.caloriebot.configurations.TelegramCaloriesBotKeyComponents;
+import com.kuklin.manageapp.bots.payment.configurations.TelegramPaymentBotKeyComponents;
 import com.kuklin.manageapp.bots.payment.entities.Payment;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.invoices.SendInvoice;
@@ -12,7 +12,7 @@ import java.util.List;
 public class YooKassaInvoiceProvider implements InvoiceProvider {
     private final String providerToken;
 
-    public YooKassaInvoiceProvider(TelegramCaloriesBotKeyComponents components) {
+    public YooKassaInvoiceProvider(TelegramPaymentBotKeyComponents components) {
         this.providerToken = components.getProviderToken();
     }
 

@@ -1,6 +1,6 @@
 package com.kuklin.manageapp.bots.payment.telegram;
 
-import com.kuklin.manageapp.bots.caloriebot.configurations.TelegramCaloriesBotKeyComponents;
+import com.kuklin.manageapp.bots.payment.configurations.TelegramPaymentBotKeyComponents;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import com.kuklin.manageapp.common.services.AsyncService;
@@ -17,8 +17,8 @@ public class PaymentTelegramBot extends TelegramBot {
     @Autowired
     private AsyncService asyncService;
 
-    public PaymentTelegramBot(TelegramCaloriesBotKeyComponents telegramCaloriesBotKeyComponents) {
-        super(telegramCaloriesBotKeyComponents.getKey());
+    public PaymentTelegramBot(TelegramPaymentBotKeyComponents components) {
+        super(components.getKey());
     }
 
     @Override
