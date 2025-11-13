@@ -97,7 +97,7 @@ public class PaymentService {
         return payment.getPayload();
     }
 
-    public Payment findByExternalPaymentIdOrNull(String externalPaymentId, YooWebhook hook) {
+    public Payment findByProviderPaymentIdIdOrNull(String externalPaymentId, YooWebhook hook) {
         Payment payment = paymentRepository.findByProviderPaymentId(externalPaymentId).orElse(null);
         if (payment != null) return payment;
 
@@ -164,5 +164,9 @@ public class PaymentService {
                 break;
             }
         }
+    }
+
+    public Payment setProviderPaymentId(Payment payment, YooKassaPaymentService.Created created) {
+        return paymentRepository.save(payment.setProviderPaymentId(created.getId()));
     }
 }

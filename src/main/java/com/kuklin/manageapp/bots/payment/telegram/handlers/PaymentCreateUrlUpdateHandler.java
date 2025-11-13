@@ -42,7 +42,14 @@ public class PaymentCreateUrlUpdateHandler implements PaymentUpdateHandler {
                 payment.getTelegramInvoicePayload()
         );
 
-        paymentTelegramBot.sendReturnedMessage(chatId, created.getConfirmationUrl());
+        paymentService.setProviderPaymentId(payment, created);
+
+        if (created == null || created.getConfirmationUrl() == null) {
+            //TODO ERROR
+            return;
+        }
+
+        paymentTelegramBot.sendReturnedMessage(chatId, "Оплаты ЮКасса: \n" + created.getConfirmationUrl());
     }
 
     private Payment.PaymentPayload extractPayment(String callbackData) {

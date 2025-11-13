@@ -11,7 +11,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
-import java.util.Optional;
 
 
 @Slf4j
@@ -62,7 +61,7 @@ public class YooWebhookService {
 
             // 3) Находим наш Payment
             // ВАЖНО: при оплате в Telegram сохраняй providerPaymentChargeId в поле, по которому ты ищешь.
-            Payment payment = paymentService.findByExternalPaymentIdOrNull(objectId, hook);
+            Payment payment = paymentService.findByProviderPaymentIdIdOrNull(objectId, hook);
 
             if (payment == null) {
                 log.warn("YooKassa webhook: payment not found, id={}", objectId);
