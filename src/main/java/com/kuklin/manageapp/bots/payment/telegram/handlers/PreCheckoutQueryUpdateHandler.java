@@ -11,6 +11,13 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.payments.PreCheckoutQuery;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+/**
+ * Обработчик PRE_CHECK_QUERY, который присылает телеграм
+ *
+ * Отвечает за:
+ * -валидацию данных о проходящем платеже
+ *
+ */
 @RequiredArgsConstructor
 @Component
 public class PreCheckoutQueryUpdateHandler implements PaymentUpdateHandler {
@@ -26,8 +33,11 @@ public class PreCheckoutQueryUpdateHandler implements PaymentUpdateHandler {
 
         PreCheckoutQuery query = update.getPreCheckoutQuery();
         AnswerPreCheckoutQuery answer = new AnswerPreCheckoutQuery();
+        //Валидация пришедшего запроса.
+        //Сравнение с записью из БД
         if (!paymentService.checkPreCheckoutQuery(query)) {
             //TODO ERROR
+            //Ответ о неудаче
             answer.setOk(false);
             answer.setErrorMessage("Ошибка данных платежа");
             answer.setPreCheckoutQueryId(query.getId());
@@ -39,7 +49,7 @@ public class PreCheckoutQueryUpdateHandler implements PaymentUpdateHandler {
             return;
         }
 
-
+        //Удачный ответ
         answer.setOk(true);
         answer.setPreCheckoutQueryId(query.getId());
 

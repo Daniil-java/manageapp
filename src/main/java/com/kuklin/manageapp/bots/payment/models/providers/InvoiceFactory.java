@@ -8,6 +8,7 @@ import org.telegram.telegrambots.meta.api.methods.invoices.SendInvoice;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+//Фабрика провайдеров
 @Component
 @Slf4j
 public class InvoiceFactory {

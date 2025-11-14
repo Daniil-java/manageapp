@@ -9,6 +9,7 @@ import org.springframework.http.MediaType;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
+//Конфиг для доступа к ЮКассе, без телеграмма
 @Configuration
 public class YooKassaClientConfig {
 

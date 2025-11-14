@@ -10,6 +10,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
+/**
+ * Обработчик комманды по интерфейсу. Используется для отправки сообщения об успешной оплатте от вебхука
+ *
+ * Отвечает за:
+ * - отправка сообщения о статусе оплаты
+ */
 @RequiredArgsConstructor
 @Component
 @Slf4j

@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 
+//Запрос для ЮКассы на создание платежа
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

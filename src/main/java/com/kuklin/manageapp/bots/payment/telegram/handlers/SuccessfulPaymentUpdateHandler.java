@@ -13,6 +13,14 @@ import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.payments.SuccessfulPayment;
 
+/**
+ * Обработчик сообщения об успешной оплате, которое присылает телеграм
+ *
+ * Отвечает за:
+ * - принятие запроса из телеграм о статусе оплаты
+ * - пополнение баланса пользователя
+ *
+ */
 @RequiredArgsConstructor
 @Component
 @Slf4j
@@ -26,9 +34,11 @@ public class SuccessfulPaymentUpdateHandler implements PaymentUpdateHandler {
     public void handle(Update update, TelegramUser telegramUser) {
         if (update.hasMessage() && update.getMessage().hasSuccessfulPayment()) {
             SuccessfulPayment success = update.getMessage().getSuccessfulPayment();
+            //Обработка успешного сообщенияя в paymentService
             Payment payment = paymentService.processSuccessfulPaymentAndGetOrNull(success, telegramUser.getTelegramId());
 
             if (payment != null) {
+                //Увеличение баланса согласно купленного плана
                 GenerationBalance balance = generationBalanceService.increaseBalanceByPaymentOrNull(payment, telegramUser.getTelegramId());
                 if (balance != null) {
 

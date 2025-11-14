@@ -12,6 +12,12 @@ import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
+/**
+ * Обработчик комманды Command.PAYMENT_YOOKASSA_URL_CREATE
+ *
+ * Отвечает за:
+ * - создание ссылки на оплату через ЮКассу
+ */
 @RequiredArgsConstructor
 @Component
 public class PaymentCreateUrlUpdateHandler implements PaymentUpdateHandler {
@@ -24,14 +30,17 @@ public class PaymentCreateUrlUpdateHandler implements PaymentUpdateHandler {
         CallbackQuery callbackQuery = update.getCallbackQuery();
         Long chatId = callbackQuery.getMessage().getChatId();
 
+        //Извлечение данных о выбранном тарифном плане
         Payment.PaymentPayload payload = extractPayment(callbackQuery.getData());
         if (payload == null) {
             //TODO
         }
 
+        //Создание записи о новом платеже
         Payment payment = paymentService
                 .createNewPaymentYooKassa(telegramUser.getTelegramId(), payload);
 
+        //Получение ссылки от ЮКассы
         YooKassaPaymentService.Created created = yooKassaPaymentService.create(
                 payment.getAmount(),
                 payment.getCurrency().name(),
@@ -42,6 +51,7 @@ public class PaymentCreateUrlUpdateHandler implements PaymentUpdateHandler {
                 payment.getTelegramInvoicePayload()
         );
 
+        //Сохранение специального идентификатора оплаты от ЮКассы
         paymentService.setProviderPaymentId(payment, created);
 
         if (created == null || created.getConfirmationUrl() == null) {
@@ -52,6 +62,7 @@ public class PaymentCreateUrlUpdateHandler implements PaymentUpdateHandler {
         paymentTelegramBot.sendReturnedMessage(chatId, "Оплаты ЮКасса: \n" + created.getConfirmationUrl());
     }
 
+    //Извлечение данных о тарифном плане из Callback-data
     private Payment.PaymentPayload extractPayment(String callbackData) {
         String[] parts = callbackData.split(TelegramBot.DEFAULT_DELIMETER);
 

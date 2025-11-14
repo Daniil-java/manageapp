@@ -12,7 +12,17 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
 
-
+/**
+ * Сервис обработки вебхуков YooKassa.
+ *
+ * Отвечает за:
+ * - приём и первичную обработку входящих webhook-событий от YooKassa;
+ * - сохранение логов вебхука;
+ * - защиту от повторной обработки одного и того же события;
+ * - поиск соответствующего Payment в нашей системе и сверку суммы/валюты;
+ * - обновление статуса платежа по типу события YooKassa;
+ * - при необходимости — запрос актуального статуса платежа через API YooKassa.
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -21,6 +31,14 @@ public class YooWebhookService {
     private final WebhookEventRepository webhookEventRepository;
     private final PaymentService paymentService;
 
+    /**
+     * Обработка входящего вебхука от YooKassa.
+     *
+     * В случае ошибок помечаем webhook_event как ошибочный и логируем.
+     *
+     * @param hook       тело вебхука от YooKassa
+     * @param remoteAddr IP-адрес источника запроса (для аудита)
+     */
     @Transactional
     public void handle(YooWebhook hook, String remoteAddr) {
         log.info("YooWebhookService handle update!");
@@ -29,6 +47,7 @@ public class YooWebhookService {
         WebhookEvent.WebhookEventType eventType = mapYooEvent(hook.getEvent());
 
         log.info("WebhookEvent saving...");
+        //Сохраняем событие в таблицу webhook_event
         WebhookEvent saved = webhookEventRepository.save(
                 WebhookEvent.incoming(
                         WebhookEvent.WebhookProvider.YOOKASSA,   // было "YOOKASSA"
@@ -48,7 +67,7 @@ public class YooWebhookService {
                 return;
             }
 
-            // 1) Идемпотентность: одно и то же событие обрабатываем один раз
+            //Проверяем, не обрабатывали ли уже событие с таким provider/event/id
             if (webhookEventRepository.isAlreadyProcessed(
                     WebhookEvent.WebhookProvider.YOOKASSA, eventType, objectId)) {
                 log.info("Skip duplicate YooKassa event: {} {}", eventType, objectId);
@@ -57,9 +76,8 @@ public class YooWebhookService {
                 return;
             }
 
-            // 2) (опционально) подтверждаем статус у ЮKassa — GET /v3/payments/{id}
 
-            // 3) Находим наш Payment
+            // Находим связанный платёж Payment в нашей БД.
             // ВАЖНО: при оплате в Telegram сохраняй providerPaymentChargeId в поле, по которому ты ищешь.
             Payment payment = paymentService.findByProviderPaymentIdIdOrNull(objectId, hook);
 
@@ -70,7 +88,7 @@ public class YooWebhookService {
                 return;
             }
 
-            // 4) Сверяем сумму/валюту (у ЮKassa в рублях с точкой, у нас в мин. единицах)
+            //Сверяем сумму/валюту (у ЮKassa в рублях с точкой, у нас в мин. единицах)
             String valueStr = hook.getObject().getAmount().getValue();      // например "199.00"
             String currency = hook.getObject().getAmount().getCurrency();   // "RUB"
             long amountMinor = toMinorUnits(valueStr);                       // 19900
@@ -83,7 +101,7 @@ public class YooWebhookService {
                 // решай по бизнесу: пометить как подозрительное, но не падаем
             }
 
-            // 5) Обновляем статус по событию (строки → енамы)
+            //Обновляем статус по событию (строки → енамы)
             paymentService.setStatus(payment, eventType, hook, objectId);
 
             saved.markProcessed();
@@ -97,6 +115,15 @@ public class YooWebhookService {
         }
     }
 
+    /**
+     * Получение статуса платежа из YooKassa по его идентификатору.
+     *
+     * Делает запрос GET /v3/payments/{id} через Feign-клиент и маппирует строковый статус
+     * из API YooKassa в наш WebhookEventType.
+     *
+     * @param paymentId идентификатор платежа в YooKassa
+     * @return тип события по статусу платежа или null, если платеж не найден/статус неизвестен
+     */
     public WebhookEvent.WebhookEventType getPaymentFromYooKassaOrNull(String paymentId) {
         try {
             Map<?, ?> paymentApi = yooKassaFeignClient.getPayment(paymentId);

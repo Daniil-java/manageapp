@@ -11,6 +11,12 @@ import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 
+/**
+ * Обработчик комманды Command.PAYMENT_PAYLOAD_PLAN
+ *
+ * Отвечает за:
+ * - возвращение сообщение с клавиатурой-выбором покупки;
+ */
 @RequiredArgsConstructor
 @Component
 public class PaymentPayloadListUpdateHandler implements PaymentUpdateHandler {
@@ -36,6 +42,7 @@ public class PaymentPayloadListUpdateHandler implements PaymentUpdateHandler {
 
     }
 
+    //Возвращает клавиатуру с ТАРИФОМ (в данном случае 10 генераций)
     private InlineKeyboardMarkup getKeyboardPlan() {
         TelegramKeyboard.TelegramKeyboardBuilder builder = TelegramKeyboard.builder();
 

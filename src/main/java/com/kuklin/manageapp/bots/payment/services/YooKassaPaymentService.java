@@ -11,6 +11,15 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
+/**
+ * Сервис интеграции с YooKassa.
+ *
+ * Отвечает за:
+ * - подготовку и отправку запросов на создание платежа в YooKassa;
+ * - преобразование суммы из младших единиц валюты (копейки/центы) в формат, ожидаемый API YooKassa;
+ * - логирование результата создания платежа;
+ * - возврат сведений о созданном платеже (id, статус, ссылка на оплату, сырой ответ от YooKassa).
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -18,6 +27,7 @@ public class YooKassaPaymentService {
     private final YooKassaFeignClient client;
     private final YooWebhookService yooWebhookService;
 
+    //Создание сссылки на платеж в ЮКассе
     public Created create(long amountMinor,
                           String currency,
                           String description,
@@ -26,6 +36,7 @@ public class YooKassaPaymentService {
                           String productCode,
                           String idempotenceKey) {
 
+        //Формирование запроса в ЮКассу, для получения ссылки на платеж
         YookassaCreatePaymentRequest req = new YookassaCreatePaymentRequest()
                 .setCapture(true)
                 .setAmount(new Amount(toDecimal(amountMinor), currency))
@@ -45,6 +56,8 @@ public class YooKassaPaymentService {
         return new Created(payment.getId(), payment.getStatus(), url, payment);
     }
 
+    //Превращение стоимости тарифного плана в объект соответствующий документации ЮКассы
+    //В БД количество денег хранится в самой маленькой еденицы валюты (н.п. копейкла или цент)
     private static String toDecimal(long minor) {
         return BigDecimal.valueOf(minor)
                 .divide(BigDecimal.valueOf(100), 2, RoundingMode.UNNECESSARY)

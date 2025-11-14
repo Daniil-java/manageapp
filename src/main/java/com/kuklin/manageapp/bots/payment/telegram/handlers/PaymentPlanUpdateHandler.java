@@ -15,6 +15,14 @@ import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+/**
+ * Обработчик комманды Command.PAYMENT_PLAN
+ *
+ * Отвечает за:
+ * - возвращение телеграм инвойса (сообщения с оплатой);
+ * - создании записи о новом платеже в БД
+ *
+ */
 @RequiredArgsConstructor
 @Component
 @Slf4j
@@ -27,13 +35,16 @@ public class PaymentPlanUpdateHandler implements PaymentUpdateHandler {
         CallbackQuery callbackQuery = update.getCallbackQuery();
         Long chatId = callbackQuery.getMessage().getChatId();
 
+        //Извлечение даных о тарифном плане из callback-data
         Payment.PaymentPayload payload = extractPayment(callbackQuery.getData());
         if (payload == null) {
             //TODO
         }
+        //Создание записи о новом платеже
         Payment payment = paymentService
                 .createNewPaymentYooKassa(telegramUser.getTelegramId(), payload);
 
+        //Создание сообщения платежжа при помощи фабрики
         SendInvoice sendInvoice = invoiceFactory.build(
                 payment.getProvider(),
                 chatId,
@@ -47,12 +58,15 @@ public class PaymentPlanUpdateHandler implements PaymentUpdateHandler {
             paymentTelegramBot.execute(sendInvoice);
         } catch (TelegramApiException e) {
             //TODO
+            //Ошибка отправки инвойса
             log.error("Telegram execute error! ", e);
             paymentTelegramBot.sendReturnedMessage(chatId, "Ошибка! Попройбуйте заново");
+            //Пометка платежа, как отмененного
             paymentService.cancelPaymentOrNull(payment.getId());
         }
     }
 
+    //Извлечение данных из callback-data
     private Payment.PaymentPayload extractPayment(String callbackData) {
         String[] parts = callbackData.split(TelegramBot.DEFAULT_DELIMETER);
 

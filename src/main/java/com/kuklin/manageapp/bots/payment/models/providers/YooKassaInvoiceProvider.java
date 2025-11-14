@@ -8,6 +8,7 @@ import org.telegram.telegrambots.meta.api.objects.payments.LabeledPrice;
 
 import java.util.List;
 
+//Провайдер ЮКассы
 @Component
 public class YooKassaInvoiceProvider implements InvoiceProvider {
     private final String providerToken;

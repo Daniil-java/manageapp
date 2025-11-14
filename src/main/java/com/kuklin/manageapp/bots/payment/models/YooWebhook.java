@@ -4,6 +4,7 @@ import lombok.Data;
 
 import java.util.Map;
 
+//Вебхук с ЮКассы
 @Data
 public class YooWebhook {
     private String type;   // всегда "notification"
