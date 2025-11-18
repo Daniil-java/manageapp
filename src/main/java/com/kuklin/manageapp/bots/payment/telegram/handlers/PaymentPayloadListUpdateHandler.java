@@ -1,6 +1,8 @@
 package com.kuklin.manageapp.bots.payment.telegram.handlers;
 
 import com.kuklin.manageapp.bots.payment.entities.Payment;
+import com.kuklin.manageapp.bots.payment.entities.PricingPlan;
+import com.kuklin.manageapp.bots.payment.services.PricingPlanService;
 import com.kuklin.manageapp.bots.payment.telegram.PaymentTelegramBot;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
@@ -10,6 +12,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
+
+import java.util.List;
 
 /**
  * Обработчик комманды Command.PAYMENT_PAYLOAD_PLAN
@@ -22,6 +26,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMa
 public class PaymentPayloadListUpdateHandler implements PaymentUpdateHandler {
     private final PaymentTelegramBot paymentTelegramBot;
     private final PaymentPlanUpdateHandler nextHandler;
+    private final PricingPlanService pricingPlanService;
     private static final String PLAN_TEXT =
             """
                     Выберите один из планов:
@@ -33,28 +38,30 @@ public class PaymentPayloadListUpdateHandler implements PaymentUpdateHandler {
                 ? update.getCallbackQuery().getMessage().getChatId()
                 : update.getMessage().getChatId();
 
+        List<PricingPlan> planList = pricingPlanService.getAllPlans();
+
         paymentTelegramBot.sendReturnedMessage(
                 chatId,
                 PLAN_TEXT,
-                getKeyboardPlan(),
+                getKeyboardPlan(planList),
                 null
         );
 
     }
 
     //Возвращает клавиатуру с ТАРИФОМ (в данном случае 10 генераций)
-    private InlineKeyboardMarkup getKeyboardPlan() {
+    private InlineKeyboardMarkup getKeyboardPlan(List<PricingPlan> planList) {
         TelegramKeyboard.TelegramKeyboardBuilder builder = TelegramKeyboard.builder();
 
-        for (Payment.PaymentPayload payload : Payment.PaymentPayload.values()) {
+        for (PricingPlan plan : planList) {
             builder.row(TelegramKeyboard.button(
-                    payload.getDescription(),
-                    nextHandler.getHandlerListName() + TelegramBot.DEFAULT_DELIMETER + payload.name()
+                    plan.getTitle(),
+                    nextHandler.getHandlerListName() + TelegramBot.DEFAULT_DELIMETER + plan.getId()
             ));
             builder.row(
                     TelegramKeyboard.button(
-                            payload.getDescription() + " ОПЛАТА ССЫЛКОЙ",
-                            Command.PAYMENT_YOOKASSA_URL_CREATE.getCommandText() + TelegramBot.DEFAULT_DELIMETER + payload.name()
+                            plan.getTitle() + " ОПЛАТА ССЫЛКОЙ",
+                            Command.PAYMENT_YOOKASSA_URL_CREATE.getCommandText() + TelegramBot.DEFAULT_DELIMETER + plan.getId()
                     ));
         }
         return builder.build();

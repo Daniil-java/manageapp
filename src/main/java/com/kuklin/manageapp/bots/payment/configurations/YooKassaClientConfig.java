@@ -2,7 +2,6 @@ package com.kuklin.manageapp.bots.payment.configurations;
 
 import feign.RequestInterceptor;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 
@@ -10,7 +9,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 //Конфиг для доступа к ЮКассе, без телеграмма
-@Configuration
 public class YooKassaClientConfig {
 
     @Bean

@@ -39,7 +39,7 @@ public class SuccessfulPaymentUpdateHandler implements PaymentUpdateHandler {
 
             if (payment != null) {
                 //Увеличение баланса согласно купленного плана
-                GenerationBalance balance = generationBalanceService.increaseBalanceByPaymentOrNull(payment, telegramUser.getTelegramId());
+                GenerationBalance balance = generationBalanceService.increaseBalanceByPayment(payment);
                 if (balance != null) {
 
                     paymentTelegramBot.sendReturnedMessage(update.getMessage().getChatId(), "Успешная оплата\nВаш баланс: " + balance.getGenerationRequests());

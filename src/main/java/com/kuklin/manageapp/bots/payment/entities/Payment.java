@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.bots.payment.entities;
 
+import com.kuklin.manageapp.bots.payment.models.common.Currency;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.Getter;
@@ -23,8 +24,7 @@ public class Payment {
     @Enumerated(EnumType.STRING)
     private Provider provider; // "STARS" | "YOOKASSA"
     private String providerPaymentId; // id платежа в ЮKassa
-    @Enumerated(EnumType.STRING)
-    private PaymentPayload payload;
+    private Long pricingPlanId;
     private String telegramInvoicePayload;
     private String description;
     @Enumerated(EnumType.STRING)
@@ -34,6 +34,7 @@ public class Payment {
     private Integer starsAmount;
     @Enumerated(EnumType.STRING)
     private PaymentStatus status;
+    @Enumerated(EnumType.STRING)
     private ProviderStatus providerStatus;
     @CreationTimestamp
     private LocalDateTime createdAt = LocalDateTime.now();
@@ -51,19 +52,8 @@ public class Payment {
     public enum Provider {
         YOOKASSA, STARS;
     }
-    public enum Currency {
-        RUB, XTR;
-    }
-    @Getter
-    @RequiredArgsConstructor
-    public enum PaymentPayload {
-        PACK_10("ПАКЕТ ИЗ 10 ФОТО-ЗАПРОСОВ", 7000, 10L);
 
-        private final String description;
-        private final Integer price;
-        private final Long generationsCount;
-    }
     public enum PaymentStatus {
-        CREATED, SUCCESS, FAILED;
+        CREATED, SUCCESS, FAILED, REFUNDED;
     }
 }

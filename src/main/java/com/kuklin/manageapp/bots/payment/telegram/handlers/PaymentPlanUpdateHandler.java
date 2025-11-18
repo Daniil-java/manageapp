@@ -1,8 +1,10 @@
 package com.kuklin.manageapp.bots.payment.telegram.handlers;
 
 import com.kuklin.manageapp.bots.payment.entities.Payment;
+import com.kuklin.manageapp.bots.payment.entities.PricingPlan;
 import com.kuklin.manageapp.bots.payment.models.providers.InvoiceFactory;
 import com.kuklin.manageapp.bots.payment.services.PaymentService;
+import com.kuklin.manageapp.bots.payment.services.PricingPlanService;
 import com.kuklin.manageapp.bots.payment.telegram.PaymentTelegramBot;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
@@ -30,26 +32,30 @@ public class PaymentPlanUpdateHandler implements PaymentUpdateHandler {
     private final PaymentTelegramBot paymentTelegramBot;
     private final InvoiceFactory invoiceFactory;
     private final PaymentService paymentService;
+    private final PricingPlanService pricingPlanService;
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
         CallbackQuery callbackQuery = update.getCallbackQuery();
         Long chatId = callbackQuery.getMessage().getChatId();
 
-        //Извлечение даных о тарифном плане из callback-data
-        Payment.PaymentPayload payload = extractPayment(callbackQuery.getData());
-        if (payload == null) {
+        //Извлечение данных о выбранном тарифном плане
+        Long pricingPlanId = extractPricingPlanId(callbackQuery.getData());
+        if (pricingPlanId == null) {
             //TODO
         }
+
+        PricingPlan plan = pricingPlanService.getPricingPlanByIdOrNull(pricingPlanId);
+
         //Создание записи о новом платеже
         Payment payment = paymentService
-                .createNewPaymentYooKassa(telegramUser.getTelegramId(), payload);
+                .createNewPaymentYooKassa(telegramUser.getTelegramId(), plan);
 
         //Создание сообщения платежжа при помощи фабрики
         SendInvoice sendInvoice = invoiceFactory.build(
                 payment.getProvider(),
                 chatId,
-                payment.getPayload().getDescription(),
-                payment.getPayload().getDescription(),
+                plan.getTitle(),
+                plan.getDescription(),
                 payment.getTelegramInvoicePayload(),
                 payment.getAmount()
         );
@@ -66,20 +72,15 @@ public class PaymentPlanUpdateHandler implements PaymentUpdateHandler {
         }
     }
 
-    //Извлечение данных из callback-data
-    private Payment.PaymentPayload extractPayment(String callbackData) {
+    //Извлечение данных о тарифном плане из Callback-data
+    private Long extractPricingPlanId(String callbackData) {
         String[] parts = callbackData.split(TelegramBot.DEFAULT_DELIMETER);
 
         if (parts.length != 2) {
             return null;
         }
 
-        try {
-            return Payment.PaymentPayload.valueOf(parts[1]);
-        } catch (IllegalArgumentException e) {
-            //TODO
-            return null;
-        }
+        return Long.parseLong(parts[1]);
     }
 
     @Override

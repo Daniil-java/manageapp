@@ -32,7 +32,7 @@ public class PaymentTelegramFacade extends TelegramFacade {
                         : update.getCallbackQuery().getFrom();
 
         TelegramUser telegramUser = telegramUserService
-                .createOrGetUserByTelegram(BotIdentifier.CALORIE_BOT, user);
+                .createOrGetUserByTelegram(BotIdentifier.PAYMENT, user);
         UpdateHandler updateHandler = processInputUpdate(update);
         if (updateHandler == null) {
             log.error("Не удалось найти подходящий хендлер. Ответа не будет");

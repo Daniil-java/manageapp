@@ -2,6 +2,7 @@ package com.kuklin.manageapp.bots.payment.models.providers;
 
 import com.kuklin.manageapp.bots.payment.configurations.TelegramPaymentBotKeyComponents;
 import com.kuklin.manageapp.bots.payment.entities.Payment;
+import com.kuklin.manageapp.bots.payment.models.common.Currency;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.invoices.SendInvoice;
 import org.telegram.telegrambots.meta.api.objects.payments.LabeledPrice;
@@ -30,7 +31,7 @@ public class YooKassaInvoiceProvider implements InvoiceProvider {
                 .description(description)
                 .payload(payload)
                 .providerToken(providerToken)
-                .currency(Payment.Currency.RUB.name())
+                .currency(Currency.RUB.name())
                 .prices(List.of(new LabeledPrice("Оплата", amountKopecks)))
                 .startParameter("yookassa_payment")
                 .build();

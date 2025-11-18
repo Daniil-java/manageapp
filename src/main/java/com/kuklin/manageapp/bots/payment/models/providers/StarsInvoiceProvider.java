@@ -1,6 +1,7 @@
 package com.kuklin.manageapp.bots.payment.models.providers;
 
 import com.kuklin.manageapp.bots.payment.entities.Payment;
+import com.kuklin.manageapp.bots.payment.models.common.Currency;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.invoices.SendInvoice;
@@ -24,7 +25,7 @@ public class StarsInvoiceProvider implements InvoiceProvider {
                 .description(description)
                 .payload(payload)
                 .providerToken("")
-                .currency(Payment.Currency.XTR.name())
+                .currency(Currency.XTR.name())
                 .prices(List.of(new LabeledPrice("Оплата", amount)))
                 .startParameter("stars_purchase")
                 .build();

@@ -2,6 +2,7 @@ package com.kuklin.manageapp.bots.payment.services;
 
 import com.kuklin.manageapp.bots.payment.entities.GenerationBalance;
 import com.kuklin.manageapp.bots.payment.entities.Payment;
+import com.kuklin.manageapp.bots.payment.entities.PricingPlan;
 import com.kuklin.manageapp.bots.payment.repositories.GenerationBalanceRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +20,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 @Slf4j
 public class GenerationBalanceService {
-
+    private final PricingPlanService pricingPlanService;
     private final GenerationBalanceRepository generationBalanceRepository;
 
     //Создание нового баланса, если не существует старый
@@ -40,28 +41,6 @@ public class GenerationBalanceService {
         );
     }
 
-    //Увеличение баланса, согласно проплаченного тарифа
-    public GenerationBalance increaseBalanceByPaymentOrNull(Payment payment, Long telegramId) {
-        //Оплаченный тариф
-        Payment.PaymentPayload payload = payment.getPayload();
-
-        //Проверка, что тариф сущестует в системе. Пока что, тариф только один
-        if (payload.equals(Payment.PaymentPayload.PACK_10)) {
-            //Получение баланса пользователя
-            GenerationBalance generationBalance = generationBalanceRepository
-                    .findByTelegramId(telegramId).orElse(null);
-
-            if (generationBalance == null) return null;
-
-            //Начисление и сохранение баланса
-            generationBalance = generationBalanceRepository.save(generationBalance.setGenerationRequests(
-                    generationBalance.getGenerationRequests() + 10
-            ));
-            return generationBalance;
-        }
-        return null;
-    }
-
     //Увеличение баланса, согласно платежу
     public GenerationBalance increaseBalanceByPayment(Payment payment) {
         //Получение баланса пользователя или налл
@@ -71,10 +50,13 @@ public class GenerationBalanceService {
             //TODO ERROR
         }
 
+        PricingPlan plan = pricingPlanService
+                .getPricingPlanByIdOrNull(payment.getPricingPlanId());
+
         //Начисление и сохранение баланса
         return generationBalanceRepository.save(
                 generationBalance.setGenerationRequests(
-                        generationBalance.getGenerationRequests() + payment.getPayload().getGenerationsCount()
+                        generationBalance.getGenerationRequests() + plan.getGenerationsCount()
                 )
         );
     }

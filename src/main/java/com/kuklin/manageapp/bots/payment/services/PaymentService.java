@@ -1,8 +1,10 @@
 package com.kuklin.manageapp.bots.payment.services;
 
 import com.kuklin.manageapp.bots.payment.entities.GenerationBalance;
+import com.kuklin.manageapp.bots.payment.entities.PricingPlan;
 import com.kuklin.manageapp.bots.payment.entities.WebhookEvent;
 import com.kuklin.manageapp.bots.payment.models.YooWebhook;
+import com.kuklin.manageapp.bots.payment.models.common.Currency;
 import com.kuklin.manageapp.bots.payment.repositories.PaymentRepository;
 import com.kuklin.manageapp.bots.payment.entities.Payment;
 import com.kuklin.manageapp.bots.payment.telegram.handlers.WebhookSuccessfulPaymentUpdateHandler;
@@ -34,27 +36,27 @@ public class PaymentService {
     private final WebhookSuccessfulPaymentUpdateHandler webhookSuccessfulPaymentUpdateHandler;
 
     //Создание новой записи о платеже
-    public Payment createNewPaymentYooKassa(Long telegramId, Payment.PaymentPayload payload) {
+    public Payment createNewPaymentYooKassa(Long telegramId, PricingPlan pricingPlan) {
         Payment payment = paymentRepository.save(new Payment()
                 .setTelegramId(telegramId)
-                .setCurrency(Payment.Currency.RUB)
+                .setCurrency(pricingPlan.getCurrency())
                 .setStatus(Payment.PaymentStatus.CREATED)
                 .setProviderStatus(Payment.ProviderStatus.NEW)
-                .setPayload(payload)
-                .setDescription(payload.getDescription())
-                .setAmount(payload.getPrice())
+                .setPricingPlanId(pricingPlan.getId())
+                .setDescription(pricingPlan.getDescription())
+                .setAmount(pricingPlan.getPriceMinor())
                 .setProvider(Payment.Provider.YOOKASSA)
                 .setStarsAmount(0));
 
-        payment.setTelegramInvoicePayload(generateTelegramInvoicePayload(payment.getId(), payload));
+        payment.setTelegramInvoicePayload(generateTelegramInvoicePayload(payment.getId(), pricingPlan));
 
         return paymentRepository.save(payment);
     }
 
     //Генерация уникального идентификатора платежа для телеграмма
-    private String generateTelegramInvoicePayload(Long paymentId, Payment.PaymentPayload payload) {
+    private String generateTelegramInvoicePayload(Long paymentId, PricingPlan pricingPlan) {
         //Название тарифного плана + ид платежа
-        String invoicePayload = payload.name() + "-" + paymentId;
+        String invoicePayload = pricingPlan.getCodeForOrderId() + "-" + pricingPlan.getId() + "-" + paymentId;
         log.info("inoice payload: " + invoicePayload);
         return invoicePayload;
     }
@@ -100,16 +102,6 @@ public class PaymentService {
         return paymentRepository.save(
                 payment.setStatus(Payment.PaymentStatus.SUCCESS)
         );
-    }
-
-    public Payment.PaymentPayload getPlanByTelegramInvoiceOrNull(SuccessfulPayment successfulPayment) {
-        Payment payment = paymentRepository
-                .findByTelegramInvoicePayloadAndStatus(
-                        successfulPayment.getInvoicePayload(), Payment.PaymentStatus.SUCCESS)
-                .orElse(null);
-
-        if (payment == null) return null;
-        return payment.getPayload();
     }
 
     //Получение записи о платеже по идентификатору из провайдера

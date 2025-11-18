@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.bots.payment.integrations;
 
+import com.kuklin.manageapp.bots.payment.configurations.YooKassaClientConfig;
 import com.kuklin.manageapp.bots.payment.models.yookassa.YookassaCreatePaymentRequest;
 import com.kuklin.manageapp.bots.payment.models.yookassa.YookassaPaymentResponse;
 import org.springframework.cloud.openfeign.FeignClient;
@@ -10,7 +11,7 @@ import java.util.Map;
 @FeignClient(
         name = "yooKassa",
         url = "${yookassa.base-url:https://api.yookassa.ru}",
-        configuration = com.kuklin.manageapp.bots.payment.configurations.YooKassaClientConfig.class
+        configuration = YooKassaClientConfig.class
 )
 public interface YooKassaFeignClient {
     // Создание платежа. ВАЖНО: прокидываем заголовок идемпотентности.
