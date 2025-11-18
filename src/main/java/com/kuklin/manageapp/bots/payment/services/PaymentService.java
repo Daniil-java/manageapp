@@ -1,12 +1,9 @@
 package com.kuklin.manageapp.bots.payment.services;
 
-import com.kuklin.manageapp.bots.payment.entities.GenerationBalance;
-import com.kuklin.manageapp.bots.payment.entities.PricingPlan;
-import com.kuklin.manageapp.bots.payment.entities.WebhookEvent;
+import com.kuklin.manageapp.bots.payment.entities.*;
 import com.kuklin.manageapp.bots.payment.models.YooWebhook;
 import com.kuklin.manageapp.bots.payment.models.common.Currency;
 import com.kuklin.manageapp.bots.payment.repositories.PaymentRepository;
-import com.kuklin.manageapp.bots.payment.entities.Payment;
 import com.kuklin.manageapp.bots.payment.telegram.handlers.WebhookSuccessfulPaymentUpdateHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -32,7 +29,7 @@ import java.util.Optional;
 @Slf4j
 public class PaymentService {
     private final PaymentRepository paymentRepository;
-    private final GenerationBalanceService generationBalanceService;
+    private final GenerationBalanceOperationService generationBalanceOperationService;
     private final WebhookSuccessfulPaymentUpdateHandler webhookSuccessfulPaymentUpdateHandler;
 
     //Создание новой записи о платеже
@@ -163,8 +160,13 @@ public class PaymentService {
                         .setPaidAt(OffsetDateTime.now(ZoneOffset.UTC).toLocalDateTime());
                 payment = paymentRepository.save(payment);
 
-                GenerationBalance balance = generationBalanceService.increaseBalanceByPayment(payment);
-                webhookSuccessfulPaymentUpdateHandler.handleYooKassaSuccess(payment, balance);
+                GenerationBalanceOperation balanceOperation = generationBalanceOperationService
+                        .increaseBalanceByPayment(payment);
+
+                if (balanceOperation == null) {
+                    //TODO ERROR;
+                }
+                webhookSuccessfulPaymentUpdateHandler.handleYooKassaSuccess(payment);
                 break;
             }
             //Отмененная оплата

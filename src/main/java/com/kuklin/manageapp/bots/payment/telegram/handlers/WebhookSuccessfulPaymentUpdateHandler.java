@@ -21,16 +21,15 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 @Slf4j
 public class WebhookSuccessfulPaymentUpdateHandler implements PaymentUpdateHandler{
     private final PaymentTelegramBot paymentTelegramBot;
+    private final PaymentBalanceUpdateHandler balanceUpdateHandler;
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
         return;
     }
 
-    public void handleYooKassaSuccess(Payment payment, GenerationBalance balance) {
+    public void handleYooKassaSuccess(Payment payment) {
         paymentTelegramBot.sendReturnedMessage(
-                payment.getTelegramId(),
-                "Оплата подтверждена\nТекущий баланс: " + balance.getGenerationRequests()
-        );
+                payment.getTelegramId(), "Оплата подтверждена");
     }
 
     @Override

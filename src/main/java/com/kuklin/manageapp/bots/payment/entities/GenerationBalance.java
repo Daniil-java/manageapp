@@ -17,4 +17,15 @@ public class GenerationBalance {
 
     private Long telegramId;
     private Long generationRequests;
+
+    public GenerationBalance subtract(Long request) {
+        generationRequests = generationRequests - request;
+        return this;
+    }
+
+    public GenerationBalance topUp(Long request) {
+        generationRequests = generationRequests + request;
+        return this;
+    }
+
 }

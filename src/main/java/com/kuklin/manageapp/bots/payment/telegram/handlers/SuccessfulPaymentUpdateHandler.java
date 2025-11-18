@@ -1,7 +1,9 @@
 package com.kuklin.manageapp.bots.payment.telegram.handlers;
 
 import com.kuklin.manageapp.bots.payment.entities.GenerationBalance;
+import com.kuklin.manageapp.bots.payment.entities.GenerationBalanceOperation;
 import com.kuklin.manageapp.bots.payment.entities.Payment;
+import com.kuklin.manageapp.bots.payment.services.GenerationBalanceOperationService;
 import com.kuklin.manageapp.bots.payment.services.GenerationBalanceService;
 import com.kuklin.manageapp.bots.payment.services.PaymentService;
 import com.kuklin.manageapp.bots.payment.telegram.PaymentTelegramBot;
@@ -27,8 +29,8 @@ import org.telegram.telegrambots.meta.api.objects.payments.SuccessfulPayment;
 public class SuccessfulPaymentUpdateHandler implements PaymentUpdateHandler {
     private final PaymentTelegramBot paymentTelegramBot;
     private final PaymentService paymentService;
-    private final GenerationBalanceService generationBalanceService;
-
+    private final GenerationBalanceOperationService generationBalanceOperationService;
+    private final PaymentBalanceUpdateHandler balanceUpdateHandler;
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
@@ -39,10 +41,10 @@ public class SuccessfulPaymentUpdateHandler implements PaymentUpdateHandler {
 
             if (payment != null) {
                 //Увеличение баланса согласно купленного плана
-                GenerationBalance balance = generationBalanceService.increaseBalanceByPayment(payment);
-                if (balance != null) {
-
-                    paymentTelegramBot.sendReturnedMessage(update.getMessage().getChatId(), "Успешная оплата\nВаш баланс: " + balance.getGenerationRequests());
+                GenerationBalanceOperation balanceOperation = generationBalanceOperationService.increaseBalanceByPayment(payment);
+                if (balanceOperation != null) {
+                    paymentTelegramBot.sendReturnedMessage(update.getMessage().getChatId(), "Успешная оплата");
+                    balanceUpdateHandler.handle(update, telegramUser);
                 } else {
                     //TODO ERROR
                 }

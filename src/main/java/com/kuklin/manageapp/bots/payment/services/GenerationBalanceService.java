@@ -64,4 +64,8 @@ public class GenerationBalanceService {
     public GenerationBalance getBalanceByTelegramIdOrNull(Long telegramId) {
         return generationBalanceRepository.findByTelegramId(telegramId).orElse(null);
     }
+
+    public GenerationBalance save(GenerationBalance balance) {
+        return generationBalanceRepository.save(balance);
+    }
 }
