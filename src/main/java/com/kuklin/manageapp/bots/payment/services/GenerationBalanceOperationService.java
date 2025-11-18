@@ -9,6 +9,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * Сервис логирующий информацию об операциях, происходящий с балансом генераций пользователя
+ *
+ * Отвечает за:
+ * - операции с балансом генераций пользователя
+ * - сохранение информации об операциях с балансом генераций
+ */
 @Service
 @RequiredArgsConstructor
 public class GenerationBalanceOperationService {
@@ -16,6 +23,7 @@ public class GenerationBalanceOperationService {
     private final GenerationBalanceService generationBalanceService;
     private final PricingPlanService pricingPlanService;
 
+    //Пополнение баланса пользователя, на основании пришедшего платежа
     @Transactional
     public GenerationBalanceOperation increaseBalanceByPayment(Payment payment) {
         //Получение баланса пользователя или налл
@@ -39,6 +47,7 @@ public class GenerationBalanceOperationService {
         return operation;
     }
 
+    //Пополнение баланса генераций пользователя
     @Transactional
     public GenerationBalanceOperation createNewBalanceOperationCredit(
             GenerationBalanceOperation.OperationSource source,
@@ -53,6 +62,7 @@ public class GenerationBalanceOperationService {
         );
     }
 
+    //Списание генераций из баланса пользователя
     @Transactional
     public GenerationBalanceOperation createNewBalanceOperationDebit(
             GenerationBalanceOperation.OperationSource source,
@@ -67,6 +77,7 @@ public class GenerationBalanceOperationService {
         );
     }
 
+    //Общий метод проведения операций над балансом пользователя
     @Transactional
     public GenerationBalanceOperation createNewBalanceOperation(
             GenerationBalanceOperation.OperationType operationType,

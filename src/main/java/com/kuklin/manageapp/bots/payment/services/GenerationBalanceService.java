@@ -11,10 +11,12 @@ import org.springframework.stereotype.Service;
 import java.util.Optional;
 
 /**
- * Сервис управляющий балансом пользователя
+ * Сервис управляющий балансом генераций пользователя
  *
  * Отвечает за:
- * - операции с балансом пользователя
+ * - создание баланса генераций для пользователя
+ * - получения баланса пользователя
+ * - сохранение баланса
  */
 @Service
 @RequiredArgsConstructor
@@ -38,26 +40,6 @@ public class GenerationBalanceService {
                 new GenerationBalance()
                         .setTelegramId(telegramId)
                         .setGenerationRequests(0L)
-        );
-    }
-
-    //Увеличение баланса, согласно платежу
-    public GenerationBalance increaseBalanceByPayment(Payment payment) {
-        //Получение баланса пользователя или налл
-        GenerationBalance generationBalance = generationBalanceRepository
-                .findByTelegramId(payment.getTelegramId()).orElse(null);
-        if (generationBalance == null) {
-            //TODO ERROR
-        }
-
-        PricingPlan plan = pricingPlanService
-                .getPricingPlanByIdOrNull(payment.getPricingPlanId());
-
-        //Начисление и сохранение баланса
-        return generationBalanceRepository.save(
-                generationBalance.setGenerationRequests(
-                        generationBalance.getGenerationRequests() + plan.getGenerationsCount()
-                )
         );
     }
 

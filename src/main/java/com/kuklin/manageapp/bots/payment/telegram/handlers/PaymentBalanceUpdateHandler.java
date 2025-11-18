@@ -9,6 +9,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
+/**
+ * Обработчик комманды Command.PAYMENT_BALANCE
+ *
+ * Отвечает за:
+ * - отправку баланса пользователю
+ */
 @Component
 @RequiredArgsConstructor
 public class PaymentBalanceUpdateHandler implements PaymentUpdateHandler {
