@@ -1,4 +1,4 @@
-package com.kuklin.manageapp.bots.payment.telegram.handlers;
+package com.kuklin.manageapp.bots.payment.telegram.handlers.telegrampay;
 
 import com.kuklin.manageapp.bots.payment.entities.GenerationBalance;
 import com.kuklin.manageapp.bots.payment.entities.GenerationBalanceOperation;
@@ -7,6 +7,8 @@ import com.kuklin.manageapp.bots.payment.services.GenerationBalanceOperationServ
 import com.kuklin.manageapp.bots.payment.services.GenerationBalanceService;
 import com.kuklin.manageapp.bots.payment.services.PaymentService;
 import com.kuklin.manageapp.bots.payment.telegram.PaymentTelegramBot;
+import com.kuklin.manageapp.bots.payment.telegram.handlers.PaymentBalanceUpdateHandler;
+import com.kuklin.manageapp.bots.payment.telegram.handlers.PaymentUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import lombok.RequiredArgsConstructor;

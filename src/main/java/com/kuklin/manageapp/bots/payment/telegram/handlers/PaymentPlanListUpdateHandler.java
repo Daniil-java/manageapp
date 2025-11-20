@@ -1,6 +1,5 @@
 package com.kuklin.manageapp.bots.payment.telegram.handlers;
 
-import com.kuklin.manageapp.bots.payment.entities.Payment;
 import com.kuklin.manageapp.bots.payment.entities.PricingPlan;
 import com.kuklin.manageapp.bots.payment.services.PricingPlanService;
 import com.kuklin.manageapp.bots.payment.telegram.PaymentTelegramBot;
@@ -23,9 +22,9 @@ import java.util.List;
  */
 @RequiredArgsConstructor
 @Component
-public class PaymentPayloadListUpdateHandler implements PaymentUpdateHandler {
+public class PaymentPlanListUpdateHandler implements PaymentUpdateHandler {
     private final PaymentTelegramBot paymentTelegramBot;
-    private final PaymentPlanUpdateHandler nextHandler;
+    private final PaymentProviderChoiceUpdateHandler nextHandler;
     private final PricingPlanService pricingPlanService;
     private static final String PLAN_TEXT =
             """
@@ -58,11 +57,6 @@ public class PaymentPayloadListUpdateHandler implements PaymentUpdateHandler {
                     plan.getTitle(),
                     nextHandler.getHandlerListName() + TelegramBot.DEFAULT_DELIMETER + plan.getId()
             ));
-            builder.row(
-                    TelegramKeyboard.button(
-                            plan.getTitle() + " ОПЛАТА ССЫЛКОЙ",
-                            Command.PAYMENT_YOOKASSA_URL_CREATE.getCommandText() + TelegramBot.DEFAULT_DELIMETER + plan.getId()
-                    ));
         }
         return builder.build();
     }

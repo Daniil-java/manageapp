@@ -19,6 +19,8 @@ public enum Command {
     PAYMENT_YOOKASSA_URL_CREATE("/createurl", BotIdentifier.PAYMENT),
     PAYMENT_SUCCESS("paymentsuccesnotcommand", BotIdentifier.PAYMENT),
     PAYMENT_BALANCE("/balance", BotIdentifier.PAYMENT),
+    PAYMENT_PROVIDER("/provider", BotIdentifier.PAYMENT),
+    PAYMENT_NOT_COMMAND("notcommand", BotIdentifier.PAYMENT),
     ASSISTANT_START("/start", BotIdentifier.ASSISTANT_BOT),
     ASSISTANT_VOICE("voice", BotIdentifier.ASSISTANT_BOT),
     ASSISTANT_TODAY("/today", BotIdentifier.ASSISTANT_BOT),
