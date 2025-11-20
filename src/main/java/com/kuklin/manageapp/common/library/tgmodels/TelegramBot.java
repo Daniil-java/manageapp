@@ -1,10 +1,13 @@
 package com.kuklin.manageapp.common.library.tgmodels;
 
+import com.kuklin.manageapp.bots.payment.entities.Payment;
+import com.kuklin.manageapp.bots.payment.models.common.Currency;
 import com.kuklin.manageapp.common.services.AsyncService;
 import lombok.extern.slf4j.Slf4j;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.BotApiMethod;
 import org.telegram.telegrambots.meta.api.methods.ParseMode;
+import org.telegram.telegrambots.meta.api.methods.invoices.SendInvoice;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.send.SendVoice;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
@@ -14,12 +17,14 @@ import org.telegram.telegrambots.meta.api.objects.InputFile;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.User;
+import org.telegram.telegrambots.meta.api.objects.payments.LabeledPrice;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboard;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import java.io.ByteArrayInputStream;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -223,6 +228,29 @@ public abstract class TelegramBot extends TelegramLongPollingBot implements Tele
             sendReturnedMessage(425120436, ex.getMessage());
             return false;
         }
+    }
+
+    public static SendInvoice buildInvoiceOrNull(Long chatId, String title,
+                                    String description, String payload,
+                                    String providerToken, int amount,
+                                    Currency currency, Payment.Provider provider,
+                                    String labelPrice
+    ) {
+
+        if (provider.equals(Payment.Provider.STARS) && !currency.equals(Currency.XTR)) {
+            return null;
+        }
+
+        return SendInvoice.builder()
+                .chatId(chatId.toString())
+                .title(title)
+                .description(description)
+                .payload(payload)
+                .providerToken(providerToken)
+                .currency(currency.name())
+                .prices(List.of(new LabeledPrice(labelPrice, amount)))
+                .startParameter(provider.getTelegramStartParameter())
+                .build();
     }
 }
 
