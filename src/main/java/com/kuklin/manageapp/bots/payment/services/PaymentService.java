@@ -34,6 +34,7 @@ public class PaymentService {
     private final GenerationBalanceOperationService generationBalanceOperationService;
     private final WebhookSuccessfulPaymentUpdateHandler webhookSuccessfulPaymentUpdateHandler;
     private final PricingPlanService pricingPlanService;
+    private final UserSubscriptionService userSubscriptionService;
 
     //Создание новой записи о платеже
     public Payment createNewPaymentYooKassa(Long telegramId, PricingPlan pricingPlan) {
@@ -155,19 +156,25 @@ public class PaymentService {
         switch (webhookEventType) {
             //Успешная оплата
             case PAYMENT_SUCCEEDED: {
+                PricingPlan plan = pricingPlanService
+                        .getPricingPlanByIdOrNull(payment.getPricingPlanId());
+
+                try {
+                    switch (plan.getPayloadType()) {
+                        case SUBSCRIPTION -> {userSubscriptionService.createSubscriptionByPayment(payment);}
+                        case GENERATION_REQUEST -> {generationBalanceOperationService
+                                .increaseBalanceByPayment(payment);}
+                    }
+                } catch (Exception e) {
+                    //TODO ERROR
+                }
+
                 payment
                         .setProviderStatus(Payment.ProviderStatus.SUCCEEDED)
                         .setStatus(Payment.PaymentStatus.SUCCESS)
                         .setProviderPaymentId(providerPaymentId)
                         .setPaidAt(OffsetDateTime.now(ZoneOffset.UTC).toLocalDateTime());
                 payment = paymentRepository.save(payment);
-
-                GenerationBalanceOperation balanceOperation = generationBalanceOperationService
-                        .increaseBalanceByPayment(payment);
-
-                if (balanceOperation == null) {
-                    //TODO ERROR;
-                }
                 webhookSuccessfulPaymentUpdateHandler.handleYooKassaSuccess(payment);
                 break;
             }
@@ -185,14 +192,21 @@ public class PaymentService {
                 payment.setProviderStatus(Payment.ProviderStatus.REFUND_SUCCEEDED);
 
                 PricingPlan plan = pricingPlanService.getPricingPlanByIdOrNull(payment.getPricingPlanId());
-                generationBalanceOperationService.createNewBalanceOperationDebit(
-                        GenerationBalanceOperation.OperationSource.PAYMENT,
-                        payment.getTelegramId(),
-                        payment.getId(),
-                        plan.getGenerationsCount(),
-                        plan.getTitle(),
-                        true
-                );
+                switch (plan.getPayloadType()) {
+                    case SUBSCRIPTION -> {
+                        userSubscriptionService.cancelByPayment(payment);
+                    }
+                    case GENERATION_REQUEST -> {
+                        generationBalanceOperationService.createNewBalanceOperationDebit(
+                                GenerationBalanceOperation.OperationSource.PAYMENT,
+                                payment.getTelegramId(),
+                                payment.getId(),
+                                plan.getGenerationsCount(),
+                                plan.getTitle(),
+                                true
+                        );
+                    }
+                }
 
                 paymentRepository.save(payment);
                 break;

@@ -5,6 +5,7 @@ import com.kuklin.manageapp.bots.payment.models.common.Currency;
 import com.kuklin.manageapp.common.services.AsyncService;
 import lombok.extern.slf4j.Slf4j;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
+import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.methods.BotApiMethod;
 import org.telegram.telegrambots.meta.api.methods.ParseMode;
 import org.telegram.telegrambots.meta.api.methods.invoices.SendInvoice;
@@ -13,10 +14,7 @@ import org.telegram.telegrambots.meta.api.methods.send.SendVoice;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageReplyMarkup;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
-import org.telegram.telegrambots.meta.api.objects.InputFile;
-import org.telegram.telegrambots.meta.api.objects.Message;
-import org.telegram.telegrambots.meta.api.objects.Update;
-import org.telegram.telegrambots.meta.api.objects.User;
+import org.telegram.telegrambots.meta.api.objects.*;
 import org.telegram.telegrambots.meta.api.objects.payments.LabeledPrice;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboard;
@@ -251,6 +249,22 @@ public abstract class TelegramBot extends TelegramLongPollingBot implements Tele
                 .prices(List.of(new LabeledPrice(labelPrice, amount)))
                 .startParameter(provider.getTelegramStartParameter())
                 .build();
+    }
+
+    public void answerCallback(Update update) {
+        if (update.hasCallbackQuery()) {
+            CallbackQuery cq = update.getCallbackQuery();
+
+            AnswerCallbackQuery answer = AnswerCallbackQuery.builder()
+                    .callbackQueryId(cq.getId())
+                    .build();
+
+            try {
+                execute(answer);
+            } catch (TelegramApiException e) {
+                log.error("Callback answer error!");
+            }
+        }
     }
 }
 

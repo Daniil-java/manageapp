@@ -60,12 +60,14 @@ public class PaymentPayUpdateHandler implements PaymentUpdateHandler {
             ProviderResult result = paymentUrlProviderFactory.handle(provider, payment, plan, chatId);
             paymentService.setProviderPaymentId(payment, result.paymentId());
             paymentTelegramBot.sendReturnedMessage(chatId, result.url());
+            paymentTelegramBot.sendDeleteMessage(chatId, update.getCallbackQuery().getMessage().getMessageId());
             return;
         }
 
         SendInvoice sendInvoice = sendInvoiceBuilder.build(provider, payment, plan, chatId);
         try {
             paymentTelegramBot.execute(sendInvoice);
+            paymentTelegramBot.sendDeleteMessage(chatId, update.getCallbackQuery().getMessage().getMessageId());
         } catch (TelegramApiException e) {
             //TODO
             //Ошибка отправки инвойса

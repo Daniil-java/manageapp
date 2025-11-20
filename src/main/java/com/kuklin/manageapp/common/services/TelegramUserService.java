@@ -42,7 +42,9 @@ public class TelegramUserService {
                 .setBotIdentifier(botIdentifier)
                 .setResponseCount(DEFAULT_RESPONSE_COUNT);
         tgUser = telegramUserRepository.save(tgUser);
-        generationBalanceService.createNewBalanceIfNotExist(optionalTelegramUser.get().getTelegramId());
+        generationBalanceService.createNewBalanceIfNotExist(
+                tgUser.getTelegramId()
+        );
 
         return tgUser;
     }

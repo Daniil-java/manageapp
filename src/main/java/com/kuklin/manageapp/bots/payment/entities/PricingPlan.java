@@ -33,7 +33,7 @@ public class PricingPlan {
     @CreationTimestamp
     private LocalDateTime created;
 
-    enum PricingPlanType {
+    public enum PricingPlanType {
         //План для пакетов с запросами
         //durationDays не используется в этом случае
         GENERATION_REQUEST,
@@ -43,7 +43,7 @@ public class PricingPlan {
         ;
     }
 
-    enum PlanStatus {
+    public enum PlanStatus {
         AVAILABLE, DISABLED;
     }
 }

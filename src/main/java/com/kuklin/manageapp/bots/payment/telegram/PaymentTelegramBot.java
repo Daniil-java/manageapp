@@ -23,6 +23,7 @@ public class PaymentTelegramBot extends TelegramBot {
 
     @Override
     public void onUpdateReceived(Update update) {
+        answerCallback(update);
         paymentTelegramFacade.handleUpdate(update);
 //        boolean result = doAsync(asyncService, update, u -> telegramCalorieBotFacade.handleUpdate(update));
 //
