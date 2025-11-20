@@ -135,7 +135,8 @@ class GenerationBalanceOperationServiceTest {
                 telegramId,
                 paymentId,
                 requestCount,
-                comment
+                comment,
+                false
         );
 
         // then
@@ -187,7 +188,8 @@ class GenerationBalanceOperationServiceTest {
                 telegramId,
                 paymentId,
                 requestCount,
-                "Should fail"
+                "Should fail",
+                false
         ))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Not enough generation balance");
