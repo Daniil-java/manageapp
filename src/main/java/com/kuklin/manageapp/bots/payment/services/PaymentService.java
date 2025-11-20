@@ -1,8 +1,10 @@
 package com.kuklin.manageapp.bots.payment.services;
 
-import com.kuklin.manageapp.bots.payment.entities.*;
-import com.kuklin.manageapp.bots.payment.models.YooWebhook;
-import com.kuklin.manageapp.bots.payment.models.common.Currency;
+import com.kuklin.manageapp.bots.payment.entities.GenerationBalanceOperation;
+import com.kuklin.manageapp.bots.payment.entities.Payment;
+import com.kuklin.manageapp.bots.payment.entities.PricingPlan;
+import com.kuklin.manageapp.bots.payment.entities.WebhookEvent;
+import com.kuklin.manageapp.bots.payment.models.yookassa.YookassaPaymentResponse;
 import com.kuklin.manageapp.bots.payment.repositories.PaymentRepository;
 import com.kuklin.manageapp.bots.payment.telegram.handlers.WebhookSuccessfulPaymentUpdateHandler;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +19,7 @@ import java.util.Optional;
 
 /**
  * Сервис управляющий записями платежей
- *
+ * <p>
  * Отвечает за:
  * - создание платежей
  * - изменение статуса платежей
@@ -31,6 +33,7 @@ public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final GenerationBalanceOperationService generationBalanceOperationService;
     private final WebhookSuccessfulPaymentUpdateHandler webhookSuccessfulPaymentUpdateHandler;
+    private final PricingPlanService pricingPlanService;
 
     //Создание новой записи о платеже
     public Payment createNewPaymentYooKassa(Long telegramId, PricingPlan pricingPlan) {
@@ -68,52 +71,61 @@ public class PaymentService {
 
     //Валидация оплаты
     public Boolean checkPreCheckoutQuery(PreCheckoutQuery query) {
+        Payment payment = getValidPaymentOrNull(
+                query.getInvoicePayload(),
+                query.getFrom().getId(),
+                query.getCurrency(),
+                query.getTotalAmount()
+        );
 
-        Payment payment = paymentRepository.findByTelegramInvoicePayload(query.getInvoicePayload()).orElse(null);
-
-        log.info("For invoice payload: " + query.getInvoicePayload() + " Payment not null: " + (payment != null));
-        if (payment == null) return false;
-
-        if (!query.getInvoicePayload().equals(payment.getTelegramInvoicePayload())) return false;
-        log.info("TelegramInvoicePayload checked");
-        if (!query.getFrom().getId().equals(payment.getTelegramId())) return false;
-        log.info("TelegramId checked");
-        if (!query.getCurrency().equals(payment.getCurrency().name())) return false;
-        log.info("Currency checked");
-        if (!query.getTotalAmount().equals(payment.getAmount())) return false;
-        log.info("Amount checked");
-
-        return true;
+        return payment != null;
     }
 
-    //Валидация успешной оплаты
+    // Валидация успешной оплаты
     public Payment processSuccessfulPaymentAndGetOrNull(SuccessfulPayment successfulPayment, Long telegramId) {
-        Payment payment = paymentRepository.findByTelegramInvoicePayload(successfulPayment.getInvoicePayload()).orElse(null);
-        if (payment == null) return null;
+        Payment payment = getValidPaymentOrNull(
+                successfulPayment.getInvoicePayload(),
+                telegramId,
+                successfulPayment.getCurrency(),
+                successfulPayment.getTotalAmount()
+        );
 
-        if (!payment.getTelegramId().equals(telegramId)) return null;
-        if (!successfulPayment.getInvoicePayload().equals(payment.getTelegramInvoicePayload())) return null;
-        if (!successfulPayment.getCurrency().equals(payment.getCurrency().name())) return null;
-        if (!successfulPayment.getTotalAmount().equals(payment.getAmount())) return null;
+        if (payment == null) return null;
 
         return paymentRepository.save(
                 payment.setStatus(Payment.PaymentStatus.SUCCESS)
         );
     }
 
+    private Payment getValidPaymentOrNull(String invoicePayload,
+                                          Long telegramId,
+                                          String currency,
+                                          Integer totalAmount) {
+
+        Payment payment = paymentRepository.findByTelegramInvoicePayload(invoicePayload).orElse(null);
+
+        log.info("For invoice payload: {} Payment not null: {}", invoicePayload, payment != null);
+
+        if (payment == null) return null;
+        if (!invoicePayload.equals(payment.getTelegramInvoicePayload())) return null;
+        if (!telegramId.equals(payment.getTelegramId())) return null;
+        if (!currency.equals(payment.getCurrency().name())) return null;
+        if (!totalAmount.equals(payment.getAmount())) return null;
+
+        return payment;
+    }
+
     //Получение записи о платеже по идентификатору из провайдера
-    public Payment findByProviderPaymentIdIdOrNull(String externalPaymentId, YooWebhook hook) {
+    public Payment findByProviderPaymentIdIdOrNull(String externalPaymentId, YookassaPaymentResponse response) {
         //Если существует - возврат
         Payment payment = paymentRepository.findByProviderPaymentId(externalPaymentId).orElse(null);
         if (payment != null) return payment;
 
         String invoicePayload = null;
-        if (hook.getObject().getMetadata() != null) {
+        if (response.getMetadata() != null) {
             //Извлечение платжеа по идентификатору из провайдера платежа
-            Object raw = hook.getObject().getMetadata().get("invoice_payload");
-            if (raw != null) {
-                invoicePayload = String.valueOf(raw);
-            }
+            invoicePayload = response.getMetadata().getOrderId();
+            log.info("INVOICE PAYLOAD: {}", invoicePayload);
         }
 
         if (invoicePayload != null && !invoicePayload.isBlank()) {
@@ -129,34 +141,24 @@ public class PaymentService {
 
     /**
      * В зависимости, от статуса в вебхуке - устанавливает статус для существуещего платежа
-     *
+     * <p>
      * В зависимости от пришедшего статуса, обновляет соответствующие поля в записи о платеже
      *
-     *
-     * @param payment запись существуещего платежа
-     * @param webhookEventType вернувшийся с вебхуком - статус платежа
-     * @param hook пришедший вебхук с ЮКассы
-     * @param objectId идентификатор платежа с ЮКассы
+     * @param payment           запись существуещего платежа
+     * @param webhookEventType  вернувшийся с вебхуком - статус платежа
+     * @param providerPaymentId идентификатор платежа с ЮКассы
      */
     public void setStatus(Payment payment,
                           WebhookEvent.WebhookEventType webhookEventType,
-                          YooWebhook hook,
-                          String objectId) {
+                          String providerPaymentId) {
+        //TODO EXC
         switch (webhookEventType) {
-//            case PAYMENT_WAITING_FOR_CAPTURE: {
-//                // если у тебя есть общий статус AUTHORIZED — можно выставить здесь
-//                // payment.setStatus(Payment.PaymentStatus.AUTHORIZED);
-//                payment.setProviderStatus(Payment.ProviderStatus.WAITING_FOR_CAPTURE)
-//                        .setProviderPaymentId(objectId); // оставляю твоё поле
-//                paymentRepository.save(payment);
-//                break;
-//            }
             //Успешная оплата
             case PAYMENT_SUCCEEDED: {
                 payment
                         .setProviderStatus(Payment.ProviderStatus.SUCCEEDED)
                         .setStatus(Payment.PaymentStatus.SUCCESS)
-                        .setProviderPaymentId(objectId)
+                        .setProviderPaymentId(providerPaymentId)
                         .setPaidAt(OffsetDateTime.now(ZoneOffset.UTC).toLocalDateTime());
                 payment = paymentRepository.save(payment);
 
@@ -181,20 +183,29 @@ public class PaymentService {
             //Возврат средств
             case REFUND_SUCCEEDED: {
                 payment.setProviderStatus(Payment.ProviderStatus.REFUND_SUCCEEDED);
-                // если есть общий статус REFUNDED — можно выставить:
-                // payment.setStatus(Payment.PaymentStatus.REFUNDED);
+
+                PricingPlan plan = pricingPlanService.getPricingPlanByIdOrNull(payment.getPricingPlanId());
+                generationBalanceOperationService.createNewBalanceOperationDebit(
+                        GenerationBalanceOperation.OperationSource.PAYMENT,
+                        payment.getTelegramId(),
+                        payment.getId(),
+                        plan.getGenerationsCount(),
+                        plan.getTitle(),
+                        true
+                );
+
                 paymentRepository.save(payment);
                 break;
             }
             //Неизвестный статус
             case UNKNOWN: {
-                log.info("Unhandled YooKassa event: {}", hook.getEvent());
+                log.info("Unhandled YooKassa event!");
                 break;
             }
         }
     }
 
-    public Payment setProviderPaymentId(Payment payment, YooKassaPaymentService.Created created) {
-        return paymentRepository.save(payment.setProviderPaymentId(created.getId()));
+    public Payment setProviderPaymentId(Payment payment, String providerOrderId) {
+        return paymentRepository.save(payment.setProviderPaymentId(providerOrderId));
     }
 }

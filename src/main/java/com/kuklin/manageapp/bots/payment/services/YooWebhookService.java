@@ -4,13 +4,12 @@ import com.kuklin.manageapp.bots.payment.entities.Payment;
 import com.kuklin.manageapp.bots.payment.entities.WebhookEvent;
 import com.kuklin.manageapp.bots.payment.integrations.YooKassaFeignClient;
 import com.kuklin.manageapp.bots.payment.models.YooWebhook;
+import com.kuklin.manageapp.bots.payment.models.yookassa.YookassaPaymentResponse;
 import com.kuklin.manageapp.bots.payment.repositories.WebhookEventRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.Map;
 
 /**
  * Сервис обработки вебхуков YooKassa.
@@ -44,6 +43,7 @@ public class YooWebhookService {
         log.info("YooWebhookService handle update!");
         // 0) Готовим данные и логируем событие (для идемпотентности и аудита)
         String objectId = hook.getObject() != null ? hook.getObject().getId() : null;
+
         WebhookEvent.WebhookEventType eventType = mapYooEvent(hook.getEvent());
 
         log.info("WebhookEvent saving...");
@@ -60,6 +60,7 @@ public class YooWebhookService {
         log.info("WebhookEvent saved!");
 
         try {
+
             if (objectId == null) {
                 log.warn("YooKassa webhook without object.id: {}", hook);
                 saved.markError("NO_OBJECT_ID");
@@ -67,10 +68,28 @@ public class YooWebhookService {
                 return;
             }
 
+            YookassaPaymentResponse response = getPaymentFromYooKassaOrNull(objectId);
+            if (response == null) {
+                log.warn("YooKassa payment not found by API request: {}", hook);
+                saved.markError("NO_PAYMENT_IN_PROVIDER");
+                webhookEventRepository.save(saved);
+                return;
+            }
+
+            // Проверка статуса из API vs тип события
+            String apiStatus = response.getStatus();
+            if (!isApiStatusCompatible(apiStatus, eventType)) {
+                log.error("Status mismatch: eventType={}, apiStatus={}, paymentId={}",
+                        eventType, apiStatus, response.getId());
+                saved.markError("STATUS_MISMATCH");
+                webhookEventRepository.save(saved);
+                return;
+            }
+
             //Проверяем, не обрабатывали ли уже событие с таким provider/event/id
             if (webhookEventRepository.isAlreadyProcessed(
-                    WebhookEvent.WebhookProvider.YOOKASSA, eventType, objectId)) {
-                log.info("Skip duplicate YooKassa event: {} {}", eventType, objectId);
+                    WebhookEvent.WebhookProvider.YOOKASSA, eventType, response.getId())) {
+                log.info("Skip duplicate YooKassa event: {} {}", eventType, response.getId());
                 saved.markProcessed();
                 webhookEventRepository.save(saved);
                 return;
@@ -79,30 +98,43 @@ public class YooWebhookService {
 
             // Находим связанный платёж Payment в нашей БД.
             // ВАЖНО: при оплате в Telegram сохраняй providerPaymentChargeId в поле, по которому ты ищешь.
-            Payment payment = paymentService.findByProviderPaymentIdIdOrNull(objectId, hook);
+            Payment payment = paymentService.findByProviderPaymentIdIdOrNull(response.getId(), response);
 
             if (payment == null) {
-                log.warn("YooKassa webhook: payment not found, id={}", objectId);
+                log.warn("YooKassa webhook: payment not found, id={}", response.getId());
                 saved.markError("PAYMENT_NOT_FOUND");
                 webhookEventRepository.save(saved);
                 return;
             }
 
+            //Проверка, что данные о деньгах не null
+            if (response.getAmount() == null ||
+                    response.getAmount().getValue() == null ||
+                    response.getAmount().getCurrency() == null) {
+                log.error("YooKassa API: amount/currency is null for id={}", response.getId());
+                saved.markError("NO_AMOUNT_IN_PROVIDER");
+                webhookEventRepository.save(saved);
+                return;
+            }
+
             //Сверяем сумму/валюту (у ЮKassa в рублях с точкой, у нас в мин. единицах)
-            String valueStr = hook.getObject().getAmount().getValue();      // например "199.00"
-            String currency = hook.getObject().getAmount().getCurrency();   // "RUB"
+            String valueStr = response.getAmount().getValue();      // например "199.00"
+            String currency = response.getAmount().getCurrency();   // "RUB"
             long amountMinor = toMinorUnits(valueStr);                       // 19900
 
+            //Проверяем, что данные о платежах в нашей базе и в ЮКассе сходятся
             if (payment.getAmount() == null
                     || payment.getAmount().longValue() != amountMinor
                     || !currency.equals(payment.getCurrency().name())) {
-                log.error("Amount/Currency mismatch: hook={} {}, db={} {}, paymentId={}",
+                log.error("Amount/Currency mismatch: apiResponse={} {}, db={} {}, paymentId={}",
                         amountMinor, currency, payment.getAmount(), payment.getCurrency(), payment.getId());
-                // решай по бизнесу: пометить как подозрительное, но не падаем
+                saved.markError("Amount/Currency mismatch");
+                webhookEventRepository.save(saved);
+                return;
             }
 
             //Обновляем статус по событию (строки → енамы)
-            paymentService.setStatus(payment, eventType, hook, objectId);
+            paymentService.setStatus(payment, eventType, response.getId());
 
             saved.markProcessed();
             webhookEventRepository.save(saved);
@@ -115,34 +147,41 @@ public class YooWebhookService {
         }
     }
 
+    //Сверка статусов платежа в пришедшем вебхуке и в ответе из запроса в ЮКассу
+    private boolean isApiStatusCompatible(String apiStatus, WebhookEvent.WebhookEventType eventType) {
+        if (apiStatus == null) {
+            return false;
+        }
+
+        // Проверяем только платёжные события. Для остальных (REFUND_* и т.п.) — не трогаем.
+        switch (eventType) {
+            case PAYMENT_SUCCEEDED:
+                return "succeeded".equals(apiStatus);
+
+            case PAYMENT_CANCELED:
+                return "canceled".equals(apiStatus);
+
+            case PAYMENT_WAITING_FOR_CAPTURE:
+                return "waiting_for_capture".equals(apiStatus);
+
+            default:
+                // Для REFUND_* и UNKNOWN сейчас просто не проверяем статус,
+                // можно расширить позже.
+                return true;
+        }
+    }
+
     /**
-     * Получение статуса платежа из YooKassa по его идентификатору.
+     * Получение актуального состояния платежа из YooKassa по его идентификатору.
      *
-     * Делает запрос GET /v3/payments/{id} через Feign-клиент и маппирует строковый статус
-     * из API YooKassa в наш WebhookEventType.
+     * Делает запрос GET /v3/payments/{id} через Feign-клиент.
      *
      * @param paymentId идентификатор платежа в YooKassa
-     * @return тип события по статусу платежа или null, если платеж не найден/статус неизвестен
+     * @return полное описание платежа или null, если платеж не найден/произошла ошибка
      */
-    public WebhookEvent.WebhookEventType getPaymentFromYooKassaOrNull(String paymentId) {
+    public YookassaPaymentResponse getPaymentFromYooKassaOrNull(String paymentId) {
         try {
-            Map<?, ?> paymentApi = yooKassaFeignClient.getPayment(paymentId);
-            if (paymentApi == null) return null;
-
-            String apiStatus = (String) paymentApi.get("status");
-            if (apiStatus == null) return null;
-
-            switch (apiStatus) {
-                case "succeeded":
-                    return WebhookEvent.WebhookEventType.PAYMENT_SUCCEEDED;
-                case "canceled":
-                    return WebhookEvent.WebhookEventType.PAYMENT_CANCELED;
-                case "waiting_for_capture":
-                    return WebhookEvent.WebhookEventType.PAYMENT_WAITING_FOR_CAPTURE;
-                // ЮKassa ещё даёт pending/authorized/etc. — маппируй при необходимости
-                default:
-                    return WebhookEvent.WebhookEventType.UNKNOWN;
-            }
+            return yooKassaFeignClient.getPayment(paymentId);
         } catch (feign.FeignException.NotFound e) {
             return null;
         } catch (Exception e) {

@@ -58,7 +58,7 @@ public class GenerationBalanceOperationService {
     ) {
         return createNewBalanceOperation(
                 GenerationBalanceOperation.OperationType.CREDIT,
-                source, telegramId, paymentId, requestCount, comment
+                source, telegramId, paymentId, requestCount, comment, false
         );
     }
 
@@ -69,11 +69,12 @@ public class GenerationBalanceOperationService {
             Long telegramId,
             Long paymentId,
             Long requestCount,
-            String comment
+            String comment,
+            boolean isRefund
     ) {
         return createNewBalanceOperation(
                 GenerationBalanceOperation.OperationType.DEBIT,
-                source, telegramId, paymentId, requestCount, comment
+                source, telegramId, paymentId, requestCount, comment, isRefund
         );
     }
 
@@ -85,7 +86,8 @@ public class GenerationBalanceOperationService {
             Long telegramId,
             Long paymentId,
             Long requestCount,
-            String comment
+            String comment,
+            boolean isRefund
     ) {
         GenerationBalance balance = generationBalanceService.getBalanceByTelegramIdOrNull(telegramId);
 
@@ -93,10 +95,13 @@ public class GenerationBalanceOperationService {
             case DEBIT -> {
                 long current = balance.getGenerationRequests();
                 if (current < requestCount) {
-                    //TODO CUSTOM ERROR
-                    throw new IllegalStateException(
-                            "Not enough generation balance: have=" + current + ", need=" + requestCount
-                    );
+
+                    if (!isRefund) {
+                        //TODO CUSTOM ERROR
+                        throw new IllegalStateException(
+                                "Not enough generation balance: have=" + current + ", need=" + requestCount
+                        );
+                    }
                 }
                 balance.subtract(requestCount);
             }

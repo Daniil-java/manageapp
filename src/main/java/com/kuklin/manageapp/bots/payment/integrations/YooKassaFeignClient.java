@@ -20,5 +20,5 @@ public interface YooKassaFeignClient {
                                           @RequestHeader("Idempotence-Key") String idempotenceKey);
 
     @GetMapping(value = "/v3/payments/{id}", produces = "application/json")
-    Map<String, Object> getPayment(@PathVariable("id") String id);
+    YookassaPaymentResponse getPayment(@PathVariable("id") String id);
 }

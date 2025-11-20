@@ -49,8 +49,20 @@ public class Payment {
         REFUND_SUCCEEDED        // успешно возвращено
     }
 
+    @Getter
+    @RequiredArgsConstructor
     public enum Provider {
-        YOOKASSA, STARS;
+        YOOKASSA("ЮКасса","yookassa_payment", PaymentFlow.TELEGRAM_INVOICE),
+        YOOKASSA_URL("Юкасса [ссылка]", "yookassa_payment", PaymentFlow.PROVIDER_REDIRECT),
+        STARS("Звезды", "stars_purchase", PaymentFlow.TELEGRAM_INVOICE);
+        private final String title;
+        private final String telegramStartParameter;
+        private final PaymentFlow providerFlow;
+    }
+
+    public enum PaymentFlow {
+        TELEGRAM_INVOICE,
+        PROVIDER_REDIRECT
     }
 
     public enum PaymentStatus {
