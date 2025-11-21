@@ -36,24 +36,24 @@ public class PaymentProviderChoiceUpdateHandler implements PaymentUpdateHandler 
                 : update.getMessage().getChatId();
 
         String planId = extractPlanId(update.getCallbackQuery().getData());
-        PricingPlan plan = null;
+
         try {
-            plan = pricingPlanService
+            PricingPlan plan = pricingPlanService
                     .getPricingPlanById(Long.valueOf(planId));
+
+            if (plan.getCurrency().equals(Currency.XTR)) {
+                update.getCallbackQuery().setData(generateCallBackData(planId, Payment.Provider.STARS.name()));
+                nextHandler.handle(update, telegramUser);
+            } else {
+                paymentTelegramBot.sendEditMessage(
+                        chatId,
+                        PROVIDER_TEXT,
+                        update.getCallbackQuery().getMessage().getMessageId(),
+                        getKeyboardProvider(planId)
+                );
+            }
         } catch (PricingPlanNotFoundException e) {
             paymentTelegramBot.sendReturnedMessage(chatId, PLAN_LIST_ERROR_MSG);
-        }
-
-        if (plan.getCurrency().equals(Currency.XTR)) {
-            update.getCallbackQuery().setData(generateCallBackData(planId, Payment.Provider.STARS.name()));
-            nextHandler.handle(update, telegramUser);
-        } else {
-            paymentTelegramBot.sendEditMessage(
-                    chatId,
-                    PROVIDER_TEXT,
-                    update.getCallbackQuery().getMessage().getMessageId(),
-                    getKeyboardProvider(planId)
-            );
         }
     }
 

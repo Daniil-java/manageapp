@@ -2,7 +2,7 @@ package com.kuklin.manageapp.bots.payment.services;
 
 import com.kuklin.manageapp.bots.payment.entities.GenerationBalance;
 import com.kuklin.manageapp.bots.payment.repositories.GenerationBalanceRepository;
-import com.kuklin.manageapp.bots.payment.services.exceptions.GenerationBalanceNotFoundException;
+import com.kuklin.manageapp.bots.payment.services.exceptions.generationbalance.GenerationBalanceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

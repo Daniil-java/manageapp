@@ -1,6 +1,6 @@
-package com.kuklin.manageapp.bots.payment.services.exceptions;
+package com.kuklin.manageapp.bots.payment.services.exceptions.generationbalance;
 
-public class GenerationBalanceNotFoundException extends Exception{
+public class GenerationBalanceNotFoundException extends GenerationBalanceException{
     public static String DEF_MSG = "User's balance of generations not found!";
     public GenerationBalanceNotFoundException() {
         super(DEF_MSG);

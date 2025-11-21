@@ -5,9 +5,12 @@ import com.kuklin.manageapp.bots.payment.entities.GenerationBalanceOperation;
 import com.kuklin.manageapp.bots.payment.entities.Payment;
 import com.kuklin.manageapp.bots.payment.entities.PricingPlan;
 import com.kuklin.manageapp.bots.payment.repositories.GenerationBalanceOperationRepository;
-import com.kuklin.manageapp.bots.payment.services.exceptions.GenerationBalanceNotFoundException;
+import com.kuklin.manageapp.bots.payment.services.exceptions.generationbalance.GenerationBalanceIllegalOperationDataException;
+import com.kuklin.manageapp.bots.payment.services.exceptions.generationbalance.GenerationBalanceNotEnoughBalanceException;
+import com.kuklin.manageapp.bots.payment.services.exceptions.generationbalance.GenerationBalanceNotFoundException;
 import com.kuklin.manageapp.bots.payment.services.exceptions.PricingPlanNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class GenerationBalanceOperationService {
     private final GenerationBalanceOperationRepository repository;
     private final GenerationBalanceService generationBalanceService;
@@ -28,7 +32,7 @@ public class GenerationBalanceOperationService {
     //Пополнение баланса пользователя, на основании пришедшего платежа
     @Transactional
     public GenerationBalanceOperation increaseBalanceByPayment(Payment payment)
-            throws GenerationBalanceNotFoundException, PricingPlanNotFoundException {
+            throws GenerationBalanceNotFoundException, PricingPlanNotFoundException, GenerationBalanceIllegalOperationDataException, GenerationBalanceNotEnoughBalanceException {
 
         PricingPlan plan = pricingPlanService
                 .getPricingPlanById(payment.getPricingPlanId());
@@ -52,7 +56,7 @@ public class GenerationBalanceOperationService {
             Long paymentId,
             Long requestCount,
             String comment
-    ) throws GenerationBalanceNotFoundException {
+    ) throws GenerationBalanceNotFoundException, GenerationBalanceIllegalOperationDataException, GenerationBalanceNotEnoughBalanceException {
         return createNewBalanceOperation(
                 GenerationBalanceOperation.OperationType.CREDIT,
                 source, telegramId, paymentId, requestCount, comment, false
@@ -68,7 +72,7 @@ public class GenerationBalanceOperationService {
             Long requestCount,
             String comment,
             boolean isRefund
-    ) throws GenerationBalanceNotFoundException {
+    ) throws GenerationBalanceNotFoundException, GenerationBalanceIllegalOperationDataException, GenerationBalanceNotEnoughBalanceException {
         return createNewBalanceOperation(
                 GenerationBalanceOperation.OperationType.DEBIT,
                 source, telegramId, paymentId, requestCount, comment, isRefund
@@ -85,19 +89,22 @@ public class GenerationBalanceOperationService {
             Long requestCount,
             String comment,
             boolean isRefund
-    ) throws GenerationBalanceNotFoundException {
+    ) throws GenerationBalanceNotFoundException, GenerationBalanceIllegalOperationDataException, GenerationBalanceNotEnoughBalanceException {
         GenerationBalance balance = generationBalanceService.getBalanceByTelegramId(telegramId);
 
+        if (requestCount < 0) {
+            log.error(GenerationBalanceIllegalOperationDataException.DEF_MSG);
+            throw new GenerationBalanceIllegalOperationDataException();
+        }
         switch (operationType) {
             case DEBIT -> {
                 long current = balance.getGenerationRequests();
                 if (current < requestCount) {
 
+                    //Если это не возврат, то счет пользователя не может опуститься ниже 0
                     if (!isRefund) {
-                        //TODO CUSTOM ERROR
-                        throw new IllegalStateException(
-                                "Not enough generation balance: have=" + current + ", need=" + requestCount
-                        );
+                        log.error(GenerationBalanceNotEnoughBalanceException.DEF_MSG);
+                        throw new GenerationBalanceNotEnoughBalanceException();
                     }
                 }
                 balance.subtract(requestCount);

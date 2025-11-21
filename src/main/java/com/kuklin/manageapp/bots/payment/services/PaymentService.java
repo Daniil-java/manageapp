@@ -6,10 +6,11 @@ import com.kuklin.manageapp.bots.payment.entities.PricingPlan;
 import com.kuklin.manageapp.bots.payment.models.common.Currency;
 import com.kuklin.manageapp.bots.payment.models.yookassa.YookassaPaymentResponse;
 import com.kuklin.manageapp.bots.payment.repositories.PaymentRepository;
-import com.kuklin.manageapp.bots.payment.services.exceptions.GenerationBalanceNotFoundException;
+import com.kuklin.manageapp.bots.payment.services.exceptions.generationbalance.GenerationBalanceIllegalOperationDataException;
+import com.kuklin.manageapp.bots.payment.services.exceptions.generationbalance.GenerationBalanceNotEnoughBalanceException;
+import com.kuklin.manageapp.bots.payment.services.exceptions.generationbalance.GenerationBalanceNotFoundException;
 import com.kuklin.manageapp.bots.payment.services.exceptions.PricingPlanNotFoundException;
 import com.kuklin.manageapp.bots.payment.services.exceptions.payment.*;
-import com.kuklin.manageapp.bots.payment.services.exceptions.subscription.SubscriptionException;
 import com.kuklin.manageapp.bots.payment.services.exceptions.subscription.SubscriptionInvalidDataException;
 import com.kuklin.manageapp.bots.payment.services.exceptions.subscription.SubscriptionNotFound;
 import com.kuklin.manageapp.bots.payment.services.exceptions.subscription.SubscriptionNotSubscribeException;
@@ -108,7 +109,7 @@ public class PaymentService {
     }
 
     // Валидация успешной оплаты
-    public Payment processSuccessfulPaymentAndGet(SuccessfulPayment successfulPayment, Long telegramId) throws PaymentValidationDataException {
+    public Payment processTelegramSuccessfulPaymentAndGet(SuccessfulPayment successfulPayment, Long telegramId) throws PaymentValidationDataException, GenerationBalanceIllegalOperationDataException, GenerationBalanceNotEnoughBalanceException, PricingPlanNotFoundException, GenerationBalanceNotFoundException {
         Payment payment = getValidPayment(
                 successfulPayment.getInvoicePayload(),
                 telegramId,
@@ -116,9 +117,13 @@ public class PaymentService {
                 successfulPayment.getTotalAmount()
         );
 
-        return paymentRepository.save(
+        payment = paymentRepository.save(
                 payment.setStatus(Payment.PaymentStatus.SUCCESS)
         );
+
+        generationBalanceOperationService.increaseBalanceByPayment(payment);
+
+        return payment;
     }
 
     private Payment getValidPayment(String invoicePayload,
@@ -201,7 +206,12 @@ public class PaymentService {
 
     //Обработка успешного платежа
     private void handleSuccess(Payment payment, String providerPaymentId)
-            throws PricingPlanNotFoundException, SubscriptionNotSubscribeException, SubscriptionInvalidDataException, GenerationBalanceNotFoundException {
+            throws PricingPlanNotFoundException,
+            SubscriptionNotSubscribeException,
+            SubscriptionInvalidDataException,
+            GenerationBalanceNotFoundException,
+            GenerationBalanceIllegalOperationDataException,
+            GenerationBalanceNotEnoughBalanceException {
 
         //Получение тарифнового плана
         PricingPlan plan = pricingPlanService
@@ -231,7 +241,11 @@ public class PaymentService {
 
     //Обработка случая возврата средств
     private void handleRefunded(Payment payment)
-            throws PricingPlanNotFoundException, SubscriptionNotFound, GenerationBalanceNotFoundException {
+            throws PricingPlanNotFoundException,
+            SubscriptionNotFound,
+            GenerationBalanceNotFoundException,
+            GenerationBalanceIllegalOperationDataException,
+            GenerationBalanceNotEnoughBalanceException {
         payment.setProviderStatus(Payment.ProviderStatus.REFUND_SUCCEEDED);
 
         //Получение тарифного плана

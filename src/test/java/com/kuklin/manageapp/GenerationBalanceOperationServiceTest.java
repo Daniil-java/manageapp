@@ -8,7 +8,9 @@ import com.kuklin.manageapp.bots.payment.repositories.GenerationBalanceOperation
 import com.kuklin.manageapp.bots.payment.services.GenerationBalanceOperationService;
 import com.kuklin.manageapp.bots.payment.services.GenerationBalanceService;
 import com.kuklin.manageapp.bots.payment.services.PricingPlanService;
-import com.kuklin.manageapp.bots.payment.services.exceptions.GenerationBalanceNotFoundException;
+import com.kuklin.manageapp.bots.payment.services.exceptions.generationbalance.GenerationBalanceIllegalOperationDataException;
+import com.kuklin.manageapp.bots.payment.services.exceptions.generationbalance.GenerationBalanceNotEnoughBalanceException;
+import com.kuklin.manageapp.bots.payment.services.exceptions.generationbalance.GenerationBalanceNotFoundException;
 import com.kuklin.manageapp.bots.payment.services.exceptions.PricingPlanNotFoundException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -40,7 +42,7 @@ class GenerationBalanceOperationServiceTest {
     @Test
     @DisplayName("CREDIT: баланс увеличивается и операция сохраняется")
     void createNewBalanceOperationCredit_increasesBalanceAndPersistsOperation()
-            throws GenerationBalanceNotFoundException {
+            throws GenerationBalanceNotFoundException, GenerationBalanceIllegalOperationDataException, GenerationBalanceNotEnoughBalanceException {
 
         // given
         Long telegramId = 123L;
@@ -108,7 +110,7 @@ class GenerationBalanceOperationServiceTest {
     @Test
     @DisplayName("DEBIT: при достаточном балансе — уменьшаем баланс и сохраняем операцию")
     void createNewBalanceOperationDebit_decreasesBalanceAndPersistsOperation()
-            throws GenerationBalanceNotFoundException {
+            throws GenerationBalanceNotFoundException, GenerationBalanceIllegalOperationDataException, GenerationBalanceNotEnoughBalanceException {
 
         // given
         Long telegramId = 123L;
@@ -210,7 +212,7 @@ class GenerationBalanceOperationServiceTest {
     @Test
     @DisplayName("increaseBalanceByPayment: дергает баланс, тариф и создает CREDIT-операцию")
     void increaseBalanceByPayment_createsCreditOperationBasedOnPaymentAndPlan()
-            throws GenerationBalanceNotFoundException, PricingPlanNotFoundException {
+            throws GenerationBalanceNotFoundException, PricingPlanNotFoundException, GenerationBalanceIllegalOperationDataException, GenerationBalanceNotEnoughBalanceException {
 
         // given
         Long telegramId = 123L;
