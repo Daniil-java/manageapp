@@ -8,6 +8,8 @@ import com.kuklin.manageapp.bots.payment.repositories.GenerationBalanceOperation
 import com.kuklin.manageapp.bots.payment.services.GenerationBalanceOperationService;
 import com.kuklin.manageapp.bots.payment.services.GenerationBalanceService;
 import com.kuklin.manageapp.bots.payment.services.PricingPlanService;
+import com.kuklin.manageapp.bots.payment.services.exceptions.GenerationBalanceNotFoundException;
+import com.kuklin.manageapp.bots.payment.services.exceptions.PricingPlanNotFoundException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,7 +31,6 @@ class GenerationBalanceOperationServiceTest {
 
     @Mock
     private GenerationBalanceService generationBalanceService;
-
     @Mock
     private PricingPlanService pricingPlanService;
 
@@ -38,7 +39,9 @@ class GenerationBalanceOperationServiceTest {
 
     @Test
     @DisplayName("CREDIT: баланс увеличивается и операция сохраняется")
-    void createNewBalanceOperationCredit_increasesBalanceAndPersistsOperation() {
+    void createNewBalanceOperationCredit_increasesBalanceAndPersistsOperation()
+            throws GenerationBalanceNotFoundException {
+
         // given
         Long telegramId = 123L;
         Long paymentId = 10L;
@@ -50,7 +53,7 @@ class GenerationBalanceOperationServiceTest {
                 .setTelegramId(telegramId)
                 .setGenerationRequests(10L);
 
-        when(generationBalanceService.getBalanceByTelegramIdOrNull(telegramId))
+        when(generationBalanceService.getBalanceByTelegramId(telegramId))
                 .thenReturn(balance);
 
         // имитируем, что save возвращает тот же объект
@@ -104,7 +107,9 @@ class GenerationBalanceOperationServiceTest {
 
     @Test
     @DisplayName("DEBIT: при достаточном балансе — уменьшаем баланс и сохраняем операцию")
-    void createNewBalanceOperationDebit_decreasesBalanceAndPersistsOperation() {
+    void createNewBalanceOperationDebit_decreasesBalanceAndPersistsOperation()
+            throws GenerationBalanceNotFoundException {
+
         // given
         Long telegramId = 123L;
         Long paymentId = 11L;
@@ -116,7 +121,7 @@ class GenerationBalanceOperationServiceTest {
                 .setTelegramId(telegramId)
                 .setGenerationRequests(10L);
 
-        when(generationBalanceService.getBalanceByTelegramIdOrNull(telegramId))
+        when(generationBalanceService.getBalanceByTelegramId(telegramId))
                 .thenReturn(balance);
 
         when(generationBalanceService.save(any(GenerationBalance.class)))
@@ -168,7 +173,9 @@ class GenerationBalanceOperationServiceTest {
 
     @Test
     @DisplayName("DEBIT: при недостаточном балансе бросается исключение и в БД ничего не пишется")
-    void createNewBalanceOperationDebit_notEnoughBalance_throwsAndDoesNotPersist() {
+    void createNewBalanceOperationDebit_notEnoughBalance_throwsAndDoesNotPersist()
+            throws GenerationBalanceNotFoundException {
+
         // given
         Long telegramId = 123L;
         Long paymentId = 11L;
@@ -179,7 +186,7 @@ class GenerationBalanceOperationServiceTest {
                 .setTelegramId(telegramId)
                 .setGenerationRequests(2L); // < requestCount
 
-        when(generationBalanceService.getBalanceByTelegramIdOrNull(telegramId))
+        when(generationBalanceService.getBalanceByTelegramId(telegramId))
                 .thenReturn(balance);
 
         // when / then
@@ -202,7 +209,9 @@ class GenerationBalanceOperationServiceTest {
 
     @Test
     @DisplayName("increaseBalanceByPayment: дергает баланс, тариф и создает CREDIT-операцию")
-    void increaseBalanceByPayment_createsCreditOperationBasedOnPaymentAndPlan() {
+    void increaseBalanceByPayment_createsCreditOperationBasedOnPaymentAndPlan()
+            throws GenerationBalanceNotFoundException, PricingPlanNotFoundException {
+
         // given
         Long telegramId = 123L;
         Long paymentId = 50L;
@@ -218,7 +227,7 @@ class GenerationBalanceOperationServiceTest {
                 .setTelegramId(telegramId)
                 .setGenerationRequests(0L);
 
-        when(generationBalanceService.getBalanceByTelegramIdOrNull(telegramId))
+        when(generationBalanceService.getBalanceByTelegramId(telegramId))
                 .thenReturn(balance);
 
         PricingPlan plan = new PricingPlan();
@@ -226,7 +235,7 @@ class GenerationBalanceOperationServiceTest {
         plan.setGenerationsCount(10L);
         plan.setTitle("Test plan");
 
-        when(pricingPlanService.getPricingPlanByIdOrNull(pricingPlanId))
+        when(pricingPlanService.getPricingPlanById(pricingPlanId))
                 .thenReturn(plan);
 
         when(generationBalanceService.save(any(GenerationBalance.class)))

@@ -98,7 +98,7 @@ public class YooWebhookService {
 
             // Находим связанный платёж Payment в нашей БД.
             // ВАЖНО: при оплате в Telegram сохраняй providerPaymentChargeId в поле, по которому ты ищешь.
-            Payment payment = paymentService.findByProviderPaymentIdIdOrNull(response.getId(), response);
+            Payment payment = paymentService.findByProviderPaymentId(response.getId(), response);
 
             if (payment == null) {
                 log.warn("YooKassa webhook: payment not found, id={}", response.getId());
@@ -133,12 +133,21 @@ public class YooWebhookService {
                 return;
             }
 
+            Payment.PaymentStatus paymentStatus = null;
             //Обновляем статус по событию (строки → енамы)
-            paymentService.setStatus(payment, eventType, response.getId());
+            switch (eventType) {
+                case PAYMENT_CANCELED -> paymentStatus = Payment.PaymentStatus.CANCEL;
+                case PAYMENT_SUCCEEDED -> paymentStatus = Payment.PaymentStatus.SUCCESS;
+                case REFUND_SUCCEEDED -> paymentStatus = Payment.PaymentStatus.REFUNDED;
+            }
 
-            saved.markProcessed();
+            if (payment != null) {
+                paymentService.changeStatus(payment, paymentStatus, response.getId());
+                saved.markProcessed();
+            } else {
+                saved.markError("Unknown status");
+            }
             webhookEventRepository.save(saved);
-
         } catch (Exception e) {
             log.error("YooKassa webhook handle error", e);
             saved.markError(e.getClass().getSimpleName() + ": " + e.getMessage());

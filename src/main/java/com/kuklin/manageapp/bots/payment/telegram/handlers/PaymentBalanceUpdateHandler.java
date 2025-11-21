@@ -4,6 +4,7 @@ import com.kuklin.manageapp.bots.payment.entities.GenerationBalance;
 import com.kuklin.manageapp.bots.payment.entities.UserSubscription;
 import com.kuklin.manageapp.bots.payment.services.GenerationBalanceService;
 import com.kuklin.manageapp.bots.payment.services.UserSubscriptionService;
+import com.kuklin.manageapp.bots.payment.services.exceptions.GenerationBalanceNotFoundException;
 import com.kuklin.manageapp.bots.payment.telegram.PaymentTelegramBot;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgutils.Command;
@@ -26,6 +27,7 @@ public class PaymentBalanceUpdateHandler implements PaymentUpdateHandler {
     private final PaymentTelegramBot paymentTelegramBot;
     private final GenerationBalanceService generationBalanceService;
     private final UserSubscriptionService userSubscriptionService;
+    private static final String BALANCE_ERROR_MSG = "Ошибка! Баланс пользователя не существует! Попробуйте ввести команду /start и повторите операцию заново";
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
         Long chatId = update.hasCallbackQuery()
@@ -35,9 +37,14 @@ public class PaymentBalanceUpdateHandler implements PaymentUpdateHandler {
         List<UserSubscription> subscriptions = userSubscriptionService
                 .getActiveAndScheduledSubscriptions(telegramUser.getTelegramId());
 
-        GenerationBalance generationBalance = generationBalanceService
-                .getBalanceByTelegramIdOrNull(telegramUser.getTelegramId());
-        paymentTelegramBot.sendReturnedMessage(chatId, getBalanceString(telegramUser, subscriptions, generationBalance));
+        try {
+            GenerationBalance generationBalance = generationBalanceService
+                    .getBalanceByTelegramId(telegramUser.getTelegramId());
+            paymentTelegramBot.sendReturnedMessage(chatId,
+                    getBalanceString(telegramUser, subscriptions, generationBalance));
+        } catch (GenerationBalanceNotFoundException e) {
+            paymentTelegramBot.sendReturnedMessage(chatId, BALANCE_ERROR_MSG);
+        }
     }
 
     private String getBalanceString(TelegramUser telegramUser, List<UserSubscription> subscriptions, GenerationBalance generationBalance) {

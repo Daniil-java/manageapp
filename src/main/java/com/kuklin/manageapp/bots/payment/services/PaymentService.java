@@ -3,9 +3,16 @@ package com.kuklin.manageapp.bots.payment.services;
 import com.kuklin.manageapp.bots.payment.entities.GenerationBalanceOperation;
 import com.kuklin.manageapp.bots.payment.entities.Payment;
 import com.kuklin.manageapp.bots.payment.entities.PricingPlan;
-import com.kuklin.manageapp.bots.payment.entities.WebhookEvent;
+import com.kuklin.manageapp.bots.payment.models.common.Currency;
 import com.kuklin.manageapp.bots.payment.models.yookassa.YookassaPaymentResponse;
 import com.kuklin.manageapp.bots.payment.repositories.PaymentRepository;
+import com.kuklin.manageapp.bots.payment.services.exceptions.GenerationBalanceNotFoundException;
+import com.kuklin.manageapp.bots.payment.services.exceptions.PricingPlanNotFoundException;
+import com.kuklin.manageapp.bots.payment.services.exceptions.payment.*;
+import com.kuklin.manageapp.bots.payment.services.exceptions.subscription.SubscriptionException;
+import com.kuklin.manageapp.bots.payment.services.exceptions.subscription.SubscriptionInvalidDataException;
+import com.kuklin.manageapp.bots.payment.services.exceptions.subscription.SubscriptionNotFound;
+import com.kuklin.manageapp.bots.payment.services.exceptions.subscription.SubscriptionNotSubscribeException;
 import com.kuklin.manageapp.bots.payment.telegram.handlers.WebhookSuccessfulPaymentUpdateHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +32,7 @@ import java.util.Optional;
  * - изменение статуса платежей
  * - валидация приходящих платежей
  * - выдачу данных о платежах
+ * - обработка случаев успешной оплаты и возврата
  */
 @Service
 @RequiredArgsConstructor
@@ -35,9 +43,18 @@ public class PaymentService {
     private final WebhookSuccessfulPaymentUpdateHandler webhookSuccessfulPaymentUpdateHandler;
     private final PricingPlanService pricingPlanService;
     private final UserSubscriptionService userSubscriptionService;
+    private final PaymentFailedLogService paymentFailedLogService;
 
     //Создание новой записи о платеже
-    public Payment createNewPaymentYooKassa(Long telegramId, PricingPlan pricingPlan) {
+    public Payment createNewPayment(Long telegramId, PricingPlan pricingPlan, Payment.Provider provider) {
+
+        Integer starsAmount = pricingPlan.getCurrency().equals(Currency.XTR)
+                ? pricingPlan.getPriceMinor() :
+                0;
+        Integer amount = pricingPlan.getCurrency().equals(Currency.XTR)
+                ? 0 :
+                pricingPlan.getPriceMinor();
+
         Payment payment = paymentRepository.save(new Payment()
                 .setTelegramId(telegramId)
                 .setCurrency(pricingPlan.getCurrency())
@@ -45,9 +62,9 @@ public class PaymentService {
                 .setProviderStatus(Payment.ProviderStatus.NEW)
                 .setPricingPlanId(pricingPlan.getId())
                 .setDescription(pricingPlan.getDescription())
-                .setAmount(pricingPlan.getPriceMinor())
-                .setProvider(Payment.Provider.YOOKASSA)
-                .setStarsAmount(0));
+                .setAmount(amount)
+                .setProvider(provider)
+                .setStarsAmount(starsAmount));
 
         payment.setTelegramInvoicePayload(generateTelegramInvoicePayload(payment.getId(), pricingPlan));
 
@@ -63,64 +80,78 @@ public class PaymentService {
     }
 
     //Изменение статуса платежа на FAILED
-    public Payment cancelPaymentOrNull(Long paymentId) {
-        Payment payment = paymentRepository.findById(paymentId).orElse(null);
-        if (payment == null) return null;
+    public Payment cancelPayment(Long paymentId) throws PaymentNotFoundException {
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElse(null);
+        if (payment == null) {
+            log.error(PaymentNotFoundException.DEF_MSG);
+            throw new PaymentNotFoundException();
+        }
 
         return paymentRepository.save(payment.setStatus(Payment.PaymentStatus.FAILED));
     }
 
     //Валидация оплаты
     public Boolean checkPreCheckoutQuery(PreCheckoutQuery query) {
-        Payment payment = getValidPaymentOrNull(
-                query.getInvoicePayload(),
-                query.getFrom().getId(),
-                query.getCurrency(),
-                query.getTotalAmount()
-        );
-
-        return payment != null;
+        Payment payment = null;
+        try {
+            payment = getValidPayment(
+                    query.getInvoicePayload(),
+                    query.getFrom().getId(),
+                    query.getCurrency(),
+                    query.getTotalAmount()
+            );
+            return true;
+        } catch (PaymentValidationDataException e) {
+            return false;
+        }
     }
 
     // Валидация успешной оплаты
-    public Payment processSuccessfulPaymentAndGetOrNull(SuccessfulPayment successfulPayment, Long telegramId) {
-        Payment payment = getValidPaymentOrNull(
+    public Payment processSuccessfulPaymentAndGet(SuccessfulPayment successfulPayment, Long telegramId) throws PaymentValidationDataException {
+        Payment payment = getValidPayment(
                 successfulPayment.getInvoicePayload(),
                 telegramId,
                 successfulPayment.getCurrency(),
                 successfulPayment.getTotalAmount()
         );
 
-        if (payment == null) return null;
-
         return paymentRepository.save(
                 payment.setStatus(Payment.PaymentStatus.SUCCESS)
         );
     }
 
-    private Payment getValidPaymentOrNull(String invoicePayload,
-                                          Long telegramId,
-                                          String currency,
-                                          Integer totalAmount) {
+    private Payment getValidPayment(String invoicePayload,
+                                    Long telegramId,
+                                    String currency,
+                                    Integer totalAmount) throws PaymentValidationDataException {
 
         Payment payment = paymentRepository.findByTelegramInvoicePayload(invoicePayload).orElse(null);
 
         log.info("For invoice payload: {} Payment not null: {}", invoicePayload, payment != null);
 
-        if (payment == null) return null;
-        if (!invoicePayload.equals(payment.getTelegramInvoicePayload())) return null;
-        if (!telegramId.equals(payment.getTelegramId())) return null;
-        if (!currency.equals(payment.getCurrency().name())) return null;
-        if (!totalAmount.equals(payment.getAmount())) return null;
+        if (payment == null
+                || !invoicePayload.equals(payment.getTelegramInvoicePayload())
+                || !telegramId.equals(payment.getTelegramId())
+                || !currency.equals(payment.getCurrency().name())
+                || !totalAmount.equals(payment.getAmount())) {
+            log.error(PaymentValidationDataException.DEF_MSG);
+            throw new PaymentValidationDataException();
+        }
 
         return payment;
     }
 
     //Получение записи о платеже по идентификатору из провайдера
-    public Payment findByProviderPaymentIdIdOrNull(String externalPaymentId, YookassaPaymentResponse response) {
+    public Payment findByProviderPaymentId(
+            String externalPaymentId, YookassaPaymentResponse response)
+            throws PaymentNotFoundException, PaymentNotFoundByProviderPaymentIdException {
         //Если существует - возврат
-        Payment payment = paymentRepository.findByProviderPaymentId(externalPaymentId).orElse(null);
-        if (payment != null) return payment;
+        Payment payment = paymentRepository.findByProviderPaymentId(externalPaymentId)
+                .orElseThrow(() -> new PaymentNotFoundException());
+        if (payment != null) {
+            return payment;
+        }
 
         String invoicePayload = null;
         if (response.getMetadata() != null) {
@@ -137,86 +168,112 @@ public class PaymentService {
             }
         }
 
-        return null;
+        throw new PaymentNotFoundByProviderPaymentIdException();
     }
 
     /**
-     * В зависимости, от статуса в вебхуке - устанавливает статус для существуещего платежа
+     * В зависимости, от статуса - устанавливает статус для существуещего платежа
      * <p>
      * В зависимости от пришедшего статуса, обновляет соответствующие поля в записи о платеже
      *
      * @param payment           запись существуещего платежа
-     * @param webhookEventType  вернувшийся с вебхуком - статус платежа
+     * @param newStatus         новый статус платежа
      * @param providerPaymentId идентификатор платежа с ЮКассы
      */
-    public void setStatus(Payment payment,
-                          WebhookEvent.WebhookEventType webhookEventType,
-                          String providerPaymentId) {
-        //TODO EXC
-        switch (webhookEventType) {
-            //Успешная оплата
-            case PAYMENT_SUCCEEDED: {
-                PricingPlan plan = pricingPlanService
-                        .getPricingPlanByIdOrNull(payment.getPricingPlanId());
-
-                try {
-                    switch (plan.getPayloadType()) {
-                        case SUBSCRIPTION -> {userSubscriptionService.createSubscriptionByPayment(payment);}
-                        case GENERATION_REQUEST -> {generationBalanceOperationService
-                                .increaseBalanceByPayment(payment);}
-                    }
-                } catch (Exception e) {
-                    //TODO ERROR
-                }
-
-                payment
-                        .setProviderStatus(Payment.ProviderStatus.SUCCEEDED)
-                        .setStatus(Payment.PaymentStatus.SUCCESS)
-                        .setProviderPaymentId(providerPaymentId)
-                        .setPaidAt(OffsetDateTime.now(ZoneOffset.UTC).toLocalDateTime());
-                payment = paymentRepository.save(payment);
-                webhookSuccessfulPaymentUpdateHandler.handleYooKassaSuccess(payment);
-                break;
+    public void changeStatus(Payment payment,
+                             Payment.PaymentStatus newStatus,
+                             String providerPaymentId) throws PaymentException {
+        try {
+            switch (newStatus) {
+                //Успешный платеж
+                case SUCCESS -> handleSuccess(payment, providerPaymentId);
+                //Возврат средств
+                case REFUNDED -> handleRefunded(payment);
+                //Отмена платежа
+                case CANCEL -> handleCanceled(payment);
             }
-            //Отмененная оплата
-            case PAYMENT_CANCELED: {
-                payment.setProviderStatus(Payment.ProviderStatus.CANCELED)
-                        .setStatus(Payment.PaymentStatus.FAILED)
-                        .setCanceledAt(OffsetDateTime.now(ZoneOffset.UTC).toLocalDateTime());
-                // по желанию: посмотреть причину в paymentApi.get("cancellation_details")
-                paymentRepository.save(payment);
-                break;
-            }
-            //Возврат средств
-            case REFUND_SUCCEEDED: {
-                payment.setProviderStatus(Payment.ProviderStatus.REFUND_SUCCEEDED);
+        } catch (Exception e) {
+            handleFailed(payment, e.getMessage());
+            throw new PaymentException(e.getMessage());
+        }
 
-                PricingPlan plan = pricingPlanService.getPricingPlanByIdOrNull(payment.getPricingPlanId());
-                switch (plan.getPayloadType()) {
-                    case SUBSCRIPTION -> {
-                        userSubscriptionService.cancelByPayment(payment);
-                    }
-                    case GENERATION_REQUEST -> {
-                        generationBalanceOperationService.createNewBalanceOperationDebit(
-                                GenerationBalanceOperation.OperationSource.PAYMENT,
-                                payment.getTelegramId(),
-                                payment.getId(),
-                                plan.getGenerationsCount(),
-                                plan.getTitle(),
-                                true
-                        );
-                    }
-                }
+    }
 
-                paymentRepository.save(payment);
-                break;
+    //Обработка успешного платежа
+    private void handleSuccess(Payment payment, String providerPaymentId)
+            throws PricingPlanNotFoundException, SubscriptionNotSubscribeException, SubscriptionInvalidDataException, GenerationBalanceNotFoundException {
+
+        //Получение тарифнового плана
+        PricingPlan plan = pricingPlanService
+                .getPricingPlanById(payment.getPricingPlanId());
+
+        //Предуссматривается 2 типа
+        //- Подписка - по факту доступ на N-дней
+        //- Количество генераций
+        switch (plan.getPayloadType()) {
+            case SUBSCRIPTION ->
+                //Создание подписки
+                    userSubscriptionService.createSubscriptionByPayment(payment);
+            case GENERATION_REQUEST ->
+                //Увеличение баланса генераций пользователя
+                    generationBalanceOperationService.increaseBalanceByPayment(payment);
+        }
+
+        payment
+                .setProviderStatus(Payment.ProviderStatus.SUCCEEDED)
+                .setStatus(Payment.PaymentStatus.SUCCESS)
+                .setProviderPaymentId(providerPaymentId)
+                .setPaidAt(OffsetDateTime.now(ZoneOffset.UTC).toLocalDateTime());
+        payment = paymentRepository.save(payment);
+        //Оповещение пользователя в телеграмме
+        webhookSuccessfulPaymentUpdateHandler.handleYooKassaSuccess(payment);
+    }
+
+    //Обработка случая возврата средств
+    private void handleRefunded(Payment payment)
+            throws PricingPlanNotFoundException, SubscriptionNotFound, GenerationBalanceNotFoundException {
+        payment.setProviderStatus(Payment.ProviderStatus.REFUND_SUCCEEDED);
+
+        //Получение тарифного плана
+        PricingPlan plan = pricingPlanService.getPricingPlanById(payment.getPricingPlanId());
+        //Предуссматривается 2 типа
+        //- Подписка - по факту доступ на N-дней
+        //- Количество генераций
+        switch (plan.getPayloadType()) {
+            case SUBSCRIPTION -> {
+                //Отмена подписки
+                userSubscriptionService.cancelByPayment(payment);
             }
-            //Неизвестный статус
-            case UNKNOWN: {
-                log.info("Unhandled YooKassa event!");
-                break;
+            case GENERATION_REQUEST -> {
+                //Списание оплаченных генераций
+                generationBalanceOperationService.createNewBalanceOperationDebit(
+                        GenerationBalanceOperation.OperationSource.PAYMENT,
+                        payment.getTelegramId(),
+                        payment.getId(),
+                        plan.getGenerationsCount(),
+                        plan.getTitle(),
+                        true
+                );
             }
         }
+    }
+
+    //Отмена платежа (не возврат)
+    private void handleCanceled(Payment payment) {
+        payment.setProviderStatus(Payment.ProviderStatus.CANCELED)
+                .setStatus(Payment.PaymentStatus.FAILED)
+                .setCanceledAt(OffsetDateTime.now(ZoneOffset.UTC).toLocalDateTime());
+        // по желанию: посмотреть причину в paymentApi.get("cancellation_details")
+        paymentRepository.save(payment);
+
+    }
+
+    //Запись лога об ошибке в БД
+    private void handleFailed(Payment payment, String error) {
+        payment.setStatus(Payment.PaymentStatus.FAILED);
+        payment = paymentRepository.save(payment);
+
+        paymentFailedLogService.createLog(payment.getId(), error);
     }
 
     public Payment setProviderPaymentId(Payment payment, String providerOrderId) {

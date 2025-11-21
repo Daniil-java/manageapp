@@ -2,9 +2,10 @@ package com.kuklin.manageapp.bots.payment.telegram.handlers;
 
 import com.kuklin.manageapp.bots.payment.entities.Payment;
 import com.kuklin.manageapp.bots.payment.entities.PricingPlan;
-import com.kuklin.manageapp.bots.payment.models.common.Currency;
 import com.kuklin.manageapp.bots.payment.services.PaymentService;
 import com.kuklin.manageapp.bots.payment.services.PricingPlanService;
+import com.kuklin.manageapp.bots.payment.services.exceptions.PricingPlanNotFoundException;
+import com.kuklin.manageapp.bots.payment.services.exceptions.payment.PaymentNotFoundException;
 import com.kuklin.manageapp.bots.payment.telegram.PaymentTelegramBot;
 import com.kuklin.manageapp.bots.payment.telegram.handlers.providerprocessors.PaymentUrlProviderFactory;
 import com.kuklin.manageapp.bots.payment.telegram.handlers.providerprocessors.ProviderResult;
@@ -22,11 +23,10 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 /**
  * Обработчик комманды Command.PAYMENT_PLAN
- *
+ * <p>
  * Отвечает за:
  * - возвращение телеграм инвойса (сообщения с оплатой);
  * - создании записи о новом платеже в БД
- *
  */
 @RequiredArgsConstructor
 @Component
@@ -37,6 +37,15 @@ public class PaymentPayUpdateHandler implements PaymentUpdateHandler {
     private final PricingPlanService pricingPlanService;
     private final PaymentUrlProviderFactory paymentUrlProviderFactory;
     private final SendInvoiceBuilder sendInvoiceBuilder;
+    private static final String PLAN_ERROR_MSG = """
+                        Не получилось найти тарифный план!
+            """;
+    private static final String DATA_EXTRACT_ERROR_MSG = """
+                        Бот не смог извлечь данные о платежном формате!
+            """;
+    private static final String PAYMENT_ERROR_MSG = """
+                        Платеж не найден! Свяжитесь с администратором!
+            """;
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
@@ -46,15 +55,19 @@ public class PaymentPayUpdateHandler implements PaymentUpdateHandler {
         //Извлечение данных о выбранном тарифном плане
         Payment.Provider provider = extractProvider(callbackQuery.getData());
         if (provider == null) {
-            //TODO ERROR
+            paymentTelegramBot.sendReturnedMessage(chatId, DATA_EXTRACT_ERROR_MSG);
         }
 
         Long pricingPlanId = extractPricingPlanId(callbackQuery.getData());
-        PricingPlan plan = pricingPlanService.getPricingPlanByIdOrNull(pricingPlanId);
+        PricingPlan plan = null;
+        try {
+            plan = pricingPlanService.getPricingPlanById(pricingPlanId);
+        } catch (PricingPlanNotFoundException e) {
+            paymentTelegramBot.sendReturnedMessage(chatId, PLAN_ERROR_MSG);
+        }
 
-        //TODO Уйти от привязки к ЮКассе
         Payment payment = paymentService
-                .createNewPaymentYooKassa(telegramUser.getTelegramId(), plan);
+                .createNewPayment(telegramUser.getTelegramId(), plan, provider);
 
         if (provider.getProviderFlow().equals(Payment.PaymentFlow.PROVIDER_REDIRECT)) {
             ProviderResult result = paymentUrlProviderFactory.handle(provider, payment, plan, chatId);
@@ -69,12 +82,15 @@ public class PaymentPayUpdateHandler implements PaymentUpdateHandler {
             paymentTelegramBot.execute(sendInvoice);
             paymentTelegramBot.sendDeleteMessage(chatId, update.getCallbackQuery().getMessage().getMessageId());
         } catch (TelegramApiException e) {
-            //TODO
             //Ошибка отправки инвойса
             log.error("Telegram execute error! ", e);
-            paymentTelegramBot.sendReturnedMessage(chatId, "Ошибка! Попройбуйте заново");
+            paymentTelegramBot.sendReturnedMessage(chatId, "Ошибка! Не получилось отправить форму оплаты! Попройбуйте заново");
             //Пометка платежа, как отмененного
-            paymentService.cancelPaymentOrNull(payment.getId());
+            try {
+                paymentService.cancelPayment(payment.getId());
+            } catch (PaymentNotFoundException ex) {
+                log.error(e.getMessage());
+            }
         }
     }
 

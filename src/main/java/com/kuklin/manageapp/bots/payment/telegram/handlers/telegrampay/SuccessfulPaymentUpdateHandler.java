@@ -4,8 +4,10 @@ import com.kuklin.manageapp.bots.payment.entities.GenerationBalance;
 import com.kuklin.manageapp.bots.payment.entities.GenerationBalanceOperation;
 import com.kuklin.manageapp.bots.payment.entities.Payment;
 import com.kuklin.manageapp.bots.payment.services.GenerationBalanceOperationService;
-import com.kuklin.manageapp.bots.payment.services.GenerationBalanceService;
 import com.kuklin.manageapp.bots.payment.services.PaymentService;
+import com.kuklin.manageapp.bots.payment.services.exceptions.GenerationBalanceNotFoundException;
+import com.kuklin.manageapp.bots.payment.services.exceptions.PricingPlanNotFoundException;
+import com.kuklin.manageapp.bots.payment.services.exceptions.payment.PaymentValidationDataException;
 import com.kuklin.manageapp.bots.payment.telegram.PaymentTelegramBot;
 import com.kuklin.manageapp.bots.payment.telegram.handlers.PaymentBalanceUpdateHandler;
 import com.kuklin.manageapp.bots.payment.telegram.handlers.PaymentUpdateHandler;
@@ -39,11 +41,24 @@ public class SuccessfulPaymentUpdateHandler implements PaymentUpdateHandler {
         if (update.hasMessage() && update.getMessage().hasSuccessfulPayment()) {
             SuccessfulPayment success = update.getMessage().getSuccessfulPayment();
             //Обработка успешного сообщенияя в paymentService
-            Payment payment = paymentService.processSuccessfulPaymentAndGetOrNull(success, telegramUser.getTelegramId());
+            Payment payment = null;
+            try {
+                payment = paymentService.processSuccessfulPaymentAndGet(success, telegramUser.getTelegramId());
+            } catch (PaymentValidationDataException e) {
+                //TODO
+            }
 
             if (payment != null) {
                 //Увеличение баланса согласно купленного плана
-                GenerationBalanceOperation balanceOperation = generationBalanceOperationService.increaseBalanceByPayment(payment);
+                GenerationBalanceOperation balanceOperation =
+                        null;
+                try {
+                    balanceOperation = generationBalanceOperationService.increaseBalanceByPayment(payment);
+                } catch (GenerationBalanceNotFoundException e) {
+                    //TODO
+                } catch (PricingPlanNotFoundException e) {
+                    //TODO
+                }
                 if (balanceOperation != null) {
                     paymentTelegramBot.sendReturnedMessage(update.getMessage().getChatId(), "Успешная оплата");
                     balanceUpdateHandler.handle(update, telegramUser);

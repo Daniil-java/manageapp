@@ -4,6 +4,10 @@ import com.kuklin.manageapp.bots.payment.entities.Payment;
 import com.kuklin.manageapp.bots.payment.entities.PricingPlan;
 import com.kuklin.manageapp.bots.payment.entities.UserSubscription;
 import com.kuklin.manageapp.bots.payment.repositories.UserSubscriptionRepository;
+import com.kuklin.manageapp.bots.payment.services.exceptions.PricingPlanNotFoundException;
+import com.kuklin.manageapp.bots.payment.services.exceptions.subscription.SubscriptionNotSubscribeException;
+import com.kuklin.manageapp.bots.payment.services.exceptions.subscription.SubscriptionInvalidDataException;
+import com.kuklin.manageapp.bots.payment.services.exceptions.subscription.SubscriptionNotFound;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
@@ -21,6 +25,7 @@ import java.util.Set;
 public class UserSubscriptionService {
     private final UserSubscriptionRepository userSubscriptionRepository;
     private final PricingPlanService pricingPlanService;
+    //Для одновременной выдачи и активных, и запланированых
     private static final Set<UserSubscription.Status> WORKING_STATUSES =
             EnumSet.of(UserSubscription.Status.ACTIVE, UserSubscription.Status.SCHEDULED);
 
@@ -71,30 +76,21 @@ public class UserSubscriptionService {
      * - статус: ACTIVE, если startAt <= now, иначе SCHEDULED.
      */
     @Transactional
-    public UserSubscription createSubscriptionByPayment(Payment payment) {
+    public UserSubscription createSubscriptionByPayment(Payment payment) throws PricingPlanNotFoundException, SubscriptionNotSubscribeException, SubscriptionInvalidDataException {
         Long pricingPlanId = payment.getPricingPlanId();
-        //TODO: ERROR/exception если pricingPlanId == null
 
-        PricingPlan plan = pricingPlanService.getPricingPlanByIdOrNull(pricingPlanId);
-        if (plan == null) {
-            //TODO: кинуть своё бизнес-исключение
-            log.error("PricingPlan not found for id={} when creating subscription for payment id={}",
-                    pricingPlanId, payment.getId());
-            return null;
-        }
+        PricingPlan plan = pricingPlanService.getPricingPlanById(pricingPlanId);
 
         if (plan.getPayloadType() != PricingPlan.PricingPlanType.SUBSCRIPTION) {
-            //TODO: кинуть своё бизнес-исключение
             log.error("Attempt to create subscription from non-subscription plan id={}, payment id={}",
                     pricingPlanId, payment.getId());
-            return null;
+            throw new SubscriptionNotSubscribeException();
         }
 
         if (plan.getDurationDays() == null || plan.getDurationDays() <= 0) {
-            //TODO: кинуть своё бизнес-исключение
             log.error("Subscription plan id={} has invalid durationDays={}",
                     pricingPlanId, plan.getDurationDays());
-            return null;
+            throw new SubscriptionInvalidDataException();
         }
 
         Long telegramId = payment.getTelegramId();
@@ -196,14 +192,9 @@ public class UserSubscriptionService {
      * - при необходимости подправить очередь подписок.
      */
     @Transactional
-    public void cancelByPayment(Payment payment) {
+    public void cancelByPayment(Payment payment) throws SubscriptionNotFound {
         Long paymentId = payment.getId();
         Long telegramId = payment.getTelegramId();
-
-        if (paymentId == null || telegramId == null) {
-            log.error("Cannot cancel subscription: paymentId or telegramId is null. payment={}", payment);
-            return;
-        }
 
         // Сначала приводим статусы в актуальное состояние
         refreshStatuses(telegramId);
@@ -211,7 +202,7 @@ public class UserSubscriptionService {
         List<UserSubscription> toCancel = userSubscriptionRepository.findAllByPaymentId(paymentId);
         if (toCancel.isEmpty()) {
             log.warn("No subscriptions found for paymentId={} (telegramId={})", paymentId, telegramId);
-            return;
+            throw new SubscriptionNotFound();
         }
 
         LocalDateTime now = LocalDateTime.now();

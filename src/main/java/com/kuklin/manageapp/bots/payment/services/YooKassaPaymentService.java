@@ -25,7 +25,6 @@ import java.math.RoundingMode;
 @RequiredArgsConstructor
 public class YooKassaPaymentService {
     private final YooKassaFeignClient client;
-    private final YooWebhookService yooWebhookService;
 
     //Создание сссылки на платеж в ЮКассе
     public Created create(long amountMinor,

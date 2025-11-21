@@ -66,6 +66,6 @@ public class Payment {
     }
 
     public enum PaymentStatus {
-        CREATED, SUCCESS, FAILED, REFUNDED;
+        CREATED, SUCCESS, FAILED, REFUNDED, CANCEL;
     }
 }

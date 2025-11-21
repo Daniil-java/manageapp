@@ -5,6 +5,8 @@ import com.kuklin.manageapp.bots.payment.entities.GenerationBalanceOperation;
 import com.kuklin.manageapp.bots.payment.entities.Payment;
 import com.kuklin.manageapp.bots.payment.entities.PricingPlan;
 import com.kuklin.manageapp.bots.payment.repositories.GenerationBalanceOperationRepository;
+import com.kuklin.manageapp.bots.payment.services.exceptions.GenerationBalanceNotFoundException;
+import com.kuklin.manageapp.bots.payment.services.exceptions.PricingPlanNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,16 +27,11 @@ public class GenerationBalanceOperationService {
 
     //Пополнение баланса пользователя, на основании пришедшего платежа
     @Transactional
-    public GenerationBalanceOperation increaseBalanceByPayment(Payment payment) {
-        //Получение баланса пользователя или налл
-        GenerationBalance generationBalance = generationBalanceService
-                .getBalanceByTelegramIdOrNull(payment.getTelegramId());
-        if (generationBalance == null) {
-            //TODO ERROR
-        }
+    public GenerationBalanceOperation increaseBalanceByPayment(Payment payment)
+            throws GenerationBalanceNotFoundException, PricingPlanNotFoundException {
 
         PricingPlan plan = pricingPlanService
-                .getPricingPlanByIdOrNull(payment.getPricingPlanId());
+                .getPricingPlanById(payment.getPricingPlanId());
 
         GenerationBalanceOperation operation = createNewBalanceOperationCredit(
                 GenerationBalanceOperation.OperationSource.PAYMENT,
@@ -55,7 +52,7 @@ public class GenerationBalanceOperationService {
             Long paymentId,
             Long requestCount,
             String comment
-    ) {
+    ) throws GenerationBalanceNotFoundException {
         return createNewBalanceOperation(
                 GenerationBalanceOperation.OperationType.CREDIT,
                 source, telegramId, paymentId, requestCount, comment, false
@@ -71,7 +68,7 @@ public class GenerationBalanceOperationService {
             Long requestCount,
             String comment,
             boolean isRefund
-    ) {
+    ) throws GenerationBalanceNotFoundException {
         return createNewBalanceOperation(
                 GenerationBalanceOperation.OperationType.DEBIT,
                 source, telegramId, paymentId, requestCount, comment, isRefund
@@ -88,8 +85,8 @@ public class GenerationBalanceOperationService {
             Long requestCount,
             String comment,
             boolean isRefund
-    ) {
-        GenerationBalance balance = generationBalanceService.getBalanceByTelegramIdOrNull(telegramId);
+    ) throws GenerationBalanceNotFoundException {
+        GenerationBalance balance = generationBalanceService.getBalanceByTelegramId(telegramId);
 
         switch (operationType) {
             case DEBIT -> {
@@ -108,7 +105,7 @@ public class GenerationBalanceOperationService {
             case CREDIT -> balance.topUp(requestCount);
         }
 
-        balance = generationBalanceService.save(balance);
+        generationBalanceService.save(balance);
 
         return repository.save(
                 new GenerationBalanceOperation()

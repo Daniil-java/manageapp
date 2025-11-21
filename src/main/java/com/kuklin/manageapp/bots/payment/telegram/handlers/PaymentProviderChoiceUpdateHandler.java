@@ -4,6 +4,7 @@ import com.kuklin.manageapp.bots.payment.entities.Payment;
 import com.kuklin.manageapp.bots.payment.entities.PricingPlan;
 import com.kuklin.manageapp.bots.payment.models.common.Currency;
 import com.kuklin.manageapp.bots.payment.services.PricingPlanService;
+import com.kuklin.manageapp.bots.payment.services.exceptions.PricingPlanNotFoundException;
 import com.kuklin.manageapp.bots.payment.telegram.PaymentTelegramBot;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
@@ -24,17 +25,24 @@ public class PaymentProviderChoiceUpdateHandler implements PaymentUpdateHandler 
             """
                     Выберите один из способ оплаты:
                     """;
+    private static final String PLAN_LIST_ERROR_MSG =
+            """
+                    Ошибка! Не получилось найти список тарифов!
+                    """;
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
         Long chatId = update.hasCallbackQuery()
                 ? update.getCallbackQuery().getMessage().getChatId()
                 : update.getMessage().getChatId();
 
-        if (!update.hasCallbackQuery()) {}//TODO ERROR
-
         String planId = extractPlanId(update.getCallbackQuery().getData());
-        PricingPlan plan = pricingPlanService
-                .getPricingPlanByIdOrNull(Long.valueOf(planId));
+        PricingPlan plan = null;
+        try {
+            plan = pricingPlanService
+                    .getPricingPlanById(Long.valueOf(planId));
+        } catch (PricingPlanNotFoundException e) {
+            paymentTelegramBot.sendReturnedMessage(chatId, PLAN_LIST_ERROR_MSG);
+        }
 
         if (plan.getCurrency().equals(Currency.XTR)) {
             update.getCallbackQuery().setData(generateCallBackData(planId, Payment.Provider.STARS.name()));

@@ -2,6 +2,7 @@ package com.kuklin.manageapp.bots.payment.services;
 
 import com.kuklin.manageapp.bots.payment.entities.PricingPlan;
 import com.kuklin.manageapp.bots.payment.repositories.PricingPlanRepository;
+import com.kuklin.manageapp.bots.payment.services.exceptions.PricingPlanNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,7 +19,8 @@ public class PricingPlanService {
         return pricingPlanRepository.findAll();
     }
 
-    public PricingPlan getPricingPlanByIdOrNull(Long id) {
-        return pricingPlanRepository.findById(id).orElse(null);
+    public PricingPlan getPricingPlanById(Long id) throws PricingPlanNotFoundException {
+        return pricingPlanRepository.findById(id)
+                .orElseThrow(() -> new PricingPlanNotFoundException());
     }
 }
