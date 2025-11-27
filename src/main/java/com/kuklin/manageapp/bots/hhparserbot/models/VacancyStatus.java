@@ -12,6 +12,7 @@ public enum VacancyStatus {
     NOTIFICATED,
 
     CREATED,
+    NOT_FOUND_ERROR,
     PARSED,
     PROCESSED,
     NOTIFICATION_ERROR;
