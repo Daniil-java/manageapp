@@ -94,22 +94,28 @@ public class PaymentService {
 
     //Валидация оплаты
     public Boolean checkPreCheckoutQuery(PreCheckoutQuery query) {
-        Payment payment = null;
         try {
-            payment = getValidPayment(
+            Payment payment = getValidPayment(
                     query.getInvoicePayload(),
                     query.getFrom().getId(),
                     query.getCurrency(),
                     query.getTotalAmount()
             );
-            return true;
+            return payment != null;
         } catch (PaymentValidationDataException e) {
             return false;
         }
     }
 
-    // Валидация успешной оплаты
-    public Payment processTelegramSuccessfulPaymentAndGet(SuccessfulPayment successfulPayment, Long telegramId) throws PaymentValidationDataException, GenerationBalanceIllegalOperationDataException, GenerationBalanceNotEnoughBalanceException, PricingPlanNotFoundException, GenerationBalanceNotFoundException {
+    // Обработка успешной оплаты
+    public Payment processTelegramSuccessfulPaymentAndGetOrNull(SuccessfulPayment successfulPayment, Long telegramId) throws PaymentException, GenerationBalanceIllegalOperationDataException, GenerationBalanceNotEnoughBalanceException, PricingPlanNotFoundException, GenerationBalanceNotFoundException {
+        Optional<Payment> byProviderId = paymentRepository
+                .findByProviderPaymentId(successfulPayment.getProviderPaymentChargeId());
+        if (byProviderId.isPresent()) {
+            // уже обрабатывали этот платёж
+            return null;
+        }
+
         Payment payment = getValidPayment(
                 successfulPayment.getInvoicePayload(),
                 telegramId,
@@ -117,12 +123,49 @@ public class PaymentService {
                 successfulPayment.getTotalAmount()
         );
 
-        payment = paymentRepository.save(
-                payment.setStatus(Payment.PaymentStatus.SUCCESS)
-        );
 
-        generationBalanceOperationService.increaseBalanceByPayment(payment);
+        PricingPlan plan = pricingPlanService
+                .getPricingPlanById(payment.getPricingPlanId());
+        //Если статус любой, но не CREATED - это значит, что это повторный платеж
+        //Он может быть в случае телеграм-подписки
+        payment = processTelegramSubs(payment, plan);
 
+        String providerToken = payment.getCurrency().equals(Currency.XTR) ?
+                successfulPayment.getTelegramPaymentChargeId() :
+                successfulPayment.getProviderPaymentChargeId();
+
+        changeStatus(payment, Payment.PaymentStatus.SUCCESS, providerToken);
+        return payment;
+    }
+
+    //Обработка телеграммовской подписки. Работает вместе с методом processTelegramSuccessfulPaymentAndGetOrNull
+    private Payment processTelegramSubs(Payment payment, PricingPlan plan) {
+        if (!payment.getStatus().equals(Payment.PaymentStatus.CREATED)) {
+            //Длительность подписки, допустимая в телеграмме.
+            int telegramSubsDaysDuration = 30;
+
+            //Проверяем, что это действительно подписка-телеграмм.
+            if (
+                    plan.getDurationDays().equals(telegramSubsDaysDuration)
+                            && plan.getPayloadType().equals(PricingPlan.PricingPlanType.SUBSCRIPTION)
+                            && plan.getCurrency().equals(Currency.XTR)
+            ) {
+                //Если это подписка, то нам надо создать новый платеж
+                payment = paymentRepository.save(
+                        new Payment()
+                                .setProvider(payment.getProvider())
+                                .setPricingPlanId(payment.getPricingPlanId())
+                                .setDescription(payment.getDescription())
+                                .setCurrency(payment.getCurrency())
+                                .setAmount(payment.getAmount())
+                                .setStarsAmount(payment.getStarsAmount())
+                                .setStatus(Payment.PaymentStatus.CREATED)
+                                .setTelegramId(payment.getTelegramId())
+                                .setTelegramInvoicePayload(payment.getTelegramInvoicePayload())
+                                .setProviderStatus(Payment.ProviderStatus.SUCCEEDED)
+                );
+            }
+        }
         return payment;
     }
 
@@ -135,11 +178,15 @@ public class PaymentService {
 
         log.info("For invoice payload: {} Payment not null: {}", invoicePayload, payment != null);
 
+        int amount = payment.getAmount();
+        if (payment.getCurrency().equals(Currency.XTR)) {
+            amount = payment.getStarsAmount();
+        }
         if (payment == null
                 || !invoicePayload.equals(payment.getTelegramInvoicePayload())
                 || !telegramId.equals(payment.getTelegramId())
                 || !currency.equals(payment.getCurrency().name())
-                || !totalAmount.equals(payment.getAmount())) {
+                || !totalAmount.equals(amount)) {
             log.error(PaymentValidationDataException.DEF_MSG);
             throw new PaymentValidationDataException();
         }
@@ -150,14 +197,15 @@ public class PaymentService {
     //Получение записи о платеже по идентификатору из провайдера
     public Payment findByProviderPaymentId(
             String externalPaymentId, YookassaPaymentResponse response)
-            throws PaymentNotFoundException, PaymentNotFoundByProviderPaymentIdException {
-        //Если существует - возврат
+            throws PaymentNotFoundByProviderPaymentIdException {
+        //Пытаемся найти по providerPaymentId
         Payment payment = paymentRepository.findByProviderPaymentId(externalPaymentId)
-                .orElseThrow(() -> new PaymentNotFoundException());
+                .orElse(null);
         if (payment != null) {
             return payment;
         }
 
+        //Пытаемся достать invoicePayload из metadata
         String invoicePayload = null;
         if (response.getMetadata() != null) {
             //Извлечение платжеа по идентификатору из провайдера платежа
@@ -165,6 +213,7 @@ public class PaymentService {
             log.info("INVOICE PAYLOAD: {}", invoicePayload);
         }
 
+        //Если payload есть – ищем по нему
         if (invoicePayload != null && !invoicePayload.isBlank()) {
 
             Optional<Payment> byPayload = paymentRepository.findByTelegramInvoicePayload(invoicePayload);
@@ -173,6 +222,7 @@ public class PaymentService {
             }
         }
 
+        //Не нашли ни по providerPaymentId, ни по payload
         throw new PaymentNotFoundByProviderPaymentIdException();
     }
 
@@ -292,5 +342,17 @@ public class PaymentService {
 
     public Payment setProviderPaymentId(Payment payment, String providerOrderId) {
         return paymentRepository.save(payment.setProviderPaymentId(providerOrderId));
+    }
+
+    public boolean refundTelegramPayment(String paymentChargeId) throws PaymentException {
+        Payment payment = paymentRepository.findByProviderPaymentId(paymentChargeId).orElse(null);
+        if (payment == null) return false;
+        if (!payment.getCurrency().equals(Currency.XTR)) return false;
+
+        if (payment.getStatus().equals(Payment.PaymentStatus.SUCCESS)) {
+            changeStatus(payment, Payment.PaymentStatus.REFUNDED, paymentChargeId);
+            return true;
+        }
+        return false;
     }
 }

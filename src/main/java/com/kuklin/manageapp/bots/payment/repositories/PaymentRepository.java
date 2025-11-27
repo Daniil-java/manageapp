@@ -11,4 +11,5 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     Optional<Payment> findByTelegramInvoicePayload(String telegramPayload);
     Optional<Payment> findByTelegramInvoicePayloadAndStatus(String telegramPayload, Payment.PaymentStatus status);
     Optional<Payment> findByProviderPaymentId(String providerPaymentId);
+    Optional<Payment> findByProviderPaymentIdAndTelegramInvoicePayload(String providerPaymentId, String telegramPayload);
 }

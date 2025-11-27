@@ -50,4 +50,6 @@ public interface UserSubscriptionRepository extends JpaRepository<UserSubscripti
             Long telegramId,
             Collection<UserSubscription.Status> statuses
     );
+
+    long countByTelegramId(Long telegramId);
 }

@@ -2,6 +2,7 @@ package com.kuklin.manageapp.bots.payment.telegram.handlers;
 
 import com.kuklin.manageapp.bots.payment.entities.Payment;
 import com.kuklin.manageapp.bots.payment.entities.PricingPlan;
+import com.kuklin.manageapp.bots.payment.models.common.Currency;
 import com.kuklin.manageapp.bots.payment.services.PaymentService;
 import com.kuklin.manageapp.bots.payment.services.PricingPlanService;
 import com.kuklin.manageapp.bots.payment.services.exceptions.PricingPlanNotFoundException;
@@ -11,6 +12,7 @@ import com.kuklin.manageapp.bots.payment.telegram.handlers.providerprocessors.Pa
 import com.kuklin.manageapp.bots.payment.telegram.handlers.providerprocessors.ProviderResult;
 import com.kuklin.manageapp.bots.payment.telegram.handlers.providerprocessors.SendInvoiceBuilder;
 import com.kuklin.manageapp.common.entities.TelegramUser;
+import com.kuklin.manageapp.common.library.tgmodels.CreateInvoiceLinkWithTelegramSubscription;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import lombok.RequiredArgsConstructor;
@@ -77,9 +79,28 @@ public class PaymentPayUpdateHandler implements PaymentUpdateHandler {
             return;
         }
 
-        SendInvoice sendInvoice = sendInvoiceBuilder.build(provider, payment, plan, chatId);
         try {
-            paymentTelegramBot.execute(sendInvoice);
+            if (plan.getPayloadType().equals(PricingPlan.PricingPlanType.SUBSCRIPTION)
+                    && plan.getCurrency().equals(Currency.XTR)
+                    && plan.getDurationDays().equals(30)
+            ) {
+                CreateInvoiceLinkWithTelegramSubscription subscriptionLink =
+                        TelegramBot.buildCreateInvoiceLink(
+                                plan.getTitle(),
+                                plan.getDescription(),
+                                payment.getTelegramInvoicePayload(),
+                                plan.getPriceMinor(),
+                                plan.getCurrency()
+                        );
+
+                String url = paymentTelegramBot.execute(subscriptionLink);
+                paymentTelegramBot.sendReturnedMessage(chatId, url);
+            }
+            else {
+                SendInvoice sendInvoice = sendInvoiceBuilder.build(provider, payment, plan, chatId);
+                paymentTelegramBot.execute(sendInvoice);
+            }
+
             paymentTelegramBot.sendDeleteMessage(chatId, update.getCallbackQuery().getMessage().getMessageId());
         } catch (TelegramApiException e) {
             //Ошибка отправки инвойса

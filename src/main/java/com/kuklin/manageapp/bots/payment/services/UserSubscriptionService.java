@@ -290,4 +290,8 @@ public class UserSubscriptionService {
         userSubscriptionRepository.saveAll(queue);
     }
 
+    public Long getUserSubscribesCount(Long telegramId) {
+        return userSubscriptionRepository.countByTelegramId(telegramId);
+    }
+
 }

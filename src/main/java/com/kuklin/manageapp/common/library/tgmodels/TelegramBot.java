@@ -229,10 +229,10 @@ public abstract class TelegramBot extends TelegramLongPollingBot implements Tele
     }
 
     public static SendInvoice buildInvoiceOrNull(Long chatId, String title,
-                                    String description, String payload,
-                                    String providerToken, int amount,
-                                    Currency currency, Payment.Provider provider,
-                                    String labelPrice
+                                                 String description, String payload,
+                                                 String providerToken, int amount,
+                                                 Currency currency, Payment.Provider provider,
+                                                 String labelPrice
     ) {
 
         if (provider.equals(Payment.Provider.STARS) && !currency.equals(Currency.XTR)) {
@@ -249,6 +249,25 @@ public abstract class TelegramBot extends TelegramLongPollingBot implements Tele
                 .prices(List.of(new LabeledPrice(labelPrice, amount)))
                 .startParameter(provider.getTelegramStartParameter())
                 .build();
+    }
+
+    public static CreateInvoiceLinkWithTelegramSubscription buildCreateInvoiceLink(
+            String title,
+            String description, String payload,
+            int amount, Currency currency
+    ) {
+        String TOKEN_DUMMY = "xtr_dummy";
+
+        CreateInvoiceLinkWithTelegramSubscription link = new CreateInvoiceLinkWithTelegramSubscription(2_592_000);
+        link.setTitle(title);
+        link.setDescription(description);
+        link.setPayload(payload);
+        link.setCurrency(currency.name());
+        link.setPrices(List.of(new LabeledPrice("Подписка 30 дней", amount)));
+        link.setProviderToken(TOKEN_DUMMY);
+
+        return link;
+
     }
 
     public void answerCallback(Update update) {

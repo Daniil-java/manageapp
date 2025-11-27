@@ -1,10 +1,12 @@
 package com.kuklin.manageapp.bots.payment.telegram.handlers.telegrampay;
 
+import com.kuklin.manageapp.bots.payment.entities.Payment;
 import com.kuklin.manageapp.bots.payment.services.PaymentService;
 import com.kuklin.manageapp.bots.payment.services.exceptions.PricingPlanNotFoundException;
 import com.kuklin.manageapp.bots.payment.services.exceptions.generationbalance.GenerationBalanceIllegalOperationDataException;
 import com.kuklin.manageapp.bots.payment.services.exceptions.generationbalance.GenerationBalanceNotEnoughBalanceException;
 import com.kuklin.manageapp.bots.payment.services.exceptions.generationbalance.GenerationBalanceNotFoundException;
+import com.kuklin.manageapp.bots.payment.services.exceptions.payment.PaymentException;
 import com.kuklin.manageapp.bots.payment.services.exceptions.payment.PaymentValidationDataException;
 import com.kuklin.manageapp.bots.payment.telegram.PaymentTelegramBot;
 import com.kuklin.manageapp.bots.payment.telegram.handlers.PaymentBalanceUpdateHandler;
@@ -49,6 +51,9 @@ public class SuccessfulPaymentUpdateHandler implements PaymentUpdateHandler {
     private static final String BALANCE_ILLEGAL_OPERATION_ERROR_MSG = """
             В тарифном плане ошибка! Выберите другой!
             """;
+    private static final String PAYMENT_ERROR_MSG = """
+            Ошибка платежа! Обратитесь к администратору!
+            """;
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
@@ -57,9 +62,14 @@ public class SuccessfulPaymentUpdateHandler implements PaymentUpdateHandler {
             SuccessfulPayment success = update.getMessage().getSuccessfulPayment();
             //Обработка успешного сообщенияя в paymentService
             try {
-                paymentService.processTelegramSuccessfulPaymentAndGet(
+                Payment payment = paymentService.processTelegramSuccessfulPaymentAndGetOrNull(
                         success, telegramUser.getTelegramId());
 
+                if (payment == null) {
+                    paymentTelegramBot.sendReturnedMessage(
+                            chatId, PAYMENT_ERROR_MSG);
+                    return;
+                }
                 paymentTelegramBot.sendReturnedMessage(
                         chatId, SUCCESS_MSG);
                 balanceUpdateHandler.handle(update, telegramUser);
@@ -74,6 +84,8 @@ public class SuccessfulPaymentUpdateHandler implements PaymentUpdateHandler {
                 paymentTelegramBot.sendReturnedMessage(chatId, BALANCE_ILLEGAL_OPERATION_ERROR_MSG);
             } catch (GenerationBalanceNotEnoughBalanceException e) {
                 paymentTelegramBot.sendReturnedMessage(chatId, BALANCE_NOT_ENOUGH_ERROR_MSG);
+            } catch (PaymentException e) {
+                paymentTelegramBot.sendReturnedMessage(chatId, PAYMENT_ERROR_MSG);
             }
         }
     }

@@ -27,17 +27,11 @@ public class PreCheckoutQueryUpdateHandler implements PaymentUpdateHandler {
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
-        if (!update.hasPreCheckoutQuery()) {
-            //TODO ERROR
-            return;
-        }
-
         PreCheckoutQuery query = update.getPreCheckoutQuery();
         AnswerPreCheckoutQuery answer = new AnswerPreCheckoutQuery();
         //Валидация пришедшего запроса.
         //Сравнение с записью из БД
         if (!paymentService.checkPreCheckoutQuery(query)) {
-            //TODO ERROR
             //Ответ о неудаче
             answer.setOk(false);
             answer.setErrorMessage("Ошибка данных платежа");
