@@ -31,6 +31,7 @@ public class OpenAiProviderProcessor implements ProviderProcessor {
         OpenAiChatCompletionRequest request =
                 OpenAiChatCompletionRequest.makeDefaultImgRequest(content, imagerUrl, chatModel);
 
+        log.info("Openai request {}", request.getMessages().get(0).getContent());
         OpenAiChatCompletionResponse response =
                 openAiFeignClient.generate("Bearer " + aiKey, request);
 
@@ -80,6 +81,7 @@ public class OpenAiProviderProcessor implements ProviderProcessor {
     }
 
     private String fetchResponse(String aiKey, OpenAiChatCompletionRequest request) {
+        log.info("Openai request {}", request.getMessages().get(0).getContent());
         OpenAiChatCompletionResponse response =
                 openAiFeignClient.generate("Bearer " + aiKey, request);
 
