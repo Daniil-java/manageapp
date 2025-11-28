@@ -37,7 +37,8 @@ public class PaymentPlanListUpdateHandler implements PaymentUpdateHandler {
                 ? update.getCallbackQuery().getMessage().getChatId()
                 : update.getMessage().getChatId();
 
-        List<PricingPlan> planList = pricingPlanService.getAllPlans();
+        List<PricingPlan> planList = pricingPlanService
+                .getAllPlansByBotIdentifier(paymentTelegramBot.getBotIdentifier());
 
         paymentTelegramBot.sendReturnedMessage(
                 chatId,

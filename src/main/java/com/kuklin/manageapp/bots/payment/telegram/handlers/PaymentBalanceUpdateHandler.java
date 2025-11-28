@@ -35,11 +35,17 @@ public class PaymentBalanceUpdateHandler implements PaymentUpdateHandler {
                 : update.getMessage().getChatId();
 
         List<UserSubscription> subscriptions = userSubscriptionService
-                .getActiveAndScheduledSubscriptions(telegramUser.getTelegramId());
+                .getActiveAndScheduledSubscriptions(
+                        telegramUser.getTelegramId(),
+                        paymentTelegramBot.getBotIdentifier()
+                );
 
         try {
             GenerationBalance generationBalance = generationBalanceService
-                    .getBalanceByTelegramId(telegramUser.getTelegramId());
+                    .getBalanceByTelegramIdAndBotIdentifier(
+                            telegramUser.getTelegramId(),
+                            paymentTelegramBot.getBotIdentifier()
+                    );
             paymentTelegramBot.sendReturnedMessage(chatId,
                     getBalanceString(telegramUser, subscriptions, generationBalance));
         } catch (GenerationBalanceNotFoundException e) {
@@ -51,7 +57,10 @@ public class PaymentBalanceUpdateHandler implements PaymentUpdateHandler {
         StringBuilder sb = new StringBuilder();
 
         UserSubscription subscription = userSubscriptionService
-                .getActiveSubscriptionOrNull(telegramUser.getTelegramId());
+                .getActiveSubscriptionOrNull(
+                        telegramUser.getTelegramId(),
+                        paymentTelegramBot.getBotIdentifier()
+                );
         String sub = subscription.getStatus().equals(UserSubscription.Status.ACTIVE)
                 ? "активна"
                 : "не активна"

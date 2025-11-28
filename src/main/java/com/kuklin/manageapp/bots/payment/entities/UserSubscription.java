@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.bots.payment.entities;
 
+import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -23,7 +24,8 @@ public class UserSubscription {
 
     @Enumerated(EnumType.STRING)
     private Status status;
-
+    @Enumerated(EnumType.STRING)
+    private BotIdentifier botIdentifier;
     private LocalDateTime startAt;
     private LocalDateTime endAt;
     @CreationTimestamp

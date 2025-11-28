@@ -9,6 +9,7 @@ import com.kuklin.manageapp.bots.payment.services.exceptions.generationbalance.G
 import com.kuklin.manageapp.bots.payment.services.exceptions.generationbalance.GenerationBalanceNotEnoughBalanceException;
 import com.kuklin.manageapp.bots.payment.services.exceptions.generationbalance.GenerationBalanceNotFoundException;
 import com.kuklin.manageapp.bots.payment.services.exceptions.PricingPlanNotFoundException;
+import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -16,7 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Сервис логирующий информацию об операциях, происходящий с балансом генераций пользователя
- *
+ * <p>
  * Отвечает за:
  * - операции с балансом генераций пользователя
  * - сохранение информации об операциях с балансом генераций
@@ -39,6 +40,7 @@ public class GenerationBalanceOperationService {
 
         GenerationBalanceOperation operation = createNewBalanceOperationCredit(
                 GenerationBalanceOperation.OperationSource.PAYMENT,
+                payment.getBotIdentifier(),
                 payment.getTelegramId(),
                 payment.getId(),
                 plan.getGenerationsCount(),
@@ -52,6 +54,7 @@ public class GenerationBalanceOperationService {
     @Transactional
     public GenerationBalanceOperation createNewBalanceOperationCredit(
             GenerationBalanceOperation.OperationSource source,
+            BotIdentifier botIdentifier,
             Long telegramId,
             Long paymentId,
             Long requestCount,
@@ -59,7 +62,7 @@ public class GenerationBalanceOperationService {
     ) throws GenerationBalanceNotFoundException, GenerationBalanceIllegalOperationDataException, GenerationBalanceNotEnoughBalanceException {
         return createNewBalanceOperation(
                 GenerationBalanceOperation.OperationType.CREDIT,
-                source, telegramId, paymentId, requestCount, comment, false
+                source, botIdentifier, telegramId, paymentId, requestCount, comment, false
         );
     }
 
@@ -67,6 +70,7 @@ public class GenerationBalanceOperationService {
     @Transactional
     public GenerationBalanceOperation createNewBalanceOperationDebit(
             GenerationBalanceOperation.OperationSource source,
+            BotIdentifier botIdentifier,
             Long telegramId,
             Long paymentId,
             Long requestCount,
@@ -75,7 +79,7 @@ public class GenerationBalanceOperationService {
     ) throws GenerationBalanceNotFoundException, GenerationBalanceIllegalOperationDataException, GenerationBalanceNotEnoughBalanceException {
         return createNewBalanceOperation(
                 GenerationBalanceOperation.OperationType.DEBIT,
-                source, telegramId, paymentId, requestCount, comment, isRefund
+                source, botIdentifier, telegramId, paymentId, requestCount, comment, isRefund
         );
     }
 
@@ -84,13 +88,15 @@ public class GenerationBalanceOperationService {
     public GenerationBalanceOperation createNewBalanceOperation(
             GenerationBalanceOperation.OperationType operationType,
             GenerationBalanceOperation.OperationSource source,
+            BotIdentifier botIdentifier,
             Long telegramId,
             Long paymentId,
             Long requestCount,
             String comment,
             boolean isRefund
     ) throws GenerationBalanceNotFoundException, GenerationBalanceIllegalOperationDataException, GenerationBalanceNotEnoughBalanceException {
-        GenerationBalance balance = generationBalanceService.getBalanceByTelegramId(telegramId);
+        GenerationBalance balance = generationBalanceService
+                .getBalanceByTelegramIdAndBotIdentifier(telegramId, botIdentifier);
 
         if (requestCount < 0) {
             log.error(GenerationBalanceIllegalOperationDataException.DEF_MSG);
@@ -122,6 +128,7 @@ public class GenerationBalanceOperationService {
                         .setPaymentId(paymentId)
                         .setComment(comment)
                         .setRequestCount(requestCount)
+                        .setBotIdentifier(botIdentifier)
         );
     }
 }

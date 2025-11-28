@@ -1,6 +1,7 @@
 package com.kuklin.manageapp.bots.payment.entities;
 
 import com.kuklin.manageapp.bots.payment.models.common.Currency;
+import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -30,6 +31,8 @@ public class PricingPlan {
     @Enumerated(EnumType.STRING)
     private PlanStatus planStatus;
     private String codeForOrderId;
+    @Enumerated(EnumType.STRING)
+    private BotIdentifier botIdentifier;
     @CreationTimestamp
     private LocalDateTime created;
 

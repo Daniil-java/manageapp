@@ -1,6 +1,6 @@
 package com.kuklin.manageapp.bots.payment.services;
 
-import com.kuklin.manageapp.bots.payment.integrations.YooKassaFeignClient;
+import com.kuklin.manageapp.bots.payment.components.integrations.YooKassaFeignClient;
 import com.kuklin.manageapp.bots.payment.models.yookassa.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

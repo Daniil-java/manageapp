@@ -1,4 +1,4 @@
-package com.kuklin.manageapp.bots.payment.telegram.handlers.providerprocessors;
+package com.kuklin.manageapp.bots.payment.components.providerprocessors;
 
 import com.kuklin.manageapp.bots.payment.entities.Payment;
 import com.kuklin.manageapp.bots.payment.entities.PricingPlan;

@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.bots.payment.entities;
 
+import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -34,6 +35,8 @@ public class GenerationBalanceOperation {
 
     private String comment;
     private Long requestCount;
+    @Enumerated(EnumType.STRING)
+    private BotIdentifier botIdentifier;
 
     @CreationTimestamp
     private LocalDateTime createdAt;

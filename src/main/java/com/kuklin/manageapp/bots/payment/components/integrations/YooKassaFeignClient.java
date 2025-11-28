@@ -1,4 +1,4 @@
-package com.kuklin.manageapp.bots.payment.integrations;
+package com.kuklin.manageapp.bots.payment.components.integrations;
 
 import com.kuklin.manageapp.bots.payment.configurations.YooKassaClientConfig;
 import com.kuklin.manageapp.bots.payment.models.yookassa.YookassaCreatePaymentRequest;

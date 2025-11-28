@@ -76,14 +76,8 @@ public class SuccessfulPaymentUpdateHandler implements PaymentUpdateHandler {
 
             } catch (PaymentValidationDataException e) {
                 paymentTelegramBot.sendReturnedMessage(chatId, VALIDATION_ERROR_MSG);
-            } catch (GenerationBalanceNotFoundException e) {
-                paymentTelegramBot.sendReturnedMessage(chatId, BALANCE_ERROR_MSG);
             } catch (PricingPlanNotFoundException e) {
                 paymentTelegramBot.sendReturnedMessage(chatId, PLAN_ERROR_MSG);
-            } catch (GenerationBalanceIllegalOperationDataException e) {
-                paymentTelegramBot.sendReturnedMessage(chatId, BALANCE_ILLEGAL_OPERATION_ERROR_MSG);
-            } catch (GenerationBalanceNotEnoughBalanceException e) {
-                paymentTelegramBot.sendReturnedMessage(chatId, BALANCE_NOT_ENOUGH_ERROR_MSG);
             } catch (PaymentException e) {
                 paymentTelegramBot.sendReturnedMessage(chatId, PAYMENT_ERROR_MSG);
             }

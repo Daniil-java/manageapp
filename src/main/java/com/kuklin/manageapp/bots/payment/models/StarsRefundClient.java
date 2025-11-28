@@ -1,4 +1,4 @@
-package com.kuklin.manageapp.bots.payment.telegram.handlers.telegrampay;
+package com.kuklin.manageapp.bots.payment.models;
 
 import java.net.URI;
 import java.net.http.HttpClient;

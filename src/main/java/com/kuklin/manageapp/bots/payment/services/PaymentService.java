@@ -15,6 +15,7 @@ import com.kuklin.manageapp.bots.payment.services.exceptions.subscription.Subscr
 import com.kuklin.manageapp.bots.payment.services.exceptions.subscription.SubscriptionNotFound;
 import com.kuklin.manageapp.bots.payment.services.exceptions.subscription.SubscriptionNotSubscribeException;
 import com.kuklin.manageapp.bots.payment.telegram.handlers.WebhookSuccessfulPaymentUpdateHandler;
+import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -47,7 +48,11 @@ public class PaymentService {
     private final PaymentFailedLogService paymentFailedLogService;
 
     //Создание новой записи о платеже
-    public Payment createNewPayment(Long telegramId, PricingPlan pricingPlan, Payment.Provider provider) {
+    public Payment createNewPayment(
+            BotIdentifier botIdentifier,
+            Long telegramId, PricingPlan pricingPlan,
+            Payment.Provider provider
+    ) {
 
         Integer starsAmount = pricingPlan.getCurrency().equals(Currency.XTR)
                 ? pricingPlan.getPriceMinor() :
@@ -56,16 +61,19 @@ public class PaymentService {
                 ? 0 :
                 pricingPlan.getPriceMinor();
 
-        Payment payment = paymentRepository.save(new Payment()
-                .setTelegramId(telegramId)
-                .setCurrency(pricingPlan.getCurrency())
-                .setStatus(Payment.PaymentStatus.CREATED)
-                .setProviderStatus(Payment.ProviderStatus.NEW)
-                .setPricingPlanId(pricingPlan.getId())
-                .setDescription(pricingPlan.getDescription())
-                .setAmount(amount)
-                .setProvider(provider)
-                .setStarsAmount(starsAmount));
+        Payment payment = paymentRepository.save(
+                new Payment()
+                        .setTelegramId(telegramId)
+                        .setCurrency(pricingPlan.getCurrency())
+                        .setStatus(Payment.PaymentStatus.CREATED)
+                        .setProviderStatus(Payment.ProviderStatus.NEW)
+                        .setPricingPlanId(pricingPlan.getId())
+                        .setDescription(pricingPlan.getDescription())
+                        .setAmount(amount)
+                        .setProvider(provider)
+                        .setStarsAmount(starsAmount)
+                        .setBotIdentifier(botIdentifier)
+        );
 
         payment.setTelegramInvoicePayload(generateTelegramInvoicePayload(payment.getId(), pricingPlan));
 
@@ -108,7 +116,11 @@ public class PaymentService {
     }
 
     // Обработка успешной оплаты
-    public Payment processTelegramSuccessfulPaymentAndGetOrNull(SuccessfulPayment successfulPayment, Long telegramId) throws PaymentException, GenerationBalanceIllegalOperationDataException, GenerationBalanceNotEnoughBalanceException, PricingPlanNotFoundException, GenerationBalanceNotFoundException {
+    public Payment processTelegramSuccessfulPaymentAndGetOrNull(
+            SuccessfulPayment successfulPayment, Long telegramId
+    )
+            throws PaymentException, PricingPlanNotFoundException
+    {
         Optional<Payment> byProviderId = paymentRepository
                 .findByProviderPaymentId(successfulPayment.getProviderPaymentChargeId());
         if (byProviderId.isPresent()) {
@@ -128,7 +140,7 @@ public class PaymentService {
                 .getPricingPlanById(payment.getPricingPlanId());
         //Если статус любой, но не CREATED - это значит, что это повторный платеж
         //Он может быть в случае телеграм-подписки
-        payment = processTelegramSubs(payment, plan);
+        payment = processTelegramSubs(payment, plan, plan.getBotIdentifier());
 
         String providerToken = payment.getCurrency().equals(Currency.XTR) ?
                 successfulPayment.getTelegramPaymentChargeId() :
@@ -139,7 +151,7 @@ public class PaymentService {
     }
 
     //Обработка телеграммовской подписки. Работает вместе с методом processTelegramSuccessfulPaymentAndGetOrNull
-    private Payment processTelegramSubs(Payment payment, PricingPlan plan) {
+    private Payment processTelegramSubs(Payment payment, PricingPlan plan, BotIdentifier botIdentifier) {
         if (!payment.getStatus().equals(Payment.PaymentStatus.CREATED)) {
             //Длительность подписки, допустимая в телеграмме.
             int telegramSubsDaysDuration = 30;
@@ -163,6 +175,7 @@ public class PaymentService {
                                 .setTelegramId(payment.getTelegramId())
                                 .setTelegramInvoicePayload(payment.getTelegramInvoicePayload())
                                 .setProviderStatus(Payment.ProviderStatus.SUCCEEDED)
+                                .setBotIdentifier(botIdentifier)
                 );
             }
         }
@@ -312,6 +325,7 @@ public class PaymentService {
                 //Списание оплаченных генераций
                 generationBalanceOperationService.createNewBalanceOperationDebit(
                         GenerationBalanceOperation.OperationSource.PAYMENT,
+                        plan.getBotIdentifier(),
                         payment.getTelegramId(),
                         payment.getId(),
                         plan.getGenerationsCount(),

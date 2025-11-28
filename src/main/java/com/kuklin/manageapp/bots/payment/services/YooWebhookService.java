@@ -2,7 +2,7 @@ package com.kuklin.manageapp.bots.payment.services;
 
 import com.kuklin.manageapp.bots.payment.entities.Payment;
 import com.kuklin.manageapp.bots.payment.entities.WebhookEvent;
-import com.kuklin.manageapp.bots.payment.integrations.YooKassaFeignClient;
+import com.kuklin.manageapp.bots.payment.components.integrations.YooKassaFeignClient;
 import com.kuklin.manageapp.bots.payment.models.YooWebhook;
 import com.kuklin.manageapp.bots.payment.models.yookassa.YookassaPaymentResponse;
 import com.kuklin.manageapp.bots.payment.repositories.WebhookEventRepository;

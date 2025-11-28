@@ -21,7 +21,6 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 @Slf4j
 public class WebhookSuccessfulPaymentUpdateHandler implements PaymentUpdateHandler{
     private final PaymentTelegramBot paymentTelegramBot;
-    private final PaymentBalanceUpdateHandler balanceUpdateHandler;
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
         return;

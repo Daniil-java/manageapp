@@ -1,10 +1,10 @@
 package com.kuklin.manageapp.bots.payment.entities;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.kuklin.manageapp.bots.payment.models.YooWebhook;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
 
 import java.time.LocalDateTime;

@@ -8,9 +8,9 @@ import com.kuklin.manageapp.bots.payment.services.PricingPlanService;
 import com.kuklin.manageapp.bots.payment.services.exceptions.PricingPlanNotFoundException;
 import com.kuklin.manageapp.bots.payment.services.exceptions.payment.PaymentNotFoundException;
 import com.kuklin.manageapp.bots.payment.telegram.PaymentTelegramBot;
-import com.kuklin.manageapp.bots.payment.telegram.handlers.providerprocessors.PaymentUrlProviderFactory;
-import com.kuklin.manageapp.bots.payment.telegram.handlers.providerprocessors.ProviderResult;
-import com.kuklin.manageapp.bots.payment.telegram.handlers.providerprocessors.SendInvoiceBuilder;
+import com.kuklin.manageapp.bots.payment.components.providerprocessors.PaymentUrlProviderFactory;
+import com.kuklin.manageapp.bots.payment.components.providerprocessors.ProviderResult;
+import com.kuklin.manageapp.bots.payment.components.providerprocessors.SendInvoiceBuilder;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.CreateInvoiceLinkWithTelegramSubscription;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
@@ -68,8 +68,10 @@ public class PaymentPayUpdateHandler implements PaymentUpdateHandler {
             paymentTelegramBot.sendReturnedMessage(chatId, PLAN_ERROR_MSG);
         }
 
-        Payment payment = paymentService
-                .createNewPayment(telegramUser.getTelegramId(), plan, provider);
+        Payment payment = paymentService.createNewPayment(
+                paymentTelegramBot.getBotIdentifier(),
+                telegramUser.getTelegramId(),
+                plan, provider);
 
         if (provider.getProviderFlow().equals(Payment.PaymentFlow.PROVIDER_REDIRECT)) {
             ProviderResult result = paymentUrlProviderFactory.handle(provider, payment, plan, chatId);
@@ -95,8 +97,7 @@ public class PaymentPayUpdateHandler implements PaymentUpdateHandler {
 
                 String url = paymentTelegramBot.execute(subscriptionLink);
                 paymentTelegramBot.sendReturnedMessage(chatId, url);
-            }
-            else {
+            } else {
                 SendInvoice sendInvoice = sendInvoiceBuilder.build(provider, payment, plan, chatId);
                 paymentTelegramBot.execute(sendInvoice);
             }

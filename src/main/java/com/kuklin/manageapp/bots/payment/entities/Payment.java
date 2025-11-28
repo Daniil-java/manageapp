@@ -1,6 +1,7 @@
 package com.kuklin.manageapp.bots.payment.entities;
 
 import com.kuklin.manageapp.bots.payment.models.common.Currency;
+import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.Getter;
@@ -36,6 +37,8 @@ public class Payment {
     private PaymentStatus status;
     @Enumerated(EnumType.STRING)
     private ProviderStatus providerStatus;
+    @Enumerated(EnumType.STRING)
+    private BotIdentifier botIdentifier;
     @CreationTimestamp
     private LocalDateTime createdAt = LocalDateTime.now();
     private LocalDateTime paidAt;

@@ -35,7 +35,10 @@ public class TelegramUserService {
                 );
 
         if (optionalTelegramUser.isPresent()) {
-            generationBalanceService.createNewBalanceIfNotExist(optionalTelegramUser.get().getTelegramId());
+            generationBalanceService.createNewBalanceIfNotExist(
+                    optionalTelegramUser.get().getTelegramId(),
+                    botIdentifier
+            );
             return optionalTelegramUser.get();
         }
         TelegramUser tgUser = TelegramUser.convertFromTelegram(telegramUser)
@@ -43,7 +46,8 @@ public class TelegramUserService {
                 .setResponseCount(DEFAULT_RESPONSE_COUNT);
         tgUser = telegramUserRepository.save(tgUser);
         generationBalanceService.createNewBalanceIfNotExist(
-                tgUser.getTelegramId()
+                tgUser.getTelegramId(),
+                botIdentifier
         );
 
         return tgUser;
