@@ -28,6 +28,8 @@ public interface VacancyRepository extends JpaRepository<Vacancy, Long> {
 
     Optional<Vacancy> findByHhIdAndWorkFilterId(long hhId, long workFilterId);
 
+    Optional<Vacancy> findFirstByHhIdAndStatus(long hhId, VacancyStatus status);
+    List<Vacancy> findAllByHhId(long hhId);
     Optional<Vacancy> findByHhIdAndDescriptionNotNull(long hhId);
 
     Optional<Vacancy> findByIdAndDescriptionNotNull(long vacancyId);

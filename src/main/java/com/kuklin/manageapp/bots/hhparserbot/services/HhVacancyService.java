@@ -32,22 +32,75 @@ public class HhVacancyService {
                     Составляй сообщение от лица компании: \n %s
                     """;
 
+    //    private static final String AI_JSON_REQUEST = """
+//            Ты — помощник по разбору вакансий. На вход ты получаешь текст вакансии.
+//
+//            Требуется сформировать объект JSON со строго следующими полями:
+//            - generatedDescription: краткое резюме вакансии (3–5 предложений на русском), передай основные моменты.
+//            - keySkills: массив строк — только hard skills (языки, фреймворки, технологии, инструменты). Все элементы в нижнем регистре, без дублей, без софт-скиллов.
+//            - strictlyRequiredSkills: массив строк — только hard skills, которые явно помечены как строго обязательные. Признаки: формулировки вида «обязательно», «must have», «необходим опыт», «обязательные требования», «без этого не рассматриваем», разделы «Требования», «Must have» и т.п. Все элементы в нижнем регистре, без дублей.
+//
+//            Правила вывода:
+//            - Ответь ТОЛЬКО валидным JSON-объектом без какого-либо дополнительного текста до или после.
+//            - Имена полей строго: generatedDescription, keySkills, strictlyRequiredSkills.
+//            - Если подходящих навыков нет — верни пустой массив [] (не null).
+//            - НЕ ДОБАВЛЯЙ MARKDOWN, ТРОЙНЫЕ КАВЫЧКИ, ЦИТАТЫб ПОЯСНЕНИЯ.
+//
+//            Текст вакансии:
+//            %s
+//            """;
     private static final String AI_JSON_REQUEST = """
             Ты — помощник по разбору вакансий. На вход ты получаешь текст вакансии.
 
-            Требуется сформировать объект JSON со строго следующими полями:
-            - generatedDescription: краткое резюме вакансии (3–5 предложений на русском), передай основные моменты.
-            - keySkills: массив строк — только hard skills (языки, фреймворки, технологии, инструменты). Все элементы в нижнем регистре, без дублей, без софт-скиллов.
-            - strictlyRequiredSkills: массив строк — только hard skills, которые явно помечены как строго обязательные. Признаки: формулировки вида «обязательно», «must have», «необходим опыт», «обязательные требования», «без этого не рассматриваем», разделы «Требования», «Must have» и т.п. Все элементы в нижнем регистре, без дублей.
-
-            Правила вывода:
-            - Ответь ТОЛЬКО валидным JSON-объектом без какого-либо дополнительного текста до или после.
-            - Имена полей строго: generatedDescription, keySkills, strictlyRequiredSkills.
-            - Если подходящих навыков нет — верни пустой массив [] (не null).
-            - НЕ ДОБАВЛЯЙ MARKDOWN, ТРОЙНЫЕ КАВЫЧКИ, ЦИТАТЫб ПОЯСНЕНИЯ.
-
             Текст вакансии:
             %s
+
+            Задача:
+            На основе текста вакансии сформировать один JSON-объект со следующей структурой:
+
+            {
+              "generatedDescription": "",   // краткое резюме вакансии (3–5 предложений на русском)
+              "keySkills": [],              // массив строк с hard skills
+              "strictlyRequiredSkills": []  // массив строк с обязательными hard skills
+            }
+
+            Правила по полям:
+            1. generatedDescription
+               - Кратко опиши вакансию 3–5 предложениями на русском.
+               - Передай основные обязанности, стек, уровень, условия.
+
+            2. keySkills
+               - Массив строк.
+               - Только hard skills: языки программирования, фреймворки, технологии, инструменты.
+               - НЕ включай софт-скиллы, личные качества, общие фразы.
+               - Все элементы в нижнем регистре.
+               - Без дублей.
+               - Не придумывай навыки, которых нет в вакансии.
+
+            3. strictlyRequiredSkills
+               - Массив строк.
+               - Только те hard skills, которые ЯВНО обозначены как строго обязательные.
+               - Признаки: формулировки вида «обязательно», «must have», «необходим опыт», «обязательные требования», «без этого не рассматриваем», разделы «Требования», «Must have» и т.п.
+               - Все элементы в нижнем регистре.
+               - Без дублей.
+               - По возможности это подмножество keySkills.
+               - Если таких явных обязательных навыков нет — верни [].
+
+            Общие правила:
+            1. Верни ТОЛЬКО ОДИН валидный JSON-объект.
+            2. Не добавляй никакого текста до или после JSON.
+               Нельзя:
+               - Префиксы/суффиксы вроде "Вот ваш JSON:".
+               - Markdown-обрамление ``` или ```json.
+               - Кавычки вокруг всего ответа.
+               - Комментарии вне JSON.
+            3. Массивы keySkills и strictlyRequiredSkills всегда должны быть массивами:
+               - Если нет подходящих навыков — верни [] (не null).
+            4. JSON должен быть синтаксически корректным:
+               - Строки в двойных кавычках.
+               - Без лишних запятых в конце.
+               - Корневой элемент — объект с полями generatedDescription, keySkills, strictlyRequiredSkills.
+            ВЕРНИ ТОЛЬКО ЧИСТЫЙ JSON, БЕЗ ЛЮБЫХ ОБРАМЛЕНИЙ, ПОДПИСЕЙ ИЛИ ПОЯСНЕНИЙ.
             """;
 
     private static final String COVER_LETTER =
@@ -140,9 +193,14 @@ public class HhVacancyService {
 
     public void parseHhVacancies(List<HhSimpleResponseDto> hhSimpleResponseDtos, WorkFilter workFilter) {
         //Обработка полученного списка ДТО-вакансий
+
+        //Ограничение на количество новый вакансий для одной ссылки
+        int limit = 50;
         for (HhSimpleResponseDto dto : hhSimpleResponseDtos) {
+            if (limit-- <= 0) break;
             //Проверка на наличие уже существующих дубликатов в БД
-            if (!vacancyRepository.findByHhIdAndWorkFilterId(dto.getHhId(), workFilter.getId())
+            if (!vacancyRepository.findByHhIdAndWorkFilterId(
+                            dto.getHhId(), workFilter.getId())
                     .isPresent()) {
                 //Конвертирование ДТО в сущность вакансии и сохранение
                 vacancyRepository.save(new Vacancy()
@@ -186,10 +244,12 @@ public class HhVacancyService {
     }
 
     //Сохранение сгенерированного описания вакансии, посредством обращения к OpenAI API
-    public void fetchGenerateDescriptionAndUpdateEntity(Vacancy vacancy) {
+    public void fetchGenerateDescriptionAndUpdateEntity(Vacancy vacancy) throws JsonProcessingException {
         //Получение сгенерированного краткого описания, на основе описания полного
         String response = openAiProviderProcessor
-                .fetchResponse(components.getAiKey(), String.format(AI_JSON_REQUEST, vacancy.getDescription()));
+                .fetchResponse(
+                        components.getAiKey(),
+                        String.format(AI_JSON_REQUEST, vacancy.getDescription()));
 
         try {
             HhAiResponse hhAiResponse = objectMapper.readValue(response, HhAiResponse.class);
@@ -202,7 +262,8 @@ public class HhVacancyService {
 
             hhSkillService.saveSkills(hhAiResponse.getKeySkills(), SkillSource.AI);
         } catch (JsonProcessingException e) {
-            log.error("Generate description deserialization error!");
+            log.error("Generated description deserialization error!");
+            throw e;
         }
     }
 
@@ -229,4 +290,15 @@ public class HhVacancyService {
     public Long getCount() {
         return vacancyRepository.count();
     }
+
+    // NEW: обёртка, чтобы шедулер мог найти уже обработанную вакансию по hhId
+    public Vacancy findProcessedByHhId(long hhId) {
+        Optional<Vacancy> opt = vacancyRepository.findFirstByHhIdAndStatus(hhId, VacancyStatus.PROCESSED);
+        return opt.orElse(null);
+    }
+
+    public void saveAll(List<Vacancy> vacancies) {
+        vacancyRepository.saveAll(vacancies);
+    }
+
 }

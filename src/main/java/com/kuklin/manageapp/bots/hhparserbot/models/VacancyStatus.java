@@ -12,6 +12,7 @@ public enum VacancyStatus {
     NOTIFICATED,
 
     CREATED,
+    OPEN_AI_ERROR,
     NOT_FOUND_ERROR,
     PARSED,
     PROCESSED,

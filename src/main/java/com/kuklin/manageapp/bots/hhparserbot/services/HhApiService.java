@@ -36,7 +36,10 @@ public class HhApiService {
                     .get();
             //Выборка необходимых элементов(вакансий) страницы
             Elements elements = document.select("a[data-qa='serp-item__title']");
+            //Ограничене на количество новых вакансий
+            int limit = 50;
             for (Element element: elements) {
+                if (limit-- <= 0) break;;
                 //Получение ссылки на вакансию
                 String vacancyUrl = element.attr("href");
                 //Валидация полученной ссылки
