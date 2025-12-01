@@ -20,8 +20,8 @@ public class TelegramCaloriesBotKeyComponents {
     public TelegramCaloriesBotKeyComponents(Environment environment) {
         this.key = environment.getProperty("CALORY_BOT_TOKEN");
         log.info("Generation key initiated (CALORY_BOT_TOKEN)");
-        this.aiKey = environment.getProperty("GENERATION_TOKEN");
-        log.info("Ai key initiated (CALORY_BOT)");
+        this.aiKey = environment.getProperty("CALORY_GENERATION_TOKEN");
+        log.info("Ai key initiated (CALORY_GENERATION_TOKEN)");
         this.geminiAiKey = environment.getProperty("GEMINI_TOKEN");
         log.info("Gemini Ai key initiated (CALORY_BOT)");
         this.deepseekAiKey = environment.getProperty("DEEPSEEK_TOKEN");

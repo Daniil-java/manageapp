@@ -17,7 +17,7 @@ public class TelegramPomidoroTimerBotKeyComponents {
     public TelegramPomidoroTimerBotKeyComponents(Environment environment) {
         this.key = environment.getProperty("TGBOT_TOKEN");
         log.info("Generation key initiated (TGBOT_TOKEN)");
-        this.aiKey = environment.getProperty("GENERATION_TOKEN");
-        log.info("Ai key initiated (TGBOT_TOKEN)");
+        this.aiKey = environment.getProperty("POMIDORO_GENERATION_TOKEN");
+        log.info("Ai key initiated (POMIDORO_GENERATION_TOKEN)");
     }
 }

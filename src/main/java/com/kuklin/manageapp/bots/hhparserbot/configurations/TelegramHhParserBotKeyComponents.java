@@ -17,7 +17,7 @@ public class TelegramHhParserBotKeyComponents {
     public TelegramHhParserBotKeyComponents(Environment environment) {
         this.key = environment.getProperty("HHTGBOT_TOKEN");
         log.info("Generation key initiated (workhunttg_bot)");
-        this.aiKey = environment.getProperty("GENERATION_TOKEN");
+        this.aiKey = environment.getProperty("HH_GENERATION_TOKEN");
         log.info("Ai key initiated (HHTGBOT_TOKEN)");
     }
 }

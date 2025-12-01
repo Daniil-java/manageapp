@@ -20,8 +20,8 @@ public class TelegramPaymentBotKeyComponents {
     public TelegramPaymentBotKeyComponents(Environment environment) {
         this.key = environment.getProperty("PAYMENT_BOT_TOKEN");
         log.info("Generation key initiated (PAYMENT_BOT_TOKEN)");
-        this.aiKey = environment.getProperty("GENERATION_TOKEN");
-        log.info("Ai key initiated (PAYMENT_BOT)");
+        this.aiKey = environment.getProperty("PAYMENT_GENERATION_TOKEN");
+        log.info("Ai key initiated (PAYMENT_GENERATION_TOKEN)");
 
         this.providerToken = environment.getProperty("PAYMENT_PROVIDER_TOKEN");
         this.shopId = environment.getProperty("PAYMENT_SHOP_ID");

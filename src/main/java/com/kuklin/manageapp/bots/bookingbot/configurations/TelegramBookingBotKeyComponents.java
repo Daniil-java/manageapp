@@ -18,7 +18,7 @@ public class TelegramBookingBotKeyComponents {
     public TelegramBookingBotKeyComponents(Environment environment) {
         this.key = environment.getProperty("SLOT_MANAGER_BOT_TOKEN");
         log.info("Generation key initiated (SLOT_MANAGER_BOT_TOKEN)");
-        this.aiKey = environment.getProperty("GENERATION_TOKEN");
-        log.info("Ai key initiated (SLOT_MANAGER_BOT_TOKEN)");
+        this.aiKey = environment.getProperty("BOOKING_GENERATION_TOKEN");
+        log.info("Ai key initiated (BOOKING_GENERATION_TOKEN)");
     }
 }
