@@ -5,3 +5,16 @@ databaseChangeLog:
   - include:
       file: /scripts/0.0.2.sql
       relativeToChangelogFile: true
+  - include:
+      file: /scripts/0.0.3.sql
+      relativeToChangelogFile: true
+  - include:
+      file: /scripts/0.0.4.sql
+      relativeToChangelogFile: true
+  - include:
+      file: /scripts/0.0.5.sql
+      relativeToChangelogFile: true
+  - include:
+      file: /scripts/0.0.6.sql
+      relativeToChangelogFile: true
+

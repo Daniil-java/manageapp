@@ -15,4 +15,9 @@ public class WebController {
     public String getFreelancePage() {
         return "freelance";
     }
+
+    @GetMapping("/pomidorotimer")
+    public String getPomidoro() {
+        return "timer";
+    }
 }

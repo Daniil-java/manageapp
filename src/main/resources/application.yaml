@@ -30,4 +30,8 @@ integrations:
   write-timeout: 5000
   openai-api:
     url: https://api.openai.com/v1/
+  hh-api:
+    url: https://api.hh.ru/
 
+locale:
+  tag: ru-RU
