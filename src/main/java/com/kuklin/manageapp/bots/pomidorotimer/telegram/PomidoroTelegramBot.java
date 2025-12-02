@@ -14,6 +14,7 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 @Component
 @Slf4j
 public class PomidoroTelegramBot extends TelegramBot {
+    public static final BotIdentifier BOT_IDENTIFIER = BotIdentifier.POMIDORO_BOT;
     @Autowired
     private PomidoroTelegramFacade pomidoroTelegramFacade;
     @Autowired
@@ -43,11 +44,11 @@ public class PomidoroTelegramBot extends TelegramBot {
 
     @Override
     public BotIdentifier getBotIdentifier() {
-        return BotIdentifier.POMIDORO_BOT;
+        return BOT_IDENTIFIER;
     }
 
     @Override
     public String getBotUsername() {
-        return BotIdentifier.POMIDORO_BOT.getBotUsername();
+        return BOT_IDENTIFIER.getBotUsername();
     }
 }

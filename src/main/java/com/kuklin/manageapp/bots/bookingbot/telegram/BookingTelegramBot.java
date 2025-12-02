@@ -10,6 +10,7 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 
 @Component
 public class BookingTelegramBot extends TelegramBot {
+    public static final BotIdentifier BOT_IDENTIFIER = BotIdentifier.BOOKING_BOT;
     @Autowired
     private BookingTelegramFacade bookingTelegramFacade;
     @Autowired
@@ -32,11 +33,11 @@ public class BookingTelegramBot extends TelegramBot {
 
     @Override
     public BotIdentifier getBotIdentifier() {
-        return BotIdentifier.BOOKING_BOT;
+        return BOT_IDENTIFIER;
     }
 
     @Override
     public String getBotUsername() {
-        return BotIdentifier.BOOKING_BOT.getBotUsername();
+        return BOT_IDENTIFIER.getBotUsername();
     }
 }

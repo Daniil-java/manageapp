@@ -162,7 +162,12 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler{
             log.info("Аудиофайла не существует.");
             return null;
         }
-        return openAiIntegrationService.fetchAudioResponse(caloriesBotKeyComponents.getAiKey(), inputAudioFile);
+        return openAiIntegrationService.fetchAudioResponse(
+                caloriesBotKeyComponents.getAiKey(),
+                inputAudioFile,
+                CalorieTelegramBot.BOT_IDENTIFIER,
+                this.getClass().getSimpleName()
+        );
     }
 
     private Map<ChatModel, DishDto> processPhotoOrNull(Message message) {

@@ -9,6 +9,7 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 
 @Component
 public class HhTelegramBot extends TelegramBot {
+    public static final BotIdentifier BOT_IDENTIFIER = BotIdentifier.HH_BOT;
     @Autowired
     private HhTelegramFacade hhTelegramFacade;
     public HhTelegramBot(TelegramHhParserBotKeyComponents components) {
@@ -21,11 +22,11 @@ public class HhTelegramBot extends TelegramBot {
 
     @Override
     public BotIdentifier getBotIdentifier() {
-        return BotIdentifier.HH_BOT;
+        return BOT_IDENTIFIER;
     }
 
     @Override
     public String getBotUsername() {
-        return BotIdentifier.HH_BOT.getBotUsername();
+        return BOT_IDENTIFIER.getBotUsername();
     }
 }

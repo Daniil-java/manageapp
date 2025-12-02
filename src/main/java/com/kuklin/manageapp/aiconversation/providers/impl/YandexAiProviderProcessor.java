@@ -3,6 +3,7 @@ package com.kuklin.manageapp.aiconversation.providers.impl;
 import com.kuklin.manageapp.aiconversation.integrations.YandexAiFeignClient;
 import com.kuklin.manageapp.aiconversation.models.yandex.YandexAiRequest;
 import com.kuklin.manageapp.aiconversation.models.yandex.YandexAiResponse;
+import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -13,7 +14,13 @@ import org.springframework.stereotype.Component;
 public class YandexAiProviderProcessor {
     private final YandexAiFeignClient yandexClient;
 
-    public String fetchResponse(String aiKey, String folderId, String content) {
+    public String fetchResponse(
+            String aiKey,
+            String folderId,
+            String content,
+            BotIdentifier botIdentifier,
+            String uniqLog) {
+        log.info(botIdentifier + "PHOTO! Uniq log: " + uniqLog);
         YandexAiRequest yandexAiRequest = YandexAiRequest.makeDefaultRequest(content, folderId);
 
         YandexAiResponse response = yandexClient.generate(

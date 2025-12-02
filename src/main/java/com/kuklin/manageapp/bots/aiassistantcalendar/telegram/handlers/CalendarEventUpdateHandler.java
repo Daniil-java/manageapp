@@ -138,7 +138,12 @@ public class CalendarEventUpdateHandler implements AssistantUpdateHandler {
             log.info("Аудиофайла не существует.");
             return null;
         }
-        return openAiProviderProcessor.fetchAudioResponse(components.getAiKey(), inputAudioFile);
+        return openAiProviderProcessor.fetchAudioResponse(
+                components.getAiKey(),
+                inputAudioFile,
+                AssistantTelegramBot.BOT_IDENTIFIER,
+                this.getClass().getSimpleName()
+        );
     }
 
     public static InlineKeyboardMarkup getInlineMessage(String eventId) {

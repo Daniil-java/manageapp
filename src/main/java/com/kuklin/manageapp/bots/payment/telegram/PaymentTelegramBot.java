@@ -12,6 +12,7 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 @Component
 @Slf4j
 public class PaymentTelegramBot extends TelegramBot {
+    public static final BotIdentifier BOT_IDENTIFIER = BotIdentifier.PAYMENT;
     @Autowired
     private PaymentTelegramFacade paymentTelegramFacade;
     @Autowired
@@ -34,11 +35,11 @@ public class PaymentTelegramBot extends TelegramBot {
 
     @Override
     public String getBotUsername() {
-        return BotIdentifier.PAYMENT.name();
+        return BOT_IDENTIFIER.getBotUsername();
     }
 
     @Override
     public BotIdentifier getBotIdentifier() {
-        return BotIdentifier.PAYMENT;
+        return BOT_IDENTIFIER;
     }
 }

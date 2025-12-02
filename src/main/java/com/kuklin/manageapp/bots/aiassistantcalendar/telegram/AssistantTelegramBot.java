@@ -12,6 +12,7 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 @Component
 @Slf4j
 public class AssistantTelegramBot extends TelegramBot {
+    public static final BotIdentifier BOT_IDENTIFIER = BotIdentifier.ASSISTANT_BOT;
     @Autowired
     private AssistantTelegramFacade assistantTelegramFacade;
     @Autowired
@@ -32,11 +33,11 @@ public class AssistantTelegramBot extends TelegramBot {
 
     @Override
     public BotIdentifier getBotIdentifier() {
-        return BotIdentifier.ASSISTANT_BOT;
+        return BOT_IDENTIFIER;
     }
 
     @Override
     public String getBotUsername() {
-        return BotIdentifier.ASSISTANT_BOT.getBotUsername();
+        return BOT_IDENTIFIER.getBotUsername();
     }
 }

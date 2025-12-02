@@ -12,7 +12,7 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 @Component
 @Slf4j
 public class CalorieTelegramBot extends TelegramBot {
-
+    public static final BotIdentifier BOT_IDENTIFIER = BotIdentifier.CALORIE_BOT;
     @Autowired
     private TelegramCalorieBotFacade telegramCalorieBotFacade;
     @Autowired
@@ -33,12 +33,12 @@ public class CalorieTelegramBot extends TelegramBot {
 
     @Override
     public String getBotUsername() {
-        return BotIdentifier.CALORIE_BOT.name();
+        return BOT_IDENTIFIER.getBotUsername();
     }
 
     @Override
     public BotIdentifier getBotIdentifier() {
-        return BotIdentifier.CALORIE_BOT;
+        return BOT_IDENTIFIER;
     }
 }
 

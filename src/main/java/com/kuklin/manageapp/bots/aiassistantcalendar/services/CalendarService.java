@@ -11,6 +11,7 @@ import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcesso
 import com.kuklin.manageapp.bots.aiassistantcalendar.configurations.TelegramAiAssistantCalendarBotKeyComponents;
 import com.kuklin.manageapp.bots.aiassistantcalendar.models.ActionKnot;
 import com.kuklin.manageapp.bots.aiassistantcalendar.models.CalendarEventAiResponse;
+import com.kuklin.manageapp.bots.aiassistantcalendar.telegram.AssistantTelegramBot;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -184,7 +185,9 @@ public class CalendarService {
                         getRemoveRequestByEventsList(todayEvents),
                         actionKnot.getCalendarEventAiResponse().getSummary()
                         + actionKnot.getCalendarEventAiResponse().getDescription()
-                )
+                ),
+                AssistantTelegramBot.BOT_IDENTIFIER,
+                this.getClass().getSimpleName()
         );
         List<String> eventIds = objectMapper.readValue(aiResponse, new TypeReference<List<String>>() {});
 

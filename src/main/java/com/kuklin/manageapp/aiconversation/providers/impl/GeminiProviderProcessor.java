@@ -7,6 +7,7 @@ import com.kuklin.manageapp.aiconversation.models.enums.ProviderVariant;
 import com.kuklin.manageapp.aiconversation.models.gemini.GeminiRequest;
 import com.kuklin.manageapp.aiconversation.models.gemini.GeminiResponse;
 import com.kuklin.manageapp.aiconversation.providers.ProviderProcessor;
+import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -34,7 +35,15 @@ public class GeminiProviderProcessor implements ProviderProcessor {
      * imgUrl — data URL вида "data:image/jpeg;base64,...."
      */
     @Override
-    public AiResponse fetchResponsePhotoOrNull(String imgUrl, String content, ChatModel chatModel, String aiKey) {
+    public AiResponse fetchResponsePhotoOrNull(
+            String imgUrl,
+            String content,
+            ChatModel chatModel,
+            String aiKey,
+            BotIdentifier botIdentifier,
+            String uniqLog
+    ) {
+        log.info(botIdentifier + "PHOTO! Uniq log: " + uniqLog);
         try {
             // 1) Разбираем data URL на mime и чистые base64-данные
             DataUrlParts data = splitDataUrl(imgUrl);

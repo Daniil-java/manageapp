@@ -7,6 +7,7 @@ import com.kuklin.manageapp.aiconversation.models.enums.ProviderVariant;
 import com.kuklin.manageapp.aiconversation.models.openai.OpenAiChatCompletionRequest;
 import com.kuklin.manageapp.aiconversation.models.openai.OpenAiChatCompletionResponse;
 import com.kuklin.manageapp.aiconversation.providers.ProviderProcessor;
+import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -24,8 +25,16 @@ public class DeepSeekProviderProcessor implements ProviderProcessor {
     }
 
     @Override
-    public AiResponse fetchResponsePhotoOrNull(String imgUrl, String content, ChatModel chatModel, String aiKey) {
+    public AiResponse fetchResponsePhotoOrNull(
+            String imgUrl,
+            String content,
+            ChatModel chatModel,
+            String aiKey,
+            BotIdentifier botIdentifier,
+            String uniqLog
+    ) {
         try {
+            log.info(botIdentifier + "PHOTO! Uniq log: " + uniqLog);
             OpenAiChatCompletionRequest req =
                     OpenAiChatCompletionRequest.makeDefaultImgRequest(content, imgUrl)
                             .setModel(chatModel.getName());

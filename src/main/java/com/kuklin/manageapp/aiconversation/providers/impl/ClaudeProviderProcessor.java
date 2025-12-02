@@ -7,6 +7,7 @@ import com.kuklin.manageapp.aiconversation.models.claude.ClaudeResponse;
 import com.kuklin.manageapp.aiconversation.models.enums.ChatModel;
 import com.kuklin.manageapp.aiconversation.models.enums.ProviderVariant;
 import com.kuklin.manageapp.aiconversation.providers.ProviderProcessor;
+import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -18,7 +19,6 @@ import java.util.Set;
 @Slf4j
 @RequiredArgsConstructor
 public class ClaudeProviderProcessor implements ProviderProcessor {
-
     private final ClaudeFeignClient claudeFeignClient;
 
     // Добавь, если нужно больше форматов
@@ -32,7 +32,15 @@ public class ClaudeProviderProcessor implements ProviderProcessor {
     }
 
     @Override
-    public AiResponse fetchResponsePhotoOrNull(String imgUrlOrDataUrl, String content, ChatModel chatModel, String aiKey) {
+    public AiResponse fetchResponsePhotoOrNull(
+            String imgUrlOrDataUrl,
+            String content,
+            ChatModel chatModel,
+            String aiKey,
+            BotIdentifier botIdentifier,
+            String uniqLog
+    ) {
+        log.info(botIdentifier + "PHOTO! Uniq log: " + uniqLog);
         int maxTokensLimit = 1024;
         String anthropicApiVersion = "2023-06-01";
         try {

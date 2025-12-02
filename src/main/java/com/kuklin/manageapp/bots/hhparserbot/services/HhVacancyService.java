@@ -8,6 +8,7 @@ import com.kuklin.manageapp.bots.hhparserbot.entities.Vacancy;
 import com.kuklin.manageapp.bots.hhparserbot.entities.WorkFilter;
 import com.kuklin.manageapp.bots.hhparserbot.models.*;
 import com.kuklin.manageapp.bots.hhparserbot.repositories.VacancyRepository;
+import com.kuklin.manageapp.bots.hhparserbot.telegram.HhTelegramBot;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -249,7 +250,10 @@ public class HhVacancyService {
         String response = openAiProviderProcessor
                 .fetchResponse(
                         components.getAiKey(),
-                        String.format(AI_JSON_REQUEST, vacancy.getDescription()));
+                        String.format(AI_JSON_REQUEST, vacancy.getDescription()),
+                        HhTelegramBot.BOT_IDENTIFIER,
+                        "vacancy id: " + vacancy.getHhId()
+                );
 
         try {
             HhAiResponse hhAiResponse = objectMapper.readValue(response, HhAiResponse.class);
@@ -274,7 +278,12 @@ public class HhVacancyService {
             //Получение сгенерированного сопроводительного письма, на основе полного описания
             String vacancyDescription = "Ключевые навыки: " + vacancy.getKeySkills() + "\n" + vacancy.getDescription();
             String request = String.format(COVER_LETTER, vacancyDescription, vacancy.getEmployerDescription(), userInfo);
-            return openAiProviderProcessor.fetchResponse(components.getAiKey(), request);
+            return openAiProviderProcessor.fetchResponse(
+                    components.getAiKey(),
+                    request,
+                    HhTelegramBot.BOT_IDENTIFIER,
+                    "vacancy id: " + vacancy.getHhId()
+            );
         }
         return null;
     }

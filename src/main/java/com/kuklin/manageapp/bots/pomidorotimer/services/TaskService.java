@@ -11,6 +11,7 @@ import com.kuklin.manageapp.bots.pomidorotimer.models.mappers.TaskMapper;
 import com.kuklin.manageapp.bots.pomidorotimer.models.mappers.UserMapper;
 import com.kuklin.manageapp.bots.pomidorotimer.models.task.Status;
 import com.kuklin.manageapp.bots.pomidorotimer.repositories.TaskRepository;
+import com.kuklin.manageapp.bots.pomidorotimer.telegram.PomidoroTelegramBot;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -137,7 +138,9 @@ public class TaskService {
         String response =
                 openAiProviderProcessor.fetchResponse(
                         components.getAiKey(),
-                        String.format(AI_REQUEST, name, comment)
+                        String.format(AI_REQUEST, name, comment),
+                        PomidoroTelegramBot.BOT_IDENTIFIER,
+                        this.getClass().getSimpleName()
                 );
 
         List<Task> taskList = taskMapper.dtoListToEntityList(objectMapper.readValue(
