@@ -7,10 +7,11 @@ import com.google.api.services.calendar.Calendar;
 import com.google.api.services.calendar.model.Event;
 import com.google.api.services.calendar.model.EventDateTime;
 import com.google.api.services.calendar.model.Events;
+import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcessor;
 import com.kuklin.manageapp.bots.aiassistantcalendar.configurations.TelegramAiAssistantCalendarBotKeyComponents;
 import com.kuklin.manageapp.bots.aiassistantcalendar.models.ActionKnot;
 import com.kuklin.manageapp.bots.aiassistantcalendar.models.CalendarEventAiResponse;
-import com.kuklin.manageapp.common.services.OpenAiIntegrationService;
+import com.kuklin.manageapp.bots.aiassistantcalendar.telegram.AssistantTelegramBot;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -27,7 +28,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class CalendarService {
-    private final OpenAiIntegrationService openAiIntegrationService;
+    private final OpenAiProviderProcessor openAiProviderProcessor;
     private final ObjectMapper objectMapper;
     private final Calendar calendarService;
     private final TelegramAiAssistantCalendarBotKeyComponents components;
@@ -177,14 +178,16 @@ public class CalendarService {
     public List<Event> removeEventInCalendarByMessage(String calendarId, ActionKnot actionKnot) throws IOException {
         List<Event> todayEvents = getTodayEvents(calendarId);
 
-        String aiResponse = openAiIntegrationService.fetchResponse(
+        String aiResponse = openAiProviderProcessor.fetchResponse(
                 components.getAiKey(),
                 String.format(
                         AI_REMOVE_REQUEST,
                         getRemoveRequestByEventsList(todayEvents),
                         actionKnot.getCalendarEventAiResponse().getSummary()
                         + actionKnot.getCalendarEventAiResponse().getDescription()
-                )
+                ),
+                AssistantTelegramBot.BOT_IDENTIFIER,
+                this.getClass().getSimpleName()
         );
         List<String> eventIds = objectMapper.readValue(aiResponse, new TypeReference<List<String>>() {});
 
