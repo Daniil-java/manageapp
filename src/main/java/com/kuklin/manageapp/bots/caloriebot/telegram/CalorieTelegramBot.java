@@ -12,13 +12,11 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 @Slf4j
 public class CalorieTelegramBot extends TelegramBot {
 
-    private String aiKey;
     @Autowired
     private TelegramCalorieBotFacade telegramCalorieBotFacade;
 
     public CalorieTelegramBot(TelegramCaloriesBotKeyComponents telegramCaloriesBotKeyComponents) {
         super(telegramCaloriesBotKeyComponents.getKey());
-        this.aiKey = telegramCaloriesBotKeyComponents.getAiKey();
     }
 
     @Override
@@ -29,9 +27,6 @@ public class CalorieTelegramBot extends TelegramBot {
     @Override
     public String getBotUsername() {
         return BotIdentifier.CALORIE_BOT.name();
-    }
-    public String getAiKey() {
-        return aiKey;
     }
 
     @Override
