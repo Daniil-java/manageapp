@@ -10,63 +10,76 @@ import com.google.api.services.calendar.CalendarScopes;
 import com.google.auth.Credentials;
 import com.google.auth.http.HttpCredentialsAdapter;
 import com.google.auth.oauth2.ServiceAccountCredentials;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.InputStream;
+import java.util.Optional;
 
 @Configuration
+@Slf4j
 public class GoogleApiConfig {
+
     @Bean
-    public Calendar googleCalendarService() throws Exception {
-        // Загружаем учетные данные сервисного аккаунта
-        Credentials creds = loadServiceAccountCredentials();
+    public Calendar googleCalendarService() {
+        try {
+            Optional<Credentials> credsOpt = loadServiceAccountCredentialsOptional();
 
-        // Оборачиваем их в HttpRequestInitializer, чтобы Google API мог авторизовывать запросы
-        HttpRequestInitializer requestInitializer = new HttpCredentialsAdapter(creds);
+            NetHttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
+            JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
 
-        // Создаём защищённый HTTP-транспорт для общения с Google API
-        NetHttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
+            // Если креды есть — используем их; если нет — "пустой" инициалайзер (NO-AUTH)
+            HttpRequestInitializer requestInitializer = credsOpt
+                    .<HttpRequestInitializer>map(HttpCredentialsAdapter::new)
+                    .orElse(request -> { /* no-op */ });
 
-        // JsonFactory отвечает за сериализацию/десериализацию JSON в Google API
-        JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
+            if (credsOpt.isEmpty()) {
+                log.warn("Service account JSON не найден. Создаю NO-AUTH клиент Google Calendar. " +
+                        "Приложение поднимется, но запросы к API будут получать 401.");
+            }
 
-        return new Calendar.Builder(httpTransport, jsonFactory, requestInitializer)
-                .setApplicationName("Spring Google Calendar Adder")
-                .build();
+            return new Calendar.Builder(httpTransport, jsonFactory, requestInitializer)
+                    .setApplicationName(credsOpt.isPresent()
+                            ? "Spring Google Calendar Adder"
+                            : "Spring Google Calendar Adder (NO-AUTH STUB)")
+                    .build();
+
+        } catch (Exception e) {
+            // На крайняк — жёсткий фолбэк: вообще без авторизации, чтобы не уронить контекст
+            log.error("Не удалось инициализировать Google Calendar клиент, создаю STUB", e);
+            NetHttpTransport transport = new NetHttpTransport();
+            JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
+            return new Calendar.Builder(transport, jsonFactory, request -> { /* no-op */ })
+                    .setApplicationName("Spring Google Calendar Adder (HARD STUB)")
+                    .build();
+        }
     }
 
     /**
-     * Загружает учетные данные сервисного аккаунта.
-     * 1. Сначала пытается взять путь из переменной окружения GOOGLE_APPLICATION_CREDENTIALS.
-     * 2. Если переменная не задана — ищет файл service-account.json в resources.
-     * 3. Если не найдено — кидает исключение.
+     * Пытается загрузить креды; если их нет/ошибка — возвращает Optional.empty()
      */
-    private Credentials loadServiceAccountCredentials() throws IOException {
-        String path = System.getenv("GOOGLE_APPLICATION_CREDENTIALS");
-        InputStream in;
+    private Optional<Credentials> loadServiceAccountCredentialsOptional() {
+        try {
+            String path = System.getenv("GOOGLE_APPLICATION_CREDENTIALS");
+            InputStream in;
 
-        if (path != null && !path.isBlank()) {
-            // Если путь задан в переменной окружения — читаем файл оттуда
-            in = new FileInputStream(path);
-        } else {
-            // Иначе пробуем найти файл в ресурсах проекта
-            in = getClass().getResourceAsStream("/service-account.json");
-            if (in == null) {
-                throw new IllegalStateException(
-                        "Service account JSON not found. " +
-                                "Set GOOGLE_APPLICATION_CREDENTIALS or place service-account.json in resources."
+            if (path != null && !path.isBlank()) {
+                in = new FileInputStream(path);
+            } else {
+                in = getClass().getResourceAsStream("/service-account.json");
+                if (in == null) return Optional.empty();
+            }
+
+            try (in) {
+                return Optional.of(
+                        ServiceAccountCredentials.fromStream(in).createScoped(CalendarScopes.CALENDAR)
                 );
             }
-        }
-
-        try (in) {
-            // Создаём объект Credentials и ограничиваем его область действия только Google Calendar API
-            return ServiceAccountCredentials.fromStream(in)
-                    .createScoped(CalendarScopes.CALENDAR);
+        } catch (Exception ex) {
+            log.warn("Не удалось загрузить service-account креды: {}", ex.getMessage());
+            return Optional.empty();
         }
     }
-
 }

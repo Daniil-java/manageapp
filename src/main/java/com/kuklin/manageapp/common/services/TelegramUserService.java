@@ -14,21 +14,34 @@ import java.util.Optional;
 @RequiredArgsConstructor
 @Slf4j
 public class TelegramUserService {
+    private static final Long DEFAULT_RESPONSE_COUNT = 0L;
     private final TelegramUserRepository telegramUserRepository;
 
-    public TelegramUser getTelegramUserByIdOrNull(Long telegramId) {
-        return telegramUserRepository.findById(telegramId).orElse(null);
+    public TelegramUser getTelegramUserByTelegramIdAndBotIdentifierOrNull(Long telegramId, BotIdentifier botIdentifier) {
+        return telegramUserRepository
+                .findTelegramUserByBotIdentifierAndTelegramId(botIdentifier, telegramId)
+                .orElse(null)
+                ;
     }
 
-    public TelegramUser createOrGetUserByTelegram(BotIdentifier botIdentifier,
-                                                  User telegramUser) {
+    public TelegramUser createOrGetUserByTelegram(
+            BotIdentifier botIdentifier, User telegramUser) {
+
         Optional<TelegramUser> optionalTelegramUser =
-                telegramUserRepository.findById(telegramUser.getId());
+                telegramUserRepository.findTelegramUserByBotIdentifierAndTelegramId(
+                        botIdentifier, telegramUser.getId()
+                );
 
         if (optionalTelegramUser.isPresent()) {
             return optionalTelegramUser.get();
         }
-        TelegramUser tgUser = TelegramUser.convertFromTelegram(telegramUser);
-        return telegramUserRepository.save(tgUser.setBotIdentifier(botIdentifier));
+        TelegramUser tgUser = TelegramUser.convertFromTelegram(telegramUser)
+                .setBotIdentifier(botIdentifier)
+                .setResponseCount(DEFAULT_RESPONSE_COUNT);
+        return telegramUserRepository.save(tgUser);
+    }
+
+    public TelegramUser save(TelegramUser telegramUser) {
+        return telegramUserRepository.save(telegramUser);
     }
 }
