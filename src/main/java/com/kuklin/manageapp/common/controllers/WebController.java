@@ -15,4 +15,14 @@ public class WebController {
     public String getFreelancePage() {
         return "freelance";
     }
+
+    @GetMapping
+    public String getPersonalPage() {
+        return "personal";
+    }
+
+    @GetMapping("/pomidorotimer")
+    public String getPomidoro() {
+        return "timer";
+    }
 }
