@@ -1,7 +1,33 @@
 server:
-  port: 8080
+  port: 8095
 
 spring:
   application:
-  name: manageapp
+    name: manageapp
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    password: password
+    username: postgres
+    url: jdbc:postgresql://localhost:5453/manageapp
+  jpa:
+    database: postgresql
+    properties:
+      hibernate:
+        format_sql: true
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+
+feign:
+  client:
+    config:
+      default:
+        connectTimeout: 5000
+        readTimeout: 1000000
+        loggerLevel: basic
+
+integrations:
+  connect-timeout: 5000
+  read-timeout: 1000000
+  write-timeout: 5000
+  openai-api:
+    url: https://api.openai.com/v1/
 
