@@ -1,4 +1,4 @@
-package com.kuklin.manageapp.payment;
+package com.kuklin.manageapp.payment.components.paymentfacades;
 
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;

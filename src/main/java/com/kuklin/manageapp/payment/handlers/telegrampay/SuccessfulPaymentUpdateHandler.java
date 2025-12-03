@@ -10,7 +10,7 @@ import com.kuklin.manageapp.common.components.TelegramBotRegistry;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.Command;
-import com.kuklin.manageapp.payment.CommonPaymentFacade;
+import com.kuklin.manageapp.payment.components.paymentfacades.CommonPaymentFacade;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -18,11 +18,13 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.payments.SuccessfulPayment;
 
 /**
- * Обработчик сообщения об успешной оплате, которое присылает телеграм
- * <p>
+ * Обработчик сообщения об успешной оплате, которое присылает Telegram.
+ *
  * Отвечает за:
- * - принятие запроса из телеграм о статусе оплаты
- * - пополнение баланса пользователя
+ * - передачу SuccessfulPayment в CommonPaymentFacade;
+ * - обработку случая, когда платёж уже был обработан (идемпотентность);
+ * - отправку пользователю сообщений об успехе/ошибке;
+ * - повторный вывод баланса (через PaymentBalanceUpdateHandler).
  */
 @RequiredArgsConstructor
 @Component

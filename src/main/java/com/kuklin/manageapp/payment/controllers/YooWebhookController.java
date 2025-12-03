@@ -12,7 +12,15 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-//Контроллер вебхуков
+/**
+ * HTTP-контроллер для приёма вебхуков от ЮKassa.
+ *
+ * Отвечает за:
+ * - приём уведомления;
+ * - логирование факта вызова;
+ * - немедленную отдачу HTTP 200, как того требует ЮKassa;
+ * - передачу payload в асинхронный сервис для дальнейшей обработки.
+ */
 @Slf4j
 @RestController
 @RequiredArgsConstructor

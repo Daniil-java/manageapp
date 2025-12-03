@@ -7,10 +7,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
- * Реализация интерфейса PaymentUrlProvider, для провайдера ЮКасса
+ * Реализация PaymentUrlProvider для провайдера ЮКасса.
  *
  * Отвечает за:
- * -возврат ссылки и идентификатора
+ * - создание платежа через YooKassaPaymentService;
+ * - возврат URL для редиректа и идентификатора платежа у провайдера.
  */
 @Component
 @RequiredArgsConstructor

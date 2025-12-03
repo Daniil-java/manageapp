@@ -17,9 +17,8 @@ import org.telegram.telegrambots.meta.api.methods.invoices.SendInvoice;
 @Component
 @RequiredArgsConstructor
 public class SendInvoiceBuilder {
-    //Если оплата проходит звездами, то токен провайдера телеграммом не проверяется.
-    //Токен не должен быть null, но пустой строкой быть не может,
-    // из-за особенносьей версии библиотеки телаграма
+    // Если оплата проходит звёздами (XTR), Telegram не проверяет providerToken.
+    // Библиотека не допускает null/пустую строку, поэтому кладём фиктивный токен.
     private final static String TOKEN_DUMMY = "xtr_dummy";
     private final TelegramPaymentBotKeyComponents components;
 

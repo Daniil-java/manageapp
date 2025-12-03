@@ -5,7 +5,7 @@ import com.kuklin.manageapp.common.components.TelegramBotRegistry;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.Command;
-import com.kuklin.manageapp.payment.CommonPaymentFacade;
+import com.kuklin.manageapp.payment.components.paymentfacades.CommonPaymentFacade;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.AnswerPreCheckoutQuery;
@@ -14,11 +14,11 @@ import org.telegram.telegrambots.meta.api.objects.payments.PreCheckoutQuery;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 /**
- * Обработчик PRE_CHECK_QUERY, который присылает телеграм
+ * Обработчик PRE_CHECKOUT_QUERY, который присылает Telegram.
  *
  * Отвечает за:
- * -валидацию данных о проходящем платеже
- *
+ * - валидацию данных о платеже через CommonPaymentFacade;
+ * - отправку AnswerPreCheckoutQuery с ok=true/false в зависимости от проверки.
  */
 @RequiredArgsConstructor
 @Component

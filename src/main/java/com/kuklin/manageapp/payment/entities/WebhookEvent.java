@@ -9,6 +9,18 @@ import lombok.experimental.Accessors;
 
 import java.time.LocalDateTime;
 
+/**
+ * Журнал вебхуков от внешних провайдеров (ЮKassa, Telegram и т.п.).
+ *
+ * Хранит:
+ * - тип провайдера и событие (provider, event);
+ * - objectId (id платежа или рефанда у провайдера);
+ * - IP-адрес отправителя;
+ * - сырой JSON-пейлоад;
+ * - флаги/время обработки и возможную ошибку.
+ *
+ * Используется для идемпотентной обработки вебхуков и отладки.
+ */
 @Entity
 @Data
 @NoArgsConstructor
@@ -56,6 +68,12 @@ public class WebhookEvent {
             return t != null ? t : UNKNOWN;
         }
     }
+    /**
+     * Фабричный метод для создания записи о входящем вебхуке.
+     *
+     * Сериализует rawBodyJson в JSON-строку и выставляет базовые поля:
+     * provider, event, objectId, remoteAddr, payload, receivedAt, processed=false.
+     */
     public static WebhookEvent incoming(WebhookProvider provider,
                                         WebhookEventType event,
                                         String objectId,
@@ -77,12 +95,14 @@ public class WebhookEvent {
                 .setProcessed(false);
     }
 
+    // Помечает событие как успешно обработанное, выставляет processedAt и очищает error.
     public void markProcessed() {
         this.processed = true;
         this.processedAt = LocalDateTime.now();
         this.error = null;
     }
 
+    // Помечает событие как обработанное с ошибкой, сохраняет текст ошибки.
     public void markError(String error) {
         this.processed = false;
         this.error = error;

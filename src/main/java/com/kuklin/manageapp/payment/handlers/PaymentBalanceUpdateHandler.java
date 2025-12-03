@@ -3,16 +3,18 @@ package com.kuklin.manageapp.payment.handlers;
 import com.kuklin.manageapp.common.components.TelegramBotRegistry;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgutils.Command;
-import com.kuklin.manageapp.payment.CommonPaymentFacade;
+import com.kuklin.manageapp.payment.components.paymentfacades.CommonPaymentFacade;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
 /**
- * Обработчик комманды Command.PAYMENT_BALANCE
- * <p>
+ * Обработчик команды Command.PAYMENT_BALANCE.
+ *
  * Отвечает за:
- * - отправку баланса пользователю
+ * - запрос баланса генераций и подписок у CommonPaymentFacade
+ *   для текущего бота (по BotIdentifier из TelegramUser);
+ * - отправку пользователю текстового резюме по балансу и активным подпискам.
  */
 @Component
 @RequiredArgsConstructor

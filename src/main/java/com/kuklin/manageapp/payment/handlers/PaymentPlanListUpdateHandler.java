@@ -6,7 +6,7 @@ import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;
-import com.kuklin.manageapp.payment.CommonPaymentFacade;
+import com.kuklin.manageapp.payment.components.paymentfacades.CommonPaymentFacade;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Update;
@@ -15,10 +15,11 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMa
 import java.util.List;
 
 /**
- * Обработчик комманды Command.PAYMENT_PAYLOAD_PLAN
- * <p>
+ * Обработчик команды Command.PAYMENT_PAYLOAD_PLAN.
+ *
  * Отвечает за:
- * - возвращение сообщение с клавиатурой-выбором покупки;
+ * - получение актуальных тарифных планов для текущего бота;
+ * - отправку сообщения с inline-клавиатурой, где каждая кнопка — отдельный тариф.
  */
 @RequiredArgsConstructor
 @Component
@@ -49,7 +50,8 @@ public class PaymentPlanListUpdateHandler implements PaymentUpdateHandler {
                 );
     }
 
-    //Возвращает клавиатуру с ТАРИФОМ (в данном случае 10 генераций)
+    // Формирует inline-клавиатуру с тарифами:
+    // каждая кнопка содержит название плана и callback с его id.
     private InlineKeyboardMarkup getKeyboardPlan(List<PricingPlan> planList) {
         TelegramKeyboard.TelegramKeyboardBuilder builder = TelegramKeyboard.builder();
 

@@ -8,7 +8,7 @@ import com.kuklin.manageapp.common.components.TelegramBotRegistry;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.Command;
-import com.kuklin.manageapp.payment.CommonPaymentFacade;
+import com.kuklin.manageapp.payment.components.paymentfacades.CommonPaymentFacade;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -17,11 +17,15 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 /**
- * Обработчик комманды Command.PAYMENT_PLAN
- * <p>
+ * Обработчик команды Command.PAYMENT_PLAN.
+ *
  * Отвечает за:
- * - возвращение телеграм инвойса (сообщения с оплатой);
- * - создании записи о новом платеже в БД
+ * - извлечение из callback-data id тарифного плана и выбранного провайдера;
+ * - запуск платежного флоу через CommonPaymentFacade;
+ * - в зависимости от результата:
+ *      - отправляет редирект-URL (провайдер по ссылке),
+ *      - создаёт ссылку на Telegram-подписку,
+ *      - отправляет обычный Telegram-инвойс.
  */
 @RequiredArgsConstructor
 @Component
@@ -93,6 +97,8 @@ public class PaymentPayUpdateHandler implements PaymentUpdateHandler {
         }
     }
 
+    // Извлекает провайдера из callback-data вида:
+    // <command>::<planId>::<providerName>
     private Payment.Provider extractProvider(String callbackData) {
         String[] parts = callbackData.split(TelegramBot.DEFAULT_DELIMETER);
 
@@ -108,7 +114,7 @@ public class PaymentPayUpdateHandler implements PaymentUpdateHandler {
         }
     }
 
-    //Извлечение данных о тарифном плане из Callback-data
+    // Извлекает id тарифного плана из callback-data.
     private Long extractPricingPlanId(String callbackData) {
         String[] parts = callbackData.split(TelegramBot.DEFAULT_DELIMETER);
 

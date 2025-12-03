@@ -9,12 +9,21 @@ import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;
-import com.kuklin.manageapp.payment.CommonPaymentFacade;
+import com.kuklin.manageapp.payment.components.paymentfacades.CommonPaymentFacade;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 
+/**
+ * Обработчик команды Command.PAYMENT_PROVIDER.
+ *
+ * Отвечает за:
+ * - выбор способа оплаты (провайдера) для выбранного тарифного плана;
+ * - для XTR-планов (звёзды) сразу прокидывает управление в PaymentPayUpdateHandler,
+ *   минуя выбор провайдера;
+ * - для остальных валют показывает клавиатуру с доступными провайдерами.
+ */
 @Component
 @RequiredArgsConstructor
 public class PaymentProviderChoiceUpdateHandler implements PaymentUpdateHandler {
@@ -64,6 +73,8 @@ public class PaymentProviderChoiceUpdateHandler implements PaymentUpdateHandler 
         return parts[1];
     }
 
+    // Формирует inline-клавиатуру со списком провайдеров,
+    // исключая STARS (звёзды обрабатываются автоматически без выбора).
     private InlineKeyboardMarkup getKeyboardProvider(String planId) {
         TelegramKeyboard.TelegramKeyboardBuilder builder = TelegramKeyboard.builder();
 

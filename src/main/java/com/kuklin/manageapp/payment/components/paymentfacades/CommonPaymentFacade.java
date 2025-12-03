@@ -1,4 +1,4 @@
-package com.kuklin.manageapp.payment;
+package com.kuklin.manageapp.payment.components.paymentfacades;
 
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.CreateInvoiceLinkWithTelegramSubscription;
@@ -53,7 +53,12 @@ public class CommonPaymentFacade implements PaymentFacade {
         return pricingPlanService.getPricingPlanById(id);
     }
 
-    // === Создание Payment + SendInvoice ===
+    // === Создание Payment и запуск платёжного флоу ===
+    // В зависимости от провайдера и тарифного плана:
+    // - создаёт запись Payment;
+    // - для провайдеров по ссылке отдаёт редирект-URL;
+    // - для Telegram-подписки отдаёт объект CreateInvoiceLinkWithTelegramSubscription;
+    // - для обычных платежей отдаёт SendInvoice.
     @Override
     public PlanPaymentResult startPlanPayment(
             BotIdentifier botIdentifier,
@@ -143,6 +148,16 @@ public class CommonPaymentFacade implements PaymentFacade {
 
     // === Успешная оплата ===
 
+    /**
+     * Обработка успешного Telegram-платежа.
+     * Внутри paymentService:
+     *  - проводится валидация;
+     *  - обновляется статус платежа и провайдера;
+     *  - создаются/обновляются подписки или баланс генераций;
+     *  - логируются ошибки.
+     *
+     * Возвращает Payment или null, если этот платёж уже был обработан (идемпотентность).
+     */
     @Override
     public Payment handleSuccessfulPayment(SuccessfulPayment successfulPayment,
                                            Long telegramId)

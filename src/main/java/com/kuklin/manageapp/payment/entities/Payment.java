@@ -12,6 +12,23 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
+/**
+ * Запись о платеже внутри системы.
+ *
+ * Отражает:
+ * - пользователя (telegramId),
+ * - провайдера и его идентификатор (provider, providerPaymentId),
+ * - привязанный тарифный план (pricingPlanId),
+ * - сумму в минимальных единицах валюты (amount) и количество звёзд (starsAmount),
+ * - текущий статус платежа в нашей системе и у провайдера,
+ * - BotIdentifier, к которому относится платёж,
+ * - временные метки создания/оплаты/отмены.
+ *
+ * Для Telegram-звёзд:
+ * - currency = XTR, amount = 0, starsAmount > 0;
+ * Для обычных валют:
+ * - currency = RUB/..., amount > 0, starsAmount = 0.
+ */
 @Entity
 @Table(name = "payments")
 @Data
@@ -64,8 +81,8 @@ public class Payment {
     }
 
     public enum PaymentFlow {
-        TELEGRAM_INVOICE,
-        PROVIDER_REDIRECT
+        TELEGRAM_INVOICE,   // платёж идёт через Telegram-инвойс
+        PROVIDER_REDIRECT   // платёж идёт через внешнюю ссылку (ЮKassa и т.п.)
     }
 
     public enum PaymentStatus {

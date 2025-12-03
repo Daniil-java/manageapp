@@ -9,6 +9,20 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
+/**
+ * Подписка пользователя на тарифный план.
+ *
+ * Статус:
+ * - ACTIVE — действует прямо сейчас;
+ * - SCHEDULED — начнётся в будущем;
+ * - EXPIRED — истекла;
+ * - CANCELLED — досрочно отменена.
+ *
+ * Привязана к:
+ * - тарифу (pricingPlanId),
+ * - платежу (paymentId),
+ * - конкретному боту (botIdentifier).
+ */
 @Entity
 @Table(name = "user_subscription")
 @Data

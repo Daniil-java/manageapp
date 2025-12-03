@@ -9,6 +9,15 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
 
+/**
+ * Лог операции над балансом генераций пользователя.
+ *
+ * Каждая запись описывает одну операцию:
+ * - тип (CREDIT/DEBIT/REFUND),
+ * - источник (PAYMENT/GENERATION/MANUAL),
+ * - связь с paymentId,
+ * - сколько запросов списали/начислили.
+ */
 @Entity
 @Table(name = "generation_balance_operations")
 @Data
