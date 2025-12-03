@@ -1,12 +1,11 @@
 package com.kuklin.manageapp.bots.kworkparser.services;
 
+import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcessor;
 import com.kuklin.manageapp.bots.kworkparser.entities.Kwork;
 import com.kuklin.manageapp.bots.kworkparser.entities.UserKworkNotification;
 import com.kuklin.manageapp.bots.kworkparser.repositories.UserKworkNotificationRepository;
 import com.kuklin.manageapp.bots.kworkparser.telegram.KworkParserTelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.ThreadUtil;
-import com.kuklin.manageapp.common.services.OpenAiIntegrationService;
-import com.kuklin.manageapp.common.services.TelegramService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -20,7 +19,7 @@ import java.util.Optional;
 @Slf4j
 public class UserKworkNotificationService {
     private final UserKworkNotificationRepository userKworkNotificationRepository;
-    private final OpenAiIntegrationService openAiIntegrationService;
+    private final OpenAiProviderProcessor openAiIntegrationService;
     private final KworkParserTelegramBot kworkParserTelegramBot;
 //    private static final String AI_REQUEST =
 //            """
