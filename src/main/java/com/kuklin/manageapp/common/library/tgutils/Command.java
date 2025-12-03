@@ -15,7 +15,9 @@ public enum Command {
     ASSISTANT_VOICE("voice", BotIdentifier.ASSISTANT_BOT),
     ASSISTANT_TODAY("/today", BotIdentifier.ASSISTANT_BOT),
     ASSISTANT_SET_CALENDARID("/set", BotIdentifier.ASSISTANT_BOT),
-    ASSISTANT_DELETE("/delete", BotIdentifier.ASSISTANT_BOT)
+    ASSISTANT_DELETE("/delete", BotIdentifier.ASSISTANT_BOT),
+    KWORK_START("/start", BotIdentifier.KWORK),
+    KWORK_URL("/url", BotIdentifier.KWORK)
     ;
 
     private final String commandText;
