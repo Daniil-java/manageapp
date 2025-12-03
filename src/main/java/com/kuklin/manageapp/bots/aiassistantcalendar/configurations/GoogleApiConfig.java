@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.bots.aiassistantcalendar.configurations;
 
+
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.HttpRequestInitializer;
 import com.google.api.client.http.javanet.NetHttpTransport;
@@ -9,64 +10,76 @@ import com.google.api.services.calendar.Calendar;
 import com.google.api.services.calendar.CalendarScopes;
 import com.google.auth.Credentials;
 import com.google.auth.http.HttpCredentialsAdapter;
+import com.google.auth.oauth2.GoogleCredentials;
 import com.google.auth.oauth2.ServiceAccountCredentials;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.util.Base64;
+import java.util.Collections;
+import java.util.Optional;
 
 @Configuration
+@Slf4j
 public class GoogleApiConfig {
+
+    private static final String ENV = "CAL_ASSISTANT_GOOGLE_CREDENTIALS_B64";
+
     @Bean
-    public Calendar googleCalendarService() throws Exception {
-        // Загружаем учетные данные сервисного аккаунта
-        Credentials creds = loadServiceAccountCredentials();
+    public Calendar assistantCalendarService() {
+        try {
+            Optional<Credentials> credsOpt = loadAssistantServiceAccount();
+            NetHttpTransport http = GoogleNetHttpTransport.newTrustedTransport();
+            JsonFactory json = JacksonFactory.getDefaultInstance();
 
-        // Оборачиваем их в HttpRequestInitializer, чтобы Google API мог авторизовывать запросы
-        HttpRequestInitializer requestInitializer = new HttpCredentialsAdapter(creds);
+            HttpRequestInitializer init = credsOpt
+                    .<HttpRequestInitializer>map(HttpCredentialsAdapter::new)
+                    .orElse(req -> { /* NO-AUTH */ });
 
-        // Создаём защищённый HTTP-транспорт для общения с Google API
-        NetHttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
-
-        // JsonFactory отвечает за сериализацию/десериализацию JSON в Google API
-        JsonFactory jsonFactory = JacksonFactory.getDefaultInstance();
-
-        return new Calendar.Builder(httpTransport, jsonFactory, requestInitializer)
-                .setApplicationName("Spring Google Calendar Adder")
-                .build();
-    }
-
-    /**
-     * Загружает учетные данные сервисного аккаунта.
-     * 1. Сначала пытается взять путь из переменной окружения GOOGLE_APPLICATION_CREDENTIALS.
-     * 2. Если переменная не задана — ищет файл service-account.json в resources.
-     * 3. Если не найдено — кидает исключение.
-     */
-    private Credentials loadServiceAccountCredentials() throws IOException {
-        String path = System.getenv("GOOGLE_APPLICATION_CREDENTIALS");
-        InputStream in;
-
-        if (path != null && !path.isBlank()) {
-            // Если путь задан в переменной окружения — читаем файл оттуда
-            in = new FileInputStream(path);
-        } else {
-            // Иначе пробуем найти файл в ресурсах проекта
-            in = getClass().getResourceAsStream("/service-account.json");
-            if (in == null) {
-                throw new IllegalStateException(
-                        "Service account JSON not found. " +
-                                "Set GOOGLE_APPLICATION_CREDENTIALS or place service-account.json in resources."
-                );
+            if (credsOpt.isEmpty()) {
+                log.warn("Assistant Calendar: creds not found in {} → NO-AUTH client (вызовы вернут 401).", ENV);
             }
-        }
 
-        try (in) {
-            // Создаём объект Credentials и ограничиваем его область действия только Google Calendar API
-            return ServiceAccountCredentials.fromStream(in)
-                    .createScoped(CalendarScopes.CALENDAR);
+            return new Calendar.Builder(http, json, init)
+                    .setApplicationName("ManageApp Assistant Calendar")
+                    .build();
+
+        } catch (Exception e) {
+            log.error("Assistant Calendar: init failed, fallback NO-AUTH", e);
+            return new Calendar.Builder(new NetHttpTransport(), JacksonFactory.getDefaultInstance(), req -> {})
+                    .setApplicationName("ManageApp Assistant Calendar (NO-AUTH)")
+                    .build();
         }
     }
 
+    private Optional<Credentials> loadAssistantServiceAccount() {
+        try (InputStream in = resolveAssistantCredsStream()) {
+            if (in == null) return Optional.empty();
+
+            // Читаем как сервис-аккаунт
+            ServiceAccountCredentials sa = ServiceAccountCredentials.fromStream(in);
+
+            // Добавляем нужный скоуп → это уже GoogleCredentials
+            GoogleCredentials scoped = sa.createScoped(Collections.singleton(CalendarScopes.CALENDAR));
+
+            // Логнем email сервис-аккаунта (берём из исходного sa)
+            log.info("Assistant Calendar SA loaded: email={}", sa.getClientEmail());
+
+            return Optional.of(scoped); // возвращаем как Credentials
+        } catch (Exception e) {
+            log.warn("Assistant Calendar: cannot load credentials from {}: {}", ENV, e.getMessage());
+            return Optional.empty();
+        }
+    }
+
+    private InputStream resolveAssistantCredsStream() {
+        String b64 = System.getenv(ENV);
+        if (b64 == null || b64.isBlank()) return null;
+        log.info("Assistant Calendar: loading creds from env {}", ENV);
+        byte[] bytes = Base64.getDecoder().decode(b64); // декодируем байты, не ломаем \n в private_key
+        return new ByteArrayInputStream(bytes);
+    }
 }

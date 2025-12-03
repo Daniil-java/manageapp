@@ -12,7 +12,9 @@ public enum BotIdentifier {
     BOOKING_BOT("@slotmanage_bot"),
     HH_BOT("@workhunttg_bot"),
     POMIDORO_BOT("@taskGPT_Bot"),
-    AVIA_BOT("@deparr_bot")
+    AVIA_BOT("@deparr_bot"),
+    PAYMENT("@payment"),
+    INTERVIEW("@interviewtrainer_bot")
     ;
 
     private final String botUsername;
