@@ -20,10 +20,13 @@ public class TelegramUserService {
         return telegramUserRepository.findById(telegramId).orElse(null);
     }
 
-    public TelegramUser createOrGetUserByTelegram(BotIdentifier botIdentifier,
-                                                  User telegramUser) {
+    public TelegramUser createOrGetUserByTelegram(
+            BotIdentifier botIdentifier, User telegramUser) {
+
         Optional<TelegramUser> optionalTelegramUser =
-                telegramUserRepository.findById(telegramUser.getId());
+                telegramUserRepository.findTelegramUserByBotIdentifierAndTelegramId(
+                        botIdentifier, telegramUser.getId()
+                );
 
         if (optionalTelegramUser.isPresent()) {
             return optionalTelegramUser.get();
