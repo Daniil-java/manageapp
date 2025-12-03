@@ -7,6 +7,7 @@ import com.kuklin.manageapp.aiconversation.models.enums.ProviderVariant;
 import com.kuklin.manageapp.aiconversation.models.gemini.GeminiRequest;
 import com.kuklin.manageapp.aiconversation.models.gemini.GeminiResponse;
 import com.kuklin.manageapp.aiconversation.providers.ProviderProcessor;
+import com.kuklin.manageapp.bots.metrics.services.MetricsAiLogService;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +22,7 @@ import java.util.Set;
 public class GeminiProviderProcessor implements ProviderProcessor {
 
     private final GeminiFeignClient geminiFeignClient;
+    private final MetricsAiLogService metricsAiLogService;
 
     private static final Set<String> SUPPORTED_IMAGE_MIME = Set.of(
             "image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"
@@ -44,6 +46,7 @@ public class GeminiProviderProcessor implements ProviderProcessor {
             String uniqLog
     ) {
         log.info(botIdentifier + "PHOTO! Uniq log: " + uniqLog);
+        increaseMetricsLog();
         try {
             // 1) Разбираем data URL на mime и чистые base64-данные
             DataUrlParts data = splitDataUrl(imgUrl);
@@ -126,6 +129,10 @@ public class GeminiProviderProcessor implements ProviderProcessor {
         }
 
         return new DataUrlParts(mime, payload);
+    }
+
+    private void increaseMetricsLog() {
+        metricsAiLogService.incrementForProvider(getProviderName());
     }
 
     private String normalizeMime(String ct) {

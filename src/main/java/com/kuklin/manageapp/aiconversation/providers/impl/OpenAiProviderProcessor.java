@@ -8,6 +8,7 @@ import com.kuklin.manageapp.aiconversation.models.openai.OpenAiChatCompletionReq
 import com.kuklin.manageapp.aiconversation.models.openai.OpenAiChatCompletionResponse;
 import com.kuklin.manageapp.aiconversation.providers.AiTextClient;
 import com.kuklin.manageapp.aiconversation.providers.ProviderProcessor;
+import com.kuklin.manageapp.bots.metrics.services.MetricsAiLogService;
 import com.kuklin.manageapp.common.library.models.ByteArrayMultipartFile;
 import com.kuklin.manageapp.common.library.models.TranscriptionResponse;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
@@ -16,17 +17,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 @Component
 @Slf4j
 @RequiredArgsConstructor
 public class OpenAiProviderProcessor implements ProviderProcessor, AiTextClient {
 
     private final OpenAiFeignClient openAiFeignClient;
+    private final MetricsAiLogService metricsAiLogService;
 
     @Override
     public AiResponse fetchResponsePhotoOrNull(
@@ -39,7 +36,7 @@ public class OpenAiProviderProcessor implements ProviderProcessor, AiTextClient 
         log.info(botIdentifier + "PHOTO! Uniq log: " + uniqLog);
         OpenAiChatCompletionRequest request =
                 OpenAiChatCompletionRequest.makeDefaultImgRequest(content, imagerUrl, chatModel);
-
+        increaseMetricsLog();
         OpenAiChatCompletionResponse response =
                 openAiFeignClient.generate("Bearer " + aiKey, request);
 
@@ -55,6 +52,7 @@ public class OpenAiProviderProcessor implements ProviderProcessor, AiTextClient 
     }
 
     private String fetchResponse(String aiKey, OpenAiChatCompletionRequest request) {
+        increaseMetricsLog();
         OpenAiChatCompletionResponse response =
                 openAiFeignClient.generate("Bearer " + aiKey, request);
 
@@ -79,6 +77,7 @@ public class OpenAiProviderProcessor implements ProviderProcessor, AiTextClient 
                 content
         );
 
+        increaseMetricsLog();
         TranscriptionResponse response = openAiFeignClient.transcribeAudio(
                 "Bearer " + aiKey,
                 multipartFile,
@@ -86,6 +85,10 @@ public class OpenAiProviderProcessor implements ProviderProcessor, AiTextClient 
         );
 
         return response.getText();
+    }
+
+    private void increaseMetricsLog() {
+        metricsAiLogService.incrementForProvider(getProviderName());
     }
 
     @Override

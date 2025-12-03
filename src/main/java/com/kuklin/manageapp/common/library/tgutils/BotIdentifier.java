@@ -14,7 +14,8 @@ public enum BotIdentifier {
     POMIDORO_BOT("@taskGPT_Bot"),
     AVIA_BOT("@deparr_bot"),
     PAYMENT("@payment"),
-    INTERVIEW("@interviewtrainer_bot")
+    INTERVIEW("@interviewtrainer_bot"),
+    METRICS("@metrics")
     ;
 
     private final String botUsername;

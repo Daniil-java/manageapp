@@ -46,6 +46,8 @@ public enum Command {
     AVIA_SUBSCRIBE("subscribe", BotIdentifier.AVIA_BOT),
     AVIA_UNSUBSCRIBE("unsubscribe", BotIdentifier.AVIA_BOT),
     AVIA_ERROR("error", BotIdentifier.AVIA_BOT),
+    METRICS_GET("/get", BotIdentifier.METRICS),
+    METRICS_TEST_ERROR("/test", BotIdentifier.METRICS)
     ;
 
     private final String commandText;
