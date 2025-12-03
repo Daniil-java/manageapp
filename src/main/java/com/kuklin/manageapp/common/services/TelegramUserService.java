@@ -1,6 +1,6 @@
 package com.kuklin.manageapp.common.services;
 
-import com.kuklin.manageapp.bots.payment.services.GenerationBalanceService;
+import com.kuklin.manageapp.payment.services.GenerationBalanceService;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import com.kuklin.manageapp.common.repositories.TelegramUserRepository;

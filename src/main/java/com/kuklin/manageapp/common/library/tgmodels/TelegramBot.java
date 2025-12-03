@@ -1,8 +1,8 @@
 package com.kuklin.manageapp.common.library.tgmodels;
 
-import com.kuklin.manageapp.bots.payment.entities.Payment;
-import com.kuklin.manageapp.bots.payment.models.common.Currency;
 import com.kuklin.manageapp.common.services.AsyncService;
+import com.kuklin.manageapp.payment.entities.Payment;
+import com.kuklin.manageapp.payment.models.common.Currency;
 import lombok.extern.slf4j.Slf4j;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
