@@ -3,7 +3,6 @@ package com.kuklin.manageapp.bots.kworkparser.services;
 import com.kuklin.manageapp.bots.kworkparser.entities.Kwork;
 import com.kuklin.manageapp.bots.kworkparser.models.KworkDto;
 import com.kuklin.manageapp.bots.kworkparser.repositories.KworkRepository;
-import com.kuklin.manageapp.common.services.OpenAiIntegrationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
