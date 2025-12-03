@@ -24,7 +24,9 @@ public class MetricsLogUpdateHandler implements MetricsUpdateHandler {
     @Scheduled(cron = "0 50 23 * * ?", zone = "Asia/Ho_Chi_Minh")
     public void sendLog() {
         Long adminId = 425120436L;
+        Long adminId2 = 420478432L;
         send(adminId);
+        send(adminId2);
     }
 
     private void send(Long chatId) {

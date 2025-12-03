@@ -26,6 +26,7 @@ public class MetricsErrorParseUpdateHandler implements MetricsUpdateHandler {
 
     private final MetricsTelegramBot metricsTelegramBot;
     private static final Long ADMIN_TG_ID = 425120436L;
+    private static final Long ADMIN_TG_ID_2 = 420478432L;
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
         String message = update.getMessage().getText().split(TelegramBot.DEFAULT_DELIMETER)[1];
@@ -83,10 +84,25 @@ public class MetricsErrorParseUpdateHandler implements MetricsUpdateHandler {
                                 .parseMode(ParseMode.HTML)
                                 .build()
                 );
+
+                metricsTelegramBot.execute(
+                        SendMessage.builder()
+                                .chatId(ADMIN_TG_ID_2)
+                                .text(chunk)
+                                .parseMode(ParseMode.HTML)
+                                .build()
+                );
             } catch (Exception ex) {
                 metricsTelegramBot.execute(
                         SendMessage.builder()
                                 .chatId(ADMIN_TG_ID)
+                                .text(chunk)
+                                .build()
+                );
+
+                metricsTelegramBot.execute(
+                        SendMessage.builder()
+                                .chatId(ADMIN_TG_ID_2)
                                 .text(chunk)
                                 .build()
                 );
