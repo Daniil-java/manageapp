@@ -15,6 +15,8 @@ import com.kuklin.manageapp.common.library.tgutils.Command;
 import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;
 import com.kuklin.manageapp.common.services.TelegramService;
 import com.kuklin.manageapp.common.services.TelegramUserService;
+import com.kuklin.manageapp.payment.components.paymentfacades.CommonPaymentFacade;
+import com.kuklin.manageapp.payment.handlers.PaymentPlanListUpdateHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -33,14 +35,16 @@ import java.util.Map.Entry;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class DishUpdateHandler implements CalorieBotUpdateHandler{
+public class DishUpdateHandler implements CalorieBotUpdateHandler {
     private final CalorieTelegramBot calorieTelegramBot;
+    private final CommonPaymentFacade commonPaymentFacade;
     private final TelegramService telegramService;
     private final TelegramCaloriesBotKeyComponents caloriesBotKeyComponents;
     private final DishService dishService;
     private final OpenAiProviderProcessor openAiIntegrationService;
     private final TelegramUserService telegramUserService;
     private final DishChoiceChatModelService dishChoiceChatModelService;
+    private final PaymentPlanListUpdateHandler paymentPlanListUpdateHandler;
     private static final String VOICE_ERROR_MESSAGE =
             "Ошибка! Не получилось обработать голосовое сообщение";
     private static final String PHOTO_ERROR_MESSAGE =
@@ -49,15 +53,35 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler{
             "Данное сообщение не поддержтвается";
     private static final String ERROR_CONTENT_MESSAGE =
             "Это не съедобно!";
+    private static final String SUB_MESSAGE =
+            "Для использования бота необходимо приобрести подписку! Введите команду /plan";
     private static final Long RESPONSE_LIMIT = 10L;
     private static final String ERROR_LIMIT_MSG = "Количество запросов, доступных вам, достигло предела!";
 
-
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
-        if (update.getMessage().hasPhoto() && !checkUserAccess(telegramUser)) {
-            calorieTelegramBot.sendReturnedMessage(update.getMessage().getChatId(), ERROR_LIMIT_MSG);
-            return;
+        Long chatId = update.hasPreCheckoutQuery()
+                ? update.getCallbackQuery().getMessage().getChatId()
+                : update.getMessage().getChatId();
+
+        if (telegramUser.getResponseCount() > RESPONSE_LIMIT) {
+            boolean isActive = commonPaymentFacade
+                    .hasActiveSubscription(
+                            telegramUser.getBotIdentifier(),
+                            telegramUser.getTelegramId()
+                    );
+            if (!isActive) {
+                calorieTelegramBot.sendReturnedMessage(
+                        chatId, ERROR_LIMIT_MSG + "\n" + SUB_MESSAGE);
+                paymentPlanListUpdateHandler.handle(update, telegramUser);
+
+                if (telegramUser.getTelegramId().equals(425120436L) ||
+                        telegramUser.getTelegramId().equals(420478432L)) {
+                    calorieTelegramBot.sendReturnedMessage(
+                            chatId, "Это для демонстрации. Скажи, чтобы я выдал подписку");
+                }
+                return;
+            }
         }
 
         Dish dish = getDishOrNull(update, telegramUser);
@@ -70,14 +94,6 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler{
                 null
         );
 
-    }
-
-    private boolean checkUserAccess(TelegramUser telegramUser) {
-        if (telegramUser.getTelegramId().equals(425120436L) ||
-        telegramUser.getTelegramId().equals(420478432L)) return true;
-
-        if (telegramUser.getResponseCount() > RESPONSE_LIMIT) return false;
-        return true;
     }
 
     private Dish getDishOrNull(Update update, TelegramUser telegramUser) {

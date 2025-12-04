@@ -1,14 +1,14 @@
 package com.kuklin.manageapp.payment.handlers;
 
-import com.kuklin.manageapp.payment.entities.Payment;
-import com.kuklin.manageapp.payment.models.PlanPaymentResult;
-import com.kuklin.manageapp.payment.services.exceptions.PricingPlanNotFoundException;
-import com.kuklin.manageapp.payment.services.exceptions.payment.PaymentNotFoundException;
 import com.kuklin.manageapp.common.components.TelegramBotRegistry;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import com.kuklin.manageapp.payment.components.paymentfacades.CommonPaymentFacade;
+import com.kuklin.manageapp.payment.entities.Payment;
+import com.kuklin.manageapp.payment.models.PlanPaymentResult;
+import com.kuklin.manageapp.payment.services.exceptions.PricingPlanNotFoundException;
+import com.kuklin.manageapp.payment.services.exceptions.payment.PaymentNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -18,14 +18,14 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 /**
  * Обработчик команды Command.PAYMENT_PLAN.
- *
+ * <p>
  * Отвечает за:
  * - извлечение из callback-data id тарифного плана и выбранного провайдера;
  * - запуск платежного флоу через CommonPaymentFacade;
  * - в зависимости от результата:
- *      - отправляет редирект-URL (провайдер по ссылке),
- *      - создаёт ссылку на Telegram-подписку,
- *      - отправляет обычный Telegram-инвойс.
+ * - отправляет редирект-URL (провайдер по ссылке),
+ * - создаёт ссылку на Telegram-подписку,
+ * - отправляет обычный Telegram-инвойс.
  */
 @RequiredArgsConstructor
 @Component
@@ -68,7 +68,8 @@ public class PaymentPayUpdateHandler implements PaymentUpdateHandler {
                     telegramUser.getTelegramId(),
                     chatId,
                     pricingPlanId,
-                    provider
+                    provider,
+                    telegramBot.getToken()
             );
 
             switch (result.type()) {

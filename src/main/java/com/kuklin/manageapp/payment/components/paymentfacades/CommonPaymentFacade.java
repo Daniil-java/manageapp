@@ -65,7 +65,8 @@ public class CommonPaymentFacade implements PaymentFacade {
             Long telegramId,
             Long chatId,
             Long pricingPlanId,
-            Payment.Provider provider
+            Payment.Provider provider,
+            String providerToken
     ) throws PricingPlanNotFoundException, PaymentNotFoundException, TelegramApiException {
 
         // 1. Тариф
@@ -119,7 +120,9 @@ public class CommonPaymentFacade implements PaymentFacade {
         }
 
         // 5. Флоу: обычный Telegram invoice
-        SendInvoice sendInvoice = sendInvoiceBuilder.build(provider, payment, plan, chatId);
+        SendInvoice sendInvoice = sendInvoiceBuilder.build(
+                provider, payment, plan, chatId, providerToken
+        );
 
         return new PlanPaymentResult(
                 PlanPaymentResultType.TELEGRAM_INVOICE,
@@ -151,11 +154,11 @@ public class CommonPaymentFacade implements PaymentFacade {
     /**
      * Обработка успешного Telegram-платежа.
      * Внутри paymentService:
-     *  - проводится валидация;
-     *  - обновляется статус платежа и провайдера;
-     *  - создаются/обновляются подписки или баланс генераций;
-     *  - логируются ошибки.
-     *
+     * - проводится валидация;
+     * - обновляется статус платежа и провайдера;
+     * - создаются/обновляются подписки или баланс генераций;
+     * - логируются ошибки.
+     * <p>
      * Возвращает Payment или null, если этот платёж уже был обработан (идемпотентность).
      */
     @Override

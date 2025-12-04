@@ -24,10 +24,19 @@ public class CalorieTelegramBot extends TelegramBot {
 
     @Override
     public void onUpdateReceived(Update update) {
-        boolean result = doAsync(asyncService, update, u -> telegramCalorieBotFacade.handleUpdate(update));
+        boolean result = doAsync(
+                asyncService,
+                update,
+                u -> telegramCalorieBotFacade.handleUpdate(update)
+        );
 
         if (!result) {
-            notifyAlreadyInProcess(update);
+            if (update.hasPreCheckoutQuery()
+                    || (update.hasMessage() && update.getMessage().hasSuccessfulPayment())) {
+                telegramCalorieBotFacade.handleUpdate(update);
+            } else {
+                notifyAlreadyInProcess(update);
+            }
         }
     }
 

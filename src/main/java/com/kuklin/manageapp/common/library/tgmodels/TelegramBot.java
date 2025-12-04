@@ -192,6 +192,8 @@ public abstract class TelegramBot extends TelegramLongPollingBot implements Tele
             return update.getMessage().getFrom();
         } else if (update.hasCallbackQuery()) {
             return update.getCallbackQuery().getFrom();
+        } else if (update.hasPreCheckoutQuery()) {
+            return update.getPreCheckoutQuery().getFrom();
         }
 
         return null;

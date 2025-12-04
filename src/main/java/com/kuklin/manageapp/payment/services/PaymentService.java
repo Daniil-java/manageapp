@@ -377,14 +377,19 @@ public class PaymentService {
     }
 
     @Transactional
-    public boolean refundTelegramPayment(String paymentChargeId) throws PaymentException {
+    public boolean refundTelegramPayment(String paymentChargeId) {
         Payment payment = paymentRepository.findByProviderPaymentId(paymentChargeId).orElse(null);
         if (payment == null) return false;
         if (!payment.getCurrency().equals(Currency.XTR)) return false;
 
         if (payment.getStatus().equals(Payment.PaymentStatus.SUCCESS)) {
-            changeStatus(payment, Payment.PaymentStatus.REFUNDED, paymentChargeId);
-            return true;
+            try {
+                changeStatus(payment, Payment.PaymentStatus.REFUNDED, paymentChargeId);
+                return true;
+            } catch (PaymentException e) {
+                log.error("Refund error!", e);
+                return false;
+            }
         }
         return false;
     }

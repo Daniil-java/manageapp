@@ -35,7 +35,8 @@ public interface PaymentFacade {
             Long telegramId,
             Long chatId,
             Long pricingPlanId,
-            Payment.Provider provider
+            Payment.Provider provider,
+            String providerToken
     ) throws PricingPlanNotFoundException, TelegramApiException, PaymentNotFoundException;
 
     void cancelPayment(Payment payment) throws PaymentException;

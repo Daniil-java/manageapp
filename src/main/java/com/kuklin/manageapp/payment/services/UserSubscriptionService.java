@@ -1,14 +1,14 @@
 package com.kuklin.manageapp.payment.services;
 
+import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import com.kuklin.manageapp.payment.entities.Payment;
 import com.kuklin.manageapp.payment.entities.PricingPlan;
 import com.kuklin.manageapp.payment.entities.UserSubscription;
 import com.kuklin.manageapp.payment.repositories.UserSubscriptionRepository;
 import com.kuklin.manageapp.payment.services.exceptions.PricingPlanNotFoundException;
-import com.kuklin.manageapp.payment.services.exceptions.subscription.SubscriptionNotSubscribeException;
 import com.kuklin.manageapp.payment.services.exceptions.subscription.SubscriptionInvalidDataException;
 import com.kuklin.manageapp.payment.services.exceptions.subscription.SubscriptionNotFound;
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.payment.services.exceptions.subscription.SubscriptionNotSubscribeException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Repository;
@@ -213,7 +213,7 @@ public class UserSubscriptionService {
         List<UserSubscription> toCancel = userSubscriptionRepository
                 .findAllByPaymentIdAndBotIdentifier(paymentId, botIdentifier);
         if (toCancel.isEmpty()) {
-            log.warn("No subscriptions found for paymentId={} (telegramId={})", paymentId, telegramId);
+            log.error("No subscriptions found for paymentId={} (telegramId={})", paymentId, telegramId);
             throw new SubscriptionNotFound();
         }
 
@@ -221,6 +221,7 @@ public class UserSubscriptionService {
 
         for (UserSubscription subToCancel : toCancel) {
             if (subToCancel.getStatus() == UserSubscription.Status.CANCELLED) {
+                log.error("Subscription is already cancelled! subId: {}", subToCancel.getId());
                 continue;
             }
 
