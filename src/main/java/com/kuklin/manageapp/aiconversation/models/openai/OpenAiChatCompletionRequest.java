@@ -17,7 +17,7 @@ public class OpenAiChatCompletionRequest {
     private Float temperature;
 
     public static final float TEMPERATURE_DEFAULT = 0.1f;
-    private static final String MODEL_DEFAULT = "gpt-4o";
+    private static final String MODEL_DEFAULT = ChatModel.GPT51.getName();
 
     public static OpenAiChatCompletionRequest makeDefaultRequest(
             String content) {

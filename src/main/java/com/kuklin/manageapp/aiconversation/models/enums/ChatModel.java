@@ -10,6 +10,7 @@ import java.util.List;
 public enum ChatModel {
     GPT4O("gpt-4o", ProviderVariant.OPENAI),
     GPT5("gpt-5", ProviderVariant.OPENAI),
+    GPT51("gpt-5.1", ProviderVariant.OPENAI),
     GEMINI25PRO("gemini-2.5-pro", ProviderVariant.GEMINI),
     GEMINI25FLASH("gemini-2.5-flash", ProviderVariant.GEMINI),
     CLAUDESONNET45("claude-sonnet-4-5-20250929", ProviderVariant.CLAUDE),
