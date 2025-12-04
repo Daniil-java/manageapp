@@ -1,27 +1,36 @@
 package com.kuklin.manageapp.common.library.tgmodels;
 
+import com.kuklin.manageapp.common.services.AsyncService;
+import com.kuklin.manageapp.payment.entities.Payment;
+import com.kuklin.manageapp.payment.models.common.Currency;
 import lombok.extern.slf4j.Slf4j;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
+import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.methods.BotApiMethod;
 import org.telegram.telegrambots.meta.api.methods.ParseMode;
+import org.telegram.telegrambots.meta.api.methods.invoices.SendInvoice;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.send.SendVoice;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageReplyMarkup;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
-import org.telegram.telegrambots.meta.api.objects.InputFile;
-import org.telegram.telegrambots.meta.api.objects.Message;
-import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.objects.*;
+import org.telegram.telegrambots.meta.api.objects.payments.LabeledPrice;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboard;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import java.io.ByteArrayInputStream;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.function.Consumer;
 
 @Slf4j
 public abstract class TelegramBot extends TelegramLongPollingBot implements TelegramBotClient {
     private String botToken;
     public static final String DEFAULT_DELIMETER = " ";
+    private final Set<Long> inProcess;
 
     @Override
     public String getToken() {
@@ -31,6 +40,7 @@ public abstract class TelegramBot extends TelegramLongPollingBot implements Tele
     public TelegramBot(String key) {
         super(key);
         botToken = key;
+        inProcess = new HashSet<>();
     }
 
     @Override
@@ -46,7 +56,7 @@ public abstract class TelegramBot extends TelegramLongPollingBot implements Tele
     }
 
     @Override
-    public void sendVoiceMessage(SendVoice message) throws TelegramApiException{
+    public void sendVoiceMessage(SendVoice message) throws TelegramApiException {
         execute(message);
     }
 
@@ -139,4 +149,143 @@ public abstract class TelegramBot extends TelegramLongPollingBot implements Tele
                 .parseMode(ParseMode.HTML)
                 .build();
     }
+
+    public void sendEditMessageReplyMarkupNull(Long chatId, Integer messageId) {
+        EditMessageReplyMarkup editMarkup = new EditMessageReplyMarkup();
+        editMarkup.setChatId(chatId);
+        editMarkup.setMessageId(messageId);
+        editMarkup.setReplyMarkup(null);
+
+        try {
+            execute(editMarkup);
+        } catch (TelegramApiException e) {
+            log.error("Не получилось изменить клавиатуру");
+        }
+    }
+
+    public void notifyAlreadyInProcess(Update update) {
+        Long chatId = update.hasCallbackQuery()
+                ? update.getCallbackQuery().getMessage().getChatId()
+                : update.hasPreCheckoutQuery()
+                ? update.getPreCheckoutQuery().getFrom().getId()
+                : update.getMessage().getChatId();
+
+        sendReturnedMessage(chatId, "Предыдущее сообщение обрабатывается, вам необходимо дождаться его завершения.");
+    }
+
+    public void notifyAsyncDone(Update update) {
+        if (update.hasCallbackQuery()) {
+            return;
+        }
+
+        User user = getUserFromUpdate(update);
+        if (user == null) {
+            log.error("Not a message or callback {} in async done", update);
+            return;
+        }
+        Long tgUserId = user.getId();
+        inProcess.remove(tgUserId);
+    }
+
+    protected static User getUserFromUpdate(Update update) {
+        if (update.hasMessage()) {
+            return update.getMessage().getFrom();
+        } else if (update.hasCallbackQuery()) {
+            return update.getCallbackQuery().getFrom();
+        } else if (update.hasPreCheckoutQuery()) {
+            return update.getPreCheckoutQuery().getFrom();
+        }
+
+        return null;
+    }
+
+    protected boolean doAsync(AsyncService asyncService, Update update, Consumer<Update> runnable) {
+        try {
+            if (update.hasCallbackQuery()) {
+                asyncService.executeAsyncCustom(this, update, runnable);
+                return true;
+            }
+
+            User user = getUserFromUpdate(update);
+            if (user == null) {
+                log.error("Not a message or callback {}", update);
+                return false;
+            }
+
+            Long tgUserId = user.getId();
+            if (inProcess.add(tgUserId)) {
+                try {
+                    asyncService.executeAsyncCustom(this, update, runnable);
+                } catch (Exception ex) {
+                    inProcess.remove(tgUserId);
+                    log.error("Parallel execution failed", ex);
+                }
+                return true;
+            }
+
+            return false;
+        } catch (Exception ex) {
+            sendReturnedMessage(425120436, ex.getMessage());
+            return false;
+        }
+    }
+
+    public static SendInvoice buildInvoiceOrNull(Long chatId, String title,
+                                                 String description, String payload,
+                                                 String providerToken, int amount,
+                                                 Currency currency, Payment.Provider provider,
+                                                 String labelPrice
+    ) {
+
+        if (provider.equals(Payment.Provider.STARS) && !currency.equals(Currency.XTR)) {
+            return null;
+        }
+
+        return SendInvoice.builder()
+                .chatId(chatId.toString())
+                .title(title)
+                .description(description)
+                .payload(payload)
+                .providerToken(providerToken)
+                .currency(currency.name())
+                .prices(List.of(new LabeledPrice(labelPrice, amount)))
+                .startParameter(provider.getTelegramStartParameter())
+                .build();
+    }
+
+    public static CreateInvoiceLinkWithTelegramSubscription buildCreateInvoiceLink(
+            String title,
+            String description, String payload,
+            int amount, Currency currency
+    ) {
+        String TOKEN_DUMMY = "xtr_dummy";
+
+        CreateInvoiceLinkWithTelegramSubscription link = new CreateInvoiceLinkWithTelegramSubscription(2_592_000);
+        link.setTitle(title);
+        link.setDescription(description);
+        link.setPayload(payload);
+        link.setCurrency(currency.name());
+        link.setPrices(List.of(new LabeledPrice("Подписка 30 дней", amount)));
+        link.setProviderToken(TOKEN_DUMMY);
+
+        return link;
+
+    }
+
+    public void answerCallback(Update update) {
+        if (update.hasCallbackQuery()) {
+            CallbackQuery cq = update.getCallbackQuery();
+
+            AnswerCallbackQuery answer = AnswerCallbackQuery.builder()
+                    .callbackQueryId(cq.getId())
+                    .build();
+
+            try {
+                execute(answer);
+            } catch (TelegramApiException e) {
+                log.error("Callback answer error!");
+            }
+        }
+    }
 }
+

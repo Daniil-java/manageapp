@@ -9,6 +9,7 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 
 @Component
 public class KworkParserTelegramBot extends TelegramBot {
+    public static final BotIdentifier BOT_IDENTIFIER = BotIdentifier.KWORK;
     @Autowired
     private KworkTelegramFacade kworkTelegramFacade;
 
@@ -22,11 +23,11 @@ public class KworkParserTelegramBot extends TelegramBot {
 
     @Override
     public BotIdentifier getBotIdentifier() {
-        return BotIdentifier.KWORK;
+        return BOT_IDENTIFIER;
     }
 
     @Override
     public String getBotUsername() {
-        return BotIdentifier.KWORK.getBotUsername();
+        return BOT_IDENTIFIER.getBotUsername();
     }
 }
