@@ -283,7 +283,7 @@ public class UserSubscriptionService {
             long days = java.time.temporal.ChronoUnit.DAYS.between(sub.getStartAt(), sub.getEndAt());
             if (days <= 0) {
                 // На всякий случай защита от кривых данных
-                log.warn("Subscription id={} has non-positive duration (start={}, end={}), skipping shift",
+                log.error("Subscription id={} has non-positive duration (start={}, end={}), skipping shift",
                         sub.getId(), sub.getStartAt(), sub.getEndAt());
                 continue;
             }

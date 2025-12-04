@@ -40,7 +40,7 @@ public class GoogleApiConfig {
                     .orElse(req -> { /* NO-AUTH */ });
 
             if (credsOpt.isEmpty()) {
-                log.warn("Assistant Calendar: creds not found in {} → NO-AUTH client (вызовы вернут 401).", ENV);
+                log.error("Assistant Calendar: creds not found in {} → NO-AUTH client (вызовы вернут 401).", ENV);
             }
 
             return new Calendar.Builder(http, json, init)
@@ -70,7 +70,7 @@ public class GoogleApiConfig {
 
             return Optional.of(scoped); // возвращаем как Credentials
         } catch (Exception e) {
-            log.warn("Assistant Calendar: cannot load credentials from {}: {}", ENV, e.getMessage());
+            log.error("Assistant Calendar: cannot load credentials from {}: {}", ENV, e.getMessage());
             return Optional.empty();
         }
     }

@@ -38,7 +38,7 @@ public class HhOpenAiScheduleProcessor implements ScheduleProcessor {
 
         for (Map.Entry<Long, List<Vacancy>> entry : groupedByHhId.entrySet()) {
             if (countException > MAX_EXCEPTION) {
-                log.warn("[AI] Exceeded max exception count ({}). Stop processing", MAX_EXCEPTION);
+                log.error("[AI] Exceeded max exception count ({}). Stop processing", MAX_EXCEPTION);
                 break;
             }
 
@@ -70,7 +70,7 @@ public class HhOpenAiScheduleProcessor implements ScheduleProcessor {
 
                 if (generatedDescription == null) {
                     // Если по какой-то причине описание не сгенерировалось, не копируем его на дубли
-                    log.warn("[AI] generatedDescription is null after OpenAI call for hhId={}, vacancyId={}",
+                    log.error("[AI] generatedDescription is null after OpenAI call for hhId={}, vacancyId={}",
                             hhId, mainVacancy.getId());
                     continue;
                 }

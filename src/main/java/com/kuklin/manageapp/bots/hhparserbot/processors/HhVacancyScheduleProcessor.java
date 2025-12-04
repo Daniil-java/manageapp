@@ -38,7 +38,7 @@ public class HhVacancyScheduleProcessor implements ScheduleProcessor {
                 ThreadUtil.sleep(500);
             } catch (FeignException.NotFound e) {
                 // Вакансия удалена / недоступна в HH — не крит
-                log.warn("VacancyScheduleProcessor: vacancy {} not found in HH (404). Marking as DELETED", vacancy.getHhId());
+                log.error("VacancyScheduleProcessor: vacancy {} not found in HH (404). Marking as DELETED", vacancy.getHhId());
                 hhVacancyService.save(vacancy.setStatus(VacancyStatus.NOT_FOUND_ERROR));
 
 

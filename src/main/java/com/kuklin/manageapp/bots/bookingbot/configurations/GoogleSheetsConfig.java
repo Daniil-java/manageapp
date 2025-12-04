@@ -73,7 +73,7 @@ public class GoogleSheetsConfig {
                     token != null ? token.getExpirationTime() : "null");
             return Optional.of(sac);
         } catch (Exception ex) {
-            log.warn("Cannot load Google credentials: {}", ex.getMessage());
+            log.error("Cannot load Google credentials: {}", ex.getMessage());
             return Optional.empty();
         }
     }

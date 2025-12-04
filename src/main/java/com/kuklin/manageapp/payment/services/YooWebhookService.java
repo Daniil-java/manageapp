@@ -194,7 +194,7 @@ public class YooWebhookService {
         } catch (feign.FeignException.NotFound e) {
             return null;
         } catch (Exception e) {
-            log.warn("YooKassa getPayment failed for id={}", paymentId, e);
+            log.error("YooKassa getPayment failed for id={}", paymentId, e);
             return null;
         }
     }
