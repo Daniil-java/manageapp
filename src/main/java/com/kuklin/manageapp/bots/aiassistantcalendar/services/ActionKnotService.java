@@ -2,9 +2,9 @@ package com.kuklin.manageapp.bots.aiassistantcalendar.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcessor;
 import com.kuklin.manageapp.bots.aiassistantcalendar.configurations.TelegramAiAssistantCalendarBotKeyComponents;
 import com.kuklin.manageapp.bots.aiassistantcalendar.models.ActionKnot;
-import com.kuklin.manageapp.common.services.OpenAiIntegrationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -15,7 +15,7 @@ import java.time.LocalDate;
 @RequiredArgsConstructor
 @Slf4j
 public class ActionKnotService {
-    private final OpenAiIntegrationService aiService;
+    private final OpenAiProviderProcessor aiService;
     private final ObjectMapper objectMapper;
     private final TelegramAiAssistantCalendarBotKeyComponents components;
 
