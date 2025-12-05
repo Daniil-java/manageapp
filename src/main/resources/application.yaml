@@ -15,17 +15,20 @@ spring:
       hibernate:
         format_sql: true
     database-platform: org.hibernate.dialect.PostgreSQLDialect
+  liquibase:
+    enabled: true
+    change-log: classpath:/db/changelog/db.changelog-master.yaml
 
 feign:
   client:
     config:
       default:
-        connectTimeout: 5000
+        connectTimeout: 15000
         readTimeout: 1000000
         loggerLevel: basic
 
 integrations:
-  connect-timeout: 5000
+  connect-timeout: 20000
   read-timeout: 1000000
   write-timeout: 5000
   openai-api:
@@ -35,3 +38,22 @@ integrations:
 
 locale:
   tag: ru-RU
+
+google:
+  oauth:
+    client-id: ${GOOGLE_OAUTH_CLIENT_ID}
+    client-secret: ${GOOGLE_CALENDAR_KEY}   # опционально (для PKCE можно пустым)
+    redirect-uri: https://kuklin.dev/auth/google/callback
+    start-uri: https://kuklin.dev/auth/google/start?linkId=
+    auth-uri: https://accounts.google.com/o/oauth2/v2/auth
+    token-uri: https://oauth2.googleapis.com/token
+    revoke-uri: https://oauth2.googleapis.com/revoke
+    userinfo-uri: https://openidconnect.googleapis.com/v1/userinfo
+    scopes:
+      - openid
+      - email
+      - profile
+      - https://www.googleapis.com/auth/calendar
+security:
+  crypto:
+    aes-key-b64: ${APP_AES_KEY_B64}

@@ -9,6 +9,7 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 
 @Component
 public class AviaTelegramBot extends TelegramBot {
+    public static final BotIdentifier BOT_IDENTIFIER = BotIdentifier.AVIA_BOT;
     @Autowired
     private AviaTelegramFacade aviaTelegramFacade;
 
@@ -22,11 +23,11 @@ public class AviaTelegramBot extends TelegramBot {
 
     @Override
     public BotIdentifier getBotIdentifier() {
-        return BotIdentifier.AVIA_BOT;
+        return BOT_IDENTIFIER;
     }
 
     @Override
     public String getBotUsername() {
-        return BotIdentifier.AVIA_BOT.getBotUsername();
+        return BOT_IDENTIFIER.getBotUsername();
     }
 }
