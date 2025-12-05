@@ -5,10 +5,13 @@ import com.kuklin.manageapp.payment.entities.Payment;
 import com.kuklin.manageapp.payment.models.common.Currency;
 import lombok.extern.slf4j.Slf4j;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
+import org.telegram.telegrambots.meta.api.methods.ActionType;
 import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.methods.BotApiMethod;
 import org.telegram.telegrambots.meta.api.methods.ParseMode;
 import org.telegram.telegrambots.meta.api.methods.invoices.SendInvoice;
+import org.telegram.telegrambots.meta.api.methods.send.SendChatAction;
+import org.telegram.telegrambots.meta.api.methods.send.SendDocument;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.methods.send.SendVoice;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
@@ -286,6 +289,35 @@ public abstract class TelegramBot extends TelegramLongPollingBot implements Tele
                 log.error("Callback answer error!");
             }
         }
+    }
+
+    public void sendChatActionTyping(Long chatId) {
+        SendChatAction typingAction = new SendChatAction();
+        typingAction.setChatId(chatId);
+        typingAction.setAction(ActionType.TYPING);
+        try {
+            execute(typingAction);
+        } catch (TelegramApiException e) {
+            log.error("Не получилось отправить ChatAction!");
+        }
+    }
+
+    /**
+     * Удобный метод для отправки документа из байтов (CSV и т.п.)
+     */
+    public Message sendDocument(long chatId, byte[] content, String filename, String caption) throws TelegramApiException {
+        InputFile inputFile = new InputFile(
+                new ByteArrayInputStream(content),
+                filename
+        );
+
+        SendDocument sendDocument = SendDocument.builder()
+                .chatId(chatId)
+                .document(inputFile)
+                .caption(caption)
+                .build();
+
+        return execute(sendDocument);
     }
 }
 
