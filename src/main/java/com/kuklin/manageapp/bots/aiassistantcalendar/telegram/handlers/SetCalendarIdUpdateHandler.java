@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.bots.aiassistantcalendar.telegram.handlers;
 
+import com.kuklin.manageapp.bots.aiassistantcalendar.services.CalendarService;
 import com.kuklin.manageapp.bots.aiassistantcalendar.services.UserGoogleCalendarService;
 import com.kuklin.manageapp.bots.aiassistantcalendar.telegram.AssistantTelegramBot;
 import com.kuklin.manageapp.common.entities.TelegramUser;
@@ -15,6 +16,7 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 public class SetCalendarIdUpdateHandler implements AssistantUpdateHandler{
     private final AssistantTelegramBot assistantTelegramBot;
     private final UserGoogleCalendarService userGoogleCalendarService;
+    private final CalendarService calendarService;
     private static final String SUCCESS_MSG = "Календарь установлен";
     private static final String ERROR_MSG = "Неверный формат команды";
     public static final String CALENDAR_IS_NULL_MSG = "Вам необходимо установить свой календарь! Для инструкций введите команду /start";
@@ -27,10 +29,20 @@ public class SetCalendarIdUpdateHandler implements AssistantUpdateHandler{
         String calendarId = extractCalendarId(message.getText());
         if (calendarId == null) {
             assistantTelegramBot.sendReturnedMessage(chatId, ERROR_MSG);
+            return;
+        }
+        if (!checkCalendarConnection(telegramUser.getTelegramId(), calendarId)) {
+            assistantTelegramBot.sendReturnedMessage(chatId, "Календарь или не существует, или к нему не установлен доступ!");
+            return;
         }
 
         userGoogleCalendarService.setCalendarIdByTelegramId(telegramUser.getTelegramId(), calendarId);
         assistantTelegramBot.sendReturnedMessage(chatId, SUCCESS_MSG);
+    }
+
+    private boolean checkCalendarConnection(Long telegramId, String calendarId) {
+        if (calendarId == null) return false;
+        return calendarService.existConnectionCalendarWithNoAuth(calendarId);
     }
 
     private String extractCalendarId(String message) {

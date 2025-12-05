@@ -11,6 +11,7 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 @Component
 @Slf4j
 public class AssistantTelegramBot extends TelegramBot {
+    public static final String DELIMETER = "#";
     @Autowired
     private AssistantTelegramFacade assistantTelegramFacade;
 

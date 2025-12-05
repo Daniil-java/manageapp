@@ -3,6 +3,7 @@ package com.kuklin.manageapp.bots.aiassistantcalendar.telegram.handlers;
 import com.kuklin.manageapp.bots.aiassistantcalendar.services.CalendarService;
 import com.kuklin.manageapp.bots.aiassistantcalendar.services.UserGoogleCalendarService;
 import com.kuklin.manageapp.bots.aiassistantcalendar.telegram.AssistantTelegramBot;
+import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.models.TokenRefreshException;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.Command;
@@ -20,6 +21,10 @@ public class AssistantDeleteUpdateHandler implements AssistantUpdateHandler{
     private final UserGoogleCalendarService userGoogleCalendarService;
     private final CalendarService calendarService;
     private static final String ERROR_MSG = "Не получилось удалить мероприятие";
+    private static final String GOOGLE_OTHER_ERROR_MESSAGE =
+            "Попробуйте обратиться позже!";
+    private static final String GOOGLE_AUTH_ERROR_MESSAGE =
+            "Вам нужно пройти авторизацию заново!";
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
         CallbackQuery callback = update.getCallbackQuery();
@@ -31,12 +36,17 @@ public class AssistantDeleteUpdateHandler implements AssistantUpdateHandler{
 
         try {
             calendarService.removeEventInCalendar(
-                    eventId,
-                    userGoogleCalendarService.getUserCalendarIdByTelegramIdOrNull(telegramUser.getTelegramId())
+                    eventId, telegramUser.getTelegramId()
             );
             assistantTelegramBot.sendDeleteMessage(chatId, messageId);
         } catch (IOException e) {
             assistantTelegramBot.sendReturnedMessage(chatId, ERROR_MSG);
+        } catch (TokenRefreshException e) {
+            if (e.getReason().equals(TokenRefreshException.Reason.INVALID_GRANT)) {
+                assistantTelegramBot.sendReturnedMessage(chatId, GOOGLE_AUTH_ERROR_MESSAGE);
+            } else {
+                assistantTelegramBot.sendReturnedMessage(chatId, GOOGLE_OTHER_ERROR_MESSAGE);
+            }
         }
     }
 
