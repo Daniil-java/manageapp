@@ -31,6 +31,7 @@ public class HhWorkFilterScheduleProcessor implements ScheduleProcessor {
             List<HhSimpleResponseDto> hhSimpleResponseDtos =
                     hhWorkFilterService.loadHhVacancies(workFilter);
             //Парсинг полученных вакансий
+            log.info("HH Vacancies parsed count: {}", hhSimpleResponseDtos.size());
             hhVacancyService.parseHhVacancies(hhSimpleResponseDtos, workFilter);
             ThreadUtil.sleep(1000);
         }

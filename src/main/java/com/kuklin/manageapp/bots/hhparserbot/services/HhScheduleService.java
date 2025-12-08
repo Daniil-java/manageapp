@@ -26,7 +26,7 @@ public class HhScheduleService {
     }
 
 
-    @Scheduled(cron = "0 */15 * * * *")
+//    @Scheduled(cron = "0 */15 * * * *")
     public void openAiScheduleProcess() {
         getInfo(hhOpenAiScheduleProcessor.getSchedulerName());
         hhOpenAiScheduleProcessor.process();

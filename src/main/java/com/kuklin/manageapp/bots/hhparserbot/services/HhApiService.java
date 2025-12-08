@@ -37,7 +37,7 @@ public class HhApiService {
             //Выборка необходимых элементов(вакансий) страницы
             Elements elements = document.select("a[data-qa='serp-item__title']");
             //Ограничене на количество новых вакансий
-            int limit = 50;
+            int limit = 75;
             for (Element element: elements) {
                 if (limit-- <= 0) break;;
                 //Получение ссылки на вакансию
@@ -52,7 +52,12 @@ public class HhApiService {
                 }
             }
         } catch (IOException e) {
-            log.error("HhApiService: Jsoup connection error!", e);
+            if (e.getCause() instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+                log.warn("HH request interrupted for url={}", url);
+            } else {
+                log.error("HhApiService: Jsoup connection error!", e);
+            }
         }
         return hhSimpleResponseDtos;
     }
