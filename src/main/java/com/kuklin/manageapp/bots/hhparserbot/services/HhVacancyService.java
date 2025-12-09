@@ -206,7 +206,7 @@ public class HhVacancyService {
         //Обработка полученного списка ДТО-вакансий
 
         //Ограничение на количество новый вакансий для одной ссылки
-        int limit = 75;
+        int limit = 75, duplicate = 0, uniq = 0;
         for (HhSimpleResponseDto dto : hhSimpleResponseDtos) {
             if (limit-- <= 0) break;
             //Проверка на наличие уже существующих дубликатов в БД
@@ -214,6 +214,7 @@ public class HhVacancyService {
                             dto.getHhId(), workFilter.getId())
                     .isPresent()
             ) {
+                uniq++;
                 //Конвертирование ДТО в сущность вакансии и сохранение
                 vacancyRepository.save(new Vacancy()
                         .setUrl(dto.getUrl())
@@ -221,8 +222,14 @@ public class HhVacancyService {
                         .setWorkFilterId(workFilter.getId())
                         .setStatus(VacancyStatus.CREATED)
                 );
+            } else {
+                log.info("Duplicate vacancy id: {}", dto.getHhId());
+                duplicate++;
             }
         }
+        log.info("\nParsed vacancies: {}\n Duplicates: {}\n Unique: {}",
+                hhSimpleResponseDtos.size(), duplicate, uniq
+        );
     }
 
 
