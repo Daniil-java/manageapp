@@ -13,6 +13,7 @@ public enum Command {
     CALORIE_TODAY_LIST("\uD83D\uDCCA СЕГОДНЯ", BotIdentifier.CALORIE_BOT),
     CALORIE_WEEK_LIST("\uD83D\uDCC5 НЕДЕЛЯ", BotIdentifier.CALORIE_BOT),
     CALORIE_CHOICE("/choice", BotIdentifier.CALORIE_BOT),
+    CALORIE_SCALE("/scale", BotIdentifier.CALORIE_BOT),
 
 
     //==========================PAYMENT============================

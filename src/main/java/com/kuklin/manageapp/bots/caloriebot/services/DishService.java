@@ -227,4 +227,11 @@ public class DishService {
 
         return dishRepository.findAllByUserIdAndCreatedBetween(userId, startOfDay, endOfDay);
     }
+
+    public Dish changeDishByPercent(Long dishId, int percentDelta) {
+        return dishRepository.findById(dishId)
+                .map(dish -> dish.applyPercentDelta(percentDelta))
+                .map(dishRepository::save)
+                .orElse(null);
+    }
 }
