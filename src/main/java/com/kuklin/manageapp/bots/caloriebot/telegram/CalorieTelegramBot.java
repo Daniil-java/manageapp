@@ -13,6 +13,7 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 @Slf4j
 public class CalorieTelegramBot extends TelegramBot {
     public static final BotIdentifier BOT_IDENTIFIER = BotIdentifier.CALORIE_BOT;
+    public static final String DELIMITER = "#cal#";
     @Autowired
     private TelegramCalorieBotFacade telegramCalorieBotFacade;
     @Autowired

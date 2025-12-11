@@ -58,12 +58,16 @@ public class TelegramCalorieBotFacade extends TelegramFacade {
         }
 
         if (update.hasCallbackQuery()) {
+            if (update.getCallbackQuery().getData().startsWith(Command.CALORIE_FAVORITE.getCommandText()))
+                return getUpdateHandlerMap().get(Command.CALORIE_FAVORITE.getCommandText());
+
             request = update.getCallbackQuery().getData().split(TelegramBot.DEFAULT_DELIMETER)[0];
 
             UpdateHandler updateHandler = getUpdateHandlerMap().get(request);
             if (updateHandler != null) {
                 return updateHandler;
             }
+
             if (request == null) {
                 return null;
             } else {
@@ -80,6 +84,9 @@ public class TelegramCalorieBotFacade extends TelegramFacade {
             }
 
             request = message.getText();
+            if (request.startsWith(Command.CALORIE_FAVORITE.getCommandText())) {
+                request = Command.CALORIE_FAVORITE.getCommandText();
+            }
         }
 
         // если request пустой (и это не callback), возвращаем GENERAL
@@ -89,7 +96,6 @@ public class TelegramCalorieBotFacade extends TelegramFacade {
 
         UpdateHandler updateHandler = getUpdateHandlerMap().get(request);
         return updateHandler == null ? getUpdateHandlerMap().get(Command.CALORIE_GENERAL.getCommandText()) : updateHandler;
-
 
     }
 }

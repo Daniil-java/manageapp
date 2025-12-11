@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,7 +33,6 @@ public class DishService {
     private final TelegramCaloriesBotKeyComponents telegramCaloriesBotKeyComponents;
     private final ObjectMapper objectMapper;
     private final ProviderProcessorHandler processorHandler;
-    private final DishChoiceChatModelService dishChoiceChatModelService;
     private static final String AI_PHOTO_REQUEST =
             """
                     Ты — экспертная система анализа изображений еды и напитков на фото. \s
@@ -133,7 +133,7 @@ public class DishService {
     }
 
     public Map<ChatModel, DishDto> getDishDtoByPhotoOrNullWithManyProviders(String imageUrl) {
-        Map<ChatModel, DishDto> map = new HashMap<>();
+        Map<ChatModel, DishDto> map = new EnumMap<ChatModel, DishDto>(ChatModel.class);
         for (ChatModel chatModel : ChatModel.getModels()) {
             ProviderVariant provider = chatModel.getProviderVariant();
 
@@ -233,5 +233,27 @@ public class DishService {
                 .map(dish -> dish.applyPercentDelta(percentDelta))
                 .map(dishRepository::save)
                 .orElse(null);
+    }
+
+    public Dish getDishByIdOrNull(Long dishId) {
+        return dishRepository.findById(dishId).orElse(null);
+    }
+
+    public Dish addDish(
+            Long userId,
+            String name,
+            Integer calories,
+            Integer proteins,
+            Integer fats,
+            Integer carbohydrates
+    ) {
+        Dish dish = new Dish()
+                .setUserId(userId)
+                .setName(name)
+                .setCalories(calories)
+                .setProteins(proteins)
+                .setFats(fats)
+                .setCarbohydrates(carbohydrates);
+        return dishRepository.save(dish);
     }
 }

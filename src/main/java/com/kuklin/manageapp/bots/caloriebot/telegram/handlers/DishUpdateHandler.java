@@ -70,7 +70,6 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
                 getPortionKeyboard(dish.getId()),
                 null
         );
-
     }
 
     /**
@@ -211,6 +210,38 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
         return true;
     }
 
+    public static InlineKeyboardMarkup getPortionKeyboardFavorite(Long dishId) {
+        String base = Command.CALORIE_SCALE.getCommandText()
+                + TelegramBot.DEFAULT_DELIMETER + dishId
+                + TelegramBot.DEFAULT_DELIMETER;
+
+        // здесь просто копируем ряды, но кнопку "Сохранить блюдо"
+        // меняем на "✅ В избранном" и делаем её неактивной
+        return TelegramKeyboard.builder()
+                .row(
+                        TelegramKeyboard.button("-50%", base + "-50"),
+                        TelegramKeyboard.button("-10%", base + "-10"),
+                        TelegramKeyboard.button("+10%", base + "10"),
+                        TelegramKeyboard.button("+50%", base + "50")
+                )
+                .row(
+                        TelegramKeyboard.button(
+                                "✅ В избранном",
+                                // сюда поставь callback для игнорируемой кнопки
+                                // если у тебя в TelegramKeyboard есть что-то типа IGNORE/EMPTY – используй его
+                                ""
+                        )
+                )
+                .row(
+                        TelegramKeyboard.button(
+                                "Удалить из дневника",
+                                Command.CALORIE_DELETE.getCommandText()
+                                        + TelegramBot.DEFAULT_DELIMETER + dishId
+                        )
+                )
+                .build();
+    }
+
     public static InlineKeyboardMarkup getPortionKeyboard(Long dishId) {
         // Базовая часть для всех кнопок изменения порции
         String base = Command.CALORIE_SCALE.getCommandText()
@@ -225,6 +256,13 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
 //                        TelegramKeyboard.button("ОК",   base + "OK"),
                         TelegramKeyboard.button("+10%", base + "10"),
                         TelegramKeyboard.button("+50%", base + "50")
+                )
+                .row(
+                        TelegramKeyboard.button(
+                                "⭐ Сохранить блюдо",
+                                Command.CALORIE_FAVORITE_ADD.getCommandText()
+                                + TelegramBot.DEFAULT_DELIMETER + dishId
+                        )
                 )
                 .row(
                         TelegramKeyboard.button(

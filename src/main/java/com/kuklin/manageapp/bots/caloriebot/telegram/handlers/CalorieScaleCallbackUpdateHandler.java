@@ -33,6 +33,7 @@ public class CalorieScaleCallbackUpdateHandler implements CalorieBotUpdateHandle
 
         if (dishId == null || scale == null) {
             calorieTelegramBot.sendReturnedMessage(chatId, ERROR_MSG);
+            return;
         }
         Dish dish = dishService.changeDishByPercent(dishId, scale);
 

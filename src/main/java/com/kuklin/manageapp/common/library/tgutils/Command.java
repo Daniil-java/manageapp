@@ -14,7 +14,10 @@ public enum Command {
     CALORIE_WEEK_LIST("\uD83D\uDCC5 НЕДЕЛЯ", BotIdentifier.CALORIE_BOT),
     CALORIE_CHOICE("/choice", BotIdentifier.CALORIE_BOT),
     CALORIE_SCALE("/scale", BotIdentifier.CALORIE_BOT),
-
+    CALORIE_FAVORITE("\uD83C\uDF1F ИЗБРАННЫЕ БЛЮДА", BotIdentifier.CALORIE_BOT),
+    CALORIE_FAVORITE_ADD("/favoriteadd", BotIdentifier.CALORIE_BOT),
+    CALORIE_FAVORITE_DELETE("/favoritedel", BotIdentifier.CALORIE_BOT),
+    CALORIE_CLOSE("/close", BotIdentifier.CALORIE_BOT),
 
     //==========================PAYMENT============================
     PAYMENT_PRE_CHECK_QUERY("precheckquerynotcommand", BotIdentifier.PAYMENT),
