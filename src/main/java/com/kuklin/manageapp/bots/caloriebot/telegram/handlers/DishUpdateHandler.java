@@ -229,7 +229,7 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
                                 "✅ В избранном",
                                 // сюда поставь callback для игнорируемой кнопки
                                 // если у тебя в TelegramKeyboard есть что-то типа IGNORE/EMPTY – используй его
-                                ""
+                                "temp" //Заглушка
                         )
                 )
                 .row(
