@@ -19,7 +19,6 @@ import java.util.Collections;
 public class DeleteUpdateHandler implements CalorieBotUpdateHandler{
     private final CalorieTelegramBot calorieTelegramBot;
     private final DishService dishService;
-    private static final String ERROR_MSG = "";
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
         CallbackQuery callback = update.getCallbackQuery();
