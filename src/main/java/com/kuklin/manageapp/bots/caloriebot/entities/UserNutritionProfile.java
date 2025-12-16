@@ -136,15 +136,15 @@ public class UserNutritionProfile {
                 .append("\n");
 
         sb.append("🏃 Активность: ")
-                .append(formatEnum(activityLevel))
+                .append(activityLevel == null ? "нет данных" : activityLevel.label)
                 .append("\n");
 
         sb.append("🎯 Цель: ")
-                .append(formatEnum(goal))
+                .append(goal == null ? "нет данных" : goal.label)
                 .append("\n");
 
         sb.append("🥗 Тип питания: ")
-                .append(formatEnum(dietType))
+                .append(dietType == null ? "нет данных" : dietType.label)
                 .append("\n");
 
         // Нормы по калориям и БЖУ

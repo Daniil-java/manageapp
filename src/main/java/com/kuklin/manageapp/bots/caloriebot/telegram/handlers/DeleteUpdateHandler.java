@@ -25,11 +25,21 @@ public class DeleteUpdateHandler implements CalorieBotUpdateHandler{
         Long chatId = callback.getMessage().getChatId();
         Integer messageId = callback.getMessage().getMessageId();
 
-        String[] data = callback.getData().split(TelegramBot.DEFAULT_DELIMETER);
-        String dishId = data[1];
+        Long dishId = extractDishIdOrNull(callback.getData());
+        if (dishId == null) return;
 
-        dishService.removeByDishId(Long.valueOf(dishId));
+        dishService.removeByDishId(dishId);
         calorieTelegramBot.editMarkup(chatId, messageId, getInlineMessage());
+    }
+
+    private Long extractDishIdOrNull(String data) {
+        try {
+            String[] parts = data.split(TelegramBot.DEFAULT_DELIMETER);
+            String dishId = parts[1];
+            return Long.parseLong(dishId);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     public static InlineKeyboardMarkup getInlineMessage() {

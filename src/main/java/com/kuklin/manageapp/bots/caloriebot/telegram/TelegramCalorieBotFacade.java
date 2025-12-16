@@ -60,6 +60,8 @@ public class TelegramCalorieBotFacade extends TelegramFacade {
         if (update.hasCallbackQuery()) {
             if (update.getCallbackQuery().getData().startsWith(Command.CALORIE_FAVORITE.getCommandText()))
                 return getUpdateHandlerMap().get(Command.CALORIE_FAVORITE.getCommandText());
+            if (update.getCallbackQuery().getData().startsWith(Command.CALORIE_PROFILE.getCommandText()))
+                return getUpdateHandlerMap().get(Command.CALORIE_PROFILE.getCommandText());
 
             request = update.getCallbackQuery().getData().split(TelegramBot.DEFAULT_DELIMETER)[0];
 

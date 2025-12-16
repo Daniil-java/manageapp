@@ -101,7 +101,8 @@ public abstract class AbstractProfileEditFieldHandler<T>
                 profile.getCurrentWeightKg(),
                 profile.getActivityLevel(),
                 profile.getGoal(),
-                profile.getWaterTargetMlPerDay()
+                profile.getWaterTargetMlPerDay(),
+                profile.getDietType()
         );
     }
 

@@ -181,7 +181,8 @@ public class UserNutritionProfileService {
             BigDecimal currentWeightKg,
             UserNutritionProfile.ActivityLevel activityLevel,
             UserNutritionProfile.Goal goal,
-            Integer waterTargetMlPerDay
+            Integer waterTargetMlPerDay,
+            DietType dietType
     ) throws UserNutritionProfileValidationException{
 
         UserNutritionProfile profile = getOrCreateProfile(userId);
@@ -193,6 +194,7 @@ public class UserNutritionProfileService {
         if (activityLevel != null) profile.setActivityLevel(activityLevel);
         if (goal != null) profile.setGoal(goal);
         if (waterTargetMlPerDay != null) profile.setWaterTargetMlPerDay(waterTargetMlPerDay);
+        if (dietType != null) profile.setDietType(dietType);
 
         return validateAndSave(profile);
     }
