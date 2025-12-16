@@ -18,6 +18,9 @@ public enum Command {
     CALORIE_FAVORITE_ADD("/favoriteadd", BotIdentifier.CALORIE_BOT),
     CALORIE_FAVORITE_DELETE("/favoritedel", BotIdentifier.CALORIE_BOT),
     CALORIE_CLOSE("/close", BotIdentifier.CALORIE_BOT),
+    CALORIE_PROFILE("\uD83D\uDC64Мой профиль", BotIdentifier.CALORIE_BOT),
+    CALORIE_PROFILE_EDIT("/profileedit", BotIdentifier.CALORIE_BOT),
+    CALORIE_PROFILE_DIALOGUE("/profiledialogue", BotIdentifier.CALORIE_BOT),
 
     //==========================PAYMENT============================
     PAYMENT_PRE_CHECK_QUERY("precheckquerynotcommand", BotIdentifier.PAYMENT),

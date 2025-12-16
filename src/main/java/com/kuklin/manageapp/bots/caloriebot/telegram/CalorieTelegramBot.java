@@ -7,7 +7,10 @@ import com.kuklin.manageapp.common.services.AsyncService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
+import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 @Component
 @Slf4j
@@ -23,8 +26,22 @@ public class CalorieTelegramBot extends TelegramBot {
         super(telegramCaloriesBotKeyComponents.getKey());
     }
 
+    private void answerCallbackQuery(CallbackQuery callbackQuery) {
+        AnswerCallbackQuery answer = AnswerCallbackQuery.builder()
+                .callbackQueryId(callbackQuery.getId())
+                .build();
+        try {
+            execute(answer);
+        } catch (TelegramApiException e) {
+            log.error("Send returned message error!", e);
+        }
+    }
+
     @Override
     public void onUpdateReceived(Update update) {
+        if (update.hasCallbackQuery()) {
+            answerCallbackQuery(update.getCallbackQuery());
+        }
         boolean result = doAsync(
                 asyncService,
                 update,
