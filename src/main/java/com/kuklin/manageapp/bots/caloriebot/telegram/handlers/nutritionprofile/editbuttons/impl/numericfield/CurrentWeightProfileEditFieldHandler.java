@@ -4,11 +4,13 @@ import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
 import com.kuklin.manageapp.bots.caloriebot.services.UserNutritionProfileService;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.CalorieNutritionProfileEditCallbackUpdateHandler;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.editbuttons.ProfileEditAction;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 
 @Component
+@Slf4j
 public class CurrentWeightProfileEditFieldHandler
         extends AbstractDecimalProfileEditFieldHandler {
 
@@ -36,11 +38,12 @@ public class CurrentWeightProfileEditFieldHandler
 
     @Override
     protected UserNutritionProfile applyValue(UserNutritionProfile profile, BigDecimal value) {
+        profileService.updateCurrentWeight(profile.getUserId(), value);
         return profile.setCurrentWeightKg(value);
     }
 
     @Override
-    protected String buildText(UserNutritionProfile profile) {
+    public String buildText(UserNutritionProfile profile) {
         return profile.getCurrentWeightKg() == null
                 ? "Вес: не указан"
                 : "Вес: " + profile.getCurrentWeightKg().toPlainString() + " кг";

@@ -5,6 +5,7 @@ import com.kuklin.manageapp.bots.caloriebot.configurations.TelegramCaloriesBotKe
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.entities.DishChoiceChatModel;
 import com.kuklin.manageapp.bots.caloriebot.entities.models.DishDto;
+import com.kuklin.manageapp.bots.caloriebot.services.AnalyticsService;
 import com.kuklin.manageapp.bots.caloriebot.services.CalorieAccessService;
 import com.kuklin.manageapp.bots.caloriebot.services.DishChoiceChatModelService;
 import com.kuklin.manageapp.bots.caloriebot.services.DishService;
@@ -41,6 +42,7 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
     private final DishChoiceChatModelService dishChoiceChatModelService;
     private final PaymentPlanListUpdateHandler paymentPlanListUpdateHandler;
     private final CalorieAccessService calorieAccessService;
+    private final AnalyticsService analyticsService;
     private static final String VOICE_ERROR_MESSAGE =
             "Ошибка! Не получилось обработать голосовое сообщение";
     private static final String PHOTO_ERROR_MESSAGE =
@@ -66,7 +68,8 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
 
         calorieTelegramBot.sendReturnedMessage(
                 update.getMessage().getChatId(),
-                Dish.getInfo(dish),
+                analyticsService.getInfo(dish, telegramUser.getTelegramId()),
+//                Dish.getInfo(dish),
                 getPortionKeyboard(dish.getId()),
                 null
         );

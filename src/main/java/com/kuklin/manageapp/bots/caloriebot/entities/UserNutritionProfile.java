@@ -29,6 +29,8 @@ public class UserNutritionProfile {
     //Вес
     public static final Integer WEIGHT_MIN = 1;
     public static final Integer WEIGHT_MAX = 500;
+    //Вода
+    public static final Integer DEF_WATER_ML = 2000;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

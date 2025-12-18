@@ -4,7 +4,6 @@ import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
 import com.kuklin.manageapp.bots.caloriebot.entities.models.UserNutritionDto;
 import com.kuklin.manageapp.bots.caloriebot.repository.UserNutritionProfileRepository;
 import com.kuklin.manageapp.bots.caloriebot.services.exceptions.InsufficientProfileDataException;
-import com.kuklin.manageapp.bots.caloriebot.services.exceptions.UserNutritionProfileException;
 import com.kuklin.manageapp.bots.caloriebot.services.exceptions.validation.InvalidAgeException;
 import com.kuklin.manageapp.bots.caloriebot.services.exceptions.validation.InvalidHeightException;
 import com.kuklin.manageapp.bots.caloriebot.services.exceptions.validation.InvalidWeightException;
@@ -12,8 +11,10 @@ import com.kuklin.manageapp.bots.caloriebot.services.exceptions.validation.UserN
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+
 import static com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile.*;
 
 /*
@@ -26,15 +27,18 @@ import static com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile
 @Slf4j
 public class UserNutritionProfileService {
     private final UserNutritionProfileRepository userNutritionProfileRepository;
+    private final WeightEntryService weightEntryService;
 
     /**
      * Получить профиль или создать пустой (только userId).
      */
+    @Transactional
     public UserNutritionProfile getOrCreateProfile(Long userId) {
         return userNutritionProfileRepository.findByUserId(userId)
                 .orElseGet(() -> userNutritionProfileRepository.save(
                         new UserNutritionProfile()
                                 .setUserId(userId)
+                                .setWaterTargetMlPerDay(DEF_WATER_ML)
                 ));
     }
 
@@ -42,16 +46,15 @@ public class UserNutritionProfileService {
      * Обновить только текущий вес из /weight 78.5.
      * Можно дергать после записи WeightEntry.
      */
-    public UserNutritionProfile updateCurrentWeight(Long userId, BigDecimal currentWeightKg) throws UserNutritionProfileException {
-        UserNutritionProfile profile = getOrCreateProfile(userId)
-                .setCurrentWeightKg(currentWeightKg);
-
-        return  validateAndSave(profile);
+    @Transactional
+    public void updateCurrentWeight(Long userId, BigDecimal currentWeightKg) {
+        weightEntryService.updateWeight(userId, currentWeightKg);
     }
 
     /**
      * Обновить только цель по воде (когда пользователь меняет её явно).
      */
+    @Transactional
     public UserNutritionProfile updateWaterTarget(Long userId, Integer waterTargetMlPerDay) {
         UserNutritionProfile profile = getOrCreateProfile(userId)
                 .setWaterTargetMlPerDay(waterTargetMlPerDay);
@@ -87,6 +90,7 @@ public class UserNutritionProfileService {
      * Валидировать профиль (диапазоны возраста/роста/веса).
      * Можно дергать перед сохранением анкеты.
      */
+    @Transactional
     public UserNutritionProfile validateAndSave(UserNutritionProfile profile)
             throws UserNutritionProfileValidationException {
 
@@ -95,6 +99,7 @@ public class UserNutritionProfileService {
     }
 
     //Пересчет пользовательских целей и сохранение
+    @Transactional
     public UserNutritionProfile recalculateAndSave(UserNutritionProfile profile) throws InsufficientProfileDataException, UserNutritionProfileValidationException {
         UserNutritionDto dto = recalcTargets(profile);
         profile = UserNutritionDto.updateNutritionData(profile, dto);
@@ -125,11 +130,16 @@ public class UserNutritionProfileService {
                 * profile.getGoal().getFatsPerKg());
         int carbs = (int) ((bmrCalories - proteins * 4 - fats * 9) / 4);
 
+        int waterTarget = (int) (profile.getCurrentWeightKg().doubleValue()
+                * profile.getActivityLevel().getWaterMlPerKg());
+
         return new UserNutritionDto()
                 .setCaloriesNormPerDay((int) bmrCalories)
                 .setProteinsNormGramsPerDay(proteins)
                 .setFatsNormGramsPerDay(fats)
-                .setCarbsNormGramsPerDay(carbs);
+                .setCarbsNormGramsPerDay(carbs)
+                .setWaterTargetMlPerDay(waterTarget)
+                ;
     }
 
     //Проверка достаточности существующих данных
@@ -173,6 +183,7 @@ public class UserNutritionProfileService {
      * Метод либо возвращает валидный профиль,
      * либо кидает UserNutritionProfileException.
      */
+    @Transactional
     public UserNutritionProfile patchProfile(
             Long userId,
             UserNutritionProfile.Sex sex,

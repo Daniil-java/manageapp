@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.common.library.tgutils;
 
+import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
@@ -21,6 +22,10 @@ public enum Command {
     CALORIE_PROFILE("\uD83D\uDC64Мой профиль", BotIdentifier.CALORIE_BOT),
     CALORIE_PROFILE_EDIT("/profileedit", BotIdentifier.CALORIE_BOT),
     CALORIE_PROFILE_DIALOGUE("/profiledialogue", BotIdentifier.CALORIE_BOT),
+    CALORIE_WATER("💧", BotIdentifier.CALORIE_BOT),
+    CALORIE_WEIGHT("Вес", BotIdentifier.CALORIE_BOT),
+    CALORIE_WEIGHT_HISTORY("/weight", BotIdentifier.CALORIE_BOT),
+    CALORIE_STATS("КБЖУ", BotIdentifier.CALORIE_BOT),
 
     //==========================PAYMENT============================
     PAYMENT_PRE_CHECK_QUERY("precheckquerynotcommand", BotIdentifier.PAYMENT),
@@ -86,9 +91,7 @@ public enum Command {
 
     //==========================METRICS============================
     METRICS_GET("/get", BotIdentifier.METRICS),
-    METRICS_TEST_ERROR("/test", BotIdentifier.METRICS)
-    ;
-
+    METRICS_TEST_ERROR("/test", BotIdentifier.METRICS);
     private final String commandText;
     private final BotIdentifier botIdentifier;
 

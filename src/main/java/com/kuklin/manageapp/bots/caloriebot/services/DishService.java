@@ -43,7 +43,7 @@ public class DishService {
                                                 1. Если на фото нет ничего, что можно съесть или выпить (пейзаж, человек, предмет, животное и т.д.) —\s
                                                    верни JSON:
                                                    {
-                                                     "name": null,
+                                                     "name": null, 
                                                      "calories": null,
                                                      "proteins": null,
                                                      "fats": null,
@@ -67,7 +67,7 @@ public class DishService {
                                         
                     Верни JSON строго в формате:                
                     {
-                      "name": <String или null>
+                      "name": <String или null> Подбери красивый подходящий смалик, перед названием блюда
                       "calories": <Integer или null>,
                       "proteins": <Integer или null>,
                       "fats": <Integer или null>,
@@ -93,7 +93,7 @@ public class DishService {
                     Верни JSON строго в формате:
                                         
                     {
-                      "name": <String или null>
+                      "name": <String или null> Подбери красивый подходящий смалик, перед названием блюда
                       "calories": <Integer или null>,
                       "proteins": <Integer или null>,
                       "fats": <Integer или null>,
@@ -223,7 +223,6 @@ public class DishService {
                 .minusDays(7)
                 .atStartOfDay();
         LocalDateTime endOfDay = now;
-
 
         return dishRepository.findAllByUserIdAndCreatedBetween(userId, startOfDay, endOfDay);
     }

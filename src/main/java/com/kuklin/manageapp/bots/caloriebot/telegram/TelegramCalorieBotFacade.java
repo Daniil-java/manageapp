@@ -56,13 +56,18 @@ public class TelegramCalorieBotFacade extends TelegramFacade {
         if (update.hasMessage() && update.getMessage().hasPhoto()) {
             return getUpdateHandlerMap().get(Command.CALORIE_GENERAL.getCommandText());
         }
+        if (update.hasMessage() && update.getMessage().getText().startsWith(Command.CALORIE_WATER.getCommandText())) {
+            return getUpdateHandlerMap().get(Command.CALORIE_WATER.getCommandText());
+        }
 
         if (update.hasCallbackQuery()) {
             if (update.getCallbackQuery().getData().startsWith(Command.CALORIE_FAVORITE.getCommandText()))
                 return getUpdateHandlerMap().get(Command.CALORIE_FAVORITE.getCommandText());
             if (update.getCallbackQuery().getData().startsWith(Command.CALORIE_PROFILE.getCommandText()))
                 return getUpdateHandlerMap().get(Command.CALORIE_PROFILE.getCommandText());
-
+            if (update.getCallbackQuery().getData().startsWith(Command.CALORIE_WATER.getCommandText())) {
+                return getUpdateHandlerMap().get(Command.CALORIE_WATER.getCommandText());
+            }
             request = update.getCallbackQuery().getData().split(TelegramBot.DEFAULT_DELIMETER)[0];
 
             UpdateHandler updateHandler = getUpdateHandlerMap().get(request);
