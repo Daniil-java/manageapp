@@ -1,39 +1,48 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.handlers;
 
+import com.kuklin.manageapp.aiconversation.models.enums.ChatModel;
 import com.kuklin.manageapp.bots.caloriebot.configurations.TelegramCaloriesBotKeyComponents;
-import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
+import com.kuklin.manageapp.bots.caloriebot.entities.DishChoiceChatModel;
+import com.kuklin.manageapp.bots.caloriebot.entities.models.DishDto;
+import com.kuklin.manageapp.bots.caloriebot.services.AnalyticsService;
+import com.kuklin.manageapp.bots.caloriebot.services.CalorieAccessService;
+import com.kuklin.manageapp.bots.caloriebot.services.DishChoiceChatModelService;
 import com.kuklin.manageapp.bots.caloriebot.services.DishService;
+import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
-import com.kuklin.manageapp.common.services.OpenAiIntegrationService;
-import com.kuklin.manageapp.common.services.TelegramService;
 import com.kuklin.manageapp.common.library.tgutils.Command;
+import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;
+import com.kuklin.manageapp.common.services.TelegramService;
+import com.kuklin.manageapp.payment.handlers.PaymentPlanListUpdateHandler;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Message;
-import org.telegram.telegrambots.meta.api.objects.PhotoSize;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.Base64;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.StringJoiner;
 
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class DishUpdateHandler implements CalorieBotUpdateHandler{
+public class DishUpdateHandler implements CalorieBotUpdateHandler {
     private final CalorieTelegramBot calorieTelegramBot;
     private final TelegramService telegramService;
     private final TelegramCaloriesBotKeyComponents caloriesBotKeyComponents;
     private final DishService dishService;
-    private final OpenAiIntegrationService openAiIntegrationService;
+    private final DishChoiceChatModelService dishChoiceChatModelService;
+    private final PaymentPlanListUpdateHandler paymentPlanListUpdateHandler;
+    private final CalorieAccessService calorieAccessService;
+    private final AnalyticsService analyticsService;
     private static final String VOICE_ERROR_MESSAGE =
             "Ошибка! Не получилось обработать голосовое сообщение";
     private static final String PHOTO_ERROR_MESSAGE =
@@ -42,29 +51,52 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler{
             "Данное сообщение не поддержтвается";
     private static final String ERROR_CONTENT_MESSAGE =
             "Это не съедобно!";
+    private static final String SUB_MESSAGE =
+            "Для использования бота необходимо приобрести подписку! Введите команду /plan";
+    private static final String ERROR_LIMIT_MSG = "Количество запросов, доступных вам, достигло предела!";
+
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
+        Long chatId = update.hasPreCheckoutQuery()
+                ? update.getCallbackQuery().getMessage().getChatId()
+                : update.getMessage().getChatId();
+
+        if (!checkAccess(update, telegramUser, chatId)) return;
 
         Dish dish = getDishOrNull(update, telegramUser);
         if (dish == null) return;
 
         calorieTelegramBot.sendReturnedMessage(
                 update.getMessage().getChatId(),
-                Dish.getInfo(dish),
-                getInlineMessage(dish.getId()),
+                analyticsService.getInfo(dish, telegramUser.getTelegramId()),
+//                Dish.getInfo(dish),
+                getPortionKeyboard(dish.getId()),
                 null
         );
-
     }
 
+    /**
+     * Обрабатывает апдейт и пытается получить Dish.
+     * Возвращает:
+     *  - Dish, если всё прошло успешно;
+     *  - null, если были ошибки (при этом в большинстве случаев уже отправлены сообщения пользователю).
+     */
     private Dish getDishOrNull(Update update, TelegramUser telegramUser) {
         Long userId = telegramUser.getTelegramId();
         Dish dish;
+
+        // ==== ВЕТКА 1: пользователь прислал фото ====
         if (update.hasMessage() && update.getMessage().hasPhoto()) {
-            dish = processPhotoOrNull(userId, update.getMessage());
+            dish = processPhotoOrNull(telegramUser, update.getMessage());
+            // ==== ВЕТКА 2: пользователь прислал голосовое ====
         } else if (update.hasMessage() && update.getMessage().hasVoice()) {
             String request = processVoiceMessageOrNull(update.getMessage());
+            // Если не смогли распознать голос — дальше не идём
+            if (request == null) {
+                return null;
+            }
             dish = processTextOrNull(userId, request, update.getMessage().getChatId());
+            // ==== ВЕТКА 3: всё остальное считаем текстовым сообщением ====
         } else {
             dish = processTextOrNull(userId, update.getMessage().getText(), update.getMessage().getChatId());
         }
@@ -74,6 +106,23 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler{
             return null;
         }
         return dish;
+    }
+
+    private String getDishDtoListString(Map<ChatModel, DishDto> map) {
+        if (map == null || map.isEmpty()) return "";
+        StringJoiner sj = new StringJoiner(System.lineSeparator());
+
+        for (Entry<ChatModel, DishDto> entry : map.entrySet()) {
+            ChatModel model = entry.getKey();
+            DishDto dto = entry.getValue();
+            if (dto != null) {
+                String name = (model != null ? model.getName() : "UNKNOWN_MODEL");
+                sj.add("<b>" + name + "</b>\n" + dto.toStringSpecial()); // dto.toString()
+                sj.add("\n");
+            }
+        }
+
+        return sj.toString();
     }
 
     private Dish processTextOrNull(Long userId, String message, long chatId) {
@@ -86,7 +135,10 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler{
 
     private String processVoiceMessageOrNull(Message message) {
         Long chatId = message.getChatId();
-        String request = convertVoiceToText(message);
+        String request = telegramService.convertVoiceToTextOrNull(
+                calorieTelegramBot,
+                caloriesBotKeyComponents.getAiKey(),
+                message);
 
         if (request == null) {
             calorieTelegramBot.sendReturnedMessage(chatId, VOICE_ERROR_MESSAGE);
@@ -97,35 +149,132 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler{
         return request;
     }
 
-    private String convertVoiceToText(Message message) {
-        log.info("Скачивание аудиофайла с телеграмма...");
-        String fileId = message.getVoice().getFileId();
-        byte[] inputAudioFile = telegramService.downloadFileOrNull(calorieTelegramBot, fileId);
-        if (inputAudioFile == null) {
-            log.info("Аудиофайла не существует.");
-            return null;
-        }
-        return openAiIntegrationService.fetchAudioResponse(caloriesBotKeyComponents.getAiKey(), inputAudioFile);
-    }
-
-    private Dish processPhotoOrNull(Long userId, Message message) {
-        List<PhotoSize> photos = message.getPhoto();
-        // Берём самое большое (последний элемент списка)
-        PhotoSize photo = photos.get(photos.size() - 1);
-
-        InputStream file = new ByteArrayInputStream(
-                telegramService.downloadFileOrNull(calorieTelegramBot, photo.getFileId()));
+    private Dish processPhotoOrNull(TelegramUser telegramUser, Message message) {
+        Dish dish;
+        String photoBase64;
         try {
-            return dishService.getDishDtoByPhotoOrNull(userId, toBase64(file));
+            photoBase64 = telegramService.downloadPhotoFileBase64OrNull(calorieTelegramBot, message);
+            dish = dishService.getDishDtoByPhotoOrNull(telegramUser.getTelegramId(), photoBase64);
         } catch (IOException e) {
-            log.error("ERROR");
-            calorieTelegramBot.sendReturnedMessage(message.getChatId(), PHOTO_ERROR_MESSAGE);
+            log.error("Provider error!");
+            calorieTelegramBot.sendReturnedMessage(message.getChatId(), "Один из провайдеров не смог обработать фото");
             return null;
         }
+
+        if (dish == null) return null;
+        processManyAiModels(dish.getId(), photoBase64, message);
+
+        calorieAccessService.incrementResponses(telegramUser);
+        return dish;
     }
 
-    private static String toBase64(InputStream inputStream) throws IOException {
-        return "data:image/jpeg;base64," + Base64.getEncoder().encodeToString(inputStream.readAllBytes());
+    private void processManyAiModels(Long dishId, String photoBase64, Message message) {
+        Map<ChatModel, DishDto> dishDtos;
+        try {
+            dishDtos = dishService.getDishDtoByPhotoOrNullWithManyProviders(photoBase64);
+        } catch (Exception e) {
+            log.error("Many providers request error!", e);
+            calorieTelegramBot.sendReturnedMessage(
+                    message.getChatId(),
+                    PHOTO_ERROR_MESSAGE
+            );
+            return;
+        }
+
+        if (dishDtos == null) {
+            calorieTelegramBot.sendReturnedMessage(message.getChatId(), "Не получилось обработать фото!");
+            return;
+        }
+        List<DishChoiceChatModel> dishChoiceChatModelList = dishChoiceChatModelService
+                .saveList(dishDtos, dishId);
+
+        calorieTelegramBot.sendReturnedMessage(
+                message.getChatId(),
+                getDishDtoListString(dishDtos),
+                getModelChooseListKeyboard(dishChoiceChatModelList),
+                null
+        );
+    }
+
+    private Boolean checkAccess(Update update, TelegramUser telegramUser, Long chatId) {
+        if (!calorieAccessService.checkAccess(telegramUser)) {
+            calorieTelegramBot.sendReturnedMessage(
+                    chatId, ERROR_LIMIT_MSG + "\n" + SUB_MESSAGE);
+            paymentPlanListUpdateHandler.handle(update, telegramUser);
+
+            if (telegramUser.getTelegramId().equals(425120436L) ||
+                    telegramUser.getTelegramId().equals(420478432L)) {
+                calorieTelegramBot.sendReturnedMessage(
+                        chatId, "Это для демонстрации. Скажи, чтобы я выдал подписку");
+            } else {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public static InlineKeyboardMarkup getPortionKeyboardFavorite(Long dishId) {
+        String base = Command.CALORIE_SCALE.getCommandText()
+                + TelegramBot.DEFAULT_DELIMETER + dishId
+                + TelegramBot.DEFAULT_DELIMETER;
+
+        // здесь просто копируем ряды, но кнопку "Сохранить блюдо"
+        // меняем на "✅ В избранном" и делаем её неактивной
+        return TelegramKeyboard.builder()
+                .row(
+                        TelegramKeyboard.button("-50%", base + "-50"),
+                        TelegramKeyboard.button("-10%", base + "-10"),
+                        TelegramKeyboard.button("+10%", base + "10"),
+                        TelegramKeyboard.button("+50%", base + "50")
+                )
+                .row(
+                        TelegramKeyboard.button(
+                                "✅ В избранном",
+                                // сюда поставь callback для игнорируемой кнопки
+                                // если у тебя в TelegramKeyboard есть что-то типа IGNORE/EMPTY – используй его
+                                "temp" //Заглушка
+                        )
+                )
+                .row(
+                        TelegramKeyboard.button(
+                                "Удалить из дневника",
+                                Command.CALORIE_DELETE.getCommandText()
+                                        + TelegramBot.DEFAULT_DELIMETER + dishId
+                        )
+                )
+                .build();
+    }
+
+    public static InlineKeyboardMarkup getPortionKeyboard(Long dishId) {
+        // Базовая часть для всех кнопок изменения порции
+        String base = Command.CALORIE_SCALE.getCommandText()
+                + TelegramBot.DEFAULT_DELIMETER + dishId
+                + TelegramBot.DEFAULT_DELIMETER;
+
+        //<scale_command>delim<dishId>delim<+-scale>
+        return TelegramKeyboard.builder()
+                .row(
+                        TelegramKeyboard.button("-50%", base + "-50"),
+                        TelegramKeyboard.button("-10%", base + "-10"),
+//                        TelegramKeyboard.button("ОК",   base + "OK"),
+                        TelegramKeyboard.button("+10%", base + "10"),
+                        TelegramKeyboard.button("+50%", base + "50")
+                )
+                .row(
+                        TelegramKeyboard.button(
+                                "⭐ Сохранить блюдо",
+                                Command.CALORIE_FAVORITE_ADD.getCommandText()
+                                + TelegramBot.DEFAULT_DELIMETER + dishId
+                        )
+                )
+                .row(
+                        TelegramKeyboard.button(
+                                "Удалить из дневника",
+                                Command.CALORIE_DELETE.getCommandText()
+                                        + TelegramBot.DEFAULT_DELIMETER + dishId
+                        )
+                )
+                .build();
     }
 
     public static InlineKeyboardMarkup getInlineMessage(Long dishId) {
@@ -140,6 +289,31 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler{
         markup.setKeyboard(Collections.singletonList(Collections.singletonList(button)));
 
         return markup;
+    }
+
+    public InlineKeyboardMarkup getModelChooseListKeyboard(
+            List<DishChoiceChatModel> dishChoiceList
+    ) {
+        TelegramKeyboard.TelegramKeyboardBuilder builder = TelegramKeyboard.builder();
+
+        dishChoiceList.stream()
+                .map(model -> TelegramKeyboard.button(
+                        model.getChatModel().getName(),
+                        getCallbackData(model)
+                ))
+                .forEach(button -> builder.row(button));
+
+        return builder.build();
+    }
+
+    private String getCallbackData(DishChoiceChatModel model) {
+        StringBuilder sb = new StringBuilder();
+
+        return sb
+                .append(Command.CALORIE_CHOICE.getCommandText())
+                .append(TelegramBot.DEFAULT_DELIMETER)
+                .append(model.getId())
+                .toString();
     }
 
     @Override

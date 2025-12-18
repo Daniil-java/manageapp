@@ -1,7 +1,9 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.handlers;
 
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
+import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
 import com.kuklin.manageapp.bots.caloriebot.services.DishService;
+import com.kuklin.manageapp.bots.caloriebot.services.UserNutritionProfileService;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgutils.Command;
@@ -20,15 +22,107 @@ import java.util.stream.Collectors;
 public class ListWeekUpdateHandler implements CalorieBotUpdateHandler{
     private final CalorieTelegramBot calorieTelegramBot;
     private final DishService dishService;
+    private final UserNutritionProfileService userNutritionProfileService;
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
         List<Dish> dishes = dishService.getWeekDishes(telegramUser.getTelegramId());
+        UserNutritionProfile profile = userNutritionProfileService.getOrCreateProfile(telegramUser.getTelegramId());
         calorieTelegramBot.sendReturnedMessage(
                 update.getMessage().getChatId(),
-                getDishesString(dishes),
+                getWeeklyAnalytics(dishes, profile),
                 StartUpdateHandler.getCommandKeyboard(),
                 null
         );
+    }
+
+    private String getWeeklyAnalytics(List<Dish> dishes, UserNutritionProfile profile) {
+        StringBuilder sb = new StringBuilder();
+
+        // Группируем по дате
+        Map<LocalDate, List<Dish>> byDay = dishes.stream()
+                .collect(Collectors.groupingBy(d -> d.getCreated().toLocalDate(),
+                        TreeMap::new, Collectors.toList()));
+
+        int normCalories = profile.getCaloriesNormPerDay() != null ? profile.getCaloriesNormPerDay() : 0;
+
+        sb.append("📊 <b>ЕЖЕНЕДЕЛЬНЫЙ ОТЧЕТ ПИТАНИЯ</b>\n");
+        sb.append("⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n\n");
+
+        int successfulDays = 0;
+        int totalCalories = 0, totalP = 0, totalF = 0, totalC = 0;
+
+        for (Map.Entry<LocalDate, List<Dish>> entry : byDay.entrySet()) {
+            LocalDate day = entry.getKey();
+            List<Dish> dayDishes = entry.getValue();
+
+            int dayCals = 0, dayP = 0, dayF = 0, dayC = 0;
+
+            sb.append("📅 <b>").append(day).append("</b>\n");
+
+            for (Dish dish : dayDishes) {
+                sb.append("▫️ <i>").append(dish.getName()).append("</i>\n");
+                // Детализация блюда: Ккал и БЖУ без смайликов
+                sb.append("  └ ").append(dish.getCalories()).append(" ккал | ")
+                        .append("Б:").append(dish.getProteins()).append(" ")
+                        .append("Ж:").append(dish.getFats()).append(" ")
+                        .append("У:").append(dish.getCarbohydrates()).append("\n");
+
+                dayCals += dish.getCalories();
+                dayP += dish.getProteins();
+                dayF += dish.getFats();
+                dayC += dish.getCarbohydrates();
+            }
+
+            boolean isExceeded = normCalories > 0 && dayCals > normCalories;
+            String dayStatusEmoji = isExceeded ? "🔴" : "🟢";
+            if (!isExceeded) successfulDays++;
+
+            sb.append("<b>").append(dayStatusEmoji).append(" Итого за день:</b>\n");
+            sb.append("🔥 ").append(dayCals).append(" / ").append(normCalories).append(" ккал");
+
+            if (isExceeded) {
+                sb.append(" ⚠️ (+").append(dayCals - normCalories).append(")");
+            }
+
+            sb.append("\n💪 Б: ").append(dayP).append(" | 🥑 Ж: ").append(dayF).append(" | 🌾 У: ").append(dayC)
+                    .append("\n\n");
+
+            totalCalories += dayCals;
+            totalP += dayP; totalF += dayF; totalC += dayC;
+        }
+
+        // Блок итоговой статистики за весь период
+        sb.append("⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n");
+        sb.append("📈 <b>ИТОГИ ПЕРИОДА</b>\n\n");
+
+        sb.append("✅ Дисциплина (калории): <b>").append(successfulDays).append(" из ").append(byDay.size()).append(" дн.</b>\n");
+
+        if (!byDay.isEmpty()) {
+            sb.append("🧮 Среднее потребление: <b>").append(totalCalories / byDay.size()).append(" ккал/день</b>\n");
+        }
+
+        sb.append("\n<b>Суммарный баланс КБЖУ:</b>\n")
+                .append("🔥 ").append(totalCalories).append(" ккал\n")
+                .append("💪 Б: ").append(totalP).append("г | ")
+                .append("🥑 Ж: ").append(totalF).append("г | ")
+                .append("🌾 У: ").append(totalC).append("г\n\n");
+
+        String macroStatus = checkMacroBalance(totalP, totalF, totalC, profile, byDay.size());
+        sb.append("📝 <b>Вердикт:</b> ").append(macroStatus);
+
+        return sb.toString();
+    }
+
+    private String checkMacroBalance(int p, int f, int c, UserNutritionProfile profile, int days) {
+        if (days == 0 || profile.getProteinsNormGramsPerDay() == null) return "Недостаточно данных для анализа БЖУ.";
+
+        int avgP = p / days;
+        int normP = profile.getProteinsNormGramsPerDay();
+
+        if (avgP < normP * 0.8) return "Старайтесь добирать норму белка для поддержки мышц. 💪";
+        if (avgP > normP * 1.2) return "У вас отличный фокус на белок! Соблюдайте баланс. ✨";
+
+        return "Рацион сбалансирован, вы отлично справляетесь! 🎯";
     }
 
     private String getDishesString(List<Dish> dishes) {
