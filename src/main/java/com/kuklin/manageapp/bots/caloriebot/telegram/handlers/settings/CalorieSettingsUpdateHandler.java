@@ -13,11 +13,15 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMa
 
 import java.util.List;
 
+/**
+ * Обработчик для комманды настроек
+ */
 @Component
 @RequiredArgsConstructor
 public class CalorieSettingsUpdateHandler implements CalorieBotUpdateHandler {
     private final CalorieTelegramBot calorieTelegramBot;
     private final UserSettingsService userSettingsService;
+    //Собираем в лист, все реализации интерфеса, который отвечает за параметр настройки
     private final List<CalorieSettingsHandler> calorieSettingsHandlers;
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
@@ -34,6 +38,10 @@ public class CalorieSettingsUpdateHandler implements CalorieBotUpdateHandler {
         );
     }
 
+
+    /**
+     * Обработчик колбэка
+     */
     private void processCallback(Update update, TelegramUser telegramUser) {
         calorieTelegramBot.sendEditMessage(
                 update.getCallbackQuery().getMessage().getChatId(),
@@ -43,6 +51,9 @@ public class CalorieSettingsUpdateHandler implements CalorieBotUpdateHandler {
         );
     }
 
+    /**
+     * Клавиатура для сообщения настроек
+     */
     private InlineKeyboardMarkup getSettingsKeyboard() {
         TelegramKeyboard.TelegramKeyboardBuilder builder = TelegramKeyboard.builder();
 

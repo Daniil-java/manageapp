@@ -13,6 +13,9 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
 
+/**
+ * Шедулер для напоминаний о приеме пищи
+ */
 @Component
 @AllArgsConstructor
 @Slf4j
@@ -21,6 +24,7 @@ public class MealReminderSchedulerProcessor implements ScheduleProcessor {
     private final CalorieTelegramBot calorieTelegramBot;
     @Override
     public void process() {
+        //Получение всех пользователей, у которых включены напоминания о приеме пищи
         List<UserSettings> users =
                 userSettingsService.getAllUserSettingWithEnabledMealReminder();
 

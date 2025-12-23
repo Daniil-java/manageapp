@@ -16,23 +16,32 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKe
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Обработчик, отвечает за настройку таймзоны
+ */
 @Component
 @RequiredArgsConstructor
 public class CalorieTimeZoneSettingsUpdateHandler implements CalorieSettingsHandler{
     private final CalorieTelegramBot calorieTelegramBot;
     private final UserSettingsService userSettingsService;
+    //Команды для коллбэка
+    //SET - означает сохранение какого-либо параметра
     private static final String SET_CMD = "SET";
+    //PAGE = перелистывание списка
     private static final String PAGE_CMD = "PAGE";
     private static final int PAGE_SIZE = 8;
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
+        //Обрабатываем только колбэк
         if (!update.hasCallbackQuery()) return;
 
         CallbackQuery query = update.getCallbackQuery();
         Long chatId = query.getMessage().getChatId();
         String data = query.getData();
 
+        //Если данные колбэка содержат только команду данного обработчика,
+        //то отсылаем сообщение с начальной клавиатурой
         if (data.equals(getHandlerListName())) {
             calorieTelegramBot.sendEditMessage(
                     chatId,
@@ -43,11 +52,16 @@ public class CalorieTimeZoneSettingsUpdateHandler implements CalorieSettingsHand
             return;
         }
 
+        //Извлекаем нужные данные (команду) из данных колбэка
         String cmd = extractCmdOrNull(data);
+        //Если команда SET
         if (SET_CMD.equals(cmd)) {
+            //Извлекаем, выбранную из данных колбэка пользователем, таймзону
             String tz = extractTzOrNull(data);
+            //Сохранение таймзоны
             userSettingsService.setTimeZoneOrNull(telegramUser.getTelegramId(), tz);
 
+            //Отправка сообщения об успешном сохранении
             calorieTelegramBot.sendEditMessage(
                     chatId,
                     "✅ Таймзона установлена: " + tz,
@@ -57,7 +71,9 @@ public class CalorieTimeZoneSettingsUpdateHandler implements CalorieSettingsHand
             return;
         }
 
+        //Обработка команды PAGE
         if (PAGE_CMD.equals(cmd)) {
+            //Ивзлекаем номер страницы
             Integer page = extractPageOrNull(data);
             if (page == null) return;
 
@@ -96,6 +112,7 @@ public class CalorieTimeZoneSettingsUpdateHandler implements CalorieSettingsHand
         }
     }
 
+    //Клавиатура для выбора таймзоны
     private InlineKeyboardMarkup getTimeZoneKeyboard(int page) {
         int total = TIME_ZONES.size();
         int totalPages = (int) Math.ceil(total / (double) PAGE_SIZE);

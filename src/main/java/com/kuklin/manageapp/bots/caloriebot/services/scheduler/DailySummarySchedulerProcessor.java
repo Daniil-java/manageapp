@@ -14,6 +14,9 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
 
+/**
+ * Шедулер для ежедневных отчетов
+ */
 @Component
 @AllArgsConstructor
 @Slf4j
@@ -25,6 +28,7 @@ public class DailySummarySchedulerProcessor implements ScheduleProcessor {
     @Override
     public void process() {
         boolean isEnabled = true;
+        //Получение всех пользователей, у которых включены ежедневные отчеты
         List<UserSettings> users =
                 userSettingsService.getAllUserSettingWithEnabledDailySummary(isEnabled);
 

@@ -14,14 +14,17 @@ import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 
+/**
+ * Обработчик настройки уведомлений/напоминаний
+ */
 @Component
 @RequiredArgsConstructor
 public class CalorieRemindersSettingsHandler implements CalorieSettingsHandler{
     private final CalorieTelegramBot calorieTelegramBot;
     private final UserSettingsService userSettingsService;
+    //Команда переключения булевых параметров
     private static final String TOGGLE_CMD = "TOGGLE";
-
-    private static final String REMINDERS = "REMINDERS";
+    //Команды для идентификации уведомлений
     private static final String DAILY = "DAILY";
     private static final String MEAL = "MEAL";
     @Override
@@ -39,9 +42,11 @@ public class CalorieRemindersSettingsHandler implements CalorieSettingsHandler{
         Long chatId = message.getChatId();
         String data = query.getData();
 
+        //Получаем настройки пользователя
         UserSettings settings =
                 userSettingsService.getOrCreate(telegramUser.getTelegramId());
 
+        //Если калбэк пришел с начальными данными
         if (data.equals(getHandlerListName())) {
             calorieTelegramBot.sendEditMessage(
                     chatId,
@@ -52,19 +57,23 @@ public class CalorieRemindersSettingsHandler implements CalorieSettingsHandler{
             return;
         }
 
+        //Разбиваем данные колбэка на части
         String[] cmd = data.split(TelegramBot.DEFAULT_DELIMETER);
         if (cmd.length < 2) return;
 
+        //Обработка команд настройки напоминаний о приеме пищи
         if (MEAL.equals(cmd[1])) {
             handleMeal(query, telegramUser, settings);
             return;
         }
 
+        //Обработка команд настройки ежедневных отчетов
         if (DAILY.equals(cmd[1])) {
             handleDaily(query, telegramUser, settings, cmd);
         }
     }
 
+    //Текстовка для статуса настроек
     private String getRemindersStatusText(UserSettings s) {
         StringBuilder sb = new StringBuilder();
 
@@ -82,7 +91,6 @@ public class CalorieRemindersSettingsHandler implements CalorieSettingsHandler{
 
         return sb.toString();
     }
-
 
     private void handleDaily(
             CallbackQuery query,

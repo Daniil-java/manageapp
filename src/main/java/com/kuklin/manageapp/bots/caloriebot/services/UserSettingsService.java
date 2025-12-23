@@ -11,15 +11,14 @@ import java.time.*;
 import java.util.List;
 import java.util.Optional;
 
+/**
+ * Сервис для пользовательских настроек
+ */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class UserSettingsService {
     private final UserSettingsRepository userSettingsRepository;
-
-    public String getTimeZoneByUserId(Long userId) {
-        return getOrCreate(userId).getTimezoneId();
-    }
 
     /**
      * Устанавливает таймзону пользователя с предварительной валидацией.
@@ -54,6 +53,7 @@ public class UserSettingsService {
         }
     }
 
+    //Получение и создание настроек пользователя
     public UserSettings getOrCreate(Long userId) {
         Optional<UserSettings> optSettings = userSettingsRepository.findById(userId);
 
@@ -66,6 +66,7 @@ public class UserSettingsService {
 
     // ---------- DAILY SUMMARY ----------
 
+    //Включение отчета о дневных итогах
     @Transactional
     public UserSettings enableDailySummaryOrNull(Long userId) {
         UserSettings settings = getOrCreate(userId);
@@ -74,6 +75,7 @@ public class UserSettingsService {
         return userSettingsRepository.save(settings);
     }
 
+    //Установки времени уведомления ежедневного отчета
     @Transactional
     public UserSettings setDailySummaryTimeOrNull(Long userId, int hour) {
         if (!validateHour(hour)) {
@@ -85,6 +87,7 @@ public class UserSettingsService {
         return userSettingsRepository.save(settings);
     }
 
+    //Отключение уведомления ежедневного отчета
     @Transactional
     public UserSettings disableDailySummary(Long userId) {
         UserSettings settings = getOrCreate(userId);
@@ -119,6 +122,7 @@ public class UserSettingsService {
         ZonedDateTime lastLocal = last.atZone(zoneId);
         return !isSameLocalDay(nowLocal, lastLocal);
     }
+
 
     @Transactional
     public void markDailySummarySent(UserSettings settings, Instant sentAtUtc) {
@@ -195,17 +199,11 @@ public class UserSettingsService {
     // ---------- COMMON ----------
 
     private boolean validateHour(int hour) {
-        if (hour < 0 || hour > 23) {
-            return false;
-        }
-        return true;
+        return hour >= 0 && hour <= 23;
     }
 
     private boolean validatePositiveInterval(int minutes) {
-        if (minutes <= 0) {
-            return false;
-        }
-        return true;
+        return minutes > 0;
     }
 
     private boolean isSameLocalDay(ZonedDateTime a, ZonedDateTime b) {
