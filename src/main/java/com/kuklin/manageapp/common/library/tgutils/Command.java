@@ -26,6 +26,9 @@ public enum Command {
     CALORIE_WEIGHT("Вес", BotIdentifier.CALORIE_BOT),
     CALORIE_WEIGHT_HISTORY("/weight", BotIdentifier.CALORIE_BOT),
     CALORIE_STATS("КБЖУ", BotIdentifier.CALORIE_BOT),
+    CALORIE_SETTINGS("⚙Настройки", BotIdentifier.CALORIE_BOT),
+    CALORIE_SETTINGS_TIMEZONE("tzset", BotIdentifier.CALORIE_BOT),
+    CALORIE_SETTINGS_REMINDERS("remind", BotIdentifier.CALORIE_BOT),
 
     //==========================PAYMENT============================
     PAYMENT_PRE_CHECK_QUERY("precheckquerynotcommand", BotIdentifier.PAYMENT),

@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 @Service
@@ -59,7 +59,7 @@ public class UserFavoriteDishService {
             return null;
         }
 
-        Dish saved = dishService.addDish(
+        Dish saved = dishService.addDishOrNull(
                 userId,
                 favorite.getName(),
                 favorite.getCalories(),
@@ -68,7 +68,7 @@ public class UserFavoriteDishService {
                 favorite.getCarbohydrates()
         );
 
-        favorite.setLastUsedAt(LocalDateTime.now());
+        favorite.setLastUsedAt(Instant.now());
         userFavoriteDishRepository.save(favorite);
 
         return saved;

@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.CreationTimestamp;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 @Table(name = "dish_choice_chat_model")
@@ -28,5 +28,5 @@ public class DishChoiceChatModel {
     private Integer carbohydrates;
     private Boolean isChoosed;
     @CreationTimestamp
-    private LocalDateTime created;
+    private Instant created;
 }

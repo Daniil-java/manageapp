@@ -10,6 +10,7 @@ import java.util.List;
 @Repository
 public interface WeightEntryRepository extends JpaRepository<WeightEntry, Long> {
     List<WeightEntry> findAllByUserIdOrderByEntryDateAsc(Long userId);
-    List<WeightEntry> findAllByUserIdOrderByEntryDateDesc(Long userId);
-    List<WeightEntry> findAllByUserIdAndEntryDateBetweenOrderByEntryDateAsc(Long userId, LocalDate startDate, LocalDate now);
+    List<WeightEntry> findAllByUserIdAndEntryDateBetweenOrderByEntryDateAsc(
+            Long userId, LocalDate startDate, LocalDate endDate
+    );
 }

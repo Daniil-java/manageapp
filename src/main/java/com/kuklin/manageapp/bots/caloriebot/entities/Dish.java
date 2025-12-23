@@ -1,4 +1,5 @@
 package com.kuklin.manageapp.bots.caloriebot.entities;
+
 import com.kuklin.manageapp.bots.caloriebot.entities.models.DishDto;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -6,7 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.CreationTimestamp;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 @Table(name = "dishes")
@@ -25,7 +26,7 @@ public class Dish {
     private Long userId;
 
     @CreationTimestamp
-    private LocalDateTime created;
+    private Instant created;
 
     public static Dish toEntity(DishDto dto) {
         return new Dish()

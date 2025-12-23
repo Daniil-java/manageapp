@@ -7,6 +7,9 @@ import com.kuklin.manageapp.bots.caloriebot.entities.WeightEntry;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Service
@@ -20,6 +23,7 @@ public class AnalyticsService {
     private final WeightEntryService weightEntryService;
     private final DishService dishService;
     private final UserNutritionProfileService userNutritionProfileService;
+    private final UserSettingsService userSettingsService;
 
     /**
      * Возвращает суммарный объем воды, выпитый пользователем за сегодня.
@@ -100,7 +104,6 @@ public class AnalyticsService {
         // 1. Если норма превышена — показываем "тревожную" шкалу
         if (totalCalories > norm) {
             StringBuilder overBar = new StringBuilder();
-            int filledTotal = (int) Math.round((double) totalCalories / norm * totalBars);
             // Ограничиваем 10-ю символами, но заменяем синий/зеленый на красный
             for (int i = 0; i < totalBars; i++) {
                 overBar.append("🟥");
@@ -166,12 +169,17 @@ public class AnalyticsService {
                 }
             }
 
+            ZoneId zoneId = userSettingsService.getOrCreate(userId).getZoneId();
             // Добавляем время, если в БД есть createdAt, чтобы различать замеры в один день
+            //TODO Время
             String time = current.getCreatedAt() != null
-                    ? " (" + current.getCreatedAt().toLocalTime().format(java.time.format.DateTimeFormatter.ofPattern("HH:mm")) + ")"
+                    ? " (" + current.getCreatedAt()
+                    .atZone(zoneId)
+                    .format(DateTimeFormatter.ofPattern("HH:mm")) + ")"
                     : "";
 
-            sb.append("• ").append(current.getEntryDate()).append(time)
+            sb.append("• ").append(current.getEntryDate())
+                    .append(time)
                     .append(": <b>").append(current.getWeightKg()).append(" кг</b>")
                     .append(trend).append("\n");
         }
@@ -193,69 +201,89 @@ public class AnalyticsService {
     /**
      * Возвращает строку прогресса для кнопки ККАЛ (Синий + Фиолетовый)
      */
-    public String getCaloriesBarButton(Long userId) {
-        UserNutritionProfile profile = userNutritionProfileService.getOrCreateProfile(userId);
-        List<Dish> dishes = dishService.getTodayDishes(userId);
+    public String getCaloriesBarButtonOrEmpty(Long userId) {
+        try {
+            UserNutritionProfile profile = userNutritionProfileService.getOrCreateProfile(userId);
+            List<Dish> dishes = dishService.getTodayDishes(userId);
 
-        int total = dishes.stream().mapToInt(Dish::getCalories).sum();
-        int norm = profile.getCaloriesNormPerDay();
-        int percent = (int) (((double) total / norm) * 100);
+            int total = dishes.stream().mapToInt(Dish::getCalories).sum();
+            int norm = profile.getCaloriesNormPerDay();
+            int percent = (int) (((double) total / norm) * 100);
 
-        return "🔥 К: " + generateButtonBar(total, norm, "\uD83D\uDFE7", "⬜") + " " + percent + "%";
+            return "🔥 К: " + generateButtonBar(total, norm, "\uD83D\uDFE7", "⬜") + " " + percent + "%";
+        } catch (Exception e) {
+            return "";
+        }
     }
 
     /**
      * Возвращает строку прогресса для кнопки БЕЛКИ (Фиолетовый)
      */
-    public String getProteinsBarButton(Long userId) {
-        UserNutritionProfile profile = userNutritionProfileService.getOrCreateProfile(userId);
-        int total = dishService.getTodayDishes(userId).stream().mapToInt(Dish::getProteins).sum();
-        int norm = profile.getProteinsNormGramsPerDay();
-        int percent = (int) (((double) total / norm) * 100);
+    public String getProteinsBarButtonOrEmpty(Long userId) {
+        try {
+            UserNutritionProfile profile = userNutritionProfileService.getOrCreateProfile(userId);
+            int total = dishService.getTodayDishes(userId).stream().mapToInt(Dish::getProteins).sum();
+            int norm = profile.getProteinsNormGramsPerDay();
+            int percent = (int) (((double) total / norm) * 100);
 
-        return "🥩 Б: " + generateButtonBar(total, norm, "🟪", "⬜") + " " + percent + "%";
+            return "🥩 Б: " + generateButtonBar(total, norm, "🟪", "⬜") + " " + percent + "%";
+        } catch (Exception e) {
+            return "";
+        }
     }
 
     /**
      * Возвращает строку прогресса для кнопки ЖИРЫ (Желтый)
      */
-    public String getFatsBarButton(Long userId) {
-        UserNutritionProfile profile = userNutritionProfileService.getOrCreateProfile(userId);
-        int total = dishService.getTodayDishes(userId).stream().mapToInt(Dish::getFats).sum();
-        int norm = profile.getFatsNormGramsPerDay();
-        int percent = (int) (((double) total / norm) * 100);
+    public String getFatsBarButtonOrEmpty(Long userId) {
+        try {
+            UserNutritionProfile profile = userNutritionProfileService.getOrCreateProfile(userId);
+            int total = dishService.getTodayDishes(userId).stream().mapToInt(Dish::getFats).sum();
+            int norm = profile.getFatsNormGramsPerDay();
+            int percent = (int) (((double) total / norm) * 100);
 
-        return "🥑 Ж: " + generateButtonBar(total, norm, "🟨", "⬜") + " " + percent + "%";
+            return "🥑 Ж: " + generateButtonBar(total, norm, "🟨", "⬜") + " " + percent + "%";
+        } catch (Exception e) {
+            return "";
+        }
     }
 
     /**
      * Возвращает строку прогресса для кнопки УГЛЕВОДЫ (Синий/Коричневый)
      */
     public String getCarbsBarButton(Long userId) {
-        UserNutritionProfile profile = userNutritionProfileService.getOrCreateProfile(userId);
-        int total = dishService.getTodayDishes(userId).stream().mapToInt(Dish::getCarbohydrates).sum();
-        int norm = profile.getCarbsNormGramsPerDay();
-        int percent = (int) (((double) total / norm) * 100);
+        try {
+            UserNutritionProfile profile = userNutritionProfileService.getOrCreateProfile(userId);
+            int total = dishService.getTodayDishes(userId).stream().mapToInt(Dish::getCarbohydrates).sum();
+            int norm = profile.getCarbsNormGramsPerDay();
+            int percent = (int) (((double) total / norm) * 100);
 
-        return "🍞 У: " + generateButtonBar(total, norm, "\uD83D\uDFE9", "⬜") + " " + percent + "%";
+            return "🍞 У: " + generateButtonBar(total, norm, "\uD83D\uDFE9", "⬜") + " " + percent + "%";
+        } catch (Exception e) {
+            return "";
+        }
     }
 
     /**
      * Возвращает строку прогресса для кнопки ВОДА (Голубые круги)
      */
     public String getWaterBarButton(Long userId) {
-        UserNutritionProfile profile = userNutritionProfileService.getOrCreateProfile(userId);
-        int total = getTodayWaterMl(userId);
-        int norm = profile.getWaterTargetMlPerDay() == null ? 2000 : profile.getWaterTargetMlPerDay();
+        try {
+            UserNutritionProfile profile = userNutritionProfileService.getOrCreateProfile(userId);
+            int total = getTodayWaterMl(userId);
+            int norm = profile.getWaterTargetMlPerDay() == null ? 2000 : profile.getWaterTargetMlPerDay();
 
-        int percent = (int) (((double) total / norm) * 100);
+            int percent = (int) (((double) total / norm) * 100);
 
-        // Используем круги для визуального отличия воды от еды
-        return "💧 В: " + generateButtonBar(total, norm, "\uD83D\uDFE6", "⬜") + " " + percent + "%";
+            // Используем круги для визуального отличия воды от еды
+            return "💧 В: " + generateButtonBar(total, norm, "\uD83D\uDFE6", "⬜") + " " + percent + "%";
+        } catch (Exception e) {
+            return "";
+        }
     }
 
     /**
-     * Универсальный генератор короткой шкалы для кнопок (6 сегментов)
+     * Универсальный генератор короткой шкалы для кнопок (10 сегментов)
      */
     private String generateButtonBar(int current, int norm, String filledEmoji, String emptyEmoji) {
         int totalBars = 10; // Оптимально для Inline-кнопок
@@ -264,7 +292,7 @@ public class AnalyticsService {
         int filled = (int) Math.round((double) current / norm * totalBars);
 
         if (current > 0 && filled == 0) filled = 1; // Видимость минимального прогресса
-        if (filled > totalBars) return "🟥🟥🟥🟥🟥🟥"; // Индикатор перебора
+        if (filled > totalBars) return "🟥".repeat(totalBars); // Индикатор перебора
 
         return filledEmoji.repeat(filled) + emptyEmoji.repeat(totalBars - filled);
     }

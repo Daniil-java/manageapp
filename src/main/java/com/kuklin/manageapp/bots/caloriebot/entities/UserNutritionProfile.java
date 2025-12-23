@@ -11,6 +11,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Entity
@@ -56,9 +57,9 @@ public class UserNutritionProfile {
     private Integer carbsNormGramsPerDay;
     private Integer waterTargetMlPerDay;
     @CreationTimestamp
-    private LocalDateTime createdAt;
+    private Instant createdAt;
     @UpdateTimestamp
-    private LocalDateTime updatedAt;
+    private Instant updatedAt;
 
     public enum UserProfileFillingState {
         EMPTY,      // только создан
@@ -191,7 +192,7 @@ public class UserNutritionProfile {
         // Таймстемпы, если нужны
         if (updatedAt != null) {
             sb.append("\nПоследнее обновление: ")
-                    .append(updatedAt.toLocalDate())
+                    .append(updatedAt)
                     .append("\n");
         }
 

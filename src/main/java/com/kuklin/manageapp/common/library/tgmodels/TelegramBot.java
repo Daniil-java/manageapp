@@ -10,10 +10,7 @@ import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.methods.BotApiMethod;
 import org.telegram.telegrambots.meta.api.methods.ParseMode;
 import org.telegram.telegrambots.meta.api.methods.invoices.SendInvoice;
-import org.telegram.telegrambots.meta.api.methods.send.SendChatAction;
-import org.telegram.telegrambots.meta.api.methods.send.SendDocument;
-import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
-import org.telegram.telegrambots.meta.api.methods.send.SendVoice;
+import org.telegram.telegrambots.meta.api.methods.send.*;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageReplyMarkup;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
@@ -48,6 +45,33 @@ public abstract class TelegramBot extends TelegramLongPollingBot implements Tele
 
     @Override
     public abstract void onUpdateReceived(Update update);
+
+    public Message sendPhotoMessage(long chatId,
+                                    byte[] photoBytes,
+                                    String filename,
+                                    String caption,
+                                    ReplyKeyboard replyKeyboard) {
+
+        if (!filename.endsWith(".jpg") && !filename.endsWith(".png")) {
+            filename = filename.trim() + ".jpg";
+        }
+
+        SendPhoto sendPhoto = SendPhoto.builder()
+                .chatId(String.valueOf(chatId))
+                .photo(new InputFile(
+                        new ByteArrayInputStream(photoBytes),
+                        filename))
+                .caption(caption)
+                .replyMarkup(replyKeyboard)
+                .build();
+
+        try {
+            return execute(sendPhoto);
+        } catch (TelegramApiException e) {
+            log.error("Не получилось отправить фото", e);
+            return null;
+        }
+    }
 
     @Override
     public void sendMessage(BotApiMethod sendMessage) {

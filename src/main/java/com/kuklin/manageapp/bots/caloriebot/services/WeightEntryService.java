@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 
 @Service
@@ -16,23 +17,28 @@ import java.util.List;
 @Slf4j
 public class WeightEntryService {
     private final WeightEntryRepository weightEntryRepository;
+    private final UserSettingsService userSettingsService;
 
     // Сохранить новый вес
     @Transactional
     public void updateWeight(Long userId, BigDecimal weightKg) {
-        // 1. Сохраняем в историю (лог)
+        ZoneId userZone = userSettingsService.getOrCreate(userId).getZoneId();
+
+        // Сохраняем в историю (лог)
         WeightEntry entry = new WeightEntry()
                 .setUserId(userId)
-                .setEntryDate(LocalDate.now())
+                .setEntryDate(LocalDate.now(userZone))
                 .setWeightKg(weightKg);
         weightEntryRepository.save(entry);
     }
 
     // Получить историю веса для графика
     public List<WeightEntry> getWeightHistory(Long userId, int days) {
-        LocalDate startDate = LocalDate.now().minusDays(days);
+        ZoneId userZone = userSettingsService.getOrCreate(userId).getZoneId();
+
+        LocalDate startDate = LocalDate.now(userZone).minusDays(days);
         return weightEntryRepository.findAllByUserIdAndEntryDateBetweenOrderByEntryDateAsc(
-                userId, startDate, LocalDate.now()
+                userId, startDate, LocalDate.now(userZone)
         );
     }
 

@@ -6,8 +6,8 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.CreationTimestamp;
 
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "water_entries")
@@ -23,7 +23,7 @@ public class WaterEntry {
     private LocalDate entryDate;
     private Integer amountMl;
     @CreationTimestamp
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     public static String getWaterStatusText(Integer currentWaterMl, Integer targetWaterMl) {
         int totalBlocks = 10; // Длина шкалы

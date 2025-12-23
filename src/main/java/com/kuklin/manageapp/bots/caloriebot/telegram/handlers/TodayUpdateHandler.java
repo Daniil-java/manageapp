@@ -27,12 +27,16 @@ public class TodayUpdateHandler implements CalorieBotUpdateHandler{
     private final UserNutritionProfileService userNutritionProfileService;
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
-        List<Dish> dishes = dishService.getTodayDishes(telegramUser.getTelegramId());
-        UserNutritionProfile profile = userNutritionProfileService.getOrCreateProfile(telegramUser.getTelegramId());
+        sendTodayMessage(telegramUser.getTelegramId());
+    }
+
+    public void sendTodayMessage(Long userId) {
+        List<Dish> dishes = dishService.getTodayDishes(userId);
+        UserNutritionProfile profile = userNutritionProfileService.getOrCreateProfile(userId);
         calorieTelegramBot.sendReturnedMessage(
-                update.getMessage().getChatId(),
+                userId,
                 getDishesString(dishes, profile),
-                getStatsKeyboard(telegramUser.getTelegramId()),
+                getStatsKeyboard(userId),
                 null
         );
     }
@@ -41,47 +45,74 @@ public class TodayUpdateHandler implements CalorieBotUpdateHandler{
         StringBuilder sb = new StringBuilder();
         sb.append("📖 <b>Дневник питания (сегодня)</b>\n\n");
 
-        int cal = 0, fats = 0, proteins = 0, carbHyd = 0;
+        int cal = 0, fats = 0, proteins = 0, carbs = 0;
+
         for (Dish dish : dishes) {
             sb.append(Dish.getInfo(dish)).append("\n");
-            cal += dish.getCalories() != null ? dish.getCalories() : 0;
-            fats += dish.getFats() != null ? dish.getFats() : 0;
-            proteins += dish.getProteins() != null ? dish.getProteins() : 0;
-            carbHyd += dish.getCarbohydrates() != null ? dish.getCarbohydrates() : 0;
+
+            if (dish.getCalories() != null) cal += dish.getCalories();
+            if (dish.getFats() != null) fats += dish.getFats();
+            if (dish.getProteins() != null) proteins += dish.getProteins();
+            if (dish.getCarbohydrates() != null) carbs += dish.getCarbohydrates();
         }
 
-        // Формируем вертикальный блок итогов
-        sb.append("\n⚡️ <b>ИТОГО:</b>\n")
-                .append("🔥 К: <b>").append(cal).append("</b> / ").append(profile.getCaloriesNormPerDay()).append(" ккал\n")
-                .append("🥩 Б: <b>").append(proteins).append("</b> / ").append(profile.getProteinsNormGramsPerDay()).append(" г\n")
-                .append("🥑 Ж: <b>").append(fats).append("</b> / ").append(profile.getFatsNormGramsPerDay()).append(" г\n")
-                .append("🍞 У: <b>").append(carbHyd).append("</b> / ").append(profile.getCarbsNormGramsPerDay());
+        sb.append("\n⚡️ <b>ИТОГО:</b>\n");
+
+        appendTotal(sb, "🔥 К", cal, profile.getCaloriesNormPerDay(), "ккал");
+        appendTotal(sb, "🥩 Б", proteins, profile.getProteinsNormGramsPerDay(), "г");
+        appendTotal(sb, "🥑 Ж", fats, profile.getFatsNormGramsPerDay(), "г");
+        appendTotal(sb, "🍞 У", carbs, profile.getCarbsNormGramsPerDay(), "г");
 
         return sb.toString();
     }
 
+    private static void appendTotal(
+            StringBuilder sb,
+            String label,
+            int total,
+            Integer norm,
+            String unit
+    ) {
+        sb.append(label)
+                .append(": <b>")
+                .append(total)
+                .append("</b>");
+
+        if (norm != null) {
+            sb.append(" / ")
+                    .append(norm)
+                    .append(" ")
+                    .append(unit);
+        }
+
+        sb.append("\n");
+    }
+
     public InlineKeyboardMarkup getStatsKeyboard(Long userId) {
-        String calories = analyticsService.getCaloriesBarButton(userId);
-        String proteins = analyticsService.getProteinsBarButton(userId);
-        String fats = analyticsService.getFatsBarButton(userId);
+        String calories = analyticsService.getCaloriesBarButtonOrEmpty(userId);
+        String proteins = analyticsService.getProteinsBarButtonOrEmpty(userId);
+        String fats = analyticsService.getFatsBarButtonOrEmpty(userId);
         String carb = analyticsService.getCarbsBarButton(userId);
         String water = analyticsService.getWaterBarButton(userId);
 
-        return TelegramKeyboard.builder()
-                .row(
-                        TelegramKeyboard.button(calories, "temp")
-                ).row(
-                        TelegramKeyboard.button(proteins, "temp")
-                ).row(
-                        TelegramKeyboard.button(fats, "temp")
-                ).row(
-                        TelegramKeyboard.button(carb, "temp")
-                ).row(
-                        TelegramKeyboard.button(water, "temp")
-                ).row(
-                        TelegramKeyboard.button("Закрыть", Command.CALORIE_CLOSE.getCommandText())
-                )
-                .build();
+        TelegramKeyboard.TelegramKeyboardBuilder builder = TelegramKeyboard.builder();
+        if (!calories.isBlank()) {
+            builder.row(TelegramKeyboard.button(calories, "temp"));
+        }
+        if (!proteins.isBlank()) {
+            builder.row(TelegramKeyboard.button(proteins, "temp"));
+        }
+        if (!fats.isBlank()) {
+            builder.row(TelegramKeyboard.button(fats, "temp"));
+        }
+        if (!carb.isBlank()) {
+            builder.row(TelegramKeyboard.button(carb, "temp"));
+        }
+        if (!water.isBlank()) {
+            builder.row(TelegramKeyboard.button(water, "temp"));
+        }
+        builder.row(TelegramKeyboard.button("Закрыть", Command.CALORIE_CLOSE.getCommandText()));
+        return builder.build();
     }
 
     @Override

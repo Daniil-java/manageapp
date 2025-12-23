@@ -16,11 +16,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
+import java.time.*;
 import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -33,6 +30,7 @@ public class DishService {
     private final TelegramCaloriesBotKeyComponents telegramCaloriesBotKeyComponents;
     private final ObjectMapper objectMapper;
     private final ProviderProcessorHandler processorHandler;
+    private final UserSettingsService userSettingsService;
     private static final String AI_PHOTO_REQUEST =
             """
                     Ты — экспертная система анализа изображений еды и напитков на фото. \s
@@ -111,8 +109,14 @@ public class DishService {
                     """;
 
     public Dish createDishOrNull(DishDto dto) {
-        if (dto.getUserId() == null) return null;
-        return dishRepository.save(Dish.toEntity(dto));
+        return addDishOrNull(
+                dto.getUserId(),
+                dto.getName(),
+                dto.getCalories(),
+                dto.getProteins(),
+                dto.getFats(),
+                dto.getCarbohydrates()
+        );
     }
 
     public Dish getDishDtoByPhotoOrNull(Long userId, String imageUrl) {
@@ -133,7 +137,7 @@ public class DishService {
     }
 
     public Map<ChatModel, DishDto> getDishDtoByPhotoOrNullWithManyProviders(String imageUrl) {
-        Map<ChatModel, DishDto> map = new EnumMap<ChatModel, DishDto>(ChatModel.class);
+        Map<ChatModel, DishDto> map = new EnumMap<>(ChatModel.class);
         for (ChatModel chatModel : ChatModel.getModels()) {
             ProviderVariant provider = chatModel.getProviderVariant();
 
@@ -210,21 +214,38 @@ public class DishService {
     }
 
     public List<Dish> getTodayDishes(Long userId) {
-        LocalDate today = LocalDate.now();
-        LocalDateTime startOfDay = today.atStartOfDay();
-        LocalDateTime endOfDay = today.atTime(LocalTime.MAX);
+        ZoneId userZone = userSettingsService.getOrCreate(userId).getZoneId();
 
-        return dishRepository.findAllByUserIdAndCreatedBetween(userId, startOfDay, endOfDay);
+        // 1. Берем текущий момент в зоне пользователя
+        ZonedDateTime userNow = ZonedDateTime.now(userZone);
+
+        // 2. Вычисляем начало дня пользователя (00:00:00 в его таймзоне)
+        ZonedDateTime startOfDayUser = userNow.toLocalDate().atStartOfDay(userZone);
+
+        // 3. Вычисляем конец дня (или просто берем "сейчас", если не нужны будущие записи)
+        ZonedDateTime endOfDayUser = startOfDayUser.plusDays(1);
+
+        // 4. Конвертируем в Instant для запроса в БД
+        return dishRepository.findAllByUserIdAndCreatedBetween(
+                userId,
+                startOfDayUser.toInstant(),
+                endOfDayUser.toInstant()
+        );
     }
 
     public List<Dish> getWeekDishes(Long userId) {
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime startOfDay = LocalDate.now()
-                .minusDays(7)
-                .atStartOfDay();
-        LocalDateTime endOfDay = now;
+        ZoneId userZone = userSettingsService.getOrCreate(userId).getZoneId();
+        ZonedDateTime userNow = ZonedDateTime.now(userZone);
 
-        return dishRepository.findAllByUserIdAndCreatedBetween(userId, startOfDay, endOfDay);
+        // 7 дней назад от начала сегодняшнего дня пользователя
+        ZonedDateTime start = userNow.toLocalDate().minusDays(7).atStartOfDay(userZone);
+        ZonedDateTime end = userNow; // до текущего момента
+
+        return dishRepository.findAllByUserIdAndCreatedBetween(
+                userId,
+                start.toInstant(),
+                end.toInstant()
+        );
     }
 
     public Dish changeDishByPercent(Long dishId, int percentDelta) {
@@ -238,7 +259,7 @@ public class DishService {
         return dishRepository.findById(dishId).orElse(null);
     }
 
-    public Dish addDish(
+    public Dish addDishOrNull(
             Long userId,
             String name,
             Integer calories,
@@ -246,6 +267,7 @@ public class DishService {
             Integer fats,
             Integer carbohydrates
     ) {
+        if (userId == null) return null;
         Dish dish = new Dish()
                 .setUserId(userId)
                 .setName(name)
@@ -253,6 +275,7 @@ public class DishService {
                 .setProteins(proteins)
                 .setFats(fats)
                 .setCarbohydrates(carbohydrates);
+        userSettingsService.updateMealLastReminder(userId);
         return dishRepository.save(dish);
     }
 }

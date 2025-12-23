@@ -7,7 +7,7 @@ import lombok.experimental.Accessors;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 @Table(name = "user_favorite_dishes")
@@ -28,8 +28,8 @@ public class UserFavoriteDish {
     private Integer carbohydrates;
 
     @CreationTimestamp
-    private LocalDateTime createdAt;
+    private Instant createdAt;
     @UpdateTimestamp
-    private LocalDateTime updatedAt;
-    private LocalDateTime lastUsedAt;
+    private Instant updatedAt;
+    private Instant lastUsedAt;
 }

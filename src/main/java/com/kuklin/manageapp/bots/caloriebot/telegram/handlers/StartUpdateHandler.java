@@ -43,6 +43,7 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
         replyKeyboard.setOneTimeKeyboard(false);
 
         KeyboardRow row1 = new KeyboardRow();
+        row1.add(Command.CALORIE_SETTINGS.getCommandText());
         row1.add(Command.CALORIE_WATER.getCommandText());
 
         KeyboardRow row = new KeyboardRow();

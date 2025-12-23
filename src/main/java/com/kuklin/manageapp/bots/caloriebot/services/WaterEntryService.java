@@ -8,28 +8,35 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.ZoneId;
 
 //Сервис для записи потребления воды
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class WaterEntryService {
+    private final UserSettingsService userSettingsService;
     private final WaterEntryRepository waterEntryRepository;
 
     // Добавить воду (например, +250мл)
     @Transactional
     public void addWater(Long userId, Integer amountMl) {
+        //Получаем зону пользователя
+        ZoneId userZone = userSettingsService.getOrCreate(userId).getZoneId();
+
         log.info("WATER ADD: {}", amountMl);
         WaterEntry entry = new WaterEntry()
                 .setUserId(userId)
-                .setEntryDate(LocalDate.now())
+                .setEntryDate(LocalDate.now(userZone))
                 .setAmountMl(amountMl);
         log.info("WATER ADD: {}", waterEntryRepository.save(entry).getAmountMl());
     }
 
     // Получить общее количество воды за сегодня
     public Integer getTodayTotal(Long userId) {
-        return waterEntryRepository.findAllByUserIdAndEntryDate(userId, LocalDate.now())
+        ZoneId userZone = userSettingsService.getOrCreate(userId).getZoneId();
+
+        return waterEntryRepository.findAllByUserIdAndEntryDate(userId, LocalDate.now(userZone))
                 .stream()
                 .mapToInt(WaterEntry::getAmountMl)
                 .sum();

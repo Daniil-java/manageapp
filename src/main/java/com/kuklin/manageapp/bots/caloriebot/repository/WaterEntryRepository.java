@@ -12,5 +12,5 @@ import java.util.Optional;
 public interface WaterEntryRepository extends JpaRepository<WaterEntry, Long> {
     Optional<WaterEntry> findTopByUserIdOrderByCreatedAtDesc(Long userId);
 
-    List<WaterEntry> findAllByUserIdAndEntryDate(Long userId, LocalDate now);
+    List<WaterEntry> findAllByUserIdAndEntryDate(Long userId, LocalDate date);
 }
