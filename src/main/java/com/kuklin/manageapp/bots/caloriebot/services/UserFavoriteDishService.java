@@ -62,4 +62,8 @@ public class UserFavoriteDishService {
         userFavoriteDishRepository.findByIdAndUserId(favoriteId, userId)
                 .ifPresent(userFavoriteDishRepository::delete);
     }
+
+    public UserFavoriteDish getUserFavoriteDishByIdOrNull(Long id) {
+        return userFavoriteDishRepository.findById(id).orElse(null);
+    }
 }

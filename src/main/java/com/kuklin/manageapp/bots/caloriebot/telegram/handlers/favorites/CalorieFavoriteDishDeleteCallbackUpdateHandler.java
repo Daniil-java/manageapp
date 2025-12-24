@@ -28,6 +28,7 @@ public class CalorieFavoriteDishDeleteCallbackUpdateHandler implements CalorieBo
     private static final String EXTRACT_DATA_ERROR = "Ошибка данных!";
     private static final String DEL_CMD = "DEL";
     private static final String PAGE_CMD = "PAGE";
+    private static final String CONFIRM_CMD = "CONFIRM";
     private static final String CLOSE_CMD = Command.CALORIE_CLOSE.getCommandText();
 
     @Override
@@ -58,6 +59,8 @@ public class CalorieFavoriteDishDeleteCallbackUpdateHandler implements CalorieBo
             handlePageCommand(telegramUser, callback);
         } else if (DEL_CMD.equals(action)) {
             handleDeleteCommand(telegramUser, callback);
+        } else if (CONFIRM_CMD.equals(action)) {
+            handleConfirmCommand(telegramUser, callback);
         }
     }
 
@@ -89,6 +92,52 @@ public class CalorieFavoriteDishDeleteCallbackUpdateHandler implements CalorieBo
                 query.getMessage().getMessageId(),
                 keyboard
         );
+    }
+
+    private void handleConfirmCommand(TelegramUser telegramUser, CallbackQuery query) {
+        Long chatId = query.getMessage().getChatId();
+
+        Integer page = extractPageOrNull(query.getData(), chatId);
+        Long favoriteId = extractFavoriteIdOrNull(query.getData(), chatId);
+        if (page == null || favoriteId == null) return;
+
+        UserFavoriteDish userFavoriteDish = userFavoriteDishService.getUserFavoriteDishByIdOrNull(favoriteId);
+        calorieTelegramBot.sendEditMessage(
+                chatId,
+                buildConfirmMessage(userFavoriteDish),
+                query.getMessage().getMessageId(),
+                buildConfirmKeyboard(page, favoriteId)
+        );
+    }
+
+    private String buildConfirmMessage(UserFavoriteDish userFavoriteDish) {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("⚠️ Вы уверены, что хотите удалить это блюдо?").append("\n");
+        String emoji = userFavoriteDish.getEmojiIcon() == null ? "" : userFavoriteDish.getEmojiIcon();
+        sb.append(emoji).append(userFavoriteDish.getName());
+        return sb.toString();
+    }
+
+    private InlineKeyboardMarkup buildConfirmKeyboard(int page, Long favoriteId) {
+        TelegramKeyboard.TelegramKeyboardBuilder builder = TelegramKeyboard.builder();
+
+        // Да — реально удалить
+        return builder.row(
+                TelegramKeyboard.button(
+                        "✅ Да",
+                        Command.CALORIE_FAVORITE_DELETE.getCommandText()
+                                + TelegramBot.DEFAULT_DELIMETER + DEL_CMD
+                                + TelegramBot.DEFAULT_DELIMETER + page
+                                + TelegramBot.DEFAULT_DELIMETER + favoriteId
+                ),
+                TelegramKeyboard.button(
+                        "❌ Нет",
+                        Command.CALORIE_FAVORITE_DELETE.getCommandText()
+                                + TelegramBot.DEFAULT_DELIMETER + PAGE_CMD
+                                + TelegramBot.DEFAULT_DELIMETER + page
+                )
+        ).build();
     }
 
     private void handleDeleteCommand(TelegramUser telegramUser, CallbackQuery query) {
@@ -148,20 +197,11 @@ public class CalorieFavoriteDishDeleteCallbackUpdateHandler implements CalorieBo
 
         TelegramKeyboard.TelegramKeyboardBuilder builder = TelegramKeyboard.builder();
 
-        //Кнопка для возврата в режим выбора
-        builder.row(
-                TelegramKeyboard.button(
-                        "\uD83D\uDD01 Вернуться к добавлению",
-                        Command.CALORIE_FAVORITE.getCommandText()
-                                + TelegramBot.DEFAULT_DELIMETER + PAGE_CMD
-                                + TelegramBot.DEFAULT_DELIMETER + page
-                ));
-
         // Кнопки с блюдами
         for (UserFavoriteDish fav : favorites.subList(fromIndex, toIndex)) {
             String callbackData =
                     Command.CALORIE_FAVORITE_DELETE.getCommandText()
-                            + TelegramBot.DEFAULT_DELIMETER + DEL_CMD
+                            + TelegramBot.DEFAULT_DELIMETER + CONFIRM_CMD
                             + TelegramBot.DEFAULT_DELIMETER + page
                             + TelegramBot.DEFAULT_DELIMETER + fav.getId();
 
@@ -192,6 +232,14 @@ public class CalorieFavoriteDishDeleteCallbackUpdateHandler implements CalorieBo
 
         }
 
+        //Кнопка для возврата в режим выбора
+        builder.row(
+                TelegramKeyboard.button(
+                        "\uD83D\uDD01 Вернуться к добавлению",
+                        Command.CALORIE_FAVORITE.getCommandText()
+                                + TelegramBot.DEFAULT_DELIMETER + PAGE_CMD
+                                + TelegramBot.DEFAULT_DELIMETER + page
+                ));
         builder.row(
                 TelegramKeyboard.button("❌ Закрыть", CLOSE_CMD)
         );

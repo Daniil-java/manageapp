@@ -6,7 +6,7 @@ import com.kuklin.manageapp.bots.caloriebot.services.AnalyticsService;
 import com.kuklin.manageapp.bots.caloriebot.services.UserFavoriteDishService;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.CalorieBotUpdateHandler;
-import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.DishUpdateHandler;
+import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.dish.DishUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.Command;
@@ -193,15 +193,6 @@ public class CalorieFavoriteDishUpdateHandler implements CalorieBotUpdateHandler
 
         TelegramKeyboard.TelegramKeyboardBuilder builder = TelegramKeyboard.builder();
 
-        //Кнопка для возврата в режим удаления
-        builder.row(
-                TelegramKeyboard.button(
-                        "\uD83D\uDDD1 Удалить из списка",
-                        Command.CALORIE_FAVORITE_DELETE.getCommandText()
-                                + TelegramBot.DEFAULT_DELIMETER + PAGE_CMD
-                                + TelegramBot.DEFAULT_DELIMETER + page
-                ));
-
         // Кнопки с блюдами
         for (UserFavoriteDish fav : favorites.subList(fromIndex, toIndex)) {
             String callbackData =
@@ -236,6 +227,14 @@ public class CalorieFavoriteDishUpdateHandler implements CalorieBotUpdateHandler
                 builder.row(navButtons.toArray(new InlineKeyboardButton[0]));
 
         }
+        //Кнопка для возврата в режим удаления
+        builder.row(
+                TelegramKeyboard.button(
+                        "\uD83D\uDDD1 Перейти в режим удаления",
+                        Command.CALORIE_FAVORITE_DELETE.getCommandText()
+                                + TelegramBot.DEFAULT_DELIMETER + PAGE_CMD
+                                + TelegramBot.DEFAULT_DELIMETER + page
+                ));
 
         builder.row(
                 TelegramKeyboard.button("❌ Закрыть", CLOSE_CMD)

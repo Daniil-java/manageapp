@@ -1,7 +1,8 @@
-package com.kuklin.manageapp.bots.caloriebot.telegram.handlers;
+package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.dish;
 
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.services.DishService;
+import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.Command;
@@ -16,7 +17,7 @@ import java.util.Collections;
 
 @RequiredArgsConstructor
 @Component
-public class DeleteUpdateHandler implements CalorieBotUpdateHandler{
+public class DeleteUpdateHandler implements CalorieBotUpdateHandler {
     private final CalorieTelegramBot calorieTelegramBot;
     private final DishService dishService;
     @Override

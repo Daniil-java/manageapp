@@ -1,4 +1,4 @@
-package com.kuklin.manageapp.bots.caloriebot.telegram.handlers;
+package com.kuklin.manageapp.bots.caloriebot.telegram.history;
 
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
@@ -6,6 +6,8 @@ import com.kuklin.manageapp.bots.caloriebot.services.DishService;
 import com.kuklin.manageapp.bots.caloriebot.services.UserNutritionProfileService;
 import com.kuklin.manageapp.bots.caloriebot.services.UserSettingsService;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
+import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.CalorieBotUpdateHandler;
+import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.StartUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import lombok.RequiredArgsConstructor;
@@ -21,7 +23,7 @@ import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
-public class ListWeekUpdateHandler implements CalorieBotUpdateHandler{
+public class ListWeekUpdateHandler implements CalorieBotUpdateHandler {
     private final CalorieTelegramBot calorieTelegramBot;
     private final DishService dishService;
     private final UserNutritionProfileService userNutritionProfileService;

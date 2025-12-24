@@ -1,4 +1,4 @@
-package com.kuklin.manageapp.bots.caloriebot.telegram.handlers;
+package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.dish;
 
 import com.kuklin.manageapp.aiconversation.models.enums.ChatModel;
 import com.kuklin.manageapp.bots.caloriebot.configurations.TelegramCaloriesBotKeyComponents;
@@ -10,6 +10,7 @@ import com.kuklin.manageapp.bots.caloriebot.services.CalorieAccessService;
 import com.kuklin.manageapp.bots.caloriebot.services.DishChoiceChatModelService;
 import com.kuklin.manageapp.bots.caloriebot.services.DishService;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
+import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.Command;
@@ -22,10 +23,8 @@ import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;

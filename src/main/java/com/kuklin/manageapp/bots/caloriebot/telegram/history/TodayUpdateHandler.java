@@ -1,4 +1,4 @@
-package com.kuklin.manageapp.bots.caloriebot.telegram.handlers;
+package com.kuklin.manageapp.bots.caloriebot.telegram.history;
 
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
@@ -6,6 +6,7 @@ import com.kuklin.manageapp.bots.caloriebot.services.AnalyticsService;
 import com.kuklin.manageapp.bots.caloriebot.services.DishService;
 import com.kuklin.manageapp.bots.caloriebot.services.UserNutritionProfileService;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
+import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;
@@ -20,7 +21,7 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-public class TodayUpdateHandler implements CalorieBotUpdateHandler{
+public class TodayUpdateHandler implements CalorieBotUpdateHandler {
     private final CalorieTelegramBot calorieTelegramBot;
     private final DishService dishService;
     private final AnalyticsService analyticsService;
