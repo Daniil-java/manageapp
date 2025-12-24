@@ -62,7 +62,8 @@ public class AnalyticsService {
         StringBuilder sb = new StringBuilder();
 
         // 1. Название и прибавка калорий
-        sb.append(dish.getEmojiIcon()).append("<b><i>").append(dish.getName()).append("</i></b> ")
+        String emoji = dish.getEmojiIcon() == null ? "🍽️" : dish.getEmojiIcon();
+        sb.append(emoji).append("<b><i>").append(dish.getName()).append("</i></b> ")
                 .append("(+").append(dish.getCalories()).append(" ккал)\n");
 
         // 2. БЖУ итоги всегда, с прибавками

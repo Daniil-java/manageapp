@@ -78,4 +78,44 @@ public class UserFavoriteDish {
 
         return dish;
     }
+
+    public static UserFavoriteDish fromDish(Dish dish) {
+        if (dish == null) {
+            return null;
+        }
+
+        UserFavoriteDish fav = new UserFavoriteDish();
+
+        // --- Основное ---
+        fav.setName(dish.getName());
+        fav.setEmojiIcon(dish.getEmojiIcon());
+
+        // --- КБЖУ ---
+        fav.setCalories(dish.getCalories());
+        fav.setProteins(dish.getProteins());
+        fav.setFats(dish.getFats());
+        fav.setCarbohydrates(dish.getCarbohydrates());
+
+        // --- Количество ---
+        fav.setWeightGrams(dish.getWeightGrams());
+        fav.setPortions(dish.getPortions());
+        fav.setPortionWeight(dish.getPortionWeight());
+
+        // --- Классификация ---
+        fav.setCategory(
+                dish.getCategory() != null
+                        ? dish.getCategory()
+                        : Dish.FoodCategory.UNKNOWN
+        );
+
+        // --- ИИ ---
+        fav.setAiConfidence(dish.getAiConfidence());
+
+        // --- Системное ---
+        fav.setUserId(dish.getUserId());
+        fav.setLastUsedAt(Instant.now());
+
+        return fav;
+    }
+
 }

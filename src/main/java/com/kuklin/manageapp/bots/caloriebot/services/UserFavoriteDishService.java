@@ -37,16 +37,7 @@ public class UserFavoriteDishService {
             return null;
         }
 
-        UserFavoriteDish favorite = new UserFavoriteDish()
-                .setUserId(userId)
-                .setName(dish.getName())
-                .setCalories(dish.getCalories())
-                .setProteins(dish.getProteins())
-                .setFats(dish.getFats())
-                .setCarbohydrates(dish.getCarbohydrates())
-                ;
-
-        return userFavoriteDishRepository.save(favorite);
+        return userFavoriteDishRepository.save(UserFavoriteDish.fromDish(dish));
     }
 
     /**
