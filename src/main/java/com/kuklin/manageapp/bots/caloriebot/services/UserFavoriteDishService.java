@@ -59,14 +59,7 @@ public class UserFavoriteDishService {
             return null;
         }
 
-        Dish saved = dishService.addDishOrNull(
-                userId,
-                favorite.getName(),
-                favorite.getCalories(),
-                favorite.getProteins(),
-                favorite.getFats(),
-                favorite.getCarbohydrates()
-        );
+        Dish saved = dishService.addDishOrNull(favorite);
 
         favorite.setLastUsedAt(Instant.now());
         userFavoriteDishRepository.save(favorite);

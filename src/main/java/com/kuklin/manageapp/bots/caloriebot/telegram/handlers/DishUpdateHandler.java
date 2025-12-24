@@ -43,6 +43,8 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
     private final PaymentPlanListUpdateHandler paymentPlanListUpdateHandler;
     private final CalorieAccessService calorieAccessService;
     private final AnalyticsService analyticsService;
+    private static final String PORTION_COUNT_CMD = "PC";
+    private static final String PORTION_WEIGHT_CMD = "PW";
     private static final String VOICE_ERROR_MESSAGE =
             "Ошибка! Не получилось обработать голосовое сообщение";
     private static final String PHOTO_ERROR_MESSAGE =
@@ -70,7 +72,7 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
                 update.getMessage().getChatId(),
                 analyticsService.getInfo(dish, telegramUser.getTelegramId()),
 //                Dish.getInfo(dish),
-                getPortionKeyboard(dish.getId()),
+                getPortionWeightKeyboard(dish),
                 null
         );
     }
@@ -78,8 +80,8 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
     /**
      * Обрабатывает апдейт и пытается получить Dish.
      * Возвращает:
-     *  - Dish, если всё прошло успешно;
-     *  - null, если были ошибки (при этом в большинстве случаев уже отправлены сообщения пользователю).
+     * - Dish, если всё прошло успешно;
+     * - null, если были ошибки (при этом в большинстве случаев уже отправлены сообщения пользователю).
      */
     private Dish getDishOrNull(Update update, TelegramUser telegramUser) {
         Long userId = telegramUser.getTelegramId();
@@ -213,20 +215,46 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
         return true;
     }
 
-    public static InlineKeyboardMarkup getPortionKeyboardFavorite(Long dishId) {
+    public static InlineKeyboardMarkup getPortionKeyboardFavorite(Dish dish) {
         String base = Command.CALORIE_SCALE.getCommandText()
-                + TelegramBot.DEFAULT_DELIMETER + dishId
+                + TelegramBot.DEFAULT_DELIMETER + dish.getId()
                 + TelegramBot.DEFAULT_DELIMETER;
 
         // здесь просто копируем ряды, но кнопку "Сохранить блюдо"
         // меняем на "✅ В избранном" и делаем её неактивной
-        return TelegramKeyboard.builder()
+
+        TelegramKeyboard.TelegramKeyboardBuilder builder = TelegramKeyboard.builder()
                 .row(
-                        TelegramKeyboard.button("-50%", base + "-50"),
+                        TelegramKeyboard.button("Вес порции:", "temp"),
                         TelegramKeyboard.button("-10%", base + "-10"),
-                        TelegramKeyboard.button("+10%", base + "10"),
-                        TelegramKeyboard.button("+50%", base + "50")
-                )
+                        TelegramKeyboard.button("+10%", base + "10")
+                );
+        if (dish.getPortions() > 1) {
+            builder.row(
+                    TelegramKeyboard.button("Порций:", "temp"),
+                    TelegramKeyboard.button(
+                            "➖",
+                            base + PORTION_COUNT_CMD
+                                    + TelegramBot.DEFAULT_DELIMETER + (dish.getPortions() - 1)
+                    ),
+                    TelegramKeyboard.button(
+                            "➕",
+                            base + PORTION_COUNT_CMD
+                                    + TelegramBot.DEFAULT_DELIMETER + (dish.getPortions() + 1)
+                    )
+            );
+        } else {
+            // Если порция одна — показываем только "+"
+            builder.row(
+                    TelegramKeyboard.button("Порций:", "temp"),
+                    TelegramKeyboard.button(
+                            "➕",
+                            base + PORTION_COUNT_CMD
+                                    + TelegramBot.DEFAULT_DELIMETER + 2
+                    )
+            );
+        }
+        return builder
                 .row(
                         TelegramKeyboard.button(
                                 "✅ В избранном",
@@ -239,7 +267,65 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
                         TelegramKeyboard.button(
                                 "Удалить из дневника",
                                 Command.CALORIE_DELETE.getCommandText()
-                                        + TelegramBot.DEFAULT_DELIMETER + dishId
+                                        + TelegramBot.DEFAULT_DELIMETER + dish.getId()
+                        )
+                )
+                .build();
+
+
+    }
+
+    public static InlineKeyboardMarkup getPortionWeightKeyboard(Dish dish) {
+        // Базовая часть для всех кнопок изменения порции
+        String base = Command.CALORIE_SCALE.getCommandText()
+                + TelegramBot.DEFAULT_DELIMETER + dish.getId()
+                + TelegramBot.DEFAULT_DELIMETER;
+
+        //<scale_command>delim<dishId>delim<+-scale>
+        TelegramKeyboard.TelegramKeyboardBuilder builder = TelegramKeyboard.builder()
+                .row(
+                        TelegramKeyboard.button("Вес порции:", "temp"),
+                        TelegramKeyboard.button("-10%", base + "-10"),
+                        TelegramKeyboard.button("+10%", base + "10")
+                );
+        if (dish.getPortions() > 1) {
+            builder.row(
+                    TelegramKeyboard.button("Порций:", "temp"),
+                    TelegramKeyboard.button(
+                            "➖",
+                            base + PORTION_COUNT_CMD
+                                    + TelegramBot.DEFAULT_DELIMETER + (dish.getPortions() - 1)
+                    ),
+                    TelegramKeyboard.button(
+                            "➕",
+                            base + PORTION_COUNT_CMD
+                                    + TelegramBot.DEFAULT_DELIMETER + (dish.getPortions() + 1)
+                    )
+            );
+        } else {
+            // Если порция одна — показываем только "+"
+            builder.row(
+                    TelegramKeyboard.button("Порций:", "temp"),
+                    TelegramKeyboard.button(
+                            "➕",
+                            base + PORTION_COUNT_CMD
+                                    + TelegramBot.DEFAULT_DELIMETER + 2
+                    )
+            );
+        }
+        return builder
+                .row(
+                        TelegramKeyboard.button(
+                                "⭐ Сохранить блюдо",
+                                Command.CALORIE_FAVORITE_ADD.getCommandText()
+                                        + TelegramBot.DEFAULT_DELIMETER + dish.getId()
+                        )
+                )
+                .row(
+                        TelegramKeyboard.button(
+                                "Удалить из дневника",
+                                Command.CALORIE_DELETE.getCommandText()
+                                        + TelegramBot.DEFAULT_DELIMETER + dish.getId()
                         )
                 )
                 .build();
@@ -264,7 +350,7 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
                         TelegramKeyboard.button(
                                 "⭐ Сохранить блюдо",
                                 Command.CALORIE_FAVORITE_ADD.getCommandText()
-                                + TelegramBot.DEFAULT_DELIMETER + dishId
+                                        + TelegramBot.DEFAULT_DELIMETER + dishId
                         )
                 )
                 .row(
@@ -275,20 +361,6 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
                         )
                 )
                 .build();
-    }
-
-    public static InlineKeyboardMarkup getInlineMessage(Long dishId) {
-        String callbackData = Command.CALORIE_DELETE.getCommandText() + TelegramBot.DEFAULT_DELIMETER + dishId;
-        String buttonText = "Удалить из дневника";
-
-        InlineKeyboardButton button = new InlineKeyboardButton();
-        button.setText(buttonText);
-        button.setCallbackData(callbackData);
-
-        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
-        markup.setKeyboard(Collections.singletonList(Collections.singletonList(button)));
-
-        return markup;
     }
 
     public InlineKeyboardMarkup getModelChooseListKeyboard(

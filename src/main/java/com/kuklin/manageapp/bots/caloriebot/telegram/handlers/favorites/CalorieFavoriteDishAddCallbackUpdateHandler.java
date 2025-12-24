@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.favorites;
 
+import com.kuklin.manageapp.bots.caloriebot.services.DishService;
 import com.kuklin.manageapp.bots.caloriebot.services.UserFavoriteDishService;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.CalorieBotUpdateHandler;
@@ -17,6 +18,7 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 public class CalorieFavoriteDishAddCallbackUpdateHandler implements CalorieBotUpdateHandler {
     private final CalorieTelegramBot calorieTelegramBot;
     private final UserFavoriteDishService userFavoriteDishService;
+    private final DishService dishService;
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
         if (!update.hasCallbackQuery()) return;
@@ -44,7 +46,7 @@ public class CalorieFavoriteDishAddCallbackUpdateHandler implements CalorieBotUp
                 query.getMessage().getChatId(),
                 query.getMessage().getText(),                         // текст оставляем как был
                 query.getMessage().getMessageId(),
-                DishUpdateHandler.getPortionKeyboardFavorite(dishId)  // новая клавиатура
+                DishUpdateHandler.getPortionKeyboardFavorite(dishService.getDishByIdOrNull(dishId))  // новая клавиатура
         );
     }
 

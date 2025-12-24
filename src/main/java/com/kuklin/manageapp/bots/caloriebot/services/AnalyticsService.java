@@ -8,7 +8,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
@@ -58,28 +57,43 @@ public class AnalyticsService {
         }
 
         UserNutritionProfile profile = userNutritionProfileService.getOrCreateProfile(userId);
+        boolean hasTargets = userNutritionProfileService.checkTargetCalculateParams(profile);
+
         StringBuilder sb = new StringBuilder();
 
         // 1. Название и прибавка калорий
-        sb.append("<b><i>").append(dish.getName()).append("</i></b> ")
+        sb.append(dish.getEmojiIcon()).append("<b><i>").append(dish.getName()).append("</i></b> ")
                 .append("(+").append(dish.getCalories()).append(" ккал)\n");
 
-        if (userNutritionProfileService.checkTargetCalculateParams(profile)) {
+        // 2. БЖУ итоги всегда, с прибавками
+        sb.append("<b>Б:</b> ").append(totalProteins);
+        if (hasTargets) {
+            sb.append("/").append(profile.getProteinsNormGramsPerDay());
+        }
+        sb.append("г (<b>+").append(dish.getProteins()).append("</b>) | ");
+
+        sb.append("<b>Ж:</b> ").append(totalFats);
+        if (hasTargets) {
+            sb.append("/").append(profile.getFatsNormGramsPerDay());
+        }
+        sb.append("г (<b>+").append(dish.getFats()).append("</b>) | ");
+
+        sb.append("<b>У:</b> ").append(totalCarbs);
+        if (hasTargets) {
+            sb.append("/").append(profile.getCarbsNormGramsPerDay());
+        }
+        sb.append("г (<b>+").append(dish.getCarbohydrates()).append("</b>)\n");
+        sb.append("<b>Вес порции:</b> ").append(dish.getPortionWeight()).append(" г\n");
+        sb.append("<b>Количество порций:</b> ").append(dish.getPortions()).append("\n\n");
+
+        if (hasTargets) {
             int norm = profile.getCaloriesNormPerDay();
             int prevTotal = totalCalories - dish.getCalories();
             int totalPercent = (int) (((double) totalCalories / norm) * 100);
             int itemPercent = (int) (((double) dish.getCalories() / norm) * 100);
 
-            // Гарантируем +1%, если калории в блюде есть
+            // гарантируем +1%, если калории в блюде есть
             if (itemPercent == 0 && dish.getCalories() > 0) itemPercent = 1;
-
-            // 2. БЖУ итоги с жирными прибавками
-            sb.append("<b>Б:</b> ").append(totalProteins).append("/").append(profile.getProteinsNormGramsPerDay()).append("г ")
-                    .append("(<b>+").append(dish.getProteins()).append("</b>) | ")
-                    .append("<b>Ж:</b> ").append(totalFats).append("/").append(profile.getFatsNormGramsPerDay()).append("г ")
-                    .append("(<b>+").append(dish.getFats()).append("</b>) | ")
-                    .append("<b>У:</b> ").append(totalCarbs).append("/").append(profile.getCarbsNormGramsPerDay()).append("г ")
-                    .append("(<b>+").append(dish.getCarbohydrates()).append("</b>)\n\n");
 
             // 3. Строка калорий и процент блюда
             sb.append(totalCalories).append("/").append(norm).append(" ")
@@ -89,13 +103,14 @@ public class AnalyticsService {
             // 4. Прогресс-бар и итоговый %
             sb.append(generateSmartBar(prevTotal, dish.getCalories(), norm))
                     .append(" 🔥 <b>").append(totalPercent).append("%</b>");
-
         } else {
-            sb.append("📊 Итого за сегодня: <b>").append(totalCalories).append(" ккал</b>");
+            // когда целей нет — просто суммарные калории
+            sb.append("📊 Итого за сегодня: <b>").append(totalCalories).append(" ккал</b>\n");
         }
 
         return sb.toString();
     }
+
 
     private String generateSmartBar(int previous, int current, int norm) {
         int totalBars = 10;
@@ -171,7 +186,6 @@ public class AnalyticsService {
 
             ZoneId zoneId = userSettingsService.getOrCreate(userId).getZoneId();
             // Добавляем время, если в БД есть createdAt, чтобы различать замеры в один день
-            //TODO Время
             String time = current.getCreatedAt() != null
                     ? " (" + current.getCreatedAt()
                     .atZone(zoneId)

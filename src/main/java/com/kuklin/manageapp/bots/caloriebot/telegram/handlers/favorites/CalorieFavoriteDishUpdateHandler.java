@@ -154,7 +154,7 @@ public class CalorieFavoriteDishUpdateHandler implements CalorieBotUpdateHandler
         calorieTelegramBot.sendReturnedMessage(
                 chatId,
                 Dish.getInfo(dish),
-                DishUpdateHandler.getPortionKeyboard(dish.getId()),
+                DishUpdateHandler.getPortionWeightKeyboard(dish),
                 null
         );
 
