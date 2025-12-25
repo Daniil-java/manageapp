@@ -1,6 +1,5 @@
 package com.kuklin.manageapp.bots.caloriebot.entities;
 
-import com.kuklin.manageapp.bots.caloriebot.services.exceptions.InsufficientProfileDataException;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.Getter;
@@ -12,7 +11,6 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "user_nutrition_profiles")
@@ -249,5 +247,17 @@ public class UserNutritionProfile {
         if (goal == null) return false;
 
         return true;
+    }
+
+    public UserNutritionProfileEntry toProfileEntryWithoutValidTime() {
+        return new UserNutritionProfileEntry()
+                .setUserId(this.userId)
+                .setGoal(this.goal)
+                .setCaloriesNormPerDay(this.caloriesNormPerDay)
+                .setProteinsNormGramsPerDay(this.proteinsNormGramsPerDay)
+                .setFatsNormGramsPerDay(this.fatsNormGramsPerDay)
+                .setCarbsNormGramsPerDay(this.carbsNormGramsPerDay)
+                .setWaterTargetMlPerDay(this.waterTargetMlPerDay)
+                ;
     }
 }

@@ -84,6 +84,9 @@ public class TelegramCalorieBotFacade extends TelegramFacade {
                 return getUpdateHandlerMap().get(Command.CALORIE_DELETE.getCommandText());
             }
         } else if (update.hasMessage()) {
+            if (update.getMessage().getText().startsWith(Command.CALORIE_ADMIN_MESSAGE.getCommandText())) {
+                return getUpdateHandlerMap().get(Command.CALORIE_ADMIN_MESSAGE.getCommandText());
+            }
             var message = update.getMessage();
             String command = message.getText().split(TelegramBot.DEFAULT_DELIMETER)[0];
             var handler = getUpdateHandlerMap().get(command);

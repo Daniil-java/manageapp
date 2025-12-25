@@ -25,9 +25,11 @@ import static com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@Transactional
 public class UserNutritionProfileService {
     private final UserNutritionProfileRepository userNutritionProfileRepository;
     private final WeightEntryService weightEntryService;
+    private final UserNutritionProfileEntryService userNutritionProfileEntryService;
 
     /**
      * Получить профиль или создать пустой (только userId).
@@ -60,7 +62,9 @@ public class UserNutritionProfileService {
                 .setWaterTargetMlPerDay(waterTargetMlPerDay);
 
         // Ничего пересчитывать не надо, только обновляем поле
-        return userNutritionProfileRepository.save(profile);
+        profile = userNutritionProfileRepository.save(profile);
+        userNutritionProfileEntryService.syncWithProfile(profile);
+        return profile;
     }
 
     //Валидация данных, без обращений в репозиторий
@@ -103,7 +107,9 @@ public class UserNutritionProfileService {
     public UserNutritionProfile recalculateAndSave(UserNutritionProfile profile) throws InsufficientProfileDataException, UserNutritionProfileValidationException {
         UserNutritionDto dto = recalcTargets(profile);
         profile = UserNutritionDto.updateNutritionData(profile, dto);
-        return validateAndSave(profile);
+        profile = validateAndSave(profile);
+        userNutritionProfileEntryService.syncWithProfile(profile);
+        return profile;
     }
 
     /**
@@ -114,32 +120,50 @@ public class UserNutritionProfileService {
 
         checkTargetCalculateParamsOrThrow(profile);
 
-        double bmrCalories = 10 * profile.getCurrentWeightKg().doubleValue()
-                + 6.25 * profile.getHeightCm()
-                - 5 * profile.getAgeYears();
+        double weight = profile.getCurrentWeightKg().doubleValue();
 
-        if (profile.getSex() == UserNutritionProfile.Sex.MALE) bmrCalories += 5;
-        else bmrCalories -= 161;
+        // --- BMR (Mifflin–St Jeor) ---
+        double bmrCalories =
+                10 * weight
+                        + 6.25 * profile.getHeightCm()
+                        - 5 * profile.getAgeYears();
 
+        if (profile.getSex() == UserNutritionProfile.Sex.MALE) {
+            bmrCalories += 5;
+        } else {
+            bmrCalories -= 161;
+        }
+
+        // --- Activity & goal (дефицит / профицит) ---
         bmrCalories *= profile.getActivityLevel().getCoef();
         bmrCalories *= profile.getGoal().getCoef();
 
-        int proteins = (int) (profile.getCurrentWeightKg().doubleValue()
-                * profile.getGoal().getProteinsPerKg());
-        int fats = (int) (profile.getCurrentWeightKg().doubleValue()
-                * profile.getGoal().getFatsPerKg());
-        int carbs = (int) ((bmrCalories - proteins * 4 - fats * 9) / 4);
+        int caloriesTarget = (int) Math.round(bmrCalories);
 
-        int waterTarget = (int) (profile.getCurrentWeightKg().doubleValue()
-                * profile.getActivityLevel().getWaterMlPerKg());
+        // --- Proteins (от текущего веса — нормально даже при похудении) ---
+        int proteins = (int) Math.round(
+                weight * profile.getGoal().getProteinsPerKg()
+        );
+
+        // --- Fats (процент от калорий, а не от веса) ---
+        // 20–30% — норма, берём 25%
+        int fatsCalories = (int) Math.round(caloriesTarget * 0.25);
+        int fats = fatsCalories / 9;
+
+        // --- Carbs (остаток) ---
+        int carbs = (caloriesTarget - proteins * 4 - fats * 9) / 4;
+
+        // --- Water ---
+        int waterTarget = (int) Math.round(
+                weight * profile.getActivityLevel().getWaterMlPerKg()
+        );
 
         return new UserNutritionDto()
-                .setCaloriesNormPerDay((int) bmrCalories)
+                .setCaloriesNormPerDay(caloriesTarget)
                 .setProteinsNormGramsPerDay(proteins)
                 .setFatsNormGramsPerDay(fats)
-                .setCarbsNormGramsPerDay(carbs)
-                .setWaterTargetMlPerDay(waterTarget)
-                ;
+                .setCarbsNormGramsPerDay(Math.max(carbs, 0))
+                .setWaterTargetMlPerDay(waterTarget);
     }
 
     //Проверка достаточности существующих данных
@@ -207,6 +231,8 @@ public class UserNutritionProfileService {
         if (waterTargetMlPerDay != null) profile.setWaterTargetMlPerDay(waterTargetMlPerDay);
         if (dietType != null) profile.setDietType(dietType);
 
-        return validateAndSave(profile);
+        profile = validateAndSave(profile);
+        userNutritionProfileEntryService.syncWithProfile(profile);
+        return profile;
     }
 }

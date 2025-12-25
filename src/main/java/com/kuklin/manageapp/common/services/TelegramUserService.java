@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.telegram.telegrambots.meta.api.objects.User;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -24,6 +25,10 @@ public class TelegramUserService {
                 .findTelegramUserByBotIdentifierAndTelegramId(botIdentifier, telegramId)
                 .orElse(null)
                 ;
+    }
+
+    public List<TelegramUser> getAllTelegramUsersByBotIdentifierOrNull(BotIdentifier botIdentifier) {
+        return telegramUserRepository.findAllByBotIdentifier(botIdentifier);
     }
 
     public TelegramUser createOrGetUserByTelegram(

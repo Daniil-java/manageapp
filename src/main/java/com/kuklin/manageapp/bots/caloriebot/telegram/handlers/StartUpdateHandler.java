@@ -25,7 +25,6 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
                     ⏳ Обновляю статус
                     """;
     private final CalorieTelegramBot calorieTelegramBot;
-    private final AnalyticsService analyticsService;
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
