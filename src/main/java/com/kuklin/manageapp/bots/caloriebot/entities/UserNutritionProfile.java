@@ -187,13 +187,6 @@ public class UserNutritionProfile {
                     .append(" л)\n");
         }
 
-        // Таймстемпы, если нужны
-        if (updatedAt != null) {
-            sb.append("\nПоследнее обновление: ")
-                    .append(updatedAt)
-                    .append("\n");
-        }
-
         return sb.toString();
     }
 

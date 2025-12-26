@@ -61,12 +61,17 @@ public class CalorieTimeZoneSettingsUpdateHandler implements CalorieSettingsHand
             //Сохранение таймзоны
             userSettingsService.setTimeZoneOrNull(telegramUser.getTelegramId(), tz);
 
-            //Отправка сообщения об успешном сохранении
+            //Возращаю сообщение с кнопкой возврата к настройкам
             calorieTelegramBot.sendEditMessage(
                     chatId,
                     "✅ Таймзона установлена: " + tz,
                     query.getMessage().getMessageId(),
-                    null
+                    TelegramKeyboard.builder()
+                            .row(TelegramKeyboard.button(
+                                    "\uD83D\uDD19 Вернуться к настройкам",
+                                    Command.CALORIE_SETTINGS.getCommandText()
+                            ))
+                            .build()
             );
             return;
         }

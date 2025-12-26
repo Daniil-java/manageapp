@@ -155,7 +155,8 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
         String photoBase64;
         try {
             photoBase64 = telegramService.downloadPhotoFileBase64OrNull(calorieTelegramBot, message);
-            dish = dishService.getDishDtoByPhotoOrNull(telegramUser.getTelegramId(), photoBase64);
+            dish = dishService.getDishDtoByPhotoOrNull(
+                    telegramUser.getTelegramId(), photoBase64, message.getCaption());
         } catch (IOException e) {
             log.error("Provider error!");
             calorieTelegramBot.sendReturnedMessage(message.getChatId(), "Один из провайдеров не смог обработать фото");
@@ -172,7 +173,7 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
     private void processManyAiModels(Long dishId, String photoBase64, Message message) {
         Map<ChatModel, DishDto> dishDtos;
         try {
-            dishDtos = dishService.getDishDtoByPhotoOrNullWithManyProviders(photoBase64);
+            dishDtos = dishService.getDishDtoByPhotoOrNullWithManyProviders(photoBase64, message.getCaption());
         } catch (Exception e) {
             log.error("Many providers request error!", e);
             calorieTelegramBot.sendReturnedMessage(

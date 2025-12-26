@@ -22,6 +22,8 @@ import java.util.List;
 public class MealReminderSchedulerProcessor implements ScheduleProcessor {
     private final UserSettingsService userSettingsService;
     private final CalorieTelegramBot calorieTelegramBot;
+    private final Integer QUIET_HOUR_START = 23;
+    private final Integer QUIET_HOUR_END = 7;
     @Override
     public void process() {
         //Получение всех пользователей, у которых включены напоминания о приеме пищи
@@ -52,6 +54,11 @@ public class MealReminderSchedulerProcessor implements ScheduleProcessor {
 
         ZoneId zoneId = settings.getZoneId();
         ZonedDateTime nowUser = nowUtc.atZone(zoneId);
+        // --- ТИХИЕ ЧАСЫ: 23:00 – 07:00 ---
+        int hour = nowUser.getHour();
+        if (hour >= QUIET_HOUR_START || hour < QUIET_HOUR_END) {
+            return;
+        }
 
         Instant lastReminderUtc = settings.getMealLastReminderUtc();
 
