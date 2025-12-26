@@ -79,7 +79,7 @@ public class TestFeatureUpdateHandler implements CalorieBotUpdateHandler {
 
             // 3. Временный файл
             Path tempFile = Files.createTempFile("report-", ".html");
-            Files.writeString(tempFile, html, StandardCharsets.UTF_8);
+            Files.writeString(tempFile, html, StandardCharsets.UTF_16);
 
             // 4. Отправка в Telegram
             SendDocument doc = SendDocument.builder()
@@ -92,6 +92,10 @@ public class TestFeatureUpdateHandler implements CalorieBotUpdateHandler {
 
             // 5. Удаляем файл
             Files.deleteIfExists(tempFile);
+            calorieTelegramBot.sendReturnedMessage(
+                    update.getMessage().getChatId(),
+                    report.aiRequest()
+            );
 
         } catch (Exception e) {
             log.error("REPORT SEND ERROR", e);

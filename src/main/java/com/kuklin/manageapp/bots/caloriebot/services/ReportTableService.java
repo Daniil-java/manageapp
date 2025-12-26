@@ -101,18 +101,19 @@ public class ReportTableService {
 
         Table periodTable = buildPeriodReport(dishes, targets, weightEntries, userSettings, from, to);
 
+        String aiRequest = String.format(AI_REQUEST_PREDICTION, periodTable.print());
         String response = openAiProviderProcessor.fetchResponse(
                 components.getAiKey(),
-                String.format(AI_REQUEST_PREDICTION, periodTable.print()),
+                aiRequest,
                 BotIdentifier.CALORIE_BOT,
                 "PERIOD REPORT"
         );
 
         System.out.println(response);
-        return new ReportResponse(periodTable, response);
+        return new ReportResponse(periodTable, response, aiRequest);
     }
 
-    public record ReportResponse (Table table, String text) {}
+    public record ReportResponse (Table table, String text, String aiRequest) {}
 
     //Дата  -   Ккал (Факт / Цель)  -   Статус(превысил/или недоел)  -   Белки   -   Жиры    -   Углеводы
     //Одна строка - один день
