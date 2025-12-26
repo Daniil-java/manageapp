@@ -25,9 +25,6 @@ import java.time.temporal.ChronoUnit;
 @Slf4j
 public class TestFeatureUpdateHandler implements CalorieBotUpdateHandler {
     private final CalorieTelegramBot calorieTelegramBot;
-    private final DishService dishService;
-    private final AnalyticsService analyticsService;
-    private final UserNutritionProfileService userNutritionProfileService;
     private final ReportTableService reportTableService;
 
     @Override
