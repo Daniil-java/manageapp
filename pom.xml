@@ -134,6 +134,12 @@
 			<version>5.2.5</version>
 		</dependency>
 
+		<dependency>
+			<groupId>tech.tablesaw</groupId>
+			<artifactId>tablesaw-core</artifactId>
+			<version>0.44.4</version>
+		</dependency>
+
 	</dependencies>
 
 	<dependencyManagement>

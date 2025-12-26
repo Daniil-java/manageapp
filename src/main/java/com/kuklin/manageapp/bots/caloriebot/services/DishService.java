@@ -17,7 +17,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.time.*;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -458,5 +460,9 @@ public class DishService {
         dish.setCarbohydrates(scale(dish.getCarbohydrates(), multiplier));
 
         return dishRepository.save(dish);
+    }
+
+    public List<Dish> getAllDishedByUserIdAndPeriod(Long userId, Instant from, Instant to) {
+        return dishRepository.findAllByUserIdAndCreatedBetween(userId, from, to);
     }
 }

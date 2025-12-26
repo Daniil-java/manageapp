@@ -56,6 +56,7 @@ public class OpenAiProviderProcessor implements ProviderProcessor, AiTextClient 
         OpenAiChatCompletionResponse response =
                 openAiFeignClient.generate("Bearer " + aiKey, request);
 
+        log.info("TOKEN INFO: " + response.getUsage().getCompletionTokens());
         return response.getChoices().get(0).getMessage().getContent();
     }
 
