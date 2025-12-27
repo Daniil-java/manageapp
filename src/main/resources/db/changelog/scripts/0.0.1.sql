@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS telegram_users (
                                               lastname TEXT,
                                               language_code TEXT,
                                               bot_identifier TEXT NOT NULL,
+                                              response_count   BIGINT DEFAULT 0,
                                               updated TIMESTAMP,
                                               created TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
