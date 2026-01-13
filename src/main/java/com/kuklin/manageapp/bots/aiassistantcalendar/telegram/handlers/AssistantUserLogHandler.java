@@ -7,7 +7,6 @@ import com.kuklin.manageapp.common.library.tgutils.Command;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Update;
-import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import java.io.IOException;
 import java.util.Set;
@@ -43,8 +42,6 @@ public class AssistantUserLogHandler implements AssistantUpdateHandler {
             );
         } catch (IOException e) {
             assistantTelegramBot.sendReturnedMessage(chatId, "Не получилось создать файл!");
-        } catch (TelegramApiException e) {
-            assistantTelegramBot.sendReturnedMessage(chatId, "Не получилось отправить файл!");
         }
     }
 
