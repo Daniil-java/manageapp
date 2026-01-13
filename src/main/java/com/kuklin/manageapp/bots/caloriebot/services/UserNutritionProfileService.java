@@ -1,7 +1,7 @@
 package com.kuklin.manageapp.bots.caloriebot.services;
 
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
-import com.kuklin.manageapp.bots.caloriebot.entities.models.UserNutritionDto;
+import com.kuklin.manageapp.bots.caloriebot.models.UserNutritionDto;
 import com.kuklin.manageapp.bots.caloriebot.repository.UserNutritionProfileRepository;
 import com.kuklin.manageapp.bots.caloriebot.services.exceptions.InsufficientProfileDataException;
 import com.kuklin.manageapp.bots.caloriebot.services.exceptions.validation.InvalidAgeException;

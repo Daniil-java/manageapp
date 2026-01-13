@@ -1,6 +1,5 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.handlers;
 
-import com.kuklin.manageapp.bots.caloriebot.services.AnalyticsService;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgutils.Command;
@@ -37,24 +36,34 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
     }
 
     public static ReplyKeyboardMarkup getCommandKeyboard() {
-        ReplyKeyboardMarkup replyKeyboard = new ReplyKeyboardMarkup();
-        replyKeyboard.setResizeKeyboard(true);
-        replyKeyboard.setOneTimeKeyboard(false);
+        ReplyKeyboardMarkup markup = new ReplyKeyboardMarkup();
+        markup.setResizeKeyboard(true);
+        markup.setOneTimeKeyboard(false);
 
-        KeyboardRow row1 = new KeyboardRow();
-        row1.add(Command.CALORIE_SETTINGS.getCommandText());
-        row1.add(Command.CALORIE_WATER.getCommandText());
+        KeyboardRow settingsRow = new KeyboardRow();
+        settingsRow.add(Command.CALORIE_SETTINGS.getCommandText());
+        settingsRow.add(Command.CALORIE_WATER.getCommandText());
 
-        KeyboardRow row = new KeyboardRow();
-        row.add(Command.CALORIE_PROFILE.getCommandText());
-        row.add(Command.CALORIE_FAVORITE.getCommandText());
+        KeyboardRow profileRow = new KeyboardRow();
+        profileRow.add(Command.CALORIE_PROFILE.getCommandText());
+        profileRow.add(Command.CALORIE_FAVORITE.getCommandText());
 
-        KeyboardRow nextRow = new KeyboardRow();
-        nextRow.add(Command.CALORIE_TODAY_LIST.getCommandText());
-        nextRow.add(Command.CALORIE_WEEK_LIST.getCommandText());
+        KeyboardRow statisticsRow = new KeyboardRow();
+        statisticsRow.add(Command.CALORIE_TODAY_LIST.getCommandText());
+        statisticsRow.add(Command.CALORIE_WEEK_LIST.getCommandText());
 
-        replyKeyboard.setKeyboard(List.of(row1, row, nextRow));
-        return replyKeyboard;
+        KeyboardRow reportRow = new KeyboardRow();
+        reportRow.add(Command.CALORIE_REPORT.getCommandText());
+
+        // Собираем в список в том порядке, в котором они должны идти в интерфейсе
+        markup.setKeyboard(List.of(
+                settingsRow,
+                profileRow,
+                statisticsRow,
+                reportRow
+        ));
+
+        return markup;
     }
 
     @Override

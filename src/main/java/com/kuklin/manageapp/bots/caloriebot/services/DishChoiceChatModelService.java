@@ -2,7 +2,7 @@ package com.kuklin.manageapp.bots.caloriebot.services;
 
 import com.kuklin.manageapp.aiconversation.models.enums.ChatModel;
 import com.kuklin.manageapp.bots.caloriebot.entities.DishChoiceChatModel;
-import com.kuklin.manageapp.bots.caloriebot.entities.models.DishDto;
+import com.kuklin.manageapp.bots.caloriebot.models.DishDto;
 import com.kuklin.manageapp.bots.caloriebot.repository.DishChoiceChatModelRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

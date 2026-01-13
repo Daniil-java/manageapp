@@ -4,7 +4,7 @@ import com.kuklin.manageapp.aiconversation.models.enums.ChatModel;
 import com.kuklin.manageapp.bots.caloriebot.configurations.TelegramCaloriesBotKeyComponents;
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.entities.DishChoiceChatModel;
-import com.kuklin.manageapp.bots.caloriebot.entities.models.DishDto;
+import com.kuklin.manageapp.bots.caloriebot.models.DishDto;
 import com.kuklin.manageapp.bots.caloriebot.services.AnalyticsService;
 import com.kuklin.manageapp.bots.caloriebot.services.CalorieAccessService;
 import com.kuklin.manageapp.bots.caloriebot.services.DishChoiceChatModelService;

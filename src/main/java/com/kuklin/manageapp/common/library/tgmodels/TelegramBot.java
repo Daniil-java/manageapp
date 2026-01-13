@@ -46,6 +46,25 @@ public abstract class TelegramBot extends TelegramLongPollingBot implements Tele
     @Override
     public abstract void onUpdateReceived(Update update);
 
+    public Message sendDocument(Long chatId, byte[] doc, String name, String caption) {
+        InputFile inputFile = new InputFile(
+                new ByteArrayInputStream(doc),
+                name
+        );
+
+        SendDocument document = SendDocument.builder()
+                .chatId(chatId)
+                .document(inputFile)
+                .caption(caption)
+                .build();
+
+        try {
+            return execute(document);
+        } catch (TelegramApiException e) {
+            log.error("Send document error!");
+            return null;
+        }
+    }
     public Message sendPhotoMessage(long chatId,
                                     byte[] photoBytes,
                                     String filename,

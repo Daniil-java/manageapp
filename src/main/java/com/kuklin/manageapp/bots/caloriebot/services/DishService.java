@@ -10,7 +10,7 @@ import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcesso
 import com.kuklin.manageapp.bots.caloriebot.configurations.TelegramCaloriesBotKeyComponents;
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserFavoriteDish;
-import com.kuklin.manageapp.bots.caloriebot.entities.models.DishDto;
+import com.kuklin.manageapp.bots.caloriebot.models.DishDto;
 import com.kuklin.manageapp.bots.caloriebot.repository.DishRepository;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import lombok.RequiredArgsConstructor;

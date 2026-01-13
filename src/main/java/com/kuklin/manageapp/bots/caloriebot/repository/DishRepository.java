@@ -11,5 +11,6 @@ import java.util.List;
 public interface DishRepository extends JpaRepository<Dish, Long> {
     List<Dish> findAllByUserId(Long userId);
     List<Dish> findAllByUserIdAndCreatedBetween(Long userId, Instant start, Instant end);
+
 }
 

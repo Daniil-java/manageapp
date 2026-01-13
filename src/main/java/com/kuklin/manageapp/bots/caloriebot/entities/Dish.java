@@ -1,6 +1,6 @@
 package com.kuklin.manageapp.bots.caloriebot.entities;
 
-import com.kuklin.manageapp.bots.caloriebot.entities.models.DishDto;
+import com.kuklin.manageapp.bots.caloriebot.models.DishDto;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.Getter;
@@ -10,6 +10,8 @@ import lombok.experimental.Accessors;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "dishes")
@@ -181,5 +183,79 @@ public class Dish {
         }
 
         return (int) result;
+    }
+
+    public static String getDishesString(List<Dish> dishes, UserNutritionProfile profile) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("📖 <b>Дневник питания (сегодня)</b>\n\n");
+
+        int cal = 0, fats = 0, proteins = 0, carbs = 0;
+
+        for (Dish dish : dishes) {
+            sb.append(Dish.getInfo(dish)).append("\n");
+
+            if (dish.getCalories() != null) cal += dish.getCalories();
+            if (dish.getFats() != null) fats += dish.getFats();
+            if (dish.getProteins() != null) proteins += dish.getProteins();
+            if (dish.getCarbohydrates() != null) carbs += dish.getCarbohydrates();
+        }
+
+        sb.append("\n⚡️ <b>ИТОГО:</b>\n");
+
+        appendTotal(sb, "🔥 К", cal, profile.getCaloriesNormPerDay(), "ккал");
+        appendTotal(sb, "🥩 Б", proteins, profile.getProteinsNormGramsPerDay(), "г");
+        appendTotal(sb, "🥑 Ж", fats, profile.getFatsNormGramsPerDay(), "г");
+        appendTotal(sb, "🍞 У", carbs, profile.getCarbsNormGramsPerDay(), "г");
+
+        return sb.toString();
+    }
+
+    private static void appendTotal(
+            StringBuilder sb,
+            String label,
+            int total,
+            Integer norm,
+            String unit
+    ) {
+        sb.append(label)
+                .append(": <b>")
+                .append(total)
+                .append("</b>");
+
+        if (norm != null) {
+            sb.append(" / ")
+                    .append(norm)
+                    .append(" ")
+                    .append(unit);
+        }
+
+        sb.append("\n");
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Dish{");
+        sb.append("name='").append(name).append("'");
+        sb.append(", cal=").append(calories);
+        sb.append(", p=").append(proteins);
+        sb.append(", f=").append(fats);
+        sb.append(", c=").append(carbohydrates);
+        sb.append(", weight=").append(weightGrams);
+        sb.append(", cat=").append(category);
+        sb.append(", conf=").append(aiConfidence);
+        sb.append(", created=").append(created); // Instant в формате UTC ISO-8601
+        sb.append("}");
+        return sb.toString();
+    }
+
+    public static String toStringList(List<Dish> dishes) {
+        if (dishes == null || dishes.isEmpty()) {
+            return "dishes: empty";
+        }
+
+        return dishes.stream()
+                .map(Dish::toString)
+                .collect(Collectors.joining("\n"));
     }
 }

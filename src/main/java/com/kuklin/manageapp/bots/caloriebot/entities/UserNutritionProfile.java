@@ -190,6 +190,27 @@ public class UserNutritionProfile {
         return sb.toString();
     }
 
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("UserNutritionProfile:\n");
+        sb.append("userId: ").append(userId).append("\n");
+        sb.append("sex: ").append(sex).append("\n");
+        sb.append("ageYears: ").append(ageYears).append("\n");
+        sb.append("heightCm: ").append(heightCm).append("\n");
+        sb.append("currentWeightKg: ").append(currentWeightKg != null ? currentWeightKg.stripTrailingZeros().toPlainString() : "null").append("\n");
+        sb.append("activityLevel: ").append(activityLevel).append("\n");
+        sb.append("goal: ").append(goal).append("\n");
+        sb.append("dietType: ").append(dietType).append("\n");
+        sb.append("caloriesTarget: ").append(caloriesNormPerDay).append("\n");
+        sb.append("proteinsTarget: ").append(proteinsNormGramsPerDay).append("\n");
+        sb.append("fatsTarget: ").append(fatsNormGramsPerDay).append("\n");
+        sb.append("carbsTarget: ").append(carbsNormGramsPerDay).append("\n");
+        sb.append("waterTargetMl: ").append(waterTargetMlPerDay).append("\n");
+        sb.append("fillingState: ").append(userProfileFillingState);
+        return sb.toString();
+    }
+
     private String formatSex() {
         if (sex == null) {
             return "нет данных";

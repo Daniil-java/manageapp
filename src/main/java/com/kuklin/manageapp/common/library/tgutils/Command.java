@@ -30,6 +30,7 @@ public enum Command {
     CALORIE_SETTINGS_TIMEZONE("tzset", BotIdentifier.CALORIE_BOT),
     CALORIE_SETTINGS_REMINDERS("remind", BotIdentifier.CALORIE_BOT),
     CALORIE_ADMIN_MESSAGE("/admin", BotIdentifier.CALORIE_BOT),
+    CALORIE_REPORT("\uD83D\uDCC4ОТЧЕТЫ", BotIdentifier.CALORIE_BOT),
 
     //==========================PAYMENT============================
     PAYMENT_PRE_CHECK_QUERY("precheckquerynotcommand", BotIdentifier.PAYMENT),

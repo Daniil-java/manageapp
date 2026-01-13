@@ -36,57 +36,10 @@ public class TodayUpdateHandler implements CalorieBotUpdateHandler {
         UserNutritionProfile profile = userNutritionProfileService.getOrCreateProfile(userId);
         calorieTelegramBot.sendReturnedMessage(
                 userId,
-                getDishesString(dishes, profile),
+                Dish.getDishesString(dishes, profile),
                 getStatsKeyboard(userId),
                 null
         );
-    }
-
-    public static String getDishesString(List<Dish> dishes, UserNutritionProfile profile) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("📖 <b>Дневник питания (сегодня)</b>\n\n");
-
-        int cal = 0, fats = 0, proteins = 0, carbs = 0;
-
-        for (Dish dish : dishes) {
-            sb.append(Dish.getInfo(dish)).append("\n");
-
-            if (dish.getCalories() != null) cal += dish.getCalories();
-            if (dish.getFats() != null) fats += dish.getFats();
-            if (dish.getProteins() != null) proteins += dish.getProteins();
-            if (dish.getCarbohydrates() != null) carbs += dish.getCarbohydrates();
-        }
-
-        sb.append("\n⚡️ <b>ИТОГО:</b>\n");
-
-        appendTotal(sb, "🔥 К", cal, profile.getCaloriesNormPerDay(), "ккал");
-        appendTotal(sb, "🥩 Б", proteins, profile.getProteinsNormGramsPerDay(), "г");
-        appendTotal(sb, "🥑 Ж", fats, profile.getFatsNormGramsPerDay(), "г");
-        appendTotal(sb, "🍞 У", carbs, profile.getCarbsNormGramsPerDay(), "г");
-
-        return sb.toString();
-    }
-
-    private static void appendTotal(
-            StringBuilder sb,
-            String label,
-            int total,
-            Integer norm,
-            String unit
-    ) {
-        sb.append(label)
-                .append(": <b>")
-                .append(total)
-                .append("</b>");
-
-        if (norm != null) {
-            sb.append(" / ")
-                    .append(norm)
-                    .append(" ")
-                    .append(unit);
-        }
-
-        sb.append("\n");
     }
 
     public InlineKeyboardMarkup getStatsKeyboard(Long userId) {

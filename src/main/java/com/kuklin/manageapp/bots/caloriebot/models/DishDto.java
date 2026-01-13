@@ -1,4 +1,4 @@
-package com.kuklin.manageapp.bots.caloriebot.entities.models;
+package com.kuklin.manageapp.bots.caloriebot.models;
 
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import lombok.Data;
