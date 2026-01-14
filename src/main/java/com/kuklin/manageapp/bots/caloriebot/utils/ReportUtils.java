@@ -239,4 +239,138 @@ public class ReportUtils {
 
         return Table.create("Детальный отчет", dateCol, nameCol, calCol, targetCol, pCol, fCol, cCol);
     }
+
+    // Добавьте этот метод в класс ReportUtils
+    public static Table buildWeightHistoryTable(List<WeightEntry> weightEntries, Instant from, Instant to, ZoneId zoneId) {
+        LocalDate startDate = from.atZone(zoneId).toLocalDate();
+        LocalDate endDate = to.atZone(zoneId).toLocalDate();
+
+        StringColumn dateCol = StringColumn.create("Дата");
+        StringColumn weightCol = StringColumn.create("Вес (кг)");
+        StringColumn deltaCol = StringColumn.create("Изменение");
+
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+
+        // Сортируем по дате, чтобы правильно считать дельту
+        List<WeightEntry> sortedEntries = weightEntries.stream()
+                .filter(w -> !w.getEntryDate().isBefore(startDate) && !w.getEntryDate().isAfter(endDate))
+                .sorted(Comparator.comparing(WeightEntry::getEntryDate))
+                .toList();
+
+        BigDecimal previousWeight = null;
+
+        for (WeightEntry entry : sortedEntries) {
+            dateCol.append(entry.getEntryDate().format(dateFormatter));
+            weightCol.append(entry.getWeightKg().stripTrailingZeros().toPlainString());
+
+            if (previousWeight != null) {
+                BigDecimal delta = entry.getWeightKg().subtract(previousWeight);
+                deltaCol.append(String.format("%+.1f", delta));
+            } else {
+                deltaCol.append("—");
+            }
+            previousWeight = entry.getWeightKg();
+        }
+
+        return Table.create("Таблица веса", dateCol, weightCol, deltaCol);
+    }
+
+    // Добавьте это в ReportUtils.java
+
+    /**
+     * Генерирует HTML-визуализацию распределения калорий по категориям.
+     * Использует простые HTML-элементы для совместимости с PDF-рендерером.
+     */
+    /**
+     * Генерирует горизонтальный чарт распределения калорий по категориям (в %).
+     */
+    public static String buildCategoryBarChartHtml(List<Dish> dishes) {
+        if (dishes == null || dishes.isEmpty()) return "";
+
+        Map<String, Integer> catMap = new HashMap<>();
+        int totalCal = 0;
+        for (Dish d : dishes) {
+            String catName = (d.getCategory() != null) ? d.getCategory().getName() : "Прочее";
+            int cal = nvl(d.getCalories());
+            catMap.put(catName, catMap.getOrDefault(catName, 0) + cal);
+            totalCal += cal;
+        }
+        if (totalCal == 0) return "";
+
+        List<Map.Entry<String, Integer>> sorted = new ArrayList<>(catMap.entrySet());
+        sorted.sort((a, b) -> b.getValue().compareTo(a.getValue()));
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("<div style='margin-top: 20px; font-family: \"DejaVu Sans\", sans-serif;'>");
+        sb.append("<h3 style='border-bottom: 1px solid #eee; padding-bottom: 5px; font-size: 14px;'>Распределение по категориям (%)</h3>");
+
+        String[] colors = {"#4e73df", "#1cc88a", "#36b9cc", "#f6c23e", "#e74a3b", "#858796"};
+        int colorIdx = 0;
+
+        for (Map.Entry<String, Integer> entry : sorted) {
+            double percent = (entry.getValue() * 100.0) / totalCal;
+            String color = colors[colorIdx % colors.length];
+            colorIdx++;
+
+            sb.append("<div style='margin-bottom: 8px;'>");
+            sb.append(String.format("<div style='font-size: 10px; margin-bottom: 2px;'>%s <span style='color: #888;'>— %.1f%%</span></div>",
+                    escapeHtml(entry.getKey()), percent));
+            sb.append("<div style='background-color: #eaecf4; border-radius: 3px; width: 100%; height: 10px;'>");
+            sb.append(String.format("<div style='background-color: %s; width: %.1f%%; height: 10px; border-radius: 3px;'></div>", color, percent));
+            sb.append("</div></div>");
+        }
+        sb.append("</div>");
+        return sb.toString();
+    }
+
+    /**
+     * Генерирует горизонтальный чарт распределения калорий по часам (Ритм питания).
+     * Теперь без таблиц, в едином стиле с категориями.
+     */
+    public static String buildHourlyCaloriesChartHtml(List<Dish> dishes, ZoneId zoneId) {
+        if (dishes == null || dishes.isEmpty()) return "";
+
+        long[] hourlyCals = new long[24];
+        long totalCal = 0;
+        for (Dish d : dishes) {
+            int hour = d.getCreated().atZone(zoneId).getHour();
+            int cal = nvl(d.getCalories());
+            hourlyCals[hour] += cal;
+            totalCal += cal;
+        }
+        if (totalCal == 0) return "";
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("<div style='margin-top: 25px; font-family: \"DejaVu Sans\", sans-serif;'>");
+        sb.append("<h3 style='border-bottom: 1px solid #eee; padding-bottom: 5px; font-size: 14px;'>Ритм питания по часам (%)</h3>");
+
+        // Контейнер с вертикальными линиями сетки на фоне
+        sb.append("<div style='position: relative; padding: 10px 0; border-left: 2px solid #5a5c69;'>");
+
+        // Отрисовка вертикальных линий сетки (каждые 25%)
+        sb.append("<div style='position: absolute; left: 25%; top: 0; bottom: 0; border-left: 1px dashed #e1e1e1;'></div>");
+        sb.append("<div style='position: absolute; left: 50%; top: 0; bottom: 0; border-left: 1px dashed #e1e1e1;'></div>");
+        sb.append("<div style='position: absolute; left: 75%; top: 0; bottom: 0; border-left: 1px dashed #e1e1e1;'></div>");
+
+        for (int h = 0; h < 24; h++) {
+            double percent = (hourlyCals[h] * 100.0) / totalCal;
+            if (percent < 0.1) continue; // Пропускаем пустые часы для компактности
+
+            // Ночные часы (22-06) выделим красным, остальные синим
+            String color = (h >= 22 || h < 6) ? "#e74a3b" : "#4e73df";
+
+            sb.append("<div style='margin-bottom: 5px; position: relative; z-index: 2;'>");
+            sb.append(String.format("<div style='font-size: 9px; margin-bottom: 1px;'>%02d:00 <span style='color: #888;'>— %.1f%%</span></div>", h, percent));
+            sb.append("<div style='background-color: #eaecf4; border-radius: 2px; width: 100%; height: 8px;'>");
+            sb.append(String.format("<div style='background-color: %s; width: %.1f%%; height: 8px; border-radius: 2px;'></div>", color, percent));
+            sb.append("</div></div>");
+        }
+
+        sb.append("</div>"); // Конец контейнера с сеткой
+        sb.append("<div style='display: flex; justify-content: space-between; font-size: 8px; color: #aaa; margin-top: 2px; padding-left: 2px;'>");
+        sb.append("<span>0%</span><span>25%</span><span>50%</span><span>75%</span><span>100%</span>");
+        sb.append("</div></div>");
+
+        return sb.toString();
+    }
 }

@@ -5,6 +5,9 @@ import tech.tablesaw.api.Table;
 public record ReportContext(String aiSummary,
                             Table dailyTable,
                             Table weeklyTable,
-                            AiPatternAnalysisResponse patternAnalysis
+                            Table weightTable,
+                            AiPatternAnalysisResponse patternAnalysis,
+                            String categoryChartHtml,
+                            String timingChartHtml
 ) {
 }

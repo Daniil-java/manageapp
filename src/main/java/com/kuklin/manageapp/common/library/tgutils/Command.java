@@ -24,7 +24,7 @@ public enum Command {
     CALORIE_PROFILE_DIALOGUE("/profiledialogue", BotIdentifier.CALORIE_BOT),
     CALORIE_WATER("💧", BotIdentifier.CALORIE_BOT),
     CALORIE_WEIGHT("Вес", BotIdentifier.CALORIE_BOT),
-    CALORIE_WEIGHT_HISTORY("/weight", BotIdentifier.CALORIE_BOT),
+    CALORIE_WEIGHT_HISTORY("⚖ВЕС", BotIdentifier.CALORIE_BOT),
     CALORIE_STATS("КБЖУ", BotIdentifier.CALORIE_BOT),
     CALORIE_SETTINGS("⚙Настройки", BotIdentifier.CALORIE_BOT),
     CALORIE_SETTINGS_TIMEZONE("tzset", BotIdentifier.CALORIE_BOT),

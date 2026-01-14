@@ -1,6 +1,7 @@
 package com.kuklin.manageapp.bots.caloriebot.services.scheduler;
 
 import com.kuklin.manageapp.bots.caloriebot.entities.UserSettings;
+import com.kuklin.manageapp.bots.caloriebot.services.ReportService;
 import com.kuklin.manageapp.bots.caloriebot.services.UserSettingsService;
 import com.kuklin.manageapp.bots.caloriebot.telegram.history.TodayUpdateHandler;
 import com.kuklin.manageapp.common.library.ScheduleProcessor;
@@ -22,6 +23,7 @@ import java.util.List;
 public class DailySummarySchedulerProcessor implements ScheduleProcessor {
     private final UserSettingsService userSettingsService;
     private final TodayUpdateHandler todayUpdateHandler;
+    private final ReportService reportService;
 
     //TODO сделать отправку не только в телеграм
     @Override
@@ -90,6 +92,7 @@ public class DailySummarySchedulerProcessor implements ScheduleProcessor {
     //TODO Универсальное средство отправки
     private void sendDailySummary(UserSettings settings) {
         todayUpdateHandler.sendTodayMessage(settings.getUserId());
+        reportService.getDayAiReport(settings.getUserId());
     }
 
     @Override

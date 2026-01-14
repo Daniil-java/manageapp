@@ -14,116 +14,131 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
+import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
-/*
-Отдает сообщение со списком возможных отчетов
-Принимает колбэк и сообщение
+/**
+ * Обработчик команд формирования отчетов по калориям.
+ * Поддерживает вывод меню выбора и генерацию PDF/AI отчетов.
  */
 @Component
 @RequiredArgsConstructor
 @Slf4j
 @Transactional
 public class CalorieReportUpdateHandler implements CalorieBotUpdateHandler {
+
     private final CalorieTelegramBot calorieTelegramBot;
     private final ReportService reportService;
     private final TodayUpdateHandler todayUpdateHandler;
-    private static final String MSG =
-            """
-                    Выберите тип отчета
-                    """;
+
+    private static final String MSG_CHOOSE_REPORT = "Выберите тип отчета";
     private static final String CLB_DATA_ERROR = "Ошибка данных! Попробуйте повторить операцию позже!";
+    private static final String DOC_ERROR = "Не получилось сгенерировать отчет! Попробуйте еще раз";
+    private static final String AWAIT_MSG = "Генерирую документ...";
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
-
         if (update.hasCallbackQuery()) {
             processCallback(update, telegramUser);
         } else if (update.hasMessage()) {
-            //Отправляем новое сообщение
-            calorieTelegramBot.sendReturnedMessage(
-                    update.getMessage().getChatId(),
-                    MSG,
-                    buildReportKeyboard(),
-                    null
-            );
+            Long chatId = update.getMessage().getChatId();
+            calorieTelegramBot.sendReturnedMessage(chatId, MSG_CHOOSE_REPORT, buildReportKeyboard(), null);
         }
     }
 
     private void processCallback(Update update, TelegramUser telegramUser) {
-        String data = update.getCallbackQuery().getData();
-        Long chatId = update.getCallbackQuery().getMessage().getChatId();
+        CallbackQuery callback = update.getCallbackQuery();
+        String data = callback.getData();
+        Long chatId = callback.getMessage().getChatId();
+        Integer messageId = callback.getMessage().getMessageId();
 
+        // Возврат к основному меню отчетов
         if (data.equals(getHandlerListName())) {
-            calorieTelegramBot.sendEditMessage(
-                    chatId,
-                    MSG,
-                    update.getCallbackQuery().getMessage().getMessageId(),
-                    buildReportKeyboard()
-            );
+            calorieTelegramBot.sendEditMessage(chatId, MSG_CHOOSE_REPORT, messageId, buildReportKeyboard());
             return;
         }
 
         try {
-            // Извлекаем тип отчета из callback data
-            ReportType reportType = ReportType.valueOf(data.split(TelegramBot.DEFAULT_DELIMETER)[1]);
+            // Извлекаем тип отчета из callback data (формат: COMMAND:TYPE)
+            String[] parts = data.split(TelegramBot.DEFAULT_DELIMETER);
+            if (parts.length < 2) return;
 
-            if (reportType.equals(ReportType.DAY)) {
-                processDayReportType(update, telegramUser);
-                return;
-            } else if (reportType.equals(ReportType.WEEK)) {
-                processWeekReportType(update, telegramUser);
-                return;
-            }
-            Instant now = Instant.now();
-            // Используем логику из Enum
-            byte[] pdfReport = reportService.buildPdfReportOrNull(
-                    reportType.getFrom(now),
-                    now,
-                    telegramUser.getTelegramId()
-            );
+            ReportType reportType = ReportType.valueOf(parts[1]);
 
-            if (pdfReport != null && pdfReport.length > 0) {
-                calorieTelegramBot.sendDocument(
-                        chatId,
-                        pdfReport,
-                        reportType.getFileName(),
-                        reportType.getCaption()
-                );
-            }
+            calorieTelegramBot.sendChatActionTyping(chatId);
+            // Обертка с индикацией загрузки
+            executeWithAwait(chatId, () -> {
+                switch (reportType) {
+                    case DAY -> handleDayReport(chatId, telegramUser.getTelegramId());
+                    case WEEK -> handleWeeklyDeepReport(chatId, telegramUser.getTelegramId());
+                    case MONTH -> handleStandardPdfReport(chatId, telegramUser.getTelegramId(), reportType);
+                }
+            });
 
         } catch (Exception e) {
-            log.error("{} CallbackData error! Data: {}", calorieTelegramBot.getBotUsername(), data, e);
+            log.error("{} Callback error! Data: {}", calorieTelegramBot.getBotUsername(), data, e);
             calorieTelegramBot.sendReturnedMessage(chatId, CLB_DATA_ERROR);
         }
     }
 
-    private void processWeekReportType(Update update, TelegramUser telegramUser) {
-        byte[] weeklyReport = reportService
-                .buildWeeklyDeepPdfReportOrNull(
-                        Instant.now().minus(7, ChronoUnit.DAYS),
-                        Instant.now(),
-                        telegramUser.getTelegramId()
-                );
-        calorieTelegramBot.sendDocument(
-                update.getCallbackQuery().getMessage().getChatId(),
-                weeklyReport,
-                ReportType.WEEK.fileName,
-                ReportType.WEEK.getCaption()
-        );
+    /**
+     * Выполняет действие (action), предварительно отправив сообщение об ожидании.
+     * После выполнения (успешного или нет) удаляет сообщение об ожидании.
+     */
+    private void executeWithAwait(Long chatId, Runnable action) {
+        Integer awaitMsgId = null;
+        try {
+            Message message = calorieTelegramBot.sendReturnedMessage(chatId, AWAIT_MSG);
+            if (message != null) {
+                awaitMsgId = message.getMessageId();
+            }
+
+            // Выполнение бизнес-логики (генерация PDF или AI запрос)
+            action.run();
+        } finally {
+            // Блок finally гарантирует, что "Генерирую..." удалится даже при Exception в action.run()
+            if (awaitMsgId != null) {
+                calorieTelegramBot.sendDeleteMessage(chatId, awaitMsgId);
+            }
+        }
     }
 
-    private void processDayReportType(Update update, TelegramUser telegramUser) {
-        todayUpdateHandler.sendTodayMessage(telegramUser.getTelegramId());
-        String aiReport = reportService.getDayAiReport(telegramUser.getTelegramId());
-        calorieTelegramBot.sendReturnedMessage(
-                update.getCallbackQuery().getMessage().getChatId(),
-                aiReport
+    private void handleDayReport(Long chatId, Long telegramId) {
+        String aiReport = reportService.getDayAiReport(telegramId);
+        calorieTelegramBot.sendReturnedMessage(chatId, aiReport);
+    }
+
+    private void handleWeeklyDeepReport(Long chatId, Long telegramId) {
+        Instant now = Instant.now();
+        byte[] report = reportService.buildWeeklyDeepPdfReportOrNull(
+                ReportType.WEEK.getFrom(now),
+                now,
+                telegramId
         );
+        sendPdfOrError(chatId, report, ReportType.WEEK);
+    }
+
+    private void handleStandardPdfReport(Long chatId, Long telegramId, ReportType type) {
+        Instant now = Instant.now();
+        byte[] report = reportService.buildPdfReportOrNull(
+                type.getFrom(now),
+                now,
+                telegramId
+        );
+        sendPdfOrError(chatId, report, type);
+    }
+
+    private void sendPdfOrError(Long chatId, byte[] content, ReportType type) {
+        if (content != null && content.length > 0) {
+            calorieTelegramBot.sendDocument(chatId, content, type.fileName, type.caption);
+        } else {
+            calorieTelegramBot.sendReturnedMessage(chatId, DOC_ERROR);
+        }
     }
 
     @Getter
@@ -147,17 +162,13 @@ public class CalorieReportUpdateHandler implements CalorieBotUpdateHandler {
         TelegramKeyboard.TelegramKeyboardBuilder builder = TelegramKeyboard.builder();
         String base = getHandlerListName() + TelegramBot.DEFAULT_DELIMETER;
 
-        builder
-                .row(
-                        TelegramKeyboard.button("Дневной", base + ReportType.DAY)
-                ).row(
-                        TelegramKeyboard.button("Недельный", base + ReportType.WEEK)
-                ).row(
-                        TelegramKeyboard.button("Месячный", base + ReportType.MONTH)
-                ).row(
-                        TelegramKeyboard.button("Закрыть", Command.CALORIE_CLOSE.getCommandText())
-                );
+        for (ReportType type : ReportType.values()) {
+            String label = type == ReportType.DAY ? "Дневной" :
+                    type == ReportType.WEEK ? "Недельный" : "Месячный";
+            builder.row(TelegramKeyboard.button(label, base + type.name()));
+        }
 
+        builder.row(TelegramKeyboard.button("Закрыть", Command.CALORIE_CLOSE.getCommandText()));
         return builder.build();
     }
 

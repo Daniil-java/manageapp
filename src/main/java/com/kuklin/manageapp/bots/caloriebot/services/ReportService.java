@@ -23,6 +23,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.util.List;
 
 // Статические импорты для улучшения читаемости (утилиты рендеринга и ИИ-промпты)
@@ -51,6 +52,9 @@ public class ReportService {
     private static final String VAR_DAILY_TABLE = "{{DAILY_TABLE}}";
     private static final String VAR_WEEKLY_TABLE = "{{WEEKLY_TABLE}}";
     private static final String VAR_NUTRITION_ANALYSIS = "{{NUTRITION_ANALYSIS}}";
+    private static final String VAR_WEIGHT_TABLE = "{{WEIGHT_TABLE}}";
+    private static final String VAR_CATEGORY_CHART = "{{CATEGORY_CHART}}";
+    private static final String VAR_TIMING_CHART = "{{TIMING_CHART}}";
 
     private final DishService dishService;
     private final UserNutritionProfileService userNutritionProfileService;
@@ -68,25 +72,27 @@ public class ReportService {
      */
     public byte[] buildWeeklyDeepPdfReportOrNull(Instant from, Instant to, Long userId) {
         try {
-            // 1. Получаем список всех блюд за период
             List<Dish> dishes = dishService.getAllDishedByUserIdAndPeriod(userId, from, to);
             List<UserNutritionProfileEntry> userNutritionEntries = userNutritionProfileEntryService.getAllByUserId(userId);
             UserSettings userSettings = userSettingsService.getOrCreate(userId);
-            // 2. Получаем текстовый анализ от ИИ
-            String aiAnalysis = getWeeklyDeepReport(from, to, userId);
+            ZoneId zoneId = userSettings.getZoneId();
 
-            // 3. Загружаем шаблон
+            String aiAnalysis = getWeeklyDeepReport(from, to, userId);
             String template = loadTemplateOrNull(WEEKLY_REPORT_TEMPLATE_PATH);
             if (template == null) return null;
 
-            // 4. Генерируем HTML таблицу с объединением ячеек по дате
-            Table dishesTable = ReportUtils.buildDetailedDishTable(dishes, userNutritionEntries, userSettings.getZoneId());
+            Table dishesTable = ReportUtils.buildDetailedDishTable(dishes, userNutritionEntries, zoneId);
             String dishesTableHtml = ReportUtils.tableToHtml(dishesTable);
 
-            // 5. Заполняем шаблон
+            // Генерируем оба графика для глубокого отчета
+            String categoryChartHtml = ReportUtils.buildCategoryBarChartHtml(dishes);
+            String timingChartHtml = ReportUtils.buildHourlyCaloriesChartHtml(dishes, zoneId); // <--- Добавили
+
             String html = template
                     .replace("{{AI_ANALYSIS}}", escapeHtml(aiAnalysis))
-                    .replace("{{DISHES_TABLE}}", dishesTableHtml);
+                    .replace("{{DISHES_TABLE}}", dishesTableHtml)
+                    .replace("{{CATEGORY_CHART}}", categoryChartHtml)
+                    .replace("{{TIMING_CHART}}", timingChartHtml); // <--- Заменили плейсхолдер
 
             return renderPdfOrNull(html);
         } catch (Exception e) {
@@ -144,18 +150,37 @@ public class ReportService {
      * Агрегирует данные из разных источников для подготовки отчета.
      */
     private ReportContext gatherReportContext(Instant from, Instant to, Long userId) throws JsonProcessingException {
-        // Получаем анализ трендов и прогноз веса
-        ReportResponseRecord periodAnalysis = getPeriodReport(from, to, userId);
-        // Получаем глубокий анализ паттернов поведения (JSON формат)
-        AiPatternAnalysisResponse patternAnalysis = getNutritionReportByPeriod(from, to, userId);
-        // Строим недельную таблицу средних значений
-        Table weeklyTable = buildWeeklyTable(from, to, userId);
+        // Получаем блюда один раз для всех нужд
+        List<Dish> dishes = dishService.getAllDishedByUserIdAndPeriod(userId, from, to);
 
+        ReportResponseRecord periodAnalysis = getPeriodReport(from, to, userId);
+        AiPatternAnalysisResponse patternAnalysis = getNutritionReportByPeriod(from, to, userId);
+
+        // Передаем dishes в методы построения таблиц (если нужно) или используем здесь
+        Table weeklyTable = ReportUtils.buildPeriodReportPerWeek(
+                dishes,
+                weightEntryService.getAllWeightHistory(userId),
+                userSettingsService.getOrCreate(userId),
+                from, to
+        );
+
+        List<WeightEntry> weightHistory = weightEntryService.getAllWeightHistory(userId);
+        ZoneId zoneId = userSettingsService.getOrCreate(userId).getZoneId();
+        Table weightTable = ReportUtils.buildWeightHistoryTable(weightHistory, from, to, zoneId);
+
+        // Генерируем HTML диаграммы
+        String categoryChartHtml = ReportUtils.buildCategoryBarChartHtml(dishes);
+        String timingChartHtml = ReportUtils.buildHourlyCaloriesChartHtml(dishes, zoneId);
+
+        // Предполагаем, что вы добавили поле categoryChart в ваш record ReportContext
         return new ReportContext(
                 periodAnalysis.text(),
                 periodAnalysis.table(),
                 weeklyTable,
-                patternAnalysis
+                weightTable,
+                patternAnalysis,
+                categoryChartHtml,
+                timingChartHtml
         );
     }
 
@@ -221,7 +246,10 @@ public class ReportService {
         return html.replace(VAR_AI_TEXT, escapeHtml(ctx.aiSummary()))
                 .replace(VAR_DAILY_TABLE, tableToHtml(ctx.dailyTable()))
                 .replace(VAR_WEEKLY_TABLE, tableToHtml(ctx.weeklyTable()))
-                .replace(VAR_NUTRITION_ANALYSIS, ctx.patternAnalysis().toHtml());
+                .replace(VAR_WEIGHT_TABLE, tableToHtml(ctx.weightTable()))
+                .replace(VAR_NUTRITION_ANALYSIS, ctx.patternAnalysis().toHtml())
+                .replace(VAR_CATEGORY_CHART, ctx.categoryChartHtml())
+                .replace(VAR_TIMING_CHART, ctx.timingChartHtml());
     }
 
     /**

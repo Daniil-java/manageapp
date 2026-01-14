@@ -50,7 +50,7 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
 
         KeyboardRow statisticsRow = new KeyboardRow();
         statisticsRow.add(Command.CALORIE_TODAY_LIST.getCommandText());
-        statisticsRow.add(Command.CALORIE_WEEK_LIST.getCommandText());
+        statisticsRow.add(Command.CALORIE_WEIGHT_HISTORY.getCommandText());
 
         KeyboardRow reportRow = new KeyboardRow();
         reportRow.add(Command.CALORIE_REPORT.getCommandText());
