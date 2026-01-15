@@ -3,11 +3,12 @@ package com.kuklin.manageapp.bots.aiassistantcalendar.telegram.handlers;
 import com.kuklin.manageapp.bots.aiassistantcalendar.telegram.AssistantTelegramBot;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgutils.Command;
-import com.kuklin.manageapp.common.services.TelegramService;
+import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 
 @Component
 @RequiredArgsConstructor
@@ -37,12 +38,22 @@ public class AssistantStartUpdateHandler implements AssistantUpdateHandler {
                     - Можно отправлять голосовые сообщения\s
                                         
                     """;
-    private final TelegramService telegramService;
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
-        log.info(update.toString());
-        assistantTelegramBot.sendReturnedMessage(update.getMessage().getChatId(), START_MESSAGE);
+        assistantTelegramBot.sendReturnedMessage(
+                update.getMessage().getChatId(),
+                START_MESSAGE,
+                getAuthButton(),
+                null
+        );
+    }
+
+    public InlineKeyboardMarkup getAuthButton() {
+        TelegramKeyboard.TelegramKeyboardBuilder builder = TelegramKeyboard.builder();
+        builder.row(TelegramKeyboard.button("Авторизация", Command.ASSISTANT_AUTH.getCommandText()));
+
+        return builder.build();
     }
 
     @Override

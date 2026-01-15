@@ -5,6 +5,7 @@ import com.google.api.services.calendar.model.EventDateTime;
 import com.kuklin.manageapp.bots.aiassistantcalendar.services.CalendarService;
 import com.kuklin.manageapp.bots.aiassistantcalendar.services.UserGoogleCalendarService;
 import com.kuklin.manageapp.bots.aiassistantcalendar.telegram.AssistantTelegramBot;
+import com.kuklin.manageapp.bots.aiassistantcalendar.testgoogleauth.models.TokenRefreshException;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import lombok.RequiredArgsConstructor;
@@ -37,9 +38,11 @@ public class AssistantTodayUpdateHandler implements AssistantUpdateHandler{
 
         String response = ERROR_MSG;
         try {
-            List<Event> events = calendarService.getTodayEvents(calendarId);
+            List<Event> events = calendarService.getTodayEvents(telegramUser.getTelegramId());
             response = getTodayEventsString(events);
         } catch (IOException e) {
+            log.error(response, e);
+        } catch (TokenRefreshException e) {
             log.error(response, e);
         }
 
