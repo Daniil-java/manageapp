@@ -7,6 +7,8 @@ import com.kuklin.manageapp.aiconversation.models.enums.ProviderVariant;
 import com.kuklin.manageapp.aiconversation.models.openai.OpenAiChatCompletionRequest;
 import com.kuklin.manageapp.aiconversation.models.openai.OpenAiChatCompletionResponse;
 import com.kuklin.manageapp.aiconversation.providers.ProviderProcessor;
+import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
+import com.kuklin.manageapp.bots.metrics.services.MetricsAiInteractionRecordService;
 import com.kuklin.manageapp.bots.metrics.services.MetricsAiLogService;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +22,7 @@ public class DeepSeekProviderProcessor implements ProviderProcessor {
 
     private final DeepSeekFeignClient deepSeekFeignClient;
     private final MetricsAiLogService metricsAiLogService;
+    private final MetricsAiInteractionRecordService metricsAiInteractionRecordService;
 
     @Override
     public ProviderVariant getProviderName() {
@@ -44,6 +47,20 @@ public class DeepSeekProviderProcessor implements ProviderProcessor {
 
             OpenAiChatCompletionResponse resp =
                     deepSeekFeignClient.generate("Bearer " + aiKey, req);
+
+            if (resp != null && resp.getUsage() != null) {
+                metricsAiInteractionRecordService.saveInteractionRecord(
+                        getProviderName(),
+                        botIdentifier,
+                        content,
+                        MetricsAiInteractionRecord.AiMessageType.PHOTO,
+                        resp.getContent(),
+                        MetricsAiInteractionRecord.AiMessageType.TEXT,
+                        resp.getUsage().getPromptTokens(),
+                        resp.getUsage().getCompletionTokens()
+                );
+
+            }
 
             return resp.toAiResponse();
 

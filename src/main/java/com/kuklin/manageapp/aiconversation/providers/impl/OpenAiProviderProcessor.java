@@ -8,6 +8,8 @@ import com.kuklin.manageapp.aiconversation.models.openai.OpenAiChatCompletionReq
 import com.kuklin.manageapp.aiconversation.models.openai.OpenAiChatCompletionResponse;
 import com.kuklin.manageapp.aiconversation.providers.AiTextClient;
 import com.kuklin.manageapp.aiconversation.providers.ProviderProcessor;
+import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
+import com.kuklin.manageapp.bots.metrics.services.MetricsAiInteractionRecordService;
 import com.kuklin.manageapp.bots.metrics.services.MetricsAiLogService;
 import com.kuklin.manageapp.common.library.models.ByteArrayMultipartFile;
 import com.kuklin.manageapp.common.library.models.TranscriptionResponse;
@@ -24,6 +26,7 @@ public class OpenAiProviderProcessor implements ProviderProcessor, AiTextClient 
 
     private final OpenAiFeignClient openAiFeignClient;
     private final MetricsAiLogService metricsAiLogService;
+    private final MetricsAiInteractionRecordService metricsAiInteractionRecordService;
 
     @Override
     public AiResponse fetchResponsePhotoOrNull(
@@ -37,39 +40,82 @@ public class OpenAiProviderProcessor implements ProviderProcessor, AiTextClient 
         OpenAiChatCompletionRequest request =
                 OpenAiChatCompletionRequest.makeDefaultImgRequest(content, imagerUrl, chatModel);
         increaseMetricsLog();
+
         OpenAiChatCompletionResponse response =
                 openAiFeignClient.generate("Bearer " + aiKey, request);
+
+        if (response != null && response.getUsage() != null) {
+            metricsAiInteractionRecordService.saveInteractionRecord(
+                    getProviderName(),
+                    botIdentifier,
+                    content,
+                    MetricsAiInteractionRecord.AiMessageType.PHOTO,
+                    response.getContent(),
+                    MetricsAiInteractionRecord.AiMessageType.TEXT,
+                    response.getUsage().getPromptTokens(),
+                    response.getUsage().getCompletionTokens()
+            );
+        }
 
         return response.toAiResponse();
     }
 
-    public String fetchPhotoResponse(String aiKey, String content, String imageUrl) {
+    public String fetchPhotoResponse(
+            String aiKey, String content, String imageUrl, BotIdentifier botIdentifier
+    ) {
         log.info("OpenAI: Photo request!");
         OpenAiChatCompletionRequest request =
                 OpenAiChatCompletionRequest.makeDefaultImgRequest(content, imageUrl);
 
-        return fetchResponse(aiKey, request);
+        return fetchResponse(aiKey, request, botIdentifier, MetricsAiInteractionRecord.AiMessageType.PHOTO);
     }
 
-    private String fetchResponse(String aiKey, OpenAiChatCompletionRequest request) {
+    private String fetchResponse(
+            String aiKey,
+            OpenAiChatCompletionRequest request,
+            BotIdentifier botIdentifier,
+            MetricsAiInteractionRecord.AiMessageType messageType
+    ) {
         increaseMetricsLog();
         OpenAiChatCompletionResponse response =
                 openAiFeignClient.generate("Bearer " + aiKey, request);
 
-        log.info("TOKEN INFO: " + response.getUsage().getCompletionTokens());
+        if (response != null && response.getUsage() != null) {
+            metricsAiInteractionRecordService.saveInteractionRecord(
+                    getProviderName(),
+                    botIdentifier,
+                    request.getMessages().get(0).getContent().get(0).getText(),
+                    messageType,
+                    response.getContent(),
+                    MetricsAiInteractionRecord.AiMessageType.TEXT,
+                    response.getUsage().getPromptTokens(),
+                    response.getUsage().getCompletionTokens()
+            );
+        }
+
         return response.getChoices().get(0).getMessage().getContent();
     }
 
     @Override
-    public String fetchResponse(String aiKey, String content, BotIdentifier botIdentifier, String uniqLog) {
+    public String fetchResponse(
+            String aiKey,
+            String content,
+            BotIdentifier botIdentifier,
+            String uniqLog,
+            MetricsAiInteractionRecord.AiMessageType messageType) {
         log.info(botIdentifier + " uniq log: " + uniqLog);
         OpenAiChatCompletionRequest request =
                 OpenAiChatCompletionRequest.makeDefaultRequest(content);
-        return fetchResponse(aiKey, request);
+        return fetchResponse(aiKey, request, botIdentifier, messageType);
 
     }
 
-    public String fetchAudioResponse(String aiKey, byte[] content, BotIdentifier botIdentifier, String uniqLog) {
+    public String fetchAudioResponse(
+            String aiKey,
+            byte[] content,
+            BotIdentifier botIdentifier,
+            String uniqLog
+    ) {
         log.info(botIdentifier + "AUDIO! Uniq log: " + uniqLog);
         MultipartFile multipartFile = new ByteArrayMultipartFile(
                 "file",
@@ -85,6 +131,17 @@ public class OpenAiProviderProcessor implements ProviderProcessor, AiTextClient 
                 "whisper-1"
         );
 
+        metricsAiInteractionRecordService.saveInteractionRecord(
+                getProviderName(),
+                botIdentifier,
+                "[VOICE]",
+                MetricsAiInteractionRecord.AiMessageType.VOICE,
+                response.getText(),
+                MetricsAiInteractionRecord.AiMessageType.TEXT,
+                null,
+                null
+        );
+
         return response.getText();
     }
 
@@ -96,41 +153,4 @@ public class OpenAiProviderProcessor implements ProviderProcessor, AiTextClient 
     public ProviderVariant getProviderName() {
         return ProviderVariant.OPENAI;
     }
-//    public List<String> fetchResponseFromManyModels(String aiKey, String content) {
-//        List<String> responses = new ArrayList<>();
-//        for (ChatModel chatModel: ChatModel.getModels()) {
-//            OpenAiChatCompletionRequest request =
-//                    OpenAiChatCompletionRequest.makeModelRequest(content, chatModel);
-//            try {
-//                responses.add(fetchResponse(aiKey, request));
-//            } catch (Exception e) {
-//                log.error("OpenAI Connection Error!");
-//            }
-//        }
-//        return responses;
-//    }
-//
-//    public Map<ChatModel, String> fetchResponseFromManyModels(
-//            String aiKey, String content, String imageUrl, BotIdentifier botIdentifier, String uniqLog
-//    ) {
-//        Map<ChatModel, String> responses = new HashMap<>();
-//        for (ChatModel chatModel: ChatModel.getModels()) {
-//            OpenAiChatCompletionRequest request =
-//                    OpenAiChatCompletionRequest.makeModelImgRequest(content, chatModel, imageUrl);
-//            try {
-//                responses.put(chatModel, fetchResponse(aiKey, request));
-//            } catch (Exception e) {
-//                log.error("OpenAI Connection Error!");
-//            }
-//        }
-//        return responses;
-//    }
-
-//    public String fetchResponse(String aiKey, String content) {
-//        log.info("OpenAI request!");
-//        OpenAiChatCompletionRequest request =
-//                OpenAiChatCompletionRequest.makeDefaultRequest(content);
-//
-//        return fetchResponse(aiKey, request);
-//    }
 }

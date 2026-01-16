@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcessor;
+import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
 import com.kuklin.manageapp.bots.pomidorotimer.configurations.TelegramPomidoroTimerBotKeyComponents;
 import com.kuklin.manageapp.bots.pomidorotimer.entities.Task;
 import com.kuklin.manageapp.bots.pomidorotimer.models.TaskDto;
@@ -140,7 +141,8 @@ public class TaskService {
                         components.getAiKey(),
                         String.format(AI_REQUEST, name, comment),
                         PomidoroTelegramBot.BOT_IDENTIFIER,
-                        this.getClass().getSimpleName()
+                        this.getClass().getSimpleName(),
+                        MetricsAiInteractionRecord.AiMessageType.TEXT
                 );
 
         List<Task> taskList = taskMapper.dtoListToEntityList(objectMapper.readValue(

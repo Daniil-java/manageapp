@@ -22,9 +22,9 @@ public class GeminiResponse extends BaseResponse {
     @Data
     @Accessors(chain = true)
     public static class UsageMetadata {
-        private Integer promptTokenCount;
-        private Integer candidatesTokenCount;
-        private Integer totalTokenCount;
+        private Long promptTokenCount;
+        private Long candidatesTokenCount;
+        private Long totalTokenCount;
     }
 
     @Override

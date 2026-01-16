@@ -12,6 +12,7 @@ import com.kuklin.manageapp.bots.caloriebot.models.NutritionAnalysisPayloadRecor
 import com.kuklin.manageapp.bots.caloriebot.models.ReportContext;
 import com.kuklin.manageapp.bots.caloriebot.models.ReportResponseRecord;
 import com.kuklin.manageapp.bots.caloriebot.utils.ReportUtils;
+import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 import lombok.RequiredArgsConstructor;
@@ -283,7 +284,8 @@ public class ReportService {
                 components.getAiKey(),
                 prompt,
                 BotIdentifier.CALORIE_BOT,
-                loggingContext
+                loggingContext,
+                MetricsAiInteractionRecord.AiMessageType.TEXT
         );
     }
 

@@ -13,6 +13,8 @@ import com.kuklin.manageapp.bots.caloriebot.entities.UserFavoriteDish;
 import com.kuklin.manageapp.bots.caloriebot.models.DishDto;
 import com.kuklin.manageapp.bots.caloriebot.repository.DishRepository;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
+import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
+import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -266,7 +268,10 @@ public class DishService {
         String aiPhotoPrompt = String.format(AI_PHOTO_REQUEST, message);
         String aiResponse = openAiIntegrationService.fetchPhotoResponse(
                 telegramCaloriesBotKeyComponents.getAiKey(),
-                aiPhotoPrompt, imageUrl);
+                aiPhotoPrompt,
+                imageUrl,
+                BotIdentifier.CALORIE_BOT
+        );
         return getDishByAiResponseOrNull(userId, aiResponse);
     }
 
@@ -275,7 +280,8 @@ public class DishService {
                 telegramCaloriesBotKeyComponents.getAiKey(),
                 String.format(AI_REQUEST, text),
                 CalorieTelegramBot.BOT_IDENTIFIER,
-                this.getClass().getSimpleName()
+                this.getClass().getSimpleName(),
+                MetricsAiInteractionRecord.AiMessageType.TEXT
         );
         return getDishByAiResponseOrNull(userId, aiResponse);
     }

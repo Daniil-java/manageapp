@@ -7,6 +7,8 @@ import com.kuklin.manageapp.aiconversation.models.claude.ClaudeResponse;
 import com.kuklin.manageapp.aiconversation.models.enums.ChatModel;
 import com.kuklin.manageapp.aiconversation.models.enums.ProviderVariant;
 import com.kuklin.manageapp.aiconversation.providers.ProviderProcessor;
+import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
+import com.kuklin.manageapp.bots.metrics.services.MetricsAiInteractionRecordService;
 import com.kuklin.manageapp.bots.metrics.services.MetricsAiLogService;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +24,7 @@ import java.util.Set;
 public class ClaudeProviderProcessor implements ProviderProcessor {
     private final ClaudeFeignClient claudeFeignClient;
     private final MetricsAiLogService metricsAiLogService;
+    private final MetricsAiInteractionRecordService metricsAiInteractionRecordService;
 
     // Добавь, если нужно больше форматов
     private static final Set<String> SUPPORTED_MIME = Set.of(
@@ -79,6 +82,19 @@ public class ClaudeProviderProcessor implements ProviderProcessor {
                     anthropicApiVersion,
                     req
             );
+
+            if (resp != null && resp.getUsage() != null) {
+                metricsAiInteractionRecordService.saveInteractionRecord(
+                        getProviderName(),
+                        botIdentifier,
+                        content,
+                        MetricsAiInteractionRecord.AiMessageType.PHOTO,
+                        resp.firstTextOrEmpty(),
+                        MetricsAiInteractionRecord.AiMessageType.TEXT,
+                        resp.getUsage().getInputTokens(),
+                        resp.getUsage().getOutputTokens()
+                        );
+            }
 
             return new AiResponse()
                     .setModel(chatModel)

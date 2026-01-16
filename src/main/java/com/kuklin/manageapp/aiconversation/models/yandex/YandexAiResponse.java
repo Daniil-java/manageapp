@@ -57,13 +57,13 @@ public class YandexAiResponse {
 
         // В ответе это строки, поэтому String
         @JsonProperty("inputTextTokens")
-        private String inputTextTokens;
+        private Long inputTextTokens;
 
         @JsonProperty("completionTokens")
-        private String completionTokens;
+        private Long completionTokens;
 
         @JsonProperty("totalTokens")
-        private String totalTokens;
+        private Long totalTokens;
 
         @JsonProperty("completionTokensDetails")
         private CompletionTokensDetails completionTokensDetails;

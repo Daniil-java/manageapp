@@ -6,7 +6,7 @@ import lombok.experimental.Accessors;
 @Data
 @Accessors(chain = true)
 public class Usage {
-    private int promptTokens;
-    private int completionTokens;
-    private int totalTokens;
+    private Long promptTokens;
+    private Long completionTokens;
+    private Long totalTokens;
 }

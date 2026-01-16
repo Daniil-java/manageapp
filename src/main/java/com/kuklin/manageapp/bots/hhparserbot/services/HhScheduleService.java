@@ -18,7 +18,7 @@ public class HhScheduleService {
     private final HhVacancyScheduleProcessor hhVacancyScheduleProcessor;
     private final HhNotificationScheduleProcessor hhNotificationScheduleProcessor;
 
-    @Scheduled(cron = "0 */20 * * * *")
+//    @Scheduled(cron = "0 */20 * * * *")
 //    @Scheduled(cron = "0 */1 * * * *")
     public void workFilterScheduleProcess() {
         getInfo(hhWorkFilterScheduleProcessor.getSchedulerName());
@@ -26,19 +26,19 @@ public class HhScheduleService {
     }
 
 
-    @Scheduled(cron = "0 */15 * * * *")
+//    @Scheduled(cron = "0 */15 * * * *")
     public void openAiScheduleProcess() {
         getInfo(hhOpenAiScheduleProcessor.getSchedulerName());
         hhOpenAiScheduleProcessor.process();
     }
 
-    @Scheduled(cron = "0 */25 * * * *")
+//    @Scheduled(cron = "0 */25 * * * *")
     public void vacancyScheduleProcess() {
         getInfo(hhVacancyScheduleProcessor.getSchedulerName());
         hhVacancyScheduleProcessor.process();
     }
 
-    @Scheduled(cron = "0 0 * * * *")
+//    @Scheduled(cron = "0 0 * * * *")
     public void notificationScheduleProcess() {
         getInfo(hhNotificationScheduleProcessor.getSchedulerName());
         hhNotificationScheduleProcessor.process();

@@ -7,6 +7,8 @@ import com.kuklin.manageapp.aiconversation.models.enums.ProviderVariant;
 import com.kuklin.manageapp.aiconversation.models.gemini.GeminiRequest;
 import com.kuklin.manageapp.aiconversation.models.gemini.GeminiResponse;
 import com.kuklin.manageapp.aiconversation.providers.ProviderProcessor;
+import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
+import com.kuklin.manageapp.bots.metrics.services.MetricsAiInteractionRecordService;
 import com.kuklin.manageapp.bots.metrics.services.MetricsAiLogService;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +25,7 @@ public class GeminiProviderProcessor implements ProviderProcessor {
 
     private final GeminiFeignClient geminiFeignClient;
     private final MetricsAiLogService metricsAiLogService;
+    private final MetricsAiInteractionRecordService metricsAiInteractionRecordService;
 
     private static final Set<String> SUPPORTED_IMAGE_MIME = Set.of(
             "image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"
@@ -64,6 +67,19 @@ public class GeminiProviderProcessor implements ProviderProcessor {
 
             // 4) Вызов модели Gemini
             GeminiResponse response = geminiFeignClient.generate(chatModel.getName(), aiKey, request);
+
+            if (response != null && response.getUsageMetadata() != null) {
+                metricsAiInteractionRecordService.saveInteractionRecord(
+                        getProviderName(),
+                        botIdentifier,
+                        content,
+                        MetricsAiInteractionRecord.AiMessageType.PHOTO,
+                        response.firstTextOrEmpty(),
+                        MetricsAiInteractionRecord.AiMessageType.TEXT,
+                        null,          // inputTokens неизвестны
+                        response.getUsageMetadata().getTotalTokenCount()          // считаем как output / total
+                );
+            }
 
             // 5) Маппим в AiResponse
             String text = (response != null) ? response.firstTextOrEmpty() : "";

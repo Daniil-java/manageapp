@@ -26,6 +26,7 @@ import com.kuklin.manageapp.bots.aiassistantcalendar.services.AiMessageLogServic
 import com.kuklin.manageapp.bots.aiassistantcalendar.services.GoogleCacheableCalendarService;
 import com.kuklin.manageapp.bots.aiassistantcalendar.services.UserGoogleCalendarService;
 import com.kuklin.manageapp.bots.aiassistantcalendar.services.google.utils.CalendarServiceUtils;
+import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -376,7 +377,8 @@ public class CalendarService {
         String aiResponse = openAiProviderProcessor.fetchResponse(
                 components.getAiKey(), request,
                 BotIdentifier.ASSISTANT_BOT,
-                BotIdentifier.ASSISTANT_BOT + " FINDING EVENT"
+                BotIdentifier.ASSISTANT_BOT + " FINDING EVENT",
+                MetricsAiInteractionRecord.AiMessageType.TEXT
         );
         aiMessageLogService.saveLog(request, aiResponse);
         List<String> eventIds = objectMapper.readValue(aiResponse, new TypeReference<List<String>>() {
@@ -414,7 +416,9 @@ public class CalendarService {
         );
         String aiResponse = openAiProviderProcessor.fetchResponse(
                 components.getAiKey(), request,
-                BotIdentifier.ASSISTANT_BOT, BotIdentifier.ASSISTANT_BOT + "YEAR FINDING EVENT"
+                BotIdentifier.ASSISTANT_BOT,
+                BotIdentifier.ASSISTANT_BOT + "YEAR FINDING EVENT",
+                MetricsAiInteractionRecord.AiMessageType.TEXT
         );
         aiMessageLogService.saveLog(request, aiResponse);
         return aiResponse;

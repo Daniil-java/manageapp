@@ -6,6 +6,7 @@ import com.google.api.services.calendar.model.Event;
 import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcessor;
 import com.kuklin.manageapp.bots.aiassistantcalendar.configurations.TelegramAiAssistantCalendarBotKeyComponents;
 import com.kuklin.manageapp.bots.aiassistantcalendar.models.ActionKnot;
+import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -220,7 +221,8 @@ public class ActionKnotService {
                 components.getAiKey(),
                 String.format(AI_REQUEST, message, todayInUserZone, tz, nowForGptStr),
                 BotIdentifier.ASSISTANT_BOT,
-                BotIdentifier.ASSISTANT_BOT + " Action knot request"
+                BotIdentifier.ASSISTANT_BOT + " Action knot request",
+                MetricsAiInteractionRecord.AiMessageType.TEXT
         );
         aiResponse = extractResponse(aiResponse);
         aiMessageLogService.saveLog(message, aiResponse);
@@ -237,7 +239,8 @@ public class ActionKnotService {
                 components.getAiKey(),
                 String.format(AI_EDIT_REQUEST, message, getOldEventString(oldEvent), LocalDate.now()),
                 BotIdentifier.ASSISTANT_BOT,
-                BotIdentifier.ASSISTANT_BOT + " Edit Action knot request"
+                BotIdentifier.ASSISTANT_BOT + " Edit Action knot request",
+                MetricsAiInteractionRecord.AiMessageType.TEXT
         );
         aiResponse = extractResponse(aiResponse);
         aiMessageLogService.saveLog(message, aiResponse);
