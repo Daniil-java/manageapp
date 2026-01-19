@@ -11,7 +11,7 @@ public enum Command {
     CALORIE_START("/start", BotIdentifier.CALORIE_BOT),
     CALORIE_DELETE("/deleteDish", BotIdentifier.CALORIE_BOT),
     CALORIE_GENERAL("/general", BotIdentifier.CALORIE_BOT),
-    CALORIE_TODAY_LIST("\uD83D\uDCCA СЕГОДНЯ", BotIdentifier.CALORIE_BOT),
+    CALORIE_TODAY_LIST("\uD83D\uDCCAСЕГОДНЯ", BotIdentifier.CALORIE_BOT),
     CALORIE_WEEK_LIST("\uD83D\uDCC5 НЕДЕЛЯ", BotIdentifier.CALORIE_BOT),
     CALORIE_CHOICE("/choice", BotIdentifier.CALORIE_BOT),
     CALORIE_SCALE("/scale", BotIdentifier.CALORIE_BOT),
@@ -31,6 +31,7 @@ public enum Command {
     CALORIE_SETTINGS_REMINDERS("remind", BotIdentifier.CALORIE_BOT),
     CALORIE_ADMIN_MESSAGE("/admin", BotIdentifier.CALORIE_BOT),
     CALORIE_REPORT("\uD83D\uDCC4ОТЧЕТЫ", BotIdentifier.CALORIE_BOT),
+    CALORIE_REMOVE_LIST("/remove", BotIdentifier.CALORIE_BOT),
 
     //==========================PAYMENT============================
     PAYMENT_PRE_CHECK_QUERY("precheckquerynotcommand", BotIdentifier.PAYMENT),
