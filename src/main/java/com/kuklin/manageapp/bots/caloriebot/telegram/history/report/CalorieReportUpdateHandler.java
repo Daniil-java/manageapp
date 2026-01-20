@@ -3,6 +3,7 @@ package com.kuklin.manageapp.bots.caloriebot.telegram.history.report;
 import com.kuklin.manageapp.bots.caloriebot.services.ReportService;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.CalorieBotUpdateHandler;
+import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.weight.CalorieWeightHistoryUpdateHandler;
 import com.kuklin.manageapp.bots.caloriebot.telegram.history.TodayUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
@@ -34,7 +35,7 @@ public class CalorieReportUpdateHandler implements CalorieBotUpdateHandler {
 
     private final CalorieTelegramBot calorieTelegramBot;
     private final ReportService reportService;
-    private final TodayUpdateHandler todayUpdateHandler;
+    private final CalorieWeightHistoryUpdateHandler calorieWeightHistoryUpdateHandler;
 
     private static final String MSG_CHOOSE_REPORT = "Выберите тип отчета";
     private static final String CLB_DATA_ERROR = "Ошибка данных! Попробуйте повторить операцию позже!";
@@ -77,6 +78,7 @@ public class CalorieReportUpdateHandler implements CalorieBotUpdateHandler {
                     case DAY -> handleDayReport(chatId, telegramUser.getTelegramId());
                     case WEEK -> handleWeeklyDeepReport(chatId, telegramUser.getTelegramId());
                     case MONTH -> handleStandardPdfReport(chatId, telegramUser.getTelegramId(), reportType);
+                    case WEIGHT -> calorieWeightHistoryUpdateHandler.handle(update, telegramUser);
                 }
             });
 
@@ -144,13 +146,14 @@ public class CalorieReportUpdateHandler implements CalorieBotUpdateHandler {
     @Getter
     @AllArgsConstructor
     public enum ReportType {
-        DAY("day-report.pdf", "ДНЕВНОЙ ОТЧЕТ", 1, ChronoUnit.DAYS),
-        WEEK("week-report.pdf", "НЕДЕЛЬНЫЙ ОТЧЕТ", 7, ChronoUnit.DAYS),
-        MONTH("month-report.pdf", "МЕСЯЧНЫЙ ОТЧЕТ", 30, ChronoUnit.DAYS);
+        DAY("day-report.pdf", "ДНЕВНОЙ ОТЧЕТ", 1l, ChronoUnit.DAYS),
+        WEEK("week-report.pdf", "НЕДЕЛЬНЫЙ ОТЧЕТ", 7l, ChronoUnit.DAYS),
+        MONTH("month-report.pdf", "МЕСЯЧНЫЙ ОТЧЕТ", 30l, ChronoUnit.DAYS),
+        WEIGHT("weight-report.pdf", "ОТЧЕТ ПО ВЕСУ", null, null);
 
         private final String fileName;
         private final String caption;
-        private final long amount;
+        private final Long amount;
         private final ChronoUnit unit;
 
         public Instant getFrom(Instant now) {
@@ -164,7 +167,8 @@ public class CalorieReportUpdateHandler implements CalorieBotUpdateHandler {
 
         for (ReportType type : ReportType.values()) {
             String label = type == ReportType.DAY ? "Дневной" :
-                    type == ReportType.WEEK ? "Недельный" : "Месячный";
+                    type == ReportType.WEEK ? "Недельный" :
+                    type == ReportType.MONTH ? "Месячный" : "Отчет по весу";
             builder.row(TelegramKeyboard.button(label, base + type.name()));
         }
 

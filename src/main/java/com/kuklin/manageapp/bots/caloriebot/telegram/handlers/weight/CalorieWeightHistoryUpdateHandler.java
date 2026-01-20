@@ -17,10 +17,17 @@ public class CalorieWeightHistoryUpdateHandler implements CalorieBotUpdateHandle
     private final AnalyticsService analyticsService;
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
-        calorieTelegramBot.sendReturnedMessage(
-                update.getMessage().getChatId(),
-                analyticsService.getWeightHistoryTextList(telegramUser.getTelegramId())
-        );
+        if (update.hasCallbackQuery()) {
+            calorieTelegramBot.sendReturnedMessage(
+                    update.getCallbackQuery().getMessage().getChatId(),
+                    analyticsService.getWeightHistoryTextList(telegramUser.getTelegramId())
+            );
+        } else if (update.hasMessage()) {
+            calorieTelegramBot.sendReturnedMessage(
+                    update.getMessage().getChatId(),
+                    analyticsService.getWeightHistoryTextList(telegramUser.getTelegramId())
+            );
+        }
     }
 
     @Override
