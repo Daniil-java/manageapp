@@ -53,8 +53,8 @@ public class WelcomeCalorieUpdateHandler implements CalorieBotUpdateHandler {
         button.setWebApp(new WebAppInfo(INSTR_URL));
 
         InlineKeyboardButton close = new InlineKeyboardButton();
-        button.setText("Закрыть");
-        button.setCallbackData(Command.CALORIE_CLOSE.getCommandText());
+        close.setText("Закрыть");
+        close.setCallbackData(Command.CALORIE_CLOSE.getCommandText());
 
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
         markup.setKeyboard(List.of(List.of(button), List.of(close)));
