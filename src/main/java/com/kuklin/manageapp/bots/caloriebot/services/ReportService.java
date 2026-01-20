@@ -25,6 +25,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 
 // Статические импорты для улучшения читаемости (утилиты рендеринга и ИИ-промпты)
@@ -119,9 +120,14 @@ public class ReportService {
     public String getDayAiReport(Long userId) {
         List<Dish> dishes = dishService.getTodayDishes(userId);
         UserNutritionProfile profile = userNutritionProfileService.getOrCreateProfile(userId);
+        UserSettings userSettings = userSettingsService.getOrCreate(userId);
+        ZonedDateTime userTime = ZonedDateTime.now(ZoneId.of(userSettings.getTimezoneId()));
 
         // Компоновка промпта: Личность ИИ + Инструкция + Данные профиля + Список блюд
-        String prompt = AI_PERSONA + String.format(AI_REQUEST_TODAY_ANALYSIS, profile, Dish.toStringList(dishes));
+        String prompt = AI_PERSONA + String.format(
+                AI_REQUEST_TODAY_ANALYSIS,
+                profile, Dish.toStringList(dishes), userTime.toString()
+        );
 
         return fetchAiResponse(prompt, "AI DAY REPORT");
     }

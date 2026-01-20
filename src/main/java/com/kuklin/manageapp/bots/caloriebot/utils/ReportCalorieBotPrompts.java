@@ -193,6 +193,7 @@ public class ReportCalorieBotPrompts {
                     Входные данные:
                     Профиль: %s
                     Съедено за день: %s
+                    Текущее время пользователя: %s
                     """;
 
     public static final String AI_PERSONA =
