@@ -18,6 +18,7 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
     private static final String START_MESSAGE =
             """
                     Отправь фото блюда, напиши его описание или отправь голосовое сообщение, чтобы получить КБЖУ блюда!
+                    Для более подробных инструкций нажми на кнопку "📖FAQ"! 
                     """;
     private static final String UPDATE_MESSAGE =
             """
@@ -42,25 +43,25 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
 
         KeyboardRow settingsRow = new KeyboardRow();
         settingsRow.add(Command.CALORIE_SETTINGS.getCommandText());
-        settingsRow.add(Command.CALORIE_WATER.getCommandText());
+        settingsRow.add(Command.CALORIE_PROFILE.getCommandText());
 
         KeyboardRow profileRow = new KeyboardRow();
-        profileRow.add(Command.CALORIE_PROFILE.getCommandText());
+        profileRow.add(Command.CALORIE_WATER.getCommandText());
         profileRow.add(Command.CALORIE_FAVORITE.getCommandText());
 
         KeyboardRow statisticsRow = new KeyboardRow();
         statisticsRow.add(Command.CALORIE_TODAY_LIST.getCommandText());
-        statisticsRow.add(Command.CALORIE_WEIGHT_HISTORY.getCommandText());
 
         KeyboardRow reportRow = new KeyboardRow();
         reportRow.add(Command.CALORIE_REPORT.getCommandText());
+        reportRow.add(Command.CALORIE_WELCOME.getCommandText());
 
         // Собираем в список в том порядке, в котором они должны идти в интерфейсе
         markup.setKeyboard(List.of(
-                settingsRow,
                 profileRow,
-                statisticsRow,
-                reportRow
+                settingsRow,
+                reportRow,
+                statisticsRow
         ));
 
         return markup;
