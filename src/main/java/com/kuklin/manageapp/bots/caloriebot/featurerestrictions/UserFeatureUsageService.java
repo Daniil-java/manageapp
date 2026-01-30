@@ -2,12 +2,15 @@ package com.kuklin.manageapp.bots.caloriebot.featurerestrictions;
 
 import com.kuklin.manageapp.bots.caloriebot.services.UserSettingsService;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.payment.components.paymentfacades.CommonPaymentFacade;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.*;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -16,9 +19,12 @@ import java.util.Optional;
  */
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class UserFeatureUsageService {
     private final UserFeatureUsageRepository userFeatureUsageRepository;
     private final UserSettingsService userSettingsService;
+    private final PlanFeatureService planFeatureService;
+    private final CommonPaymentFacade commonPaymentFacade;
 
     /**
      * Возвращает объект использования фичи, предварительно проверяя необходимость сброса счетчика.
@@ -59,14 +65,29 @@ public class UserFeatureUsageService {
         );
     }
 
+
     /**
      * Увеличивает счетчик использования функции на 1.
+     * Теперь безопасно создает запись, если её еще нет.
      */
     @Transactional
     public void incrementUsage(Long userId, BotIdentifier botIdentifier, BotFeature feature) {
-        UserFeatureUsage usage = userFeatureUsageRepository
-                .findByUserIdAndFeatureAndAndBotIdentifier(userId, feature, botIdentifier)
-                .orElseThrow(); // Гарантируется предварительной проверкой в AccessService
+        String planCode = commonPaymentFacade.getActivePlanCodeByUserIdOrNull(userId, botIdentifier);
+        List<PlanFeature> planFeatureList = planFeatureService.getFeaturesByPlanCode(planCode, botIdentifier);
+        PlanFeature plan = null;
+        for (PlanFeature planFeature: planFeatureList) {
+            if (planFeature.getFeature().equals(feature)) {
+                plan = planFeature;
+            }
+        }
+        if (plan == null) {
+            log.error("PlanFeature dont exist");
+            return;
+        }
+        // Используем существующий метод, который гарантированно вернет сущность (создаст или сбросит старую)
+        UserFeatureUsage usage = getUserFeatureUsageByUserIdAndBotIdentifierAndBotFeatureOrCreate(
+                userId, botIdentifier, feature, plan.getLimitPeriod()
+        );
 
         usage.setUsedCount(usage.getUsedCount() + 1);
         userFeatureUsageRepository.save(usage);
