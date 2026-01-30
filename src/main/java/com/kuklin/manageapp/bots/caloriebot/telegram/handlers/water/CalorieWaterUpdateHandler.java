@@ -2,9 +2,9 @@ package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.water;
 
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
 import com.kuklin.manageapp.bots.caloriebot.entities.WaterEntry;
-import com.kuklin.manageapp.bots.caloriebot.services.AnalyticsService;
-import com.kuklin.manageapp.bots.caloriebot.services.UserNutritionProfileService;
-import com.kuklin.manageapp.bots.caloriebot.services.WaterEntryService;
+import com.kuklin.manageapp.bots.caloriebot.components.services.AnalyticsService;
+import com.kuklin.manageapp.bots.caloriebot.components.services.UserNutritionProfileService;
+import com.kuklin.manageapp.bots.caloriebot.components.services.WaterEntryService;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;

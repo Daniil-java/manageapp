@@ -1,7 +1,7 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.dish;
 
 import com.kuklin.manageapp.bots.caloriebot.entities.DishChoiceChatModel;
-import com.kuklin.manageapp.bots.caloriebot.services.DishChoiceChatModelService;
+import com.kuklin.manageapp.bots.caloriebot.components.services.DishChoiceChatModelService;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;

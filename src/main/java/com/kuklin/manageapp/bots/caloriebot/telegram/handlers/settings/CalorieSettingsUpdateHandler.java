@@ -1,6 +1,6 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.settings;
 
-import com.kuklin.manageapp.bots.caloriebot.services.UserSettingsService;
+import com.kuklin.manageapp.bots.caloriebot.components.services.UserSettingsService;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;

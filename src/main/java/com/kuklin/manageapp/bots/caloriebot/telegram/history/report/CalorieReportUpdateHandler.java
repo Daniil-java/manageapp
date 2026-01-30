@@ -1,11 +1,10 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.history.report;
 
-import com.kuklin.manageapp.bots.caloriebot.featurerestrictions.MissingFeatureException;
-import com.kuklin.manageapp.bots.caloriebot.services.ReportService;
+import com.kuklin.manageapp.bots.caloriebot.models.exceptions.MissingFeatureException;
+import com.kuklin.manageapp.bots.caloriebot.components.services.ReportService;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.weight.CalorieWeightHistoryUpdateHandler;
-import com.kuklin.manageapp.bots.caloriebot.telegram.history.TodayUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.Command;

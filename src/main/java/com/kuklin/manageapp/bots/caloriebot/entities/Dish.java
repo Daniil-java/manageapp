@@ -1,6 +1,6 @@
 package com.kuklin.manageapp.bots.caloriebot.entities;
 
-import com.kuklin.manageapp.bots.caloriebot.models.DishDto;
+import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.DishDto;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.Getter;
