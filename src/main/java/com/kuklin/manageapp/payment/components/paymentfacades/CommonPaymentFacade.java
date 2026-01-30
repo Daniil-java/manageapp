@@ -45,7 +45,7 @@ public class CommonPaymentFacade implements PaymentFacade {
 
     @Override
     public List<PricingPlan> getPricingPlans(BotIdentifier botIdentifier) {
-        return pricingPlanService.getAllPlansByBotIdentifier(botIdentifier);
+        return pricingPlanService.getAllPlansByBotIdentifierAndPlanStatusAvailable(botIdentifier);
     }
 
     @Override
@@ -95,10 +95,13 @@ public class CommonPaymentFacade implements PaymentFacade {
         }
 
         // 4. Флоу: Telegram-подписка
-        boolean isTelegramSubscription =
-                plan.getPayloadType().equals(PricingPlan.PricingPlanType.SUBSCRIPTION)
-                        && plan.getCurrency().equals(Currency.XTR)
-                        && Objects.equals(plan.getDurationDays(), 30);
+//        boolean isTelegramSubscription =
+//                plan.getPayloadType().equals(PricingPlan.PricingPlanType.SUBSCRIPTION)
+//                        && plan.getCurrency().equals(Currency.XTR)
+//                        && Objects.equals(plan.getDurationDays(), 30);
+
+        //Хардкодный параметр, чтобы присылать sendInvoice, а не ссылку
+        boolean isTelegramSubscription = false;
 
         if (isTelegramSubscription) {
             CreateInvoiceLinkWithTelegramSubscription subscriptionLink =
@@ -131,6 +134,27 @@ public class CommonPaymentFacade implements PaymentFacade {
                 null,
                 payment.getId()
         );
+    }
+
+    public Long getActivePlanIdByUserIdAndBotIdentifierOrNull(Long userId, BotIdentifier botIdentifier) {
+        UserSubscription userSubscription = userSubscriptionService
+                .getActiveSubscriptionOrNull(userId, botIdentifier);
+
+        return userSubscription == null ? null : userSubscription.getPricingPlanId();
+    }
+
+    public String getActivePlanCodeByUserIdOrNull(Long userId, BotIdentifier botIdentifier) {
+        UserSubscription userSubscription = userSubscriptionService
+                .getActiveSubscriptionOrNull(userId, botIdentifier);
+
+        if (userSubscription == null) return null;
+
+        Long pricingPlanId = userSubscription.getPricingPlanId();
+        try {
+            return pricingPlanService.getPricingPlanById(pricingPlanId).getCodeForOrderId();
+        } catch (PricingPlanNotFoundException e) {
+            return null;
+        }
     }
 
     @Override
@@ -215,10 +239,7 @@ public class CommonPaymentFacade implements PaymentFacade {
     }
 
     @Override
-    public String getBalanceSubscriptionString(
-            TelegramUser telegramUser,
-            BotIdentifier botIdentifier
-    ) {
+    public String getBalanceSubscriptionString(TelegramUser telegramUser, BotIdentifier botIdentifier) {
         StringBuilder sb = new StringBuilder();
 
         List<UserSubscription> subscriptions = userSubscriptionService

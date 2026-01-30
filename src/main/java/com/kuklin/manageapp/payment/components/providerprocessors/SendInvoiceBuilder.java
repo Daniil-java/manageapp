@@ -3,6 +3,7 @@ package com.kuklin.manageapp.payment.components.providerprocessors;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.payment.entities.Payment;
 import com.kuklin.manageapp.payment.entities.PricingPlan;
+import com.kuklin.manageapp.payment.models.common.Currency;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.invoices.SendInvoice;
@@ -30,13 +31,17 @@ public class SendInvoiceBuilder {
         if (!provider.equals(Payment.Provider.STARS) && providerToken.equals(TOKEN_DUMMY)) {
             return null;
         }
+        Integer price = plan.getCurrency().equals(Currency.XTR)
+                ? payment.getStarsAmount()
+                : payment.getAmount();
+
         return TelegramBot.buildInvoiceOrNull(
                 chatId,
                 plan.getTitle(),
                 plan.getDescription(),
                 payment.getTelegramInvoicePayload(),
                 providerToken,
-                payment.getAmount(),
+                price,
                 plan.getCurrency(),
                 provider,
                 "Оплата"

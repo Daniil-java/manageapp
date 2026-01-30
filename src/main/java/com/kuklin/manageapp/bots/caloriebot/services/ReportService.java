@@ -7,6 +7,9 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcessor;
 import com.kuklin.manageapp.bots.caloriebot.configurations.TelegramCaloriesBotKeyComponents;
 import com.kuklin.manageapp.bots.caloriebot.entities.*;
+import com.kuklin.manageapp.bots.caloriebot.featurerestrictions.AccessResult;
+import com.kuklin.manageapp.bots.caloriebot.featurerestrictions.BotFeature;
+import com.kuklin.manageapp.bots.caloriebot.featurerestrictions.RequiresFeature;
 import com.kuklin.manageapp.bots.caloriebot.models.AiPatternAnalysisResponse;
 import com.kuklin.manageapp.bots.caloriebot.models.NutritionAnalysisPayloadRecord;
 import com.kuklin.manageapp.bots.caloriebot.models.ReportContext;
@@ -72,7 +75,8 @@ public class ReportService {
     /**
      * Формирует глубокий недельный PDF-отчет с детализацией по каждому блюду.
      */
-    public byte[] buildWeeklyDeepPdfReportOrNull(Instant from, Instant to, Long userId) {
+    @RequiresFeature(value = BotFeature.REPORT_PDF_WEEK, botIdentifier = BotIdentifier.CALORIE_BOT)
+    public AccessResult<byte[]> buildWeeklyDeepPdfReportOrNull(Instant from, Instant to, Long userId) {
         try {
             List<Dish> dishes = dishService.getAllDishedByUserIdAndPeriod(userId, from, to);
             List<UserNutritionProfileEntry> userNutritionEntries = userNutritionProfileEntryService.getAllByUserId(userId);
@@ -81,7 +85,7 @@ public class ReportService {
 
             String aiAnalysis = getWeeklyDeepReport(from, to, userId);
             String template = loadTemplateOrNull(WEEKLY_REPORT_TEMPLATE_PATH);
-            if (template == null) return null;
+            if (template == null) return AccessResult.success(null);
 
             Table dishesTable = ReportUtils.buildDetailedDishTable(dishes, userNutritionEntries, zoneId);
             String dishesTableHtml = ReportUtils.tableToHtml(dishesTable);
@@ -96,17 +100,17 @@ public class ReportService {
                     .replace("{{CATEGORY_CHART}}", categoryChartHtml)
                     .replace("{{TIMING_CHART}}", timingChartHtml); // <--- Заменили плейсхолдер
 
-            return renderPdfOrNull(html);
+            return AccessResult.success(renderPdfOrNull(html));
         } catch (Exception e) {
             log.error("Failed to build Weekly Deep PDF for user {}", userId, e);
-            return null;
+            return AccessResult.success(null);
         }
     }
 
     /**
      * Получает текстовый анализ за неделю от ИИ.
      */
-    public String getWeeklyDeepReport(Instant from, Instant to, Long userId) {
+    private String getWeeklyDeepReport(Instant from, Instant to, Long userId) {
         List<Dish> dishes = dishService.getAllDishedByUserIdAndPeriod(userId, from, to);
         UserNutritionProfile profile = userNutritionProfileService.getOrCreateProfile(userId);
 
@@ -117,7 +121,8 @@ public class ReportService {
     /**
      * Формирует текстовый ИИ-анализ питания пользователя за текущие сутки.
      */
-    public String getDayAiReport(Long userId) {
+    @RequiresFeature(value = BotFeature.REPORT_DAY, botIdentifier = BotIdentifier.CALORIE_BOT)
+    public AccessResult<String> getDayAiReport(Long userId) {
         List<Dish> dishes = dishService.getTodayDishes(userId);
         UserNutritionProfile profile = userNutritionProfileService.getOrCreateProfile(userId);
         UserSettings userSettings = userSettingsService.getOrCreate(userId);
@@ -129,25 +134,26 @@ public class ReportService {
                 profile, Dish.toStringList(dishes), userTime.toString()
         );
 
-        return fetchAiResponse(prompt, "AI DAY REPORT");
+        return AccessResult.success(fetchAiResponse(prompt, "AI DAY REPORT"));
     }
 
     /**
      * Точка входа для генерации комплексного PDF отчета.
      * Координирует сбор данных, работу ИИ и финальный рендеринг.
      */
-    public byte[] buildPdfReportOrNull(Instant from, Instant to, Long userId) {
+    @RequiresFeature(value = BotFeature.REPORT_PDF_MONTH, botIdentifier = BotIdentifier.CALORIE_BOT)
+    public AccessResult<byte[]> buildPdfReportOrNull(Instant from, Instant to, Long userId) {
         try {
             // 1. Сбор контекста (все данные и ответы ИИ в одном объекте)
             ReportContext context = gatherReportContext(from, to, userId);
             // 2. Заполнение HTML-шаблона данными
             String filledHtml = fillTemplateOrNull(context);
-            if (filledHtml == null) return null;
+            if (filledHtml == null) return AccessResult.success(null);
             // 3. Конвертация HTML в PDF байты
-            return renderPdfOrNull(filledHtml);
+            return AccessResult.success(renderPdfOrNull(filledHtml));
         } catch (Exception e) {
             log.error("Failed to build PDF report for user {}", userId, e);
-            return null;
+            return AccessResult.success(null);
         }
     }
 

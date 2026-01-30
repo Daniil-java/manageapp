@@ -56,12 +56,16 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
         reportRow.add(Command.CALORIE_REPORT.getCommandText());
         reportRow.add(Command.CALORIE_WELCOME.getCommandText());
 
+        KeyboardRow subRow = new KeyboardRow();
+        subRow.add(Command.CALORIE_PAYMENT_PAYLOAD_PLAN.getCommandText());
+
         // Собираем в список в том порядке, в котором они должны идти в интерфейсе
         markup.setKeyboard(List.of(
                 profileRow,
                 settingsRow,
                 reportRow,
-                statisticsRow
+                statisticsRow,
+                subRow
         ));
 
         return markup;

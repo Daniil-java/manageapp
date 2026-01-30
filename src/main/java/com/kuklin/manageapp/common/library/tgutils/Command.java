@@ -33,6 +33,7 @@ public enum Command {
     CALORIE_REPORT("\uD83D\uDCC4ОТЧЕТЫ", BotIdentifier.CALORIE_BOT),
     CALORIE_REMOVE_LIST("/remove", BotIdentifier.CALORIE_BOT),
     CALORIE_WELCOME("📖FAQ", BotIdentifier.CALORIE_BOT),
+    CALORIE_PAYMENT_PAYLOAD_PLAN("\uD83D\uDCB3ПОДПИСКА", BotIdentifier.CALORIE_BOT),
 
     //==========================PAYMENT============================
     PAYMENT_PRE_CHECK_QUERY("precheckquerynotcommand", BotIdentifier.PAYMENT),

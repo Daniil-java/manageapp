@@ -15,10 +15,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 @Repository
 @RequiredArgsConstructor
@@ -109,14 +106,15 @@ public class UserSubscriptionService {
         // Обновляем статусы перед расчётом очереди
         refreshStatuses(telegramId, plan.getBotIdentifier());
 
-        // Последняя (по времени окончания) актуальная/запланированная подписка
-        Optional<UserSubscription> lastOpt = userSubscriptionRepository
-                .findFirstByTelegramIdAndBotIdentifierAndStatusInAndEndAtGreaterThanOrderByEndAtDesc(
-                        telegramId,
-                        payment.getBotIdentifier(),
-                        WORKING_STATUSES,
-                        now
-                );
+        // Блокируем все активные/запланированные подписки этого юзера на время расчета.
+        // Если другой поток (платеж) попробует сделать то же самое, он будет ждать здесь.
+        List<UserSubscription> activeQueue = userSubscriptionRepository
+                .findAllByTelegramIdAndBotIdentifierAndStatusInForUpdate(telegramId, botIdentifier, WORKING_STATUSES);
+
+        // Ищем самую "позднюю" подписку из тех, что нашли (наш хвост очереди)
+        Optional<UserSubscription> lastOpt = activeQueue.stream()
+                .filter(s -> s.getEndAt().isAfter(now))
+                .max(Comparator.comparing(UserSubscription::getEndAt));
 
         LocalDateTime startAt;
         if (lastOpt.isPresent()) {

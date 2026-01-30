@@ -1,6 +1,7 @@
 package com.kuklin.manageapp.bots.caloriebot.services.scheduler;
 
 import com.kuklin.manageapp.bots.caloriebot.entities.UserSettings;
+import com.kuklin.manageapp.bots.caloriebot.featurerestrictions.MissingFeatureException;
 import com.kuklin.manageapp.bots.caloriebot.services.ReportService;
 import com.kuklin.manageapp.bots.caloriebot.services.UserSettingsService;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
@@ -93,11 +94,16 @@ public class DailySummarySchedulerProcessor implements ScheduleProcessor {
 
     //TODO Универсальное средство отправки
     private void sendDailySummary(UserSettings settings) {
-        todayUpdateHandler.sendTodayMessage(settings.getUserId());
-        calorieTelegramBot.sendReturnedMessage(
-                settings.getUserId(),
-                reportService.getDayAiReport(settings.getUserId())
-        );
+        try {
+            todayUpdateHandler.sendTodayMessage(settings.getUserId());
+            String dayReport = reportService.getDayAiReport(settings.getUserId()).getOrThrow();
+            calorieTelegramBot.sendReturnedMessage(
+                    settings.getUserId(),
+                    dayReport
+            );
+        } catch (MissingFeatureException e) {
+            log.warn("scheduler day report access denied!");
+        }
     }
 
     @Override

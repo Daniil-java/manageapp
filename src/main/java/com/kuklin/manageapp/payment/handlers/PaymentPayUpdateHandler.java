@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 /**
@@ -42,6 +43,14 @@ public class PaymentPayUpdateHandler implements PaymentUpdateHandler {
     private static final String TELEGRAM_ERROR_MSG = """
                         Ошибка! Не получилось отправить форму оплаты! Попройбуйте заново
             """;
+
+    private static final String SUBSCRIPTION_PAY_TITLE = "💳 Оформить подписку";
+    private static final String SUBSCRIPTION_MSG_TEXT = """
+        ⭐ *Подписка на Telegram Stars*
+        
+        Для активации автопродляемой подписки нажмите на кнопку ниже. 
+        Оплата произойдет через ваш баланс звезд.
+        """;
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
@@ -76,8 +85,12 @@ public class PaymentPayUpdateHandler implements PaymentUpdateHandler {
                 case REDIRECT_URL -> telegramBot.sendReturnedMessage(chatId, result.url());
                 case TELEGRAM_SUBSCRIPTION_URL -> {
                     String url = telegramBot.execute(result.createInvoiceLink());
-                    telegramBot
-                            .sendReturnedMessage(chatId, url);
+                    telegramBot.sendReturnedMessage(
+                            chatId,
+                            SUBSCRIPTION_MSG_TEXT,
+                            createSubscriptionKeyboard(url),
+                            null
+                    );
                 }
                 case TELEGRAM_INVOICE -> telegramBotRegistry.get(telegramUser.getBotIdentifier())
                         .execute(result.invoice());
@@ -96,6 +109,19 @@ public class PaymentPayUpdateHandler implements PaymentUpdateHandler {
         } catch (PaymentNotFoundException e) {
             log.error("Payment not found error!");
         }
+    }
+
+    private InlineKeyboardMarkup createSubscriptionKeyboard(String url) {
+        org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton payButton =
+                new org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton();
+        payButton.setText(SUBSCRIPTION_PAY_TITLE);
+        payButton.setUrl(url);
+
+        org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup markup =
+                new org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup();
+        markup.setKeyboard(java.util.List.of(java.util.List.of(payButton)));
+
+        return markup;
     }
 
     // Извлекает провайдера из callback-data вида:

@@ -8,6 +8,9 @@ import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcesso
 import com.kuklin.manageapp.bots.caloriebot.configurations.TelegramCaloriesBotKeyComponents;
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserFavoriteDish;
+import com.kuklin.manageapp.bots.caloriebot.featurerestrictions.AccessResult;
+import com.kuklin.manageapp.bots.caloriebot.featurerestrictions.BotFeature;
+import com.kuklin.manageapp.bots.caloriebot.featurerestrictions.RequiresFeature;
 import com.kuklin.manageapp.bots.caloriebot.models.DishDto;
 import com.kuklin.manageapp.bots.caloriebot.repository.DishRepository;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
@@ -42,7 +45,8 @@ public class DishService {
     // --- Public Methods ---
 
     @Transactional
-    public List<Dish> getDishDtoByPhotoOrNull(Long userId, String imageUrl, String message) {
+    @RequiresFeature(value = BotFeature.DISH_AI_VISION, botIdentifier = BotIdentifier.CALORIE_BOT)
+    public AccessResult<List<Dish>> getDishDtoByPhoto(Long userId, String imageUrl, String message) {
         String aiPhotoPrompt = String.format(AI_PHOTO_REQUEST, message);
         String aiResponse = openAiIntegrationService.fetchPhotoResponse(
                 telegramCaloriesBotKeyComponents.getAiKey(),
@@ -50,7 +54,7 @@ public class DishService {
                 imageUrl,
                 BotIdentifier.CALORIE_BOT
         );
-        return getDishListByAiResponseOrNull(userId, aiResponse);
+        return AccessResult.success(getDishListByAiResponseOrNull(userId, aiResponse));
     }
 
     @Transactional
@@ -227,7 +231,8 @@ public class DishService {
 
     // --- Commented Methods ---
 
-    //TODO Не работает, если несколько блюд вернется. Требует дополнительного рефакторинга, для обработки списка блюд
+    //Не работает, если несколько блюд вернется. Требует дополнительного рефакторинга, для обработки списка блюд
+//        @Deprecated
 //    @Transactional
 //    public Map<ChatModel, DishDto> getDishDtoByPhotoOrNullWithManyProviders(String imageUrl, String message) {
 //        Map<ChatModel, DishDto> map = new EnumMap<>(ChatModel.class);

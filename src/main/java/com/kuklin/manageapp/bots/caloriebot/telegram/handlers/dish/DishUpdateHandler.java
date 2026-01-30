@@ -4,6 +4,8 @@ import com.kuklin.manageapp.aiconversation.models.enums.ChatModel;
 import com.kuklin.manageapp.bots.caloriebot.configurations.TelegramCaloriesBotKeyComponents;
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.entities.DishChoiceChatModel;
+import com.kuklin.manageapp.bots.caloriebot.featurerestrictions.AccessResult;
+import com.kuklin.manageapp.bots.caloriebot.featurerestrictions.MissingFeatureException;
 import com.kuklin.manageapp.bots.caloriebot.models.DishDto;
 import com.kuklin.manageapp.bots.caloriebot.services.AnalyticsService;
 import com.kuklin.manageapp.bots.caloriebot.services.CalorieAccessService;
@@ -25,7 +27,6 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -56,14 +57,13 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
     private static final String SUB_MESSAGE =
             "Для использования бота необходимо приобрести подписку! Введите команду /plan";
     private static final String ERROR_LIMIT_MSG = "Количество запросов, доступных вам, достигло предела!";
+    private static final String ACCESS_DENIED_MSG = "Доступ ограничен!";
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
         Long chatId = update.hasPreCheckoutQuery()
                 ? update.getCallbackQuery().getMessage().getChatId()
                 : update.getMessage().getChatId();
-
-        if (!checkAccess(update, telegramUser, chatId)) return;
 
         List<Dish> dishes = getDishOrNull(update, telegramUser);
         if (dishes == null || dishes.isEmpty()) return;
@@ -90,7 +90,12 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
 
         // ==== ВЕТКА 1: пользователь прислал фото ====
         if (update.hasMessage() && update.getMessage().hasPhoto()) {
-            dishes = processPhotoOrNull(telegramUser, update.getMessage());
+            try {
+                dishes = processPhotoOrNull(telegramUser, update.getMessage());
+            } catch (MissingFeatureException e) {
+                calorieTelegramBot.sendReturnedMessage(update.getMessage().getChatId(), ACCESS_DENIED_MSG);
+                return null;
+            }
             // ==== ВЕТКА 2: пользователь прислал голосовое ====
         } else if (update.hasMessage() && update.getMessage().hasVoice()) {
             String request = processVoiceMessageOrNull(update.getMessage());
@@ -152,24 +157,22 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
         return request;
     }
 
-    private List<Dish> processPhotoOrNull(TelegramUser telegramUser, Message message) {
-        String photoBase64;
-        List<Dish> dishes;
+    private List<Dish> processPhotoOrNull(TelegramUser telegramUser, Message message) throws MissingFeatureException {
         try {
-            photoBase64 = telegramService.downloadPhotoFileBase64OrNull(calorieTelegramBot, message);
-            dishes = dishService.getDishDtoByPhotoOrNull(
+            String photoBase64 = telegramService.downloadPhotoFileBase64OrNull(calorieTelegramBot, message);
+            AccessResult<List<Dish>> dishResult = dishService.getDishDtoByPhoto(
                     telegramUser.getTelegramId(), photoBase64, message.getCaption());
+            List<Dish> dishes = dishResult.getOrThrow();
+            calorieAccessService.incrementResponses(telegramUser);
+            if (dishes == null || dishes.isEmpty()) return null;
+//        processManyAiModels(dish.getId(), photoBase64, message);
+
+            return dishes;
         } catch (IOException e) {
             log.error("Provider error!");
             calorieTelegramBot.sendReturnedMessage(message.getChatId(), "Один из провайдеров не смог обработать фото");
             return null;
         }
-
-        calorieAccessService.incrementResponses(telegramUser);
-        if (dishes == null || dishes.isEmpty()) return null;
-//        processManyAiModels(dish.getId(), photoBase64, message);
-
-        return dishes;
     }
 
 //    private void processManyAiModels(Long dishId, String photoBase64, Message message) {
@@ -199,23 +202,6 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
 //                null
 //        );
 //    }
-
-    private Boolean checkAccess(Update update, TelegramUser telegramUser, Long chatId) {
-        if (!calorieAccessService.checkAccess(telegramUser)) {
-            calorieTelegramBot.sendReturnedMessage(
-                    chatId, ERROR_LIMIT_MSG + "\n" + SUB_MESSAGE);
-            paymentPlanListUpdateHandler.handle(update, telegramUser);
-
-            if (telegramUser.getTelegramId().equals(425120436L) ||
-                    telegramUser.getTelegramId().equals(420478432L)) {
-                calorieTelegramBot.sendReturnedMessage(
-                        chatId, "Это для демонстрации. Скажи, чтобы я выдал подписку");
-            } else {
-                return false;
-            }
-        }
-        return true;
-    }
 
     public static InlineKeyboardMarkup getPortionKeyboardFavorite(Dish dish) {
         String base = Command.CALORIE_SCALE.getCommandText()

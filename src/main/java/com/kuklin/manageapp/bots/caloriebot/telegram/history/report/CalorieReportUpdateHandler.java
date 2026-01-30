@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.history.report;
 
+import com.kuklin.manageapp.bots.caloriebot.featurerestrictions.MissingFeatureException;
 import com.kuklin.manageapp.bots.caloriebot.services.ReportService;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.CalorieBotUpdateHandler;
@@ -41,6 +42,7 @@ public class CalorieReportUpdateHandler implements CalorieBotUpdateHandler {
     private static final String CLB_DATA_ERROR = "Ошибка данных! Попробуйте повторить операцию позже!";
     private static final String DOC_ERROR = "Не получилось сгенерировать отчет! Попробуйте еще раз";
     private static final String AWAIT_MSG = "Генерирую документ...";
+    private static final String ACCESS_DENIED_MSG = "Доступ ограничен!";
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
@@ -111,28 +113,42 @@ public class CalorieReportUpdateHandler implements CalorieBotUpdateHandler {
     }
 
     private void handleDayReport(Long chatId, Long telegramId) {
-        String aiReport = reportService.getDayAiReport(telegramId);
+        String aiReport = null;
+        try {
+            aiReport = reportService.getDayAiReport(telegramId).getOrThrow();
+        } catch (MissingFeatureException e) {
+            aiReport = ACCESS_DENIED_MSG;
+        }
         calorieTelegramBot.sendReturnedMessage(chatId, aiReport);
     }
 
     private void handleWeeklyDeepReport(Long chatId, Long telegramId) {
-        Instant now = Instant.now();
-        byte[] report = reportService.buildWeeklyDeepPdfReportOrNull(
-                ReportType.WEEK.getFrom(now),
-                now,
-                telegramId
-        );
-        sendPdfOrError(chatId, report, ReportType.WEEK);
+        try {
+            Instant now = Instant.now();
+            byte[] report = reportService.buildWeeklyDeepPdfReportOrNull(
+                    ReportType.WEEK.getFrom(now),
+                    now,
+                    telegramId
+            ).getOrThrow();
+            sendPdfOrError(chatId, report, ReportType.WEEK);
+        } catch (MissingFeatureException e) {
+            calorieTelegramBot.sendReturnedMessage(chatId, ACCESS_DENIED_MSG);
+        }
+
     }
 
     private void handleStandardPdfReport(Long chatId, Long telegramId, ReportType type) {
-        Instant now = Instant.now();
-        byte[] report = reportService.buildPdfReportOrNull(
-                type.getFrom(now),
-                now,
-                telegramId
-        );
-        sendPdfOrError(chatId, report, type);
+        try {
+            Instant now = Instant.now();
+            byte[] report = reportService.buildPdfReportOrNull(
+                    type.getFrom(now),
+                    now,
+                    telegramId
+            ).getOrThrow();
+            sendPdfOrError(chatId, report, type);
+        } catch (MissingFeatureException e) {
+            calorieTelegramBot.sendReturnedMessage(chatId, ACCESS_DENIED_MSG);
+        }
     }
 
     private void sendPdfOrError(Long chatId, byte[] content, ReportType type) {
@@ -168,7 +184,7 @@ public class CalorieReportUpdateHandler implements CalorieBotUpdateHandler {
         for (ReportType type : ReportType.values()) {
             String label = type == ReportType.DAY ? "Дневной" :
                     type == ReportType.WEEK ? "Недельный" :
-                    type == ReportType.MONTH ? "Месячный" : "Отчет по весу";
+                            type == ReportType.MONTH ? "Месячный" : "Отчет по весу";
             builder.row(TelegramKeyboard.button(label, base + type.name()));
         }
 
