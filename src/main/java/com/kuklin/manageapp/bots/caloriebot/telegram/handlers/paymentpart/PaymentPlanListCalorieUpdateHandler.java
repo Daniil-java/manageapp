@@ -89,6 +89,12 @@ public class PaymentPlanListCalorieUpdateHandler implements CalorieBotUpdateHand
                     nextHandler.getHandlerListName() + TelegramBot.DEFAULT_DELIMETER + plan.getId()
             ));
         }
+        builder.row(
+                TelegramKeyboard.button("\uD83D\uDD0DСтатус подписки", Command.PAYMENT_BALANCE.getCommandText())
+        );
+        builder.row(
+                TelegramKeyboard.button("❌Закрыть", Command.CALORIE_CLOSE.getCommandText())
+        );
         return builder.build();
     }
 

@@ -49,8 +49,6 @@ public class PaymentService {
     private final PricingPlanService pricingPlanService;
     private final UserSubscriptionService userSubscriptionService;
     private final PaymentFailedLogService paymentFailedLogService;
-    private final TelegramBotRegistry telegramBotRegistry;
-    private static final String SUCCESS_PAY_MSG = "Оплата подтверждена";
 
     //Создание новой записи о платеже
     @Transactional
@@ -312,9 +310,6 @@ public class PaymentService {
                 .setProviderPaymentId(providerPaymentId)
                 .setPaidAt(Instant.now());
         payment = paymentRepository.save(payment);
-        //Оповещение пользователя в телеграмме
-        telegramBotRegistry.get(payment.getBotIdentifier()).sendReturnedMessage(
-                payment.getTelegramId(), SUCCESS_PAY_MSG);
     }
 
     //Обработка случая возврата средств

@@ -1,10 +1,10 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.water;
 
-import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
-import com.kuklin.manageapp.bots.caloriebot.entities.WaterEntry;
 import com.kuklin.manageapp.bots.caloriebot.components.services.AnalyticsService;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserNutritionProfileService;
 import com.kuklin.manageapp.bots.caloriebot.components.services.WaterEntryService;
+import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
+import com.kuklin.manageapp.bots.caloriebot.entities.WaterEntry;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
@@ -45,6 +45,15 @@ public class CalorieWaterUpdateHandler implements CalorieBotUpdateHandler {
     private void processCallback(Update update, TelegramUser telegramUser) {
         CallbackQuery query = update.getCallbackQuery();
         String data = query.getData();
+
+        if (data.equals(getHandlerListName())) {
+            refreshWaterInterface(
+                    telegramUser,
+                    query.getMessage().getChatId(),
+                    query.getMessage().getMessageId()
+            );
+            return;
+        }
         String cmd = extractCommandOrNull(data);
 
         if (ADJ_CMD.equals(cmd)) {

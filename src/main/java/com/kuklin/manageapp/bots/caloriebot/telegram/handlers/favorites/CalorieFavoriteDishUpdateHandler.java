@@ -1,9 +1,9 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.favorites;
 
-import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
-import com.kuklin.manageapp.bots.caloriebot.entities.UserFavoriteDish;
 import com.kuklin.manageapp.bots.caloriebot.components.services.AnalyticsService;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserFavoriteDishService;
+import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
+import com.kuklin.manageapp.bots.caloriebot.entities.UserFavoriteDish;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.dish.DishUpdateHandler;
@@ -14,7 +14,6 @@ import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
-import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
@@ -44,36 +43,8 @@ public class CalorieFavoriteDishUpdateHandler implements CalorieBotUpdateHandler
     }
 
     private void processMessage(Update update, TelegramUser telegramUser) {
-        Message message = update.getMessage();
-
-        //Получения списка сохраненных блюд пользователя
-        List<UserFavoriteDish> favoriteDishes = userFavoriteDishService
-                .getAllForUser(telegramUser.getTelegramId());
-
-        //Если нет сохранненых, отправляем сообщение
-        if (favoriteDishes == null || favoriteDishes.isEmpty()) {
-            calorieTelegramBot.sendReturnedMessage(
-                    message.getChatId(),
-                    "У тебя пока нет сохранённых блюд. " +
-                            "Добавь любое блюдо и нажми «⭐ Сохранить»."
-            );
-            return;
-        }
-
-        int page = 0;
-
-        InlineKeyboardMarkup keyboard =
-                buildFavoritesKeyboard(favoriteDishes, page);
-
-        String text = buildListTitle(favoriteDishes.size(), page);
-
-        calorieTelegramBot.sendReturnedMessage(
-                message.getChatId(),
-                text,
-                keyboard,
-                null
-        );
-
+        Long chatId = update.getMessage().getChatId();
+        showFavorites(chatId, telegramUser);
     }
 
     private String buildListTitle(int total, int page) {
@@ -91,7 +62,10 @@ public class CalorieFavoriteDishUpdateHandler implements CalorieBotUpdateHandler
         String data = callback.getData();
 
         String action = extractCommandOrNull(data, callback.getMessage().getChatId());
-        if (action == null) return;
+        if (action == null) {
+            showFavorites(callback.getMessage().getChatId(), telegramUser);
+            return;
+        }
 
         if (PAGE_CMD.equals(action)) {
             handlePageCommand(telegramUser, callback);
@@ -99,6 +73,30 @@ public class CalorieFavoriteDishUpdateHandler implements CalorieBotUpdateHandler
             handleAddCommand(telegramUser, callback);
         }
     }
+
+    private void showFavorites(Long chatId, TelegramUser telegramUser) {
+
+        List<UserFavoriteDish> favoriteDishes =
+                userFavoriteDishService.getAllForUser(telegramUser.getTelegramId());
+
+        if (favoriteDishes == null || favoriteDishes.isEmpty()) {
+            calorieTelegramBot.sendReturnedMessage(
+                    chatId,
+                    "У тебя пока нет сохранённых блюд. Добавь любое блюдо и нажми «⭐ Сохранить»."
+            );
+            return;
+        }
+
+        int page = 0;
+
+        InlineKeyboardMarkup keyboard =
+                buildFavoritesKeyboard(favoriteDishes, page);
+
+        String text = buildListTitle(favoriteDishes.size(), page);
+
+        calorieTelegramBot.sendReturnedMessage(chatId, text, keyboard, null);
+    }
+
 
     private void handlePageCommand(TelegramUser telegramUser, CallbackQuery query) {
         // перелистывание

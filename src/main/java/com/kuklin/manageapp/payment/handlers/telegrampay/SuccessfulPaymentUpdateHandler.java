@@ -63,8 +63,14 @@ public class SuccessfulPaymentUpdateHandler implements PaymentUpdateHandler {
                 }
                 telegramBot.sendReturnedMessage(
                         chatId, SUCCESS_MSG);
-                balanceUpdateHandler.handle(update, telegramUser);
 
+                //Подменяем сообщение, чтобы вызвать нужный хендлер
+                update.getMessage().setText(Command.PAYMENT_BALANCE.getCommandText());
+                //Получаем экземпляр бота, через которого прошла оплата
+                //И отправляем в метод, скоректирование сообщение, для вызова нужного хендлера
+                //Нужна соответствующая настройка через interface PaymentUpdateHandler
+                telegramBotRegistry.get(payment.getBotIdentifier())
+                        .onUpdateReceived(update);
             } catch (PaymentValidationDataException e) {
                 telegramBot.sendReturnedMessage(chatId, VALIDATION_ERROR_MSG);
             } catch (PricingPlanNotFoundException e) {

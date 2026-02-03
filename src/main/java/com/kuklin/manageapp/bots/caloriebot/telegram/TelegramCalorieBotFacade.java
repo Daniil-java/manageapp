@@ -42,6 +42,7 @@ public class TelegramCalorieBotFacade extends TelegramFacade {
         }
     }
 
+    //TODO метод стал слишком хардкодным. Необходим рефакторинг
     public UpdateHandler processInputUpdate(Update update) {
         String request = null;
 
