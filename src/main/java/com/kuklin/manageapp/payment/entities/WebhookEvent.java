@@ -7,6 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 /**
@@ -37,8 +38,8 @@ public class WebhookEvent {
     private String remoteAddr;   // IP отправителя
     private boolean processed;
     private String error;
-    private LocalDateTime receivedAt;
-    private LocalDateTime processedAt;
+    private Instant receivedAt;
+    private Instant processedAt;
 
     @Lob
     @Column(columnDefinition = "TEXT")
@@ -91,14 +92,14 @@ public class WebhookEvent {
                 .setObjectId(objectId)
                 .setRemoteAddr(remoteAddr)
                 .setPayload(json)
-                .setReceivedAt(LocalDateTime.now())
+                .setReceivedAt(Instant.now())
                 .setProcessed(false);
     }
 
     // Помечает событие как успешно обработанное, выставляет processedAt и очищает error.
     public void markProcessed() {
         this.processed = true;
-        this.processedAt = LocalDateTime.now();
+        this.processedAt = Instant.now();
         this.error = null;
     }
 

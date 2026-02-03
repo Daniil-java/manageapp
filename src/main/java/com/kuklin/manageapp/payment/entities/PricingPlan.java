@@ -1,14 +1,14 @@
 package com.kuklin.manageapp.payment.entities;
 
-import com.kuklin.manageapp.payment.models.common.Currency;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.payment.models.common.Currency;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.CreationTimestamp;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 @Table(name = "pricing_plans")
@@ -34,7 +34,7 @@ public class PricingPlan {
     @Enumerated(EnumType.STRING)
     private BotIdentifier botIdentifier;
     @CreationTimestamp
-    private LocalDateTime created;
+    private Instant created;
 
     public enum PricingPlanType {
         //План для пакетов с запросами

@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.CreationTimestamp;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * Лог операции над балансом генераций пользователя.
@@ -48,7 +48,7 @@ public class GenerationBalanceOperation {
     private BotIdentifier botIdentifier;
 
     @CreationTimestamp
-    private LocalDateTime createdAt;
+    private Instant createdAt;
 
     public enum OperationType {
         CREDIT, DEBIT, REFUND

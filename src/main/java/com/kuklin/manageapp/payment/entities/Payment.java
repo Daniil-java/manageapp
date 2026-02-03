@@ -1,7 +1,7 @@
 package com.kuklin.manageapp.payment.entities;
 
-import com.kuklin.manageapp.payment.models.common.Currency;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.payment.models.common.Currency;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.Getter;
@@ -10,7 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.CreationTimestamp;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 /**
  * Запись о платеже внутри системы.
@@ -57,9 +57,9 @@ public class Payment {
     @Enumerated(EnumType.STRING)
     private BotIdentifier botIdentifier;
     @CreationTimestamp
-    private LocalDateTime createdAt = LocalDateTime.now();
-    private LocalDateTime paidAt;
-    private LocalDateTime canceledAt;
+    private Instant createdAt;
+    private Instant paidAt;
+    private Instant canceledAt;
 
     public enum ProviderStatus {
         NEW,                    // только создали у себя

@@ -6,7 +6,7 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.CreationTimestamp;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 @Table(name = "payment_failed_log")
@@ -22,7 +22,7 @@ public class PaymentFailedLog {
     @Enumerated(EnumType.STRING)
     private Status status;
     @CreationTimestamp
-    private LocalDateTime created;
+    private Instant created;
 
     public enum Status {
         PROCESSED, PENDING;

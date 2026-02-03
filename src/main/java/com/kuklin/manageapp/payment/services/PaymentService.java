@@ -25,8 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.telegram.telegrambots.meta.api.objects.payments.PreCheckoutQuery;
 import org.telegram.telegrambots.meta.api.objects.payments.SuccessfulPayment;
 
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
+import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -311,7 +310,7 @@ public class PaymentService {
                 .setProviderStatus(Payment.ProviderStatus.SUCCEEDED)
                 .setStatus(Payment.PaymentStatus.SUCCESS)
                 .setProviderPaymentId(providerPaymentId)
-                .setPaidAt(OffsetDateTime.now(ZoneOffset.UTC).toLocalDateTime());
+                .setPaidAt(Instant.now());
         payment = paymentRepository.save(payment);
         //Оповещение пользователя в телеграмме
         telegramBotRegistry.get(payment.getBotIdentifier()).sendReturnedMessage(
@@ -357,7 +356,7 @@ public class PaymentService {
     private void handleCanceled(Payment payment) {
         payment.setProviderStatus(Payment.ProviderStatus.CANCELED)
                 .setStatus(Payment.PaymentStatus.CANCEL)
-                .setCanceledAt(OffsetDateTime.now(ZoneOffset.UTC).toLocalDateTime());
+                .setCanceledAt(Instant.now());
         // по желанию: посмотреть причину в paymentApi.get("cancellation_details")
         paymentRepository.save(payment);
 

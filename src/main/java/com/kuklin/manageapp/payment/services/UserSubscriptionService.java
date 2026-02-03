@@ -4,6 +4,7 @@ import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import com.kuklin.manageapp.payment.entities.Payment;
 import com.kuklin.manageapp.payment.entities.PricingPlan;
 import com.kuklin.manageapp.payment.entities.UserSubscription;
+import com.kuklin.manageapp.payment.models.RefreshResult;
 import com.kuklin.manageapp.payment.repositories.UserSubscriptionRepository;
 import com.kuklin.manageapp.payment.services.exceptions.PricingPlanNotFoundException;
 import com.kuklin.manageapp.payment.services.exceptions.subscription.SubscriptionInvalidDataException;
@@ -11,31 +12,51 @@ import com.kuklin.manageapp.payment.services.exceptions.subscription.Subscriptio
 import com.kuklin.manageapp.payment.services.exceptions.subscription.SubscriptionNotSubscribeException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 @Repository
 @RequiredArgsConstructor
 @Slf4j
 public class UserSubscriptionService {
+
     private final UserSubscriptionRepository userSubscriptionRepository;
     private final PricingPlanService pricingPlanService;
-    //Для одновременной выдачи и активных, и запланированых
+
+    /**
+     * Статусы, которые считаются "живыми" и участвуют в очередях
+     * EXPIRED / CANCELLED сюда принципиально не входят
+     */
     private static final Set<UserSubscription.Status> WORKING_STATUSES =
             EnumSet.of(UserSubscription.Status.ACTIVE, UserSubscription.Status.SCHEDULED);
 
-    //Проверка, что сейчас есть актуальная подписка
+    /**
+     * Быстрая проверка — есть ли сейчас активная подписка
+     * Используется в user-flow (бот, UI и т.п.)
+     */
     public boolean hasActiveSubscription(Long telegramId, BotIdentifier botIdentifier) {
         return getActiveSubscriptionOrNull(telegramId, botIdentifier) != null;
     }
 
-    // Текущая активная подписка или null
+    /**
+     * Возвращает текущую активную подписку пользователя или null
+     *
+     * Перед поиском:
+     *  - синхронизирует статусы (SCHEDULED → ACTIVE, ACTIVE → EXPIRED)
+     *
+     * Важно: используется только в user-flow, НЕ в cron
+     */
     public UserSubscription getActiveSubscriptionOrNull(Long telegramId, BotIdentifier botIdentifier) {
         refreshStatuses(telegramId, botIdentifier);
-        LocalDateTime now = LocalDateTime.now();
+        Instant now = Instant.now();
 
         return userSubscriptionRepository
                 .findFirstByTelegramIdAndBotIdentifierAndStatusAndStartAtLessThanEqualAndEndAtGreaterThanOrderByStartAtAsc(
@@ -49,14 +70,12 @@ public class UserSubscriptionService {
     }
 
     /**
-     * Возвращает все подписки пользователя, которые:
-     * - уже активны ИЛИ запланированы (ACTIVE / SCHEDULED);
-     * - ещё не закончились (endAt > now);
-     * - отсортированы по startAt (по порядку очереди).
+     * Возвращает активные + запланированные подписки пользователя
+     * Используется для отображения очереди подписок
      */
     public List<UserSubscription> getActiveAndScheduledSubscriptions(Long telegramId, BotIdentifier botIdentifier) {
         refreshStatuses(telegramId, botIdentifier);
-        LocalDateTime now = LocalDateTime.now();
+        Instant now = Instant.now();
 
         return userSubscriptionRepository
                 .findAllByTelegramIdAndBotIdentifierAndStatusInAndEndAtGreaterThanOrderByStartAtAsc(
@@ -67,110 +86,80 @@ public class UserSubscriptionService {
                 );
     }
 
-    // Создание новой подписки при покупке
-
     /**
-     * Создаёт подписку по успешному платежу.
+     * Создание подписки по платежу
+     *
      * Логика:
-     * - если нет активных/запланированных подписок – подписка начинается "сейчас";
-     * - если есть цепочка подписок – новая подписка стартует сразу после последней (endAt последней);
-     * - статус: ACTIVE, если startAt <= now, иначе SCHEDULED.
+     *  - проверяем, что план — подписочный
+     *  - обновляем текущие статусы
+     *  - строим очередь: новая подписка стартует
+     *    либо сейчас, либо сразу после последней активной
      */
     @Transactional
-    public UserSubscription createSubscriptionByPayment(
-            Payment payment
-    ) throws PricingPlanNotFoundException,
+    public UserSubscription createSubscriptionByPayment(Payment payment)
+            throws PricingPlanNotFoundException,
             SubscriptionNotSubscribeException,
             SubscriptionInvalidDataException {
 
-        Long pricingPlanId = payment.getPricingPlanId();
-        BotIdentifier botIdentifier = payment.getBotIdentifier();
-
-        PricingPlan plan = pricingPlanService.getPricingPlanById(pricingPlanId);
+        PricingPlan plan = pricingPlanService.getPricingPlanById(payment.getPricingPlanId());
 
         if (plan.getPayloadType() != PricingPlan.PricingPlanType.SUBSCRIPTION) {
-            log.error("Attempt to create subscription from non-subscription plan id={}, payment id={}",
-                    pricingPlanId, payment.getId());
             throw new SubscriptionNotSubscribeException();
         }
 
         if (plan.getDurationDays() == null || plan.getDurationDays() <= 0) {
-            log.error("Subscription plan id={} has invalid durationDays={}",
-                    pricingPlanId, plan.getDurationDays());
             throw new SubscriptionInvalidDataException();
         }
 
         Long telegramId = payment.getTelegramId();
-        LocalDateTime now = LocalDateTime.now();
+        BotIdentifier botIdentifier = payment.getBotIdentifier();
+        Instant now = Instant.now();
 
-        // Обновляем статусы перед расчётом очереди
-        refreshStatuses(telegramId, plan.getBotIdentifier());
+        refreshStatuses(telegramId, botIdentifier);
 
-        // Блокируем все активные/запланированные подписки этого юзера на время расчета.
-        // Если другой поток (платеж) попробует сделать то же самое, он будет ждать здесь.
-        List<UserSubscription> activeQueue = userSubscriptionRepository
-                .findAllByTelegramIdAndBotIdentifierAndStatusInForUpdate(telegramId, botIdentifier, WORKING_STATUSES);
+        // Блокируем очередь, чтобы избежать гонок при покупке
+        List<UserSubscription> queue =
+                userSubscriptionRepository.findAllByTelegramIdAndBotIdentifierAndStatusInForUpdate(
+                        telegramId, botIdentifier, WORKING_STATUSES);
 
-        // Ищем самую "позднюю" подписку из тех, что нашли (наш хвост очереди)
-        Optional<UserSubscription> lastOpt = activeQueue.stream()
-                .filter(s -> s.getEndAt().isAfter(now))
-                .max(Comparator.comparing(UserSubscription::getEndAt));
+        Instant startAt = queue.stream()
+                .map(UserSubscription::getEndAt)
+                .filter(end -> end.isAfter(now))
+                .max(Instant::compareTo)
+                .orElse(now);
 
-        LocalDateTime startAt;
-        if (lastOpt.isPresent()) {
-            // Уже есть цепочка подписок – новая встаёт в хвост очереди
-            startAt = lastOpt.get().getEndAt();
-        } else {
-            // Подписок нет или всё EXPIRED – стартуем сразу
-            startAt = now;
-        }
+        Instant endAt = startAt.plus(plan.getDurationDays(), ChronoUnit.DAYS);
 
-        LocalDateTime endAt = startAt.plusDays(plan.getDurationDays());
-
-        UserSubscription subscription = new UserSubscription()
+        UserSubscription sub = new UserSubscription()
                 .setTelegramId(telegramId)
                 .setPricingPlanId(plan.getId())
                 .setPaymentId(payment.getId())
+                .setBotIdentifier(botIdentifier)
                 .setStartAt(startAt)
                 .setEndAt(endAt)
-                .setBotIdentifier(botIdentifier);
+                .setStatus(startAt.isAfter(now)
+                        ? UserSubscription.Status.SCHEDULED
+                        : UserSubscription.Status.ACTIVE);
 
-        if (!startAt.isAfter(now)) {
-            subscription.setStatus(UserSubscription.Status.ACTIVE);
-        } else {
-            subscription.setStatus(UserSubscription.Status.SCHEDULED);
-        }
-
-        UserSubscription saved = userSubscriptionRepository.save(subscription);
-
-        log.info("Created subscription id={} for telegramId={}, planId={}, startAt={}, endAt={}",
-                saved.getId(), telegramId, plan.getId(), saved.getStartAt(), saved.getEndAt());
-
-        return saved;
+        return userSubscriptionRepository.save(sub);
     }
 
-    // Внутренняя поддержка статусов
-
     /**
-     * Обновляет статусы подписок пользователя по времени:
-     * - SCHEDULED → ACTIVE, если startAt <= now < endAt;
-     * - ACTIVE → EXPIRED, если endAt <= now.
-     * <p>
-     * Вызывается:
-     * - перед проверкой активной подписки;
-     * - перед получением списка активных/запланированных;
-     * - перед созданием новой подписки (чтобы очередь была актуальна).
+     * Локальная синхронизация статусов для конкретного пользователя и бота
+     *
+     * Делает ТОЛЬКО:
+     *  - SCHEDULED → ACTIVE (если старт наступил)
+     *  - ACTIVE → EXPIRED (если срок вышел)
+     *
+     * НЕ предназначен для глобального cron
      */
     @Transactional
     protected void refreshStatuses(Long telegramId, BotIdentifier botIdentifier) {
-        LocalDateTime now = LocalDateTime.now();
+        Instant now = Instant.now();
 
-        List<UserSubscription> subs = userSubscriptionRepository
-                .findAllByTelegramIdAndBotIdentifierAndStatusIn(
-                        telegramId,
-                        botIdentifier,
-                        WORKING_STATUSES
-                );
+        List<UserSubscription> subs =
+                userSubscriptionRepository.findAllByTelegramIdAndBotIdentifierAndStatusIn(
+                        telegramId, botIdentifier, WORKING_STATUSES);
 
         boolean changed = false;
 
@@ -178,10 +167,13 @@ public class UserSubscriptionService {
             if (sub.getStatus() == UserSubscription.Status.SCHEDULED
                     && !sub.getStartAt().isAfter(now)
                     && sub.getEndAt().isAfter(now)) {
+
                 sub.setStatus(UserSubscription.Status.ACTIVE);
                 changed = true;
+
             } else if (sub.getStatus() == UserSubscription.Status.ACTIVE
                     && !sub.getEndAt().isAfter(now)) {
+
                 sub.setStatus(UserSubscription.Status.EXPIRED);
                 changed = true;
             }
@@ -193,113 +185,125 @@ public class UserSubscriptionService {
     }
 
     /**
-     * На будущее: обработка возврата денег за подписку.
-     * Можно вызывать из логики REFUND:
-     * - найти подписку по paymentId,
-     * - пометить CANCELLED,
-     * - при необходимости подправить очередь подписок.
+     * Отмена подписки по платежу
+     *
+     * Важно:
+     *  - отмена может затронуть активную или будущую подписку
+     *  - после отмены сдвигаем очередь
      */
     @Transactional
     public void cancelByPayment(Payment payment) throws SubscriptionNotFound {
-        Long paymentId = payment.getId();
         Long telegramId = payment.getTelegramId();
         BotIdentifier botIdentifier = payment.getBotIdentifier();
 
-        // Сначала приводим статусы в актуальное состояние
         refreshStatuses(telegramId, botIdentifier);
 
-        List<UserSubscription> toCancel = userSubscriptionRepository
-                .findAllByPaymentIdAndBotIdentifier(paymentId, botIdentifier);
+        List<UserSubscription> toCancel =
+                userSubscriptionRepository.findAllByPaymentIdAndBotIdentifier(
+                        payment.getId(), botIdentifier);
+
         if (toCancel.isEmpty()) {
-            log.error("No subscriptions found for paymentId={} (telegramId={})", paymentId, telegramId);
             throw new SubscriptionNotFound();
         }
 
-        LocalDateTime now = LocalDateTime.now();
+        Instant now = Instant.now();
 
-        for (UserSubscription subToCancel : toCancel) {
-            if (subToCancel.getStatus() == UserSubscription.Status.CANCELLED) {
-                log.error("Subscription is already cancelled! subId: {}", subToCancel.getId());
+        for (UserSubscription sub : toCancel) {
+            sub.setStatus(UserSubscription.Status.CANCELLED);
+            userSubscriptionRepository.save(sub);
+
+            if (!sub.getEndAt().isAfter(now)) {
                 continue;
             }
 
-            UserSubscription.Status oldStatus = subToCancel.getStatus();
-            LocalDateTime start = subToCancel.getStartAt();
-            LocalDateTime end = subToCancel.getEndAt();
+            Instant anchor = now.isAfter(sub.getStartAt())
+                    ? now
+                    : sub.getStartAt();
 
-            subToCancel.setStatus(UserSubscription.Status.CANCELLED);
-            userSubscriptionRepository.save(subToCancel);
-
-            log.info("Cancelled subscription id={} for paymentId={}, telegramId={}, oldStatus={}, interval=[{}, {}]",
-                    subToCancel.getId(), paymentId, telegramId, oldStatus, start, end);
-
-            // Если подписка уже целиком в прошлом — сдвигать нечего
-            if (!end.isAfter(now)) {
-                continue;
-            }
-
-            // Определяем, с какой точки начинать "упаковывать" хвост очереди:
-            // - если отменили текущую активную (now между start и end) → следующий слот с now
-            // - если отменили будущую (now < start) → следующий слот с start этой подписки
-            LocalDateTime anchorStart;
-            if (now.isAfter(start)) {
-                anchorStart = now;
-            } else {
-                anchorStart = start;
-            }
-
-            // Пересобираем цепочку будущих подписок
-            shiftFutureSubscriptions(telegramId, subToCancel, anchorStart, payment.getBotIdentifier());
+            shiftFutureSubscriptions(telegramId, sub, anchor, botIdentifier);
         }
 
-        // После переразброса дат ещё раз обновим статусы (SCHEDULED → ACTIVE, ACTIVE → EXPIRED)
         refreshStatuses(telegramId, botIdentifier);
     }
 
+    /**
+     * Сдвиг будущих подписок после отмены
+     * Используется ТОЛЬКО из cancelByPayment
+     */
     private void shiftFutureSubscriptions(Long telegramId,
                                           UserSubscription cancelled,
-                                          LocalDateTime anchorStart,
+                                          Instant anchorStart,
                                           BotIdentifier botIdentifier) {
 
-        // Все ещё живые (ACTIVE/SCHEDULED) подписки пользователя
-        List<UserSubscription> queue = userSubscriptionRepository
-                .findAllByTelegramIdAndBotIdentifierAndStatusInOrderByStartAtAsc(
+        List<UserSubscription> queue =
+                userSubscriptionRepository.findAllByTelegramIdAndBotIdentifierAndStatusInOrderByStartAtAsc(
                         telegramId, botIdentifier, WORKING_STATUSES);
 
-        // Оставляем только те, что идут после отменённой (позже по временной оси)
         queue = queue.stream()
-                .filter(sub -> sub.getStartAt().isAfter(cancelled.getStartAt()))
+                .filter(s -> s.getStartAt().isAfter(cancelled.getStartAt()))
                 .toList();
 
-        if (queue.isEmpty()) {
-            return;
-        }
-
-        LocalDateTime currentStart = anchorStart;
+        Instant current = anchorStart;
 
         for (UserSubscription sub : queue) {
-            long days = java.time.temporal.ChronoUnit.DAYS.between(sub.getStartAt(), sub.getEndAt());
-            if (days <= 0) {
-                // На всякий случай защита от кривых данных
-                log.error("Subscription id={} has non-positive duration (start={}, end={}), skipping shift",
-                        sub.getId(), sub.getStartAt(), sub.getEndAt());
-                continue;
-            }
+            long days = ChronoUnit.DAYS.between(sub.getStartAt(), sub.getEndAt());
+            if (days <= 0) continue;
 
-            LocalDateTime newStart = currentStart;
-            LocalDateTime newEnd = newStart.plusDays(days);
-
-            if (!newStart.equals(sub.getStartAt()) || !newEnd.equals(sub.getEndAt())) {
-                log.info("Shifting subscription id={} for telegramId={} from [{}, {}] to [{}, {}]",
-                        sub.getId(), telegramId, sub.getStartAt(), sub.getEndAt(), newStart, newEnd);
-
-                sub.setStartAt(newStart);
-                sub.setEndAt(newEnd);
-            }
-
-            currentStart = newEnd;
+            sub.setStartAt(current);
+            sub.setEndAt(current.plus(days, ChronoUnit.DAYS));
+            current = sub.getEndAt();
         }
 
         userSubscriptionRepository.saveAll(queue);
+    }
+
+    // Ищем пачку тех, чья ACTIVE подписка закончилась
+    public Slice<UserSubscription> findExpiredCandidates(int batchSize) {
+        return userSubscriptionRepository.findAllByStatusAndEndAtLessThanEqual(
+                UserSubscription.Status.ACTIVE,
+                Instant.now(),
+                PageRequest.of(0, batchSize, Sort.by("id").ascending())
+        );
+    }
+
+    // Ищем пачку тех, чья SCHEDULED подписка должна начаться
+    public Slice<UserSubscription> findScheduledCandidates(int batchSize) {
+        Instant now = Instant.now();
+        return userSubscriptionRepository.findAllByStatusAndStartAtLessThanEqualAndEndAtGreaterThan(
+                UserSubscription.Status.SCHEDULED, now, now,
+                PageRequest.of(0, batchSize, Sort.by("id").ascending())
+        );
+    }
+
+    // REQUIRES_NEW гарантирует: транзакция закроется (и версия проверится) сразу после метода.
+    // Если другой поток изменил запись, здесь вылетит OptimisticLockException.
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public Optional<UserSubscription> expireOne(Long id) {
+        return userSubscriptionRepository.findById(id)
+                .filter(s -> s.getStatus() == UserSubscription.Status.ACTIVE)
+                .map(sub -> {
+                    sub.setStatus(UserSubscription.Status.EXPIRED);
+                    return userSubscriptionRepository.save(sub);
+                });
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public Optional<UserSubscription> activateOne(Long id) {
+        UserSubscription sub = userSubscriptionRepository.findById(id).orElse(null);
+
+        if (sub == null || sub.getStatus() != UserSubscription.Status.SCHEDULED) {
+            return Optional.empty();
+        }
+
+        // Проверяем, не появилась ли у пользователя активная подписка в этом боте.
+        // Это предотвращает наслоение подписок, если крон сработал некорректно.
+        if (userSubscriptionRepository.existsByTelegramIdAndBotIdentifierAndStatus(
+                sub.getTelegramId(), sub.getBotIdentifier(), UserSubscription.Status.ACTIVE)) {
+            log.warn("Cannot activate sub {} for user {}: already has ACTIVE", id, sub.getTelegramId());
+            return Optional.empty();
+        }
+
+        sub.setStatus(UserSubscription.Status.ACTIVE);
+        return Optional.of(userSubscriptionRepository.save(sub));
     }
 }

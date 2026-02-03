@@ -1,15 +1,17 @@
 package com.kuklin.manageapp.payment.repositories;
 
-import com.kuklin.manageapp.payment.entities.UserSubscription;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.payment.entities.UserSubscription;
 import jakarta.persistence.LockModeType;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -25,7 +27,7 @@ public interface UserSubscriptionRepository extends JpaRepository<UserSubscripti
             Long telegramId,
             BotIdentifier botIdentifier,
             Collection<UserSubscription.Status> statuses,
-            LocalDateTime now
+            Instant now
     );
 
     // Последняя (по времени окончания) активная/запланированная подписка
@@ -33,7 +35,7 @@ public interface UserSubscriptionRepository extends JpaRepository<UserSubscripti
             Long telegramId,
             BotIdentifier botIdentifier,
             Collection<UserSubscription.Status> statuses,
-            LocalDateTime now
+            Instant now
     );
 
     // Текущая активная подписка (с учётом интервала)
@@ -41,8 +43,8 @@ public interface UserSubscriptionRepository extends JpaRepository<UserSubscripti
             Long telegramId,
             BotIdentifier botIdentifier,
             UserSubscription.Status status,
-            LocalDateTime from,
-            LocalDateTime to
+            Instant from,
+            Instant to
     );
 
     // Для внутреннего обновления статусов
@@ -63,10 +65,6 @@ public interface UserSubscriptionRepository extends JpaRepository<UserSubscripti
 
     );
 
-    long countByTelegramId(Long telegramId);
-
-//    List<UserSubscription> findAllByTelegramIdAndBotIdentifierAndStatusInForUpdate(Long telegramId, BotIdentifier botIdentifier, Set<UserSubscription.Status> workingStatuses);
-
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT s FROM UserSubscription s WHERE s.telegramId = :tgId " +
             "AND s.botIdentifier = :botId AND s.status IN :statuses")
@@ -76,4 +74,26 @@ public interface UserSubscriptionRepository extends JpaRepository<UserSubscripti
             @Param("statuses") Set<UserSubscription.Status> statuses
     );
 
+    List<UserSubscription> findAllByBotIdentifierAndStatus(BotIdentifier botIdentifier, UserSubscription.Status status);
+    List<UserSubscription> findAllByStatus(UserSubscription.Status status);
+
+    Slice<UserSubscription> findAllByStatusAndEndAtLessThanEqual(
+            UserSubscription.Status status,
+            Instant now,
+            Pageable pageable
+    );
+
+    Slice<UserSubscription> findAllByStatusAndStartAtLessThanEqualAndEndAtGreaterThan(
+            UserSubscription.Status status,
+            Instant lessThanStart,
+            Instant greaterThanEnd,
+            Pageable pageable
+    );
+
+    // Проверка наличия активной подписки (используется при активации запланированной)
+    boolean existsByTelegramIdAndBotIdentifierAndStatus(
+            Long telegramId,
+            BotIdentifier botIdentifier,
+            UserSubscription.Status status
+    );
 }

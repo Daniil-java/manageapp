@@ -3,11 +3,16 @@ package com.kuklin.manageapp.payment.entities;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.CreationTimestamp;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 
 /**
  * Подписка пользователя на тарифный план.
@@ -40,15 +45,21 @@ public class UserSubscription {
     private Status status;
     @Enumerated(EnumType.STRING)
     private BotIdentifier botIdentifier;
-    private LocalDateTime startAt;
-    private LocalDateTime endAt;
+    private Instant startAt;
+    private Instant endAt;
     @CreationTimestamp
-    private LocalDateTime createdAt;
+    private Instant createdAt;
+    @Version
+    private Long version;
 
+    @RequiredArgsConstructor
+    @Getter
     public enum Status {
-        ACTIVE,
-        SCHEDULED,
-        EXPIRED,
-        CANCELLED
+        ACTIVE("Активна"),
+        SCHEDULED("Запланирована"),
+        EXPIRED("Истекла"),
+        CANCELLED("Отменена");
+
+        private final String commandText;
     }
 }
