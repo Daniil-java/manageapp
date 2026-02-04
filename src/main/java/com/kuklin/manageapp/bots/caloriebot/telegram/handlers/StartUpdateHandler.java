@@ -1,8 +1,12 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.handlers;
 
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
+import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.paymentpart.SubscriptionStatusCalorieUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
+import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import com.kuklin.manageapp.common.library.tgutils.Command;
+import com.kuklin.manageapp.payment.entities.UserSubscription;
+import com.kuklin.manageapp.payment.services.UserSubscriptionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Update;
@@ -20,11 +24,9 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
                     Отправь фото блюда, напиши его описание или отправь голосовое сообщение, чтобы получить КБЖУ блюда!
                     Для более подробных инструкций нажми на кнопку "📖FAQ"! 
                     """;
-    private static final String UPDATE_MESSAGE =
-            """
-                    ⏳ Обновляю статус
-                    """;
+    private final UserSubscriptionService userSubscriptionService;
     private final CalorieTelegramBot calorieTelegramBot;
+    private final SubscriptionStatusCalorieUpdateHandler subscriptionStatusCalorieUpdateHandler;
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
@@ -34,6 +36,22 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
                 getCommandKeyboard(),
                 null
         );
+
+        //Пробный период
+        UserSubscription userSubscription = userSubscriptionService
+                .createSubscriptionByFreePlanOrNull(
+                        telegramUser.getTelegramId(), BotIdentifier.CALORIE_BOT);
+        //Если null - значит пробный период уже был у пользователя
+        if (userSubscription != null) {
+            String text = subscriptionStatusCalorieUpdateHandler.getSubscriptionStatusMessage(
+                    telegramUser.getTelegramId(),
+                    userSubscription
+            );
+            calorieTelegramBot.sendReturnedMessage(
+                    update.getMessage().getChatId(),
+                    text
+            );
+        }
     }
 
     public static ReplyKeyboardMarkup getCommandKeyboard() {

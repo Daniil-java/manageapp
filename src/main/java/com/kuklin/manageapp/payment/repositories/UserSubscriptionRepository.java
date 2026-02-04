@@ -96,4 +96,10 @@ public interface UserSubscriptionRepository extends JpaRepository<UserSubscripti
             BotIdentifier botIdentifier,
             UserSubscription.Status status
     );
+
+    boolean existsByTelegramIdAndBotIdentifierAndPricingPlanId(
+            Long telegramId,
+            BotIdentifier botIdentifier,
+            Long pricingPlanId
+    );
 }

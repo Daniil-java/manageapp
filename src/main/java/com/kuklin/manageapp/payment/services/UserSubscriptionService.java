@@ -4,7 +4,6 @@ import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import com.kuklin.manageapp.payment.entities.Payment;
 import com.kuklin.manageapp.payment.entities.PricingPlan;
 import com.kuklin.manageapp.payment.entities.UserSubscription;
-import com.kuklin.manageapp.payment.models.RefreshResult;
 import com.kuklin.manageapp.payment.repositories.UserSubscriptionRepository;
 import com.kuklin.manageapp.payment.services.exceptions.PricingPlanNotFoundException;
 import com.kuklin.manageapp.payment.services.exceptions.subscription.SubscriptionInvalidDataException;
@@ -140,6 +139,58 @@ public class UserSubscriptionService {
                 .setStatus(startAt.isAfter(now)
                         ? UserSubscription.Status.SCHEDULED
                         : UserSubscription.Status.ACTIVE);
+
+        return userSubscriptionRepository.save(sub);
+    }
+
+    //Метод для выдачи подписки пробного периода
+    //Одному пользователю - выдается лишь раз
+    @Transactional
+    public UserSubscription createSubscriptionByFreePlanOrNull(Long telegramId, BotIdentifier botIdentifier) {
+        // 1. Получаем сам план
+        PricingPlan plan = pricingPlanService.getFreePricingPlanOrNull(botIdentifier);
+        if (plan == null) return null;
+
+        // 2. Проверяем, не была ли уже выдана ЭТА конкретная бесплатная подписка
+        boolean alreadyUsed = userSubscriptionRepository
+                .existsByTelegramIdAndBotIdentifierAndPricingPlanId(telegramId, botIdentifier, plan.getId());
+
+        if (alreadyUsed) {
+            return null;
+        }
+
+        // 3. Смотрим текущие подписки (Активные + Запланированные)
+        List<UserSubscription> currentSubscriptions = getActiveAndScheduledSubscriptions(telegramId, botIdentifier);
+
+        Instant startAt;
+        UserSubscription.Status status;
+
+        if (currentSubscriptions.isEmpty()) {
+            // Если чисто — стартуем сейчас и сразу активируем
+            startAt = Instant.now();
+            status = UserSubscription.Status.ACTIVE;
+        } else {
+            // Если есть подписки — ищем самую позднюю дату окончания
+            // Чтобы поставить новую подписку в очередь после самой последней
+            startAt = currentSubscriptions.stream()
+                    .map(UserSubscription::getEndAt)
+                    .max(Comparator.naturalOrder())
+                    .orElse(Instant.now()); // Fallback (на всякий случай)
+
+            status = UserSubscription.Status.SCHEDULED;
+        }
+
+        // 4. Создаем и сохраняем подписку
+        long dummyPaymentId = -1l;
+        UserSubscription sub = new UserSubscription()
+                .setTelegramId(telegramId)
+                .setPricingPlanId(plan.getId())
+                .setPaymentId(dummyPaymentId)
+                .setBotIdentifier(botIdentifier)
+                .setStartAt(startAt)
+                // Важно: endAt рассчитываем от startAt, который мы вычислили выше
+                .setEndAt(startAt.plus(plan.getDurationDays(), ChronoUnit.DAYS))
+                .setStatus(status);
 
         return userSubscriptionRepository.save(sub);
     }

@@ -9,6 +9,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
+
+import static com.kuklin.manageapp.payment.entities.PricingPlan.PlanStatus.SYSTEM_FREE;
 
 @Service
 @RequiredArgsConstructor
@@ -27,5 +30,14 @@ public class PricingPlanService {
     public PricingPlan getPricingPlanById(Long id) throws PricingPlanNotFoundException {
         return pricingPlanRepository.findById(id)
                 .orElseThrow(PricingPlanNotFoundException::new);
+    }
+
+    //Выдает бесплатный системный план (предназначенный для пробного периода)
+    //planStatus - SYSTEM_FREE
+    public PricingPlan getFreePricingPlanOrNull(BotIdentifier botIdentifier) {
+        Optional<PricingPlan> pricingPlan = pricingPlanRepository
+                .findFirstByBotIdentifierAndPlanStatus(botIdentifier, SYSTEM_FREE);
+
+        return pricingPlan.orElse(null);
     }
 }

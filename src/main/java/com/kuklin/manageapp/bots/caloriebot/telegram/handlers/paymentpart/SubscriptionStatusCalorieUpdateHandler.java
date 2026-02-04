@@ -7,9 +7,11 @@ import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.CalorieBotUpdateHa
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import com.kuklin.manageapp.common.library.tgutils.Command;
-import com.kuklin.manageapp.payment.components.paymentfacades.CommonPaymentFacade;
+import com.kuklin.manageapp.payment.entities.PricingPlan;
 import com.kuklin.manageapp.payment.entities.UserSubscription;
+import com.kuklin.manageapp.payment.services.PricingPlanService;
 import com.kuklin.manageapp.payment.services.UserSubscriptionService;
+import com.kuklin.manageapp.payment.services.exceptions.PricingPlanNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -27,6 +29,7 @@ public class SubscriptionStatusCalorieUpdateHandler implements CalorieBotUpdateH
     private final CalorieTelegramBot calorieTelegramBot;
     private final UserSubscriptionService userSubscriptionService;
     private final UserSettingsService userSettingsService;
+    private final PricingPlanService pricingPlanService;
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
@@ -58,17 +61,27 @@ public class SubscriptionStatusCalorieUpdateHandler implements CalorieBotUpdateH
         return "Статус подписки:\n\n" + details;
     }
 
-    private String getSubscriptionStatusMessage(Long telegramId, UserSubscription sub) {
+    public String getSubscriptionStatusMessage(Long telegramId, UserSubscription sub) {
         UserSettings userSettings = userSettingsService.getOrCreate(telegramId);
 
         ZoneId zoneId = userSettings.getZoneId();
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
 
+        String name;
+        String description;
+        try {
+            PricingPlan pricingPlan = pricingPlanService.getPricingPlanById(sub.getPricingPlanId());
+            name = pricingPlan.getTitle();
+            description = pricingPlan.getDescription();
+        } catch (PricingPlanNotFoundException e) {
+            name = "Неизвестно";
+            description = "Без описания";
+        }
         String period = (sub.getStartAt() != null && sub.getEndAt() != null)
                 ? String.format("%s — %s", sub.getStartAt().atZone(zoneId).format(fmt), sub.getEndAt().atZone(zoneId).format(fmt))
                 : "не задан";
 
-        return String.format("📌 Статус: %s\n⏳ Период: %s", sub.getStatus().getCommandText(), period);
+        return String.format("Полдписка: %s\n %s\n📌 Статус: %s\n⏳ Период: %s", name, description, sub.getStatus().getCommandText(), period);
     }
 
     @Override

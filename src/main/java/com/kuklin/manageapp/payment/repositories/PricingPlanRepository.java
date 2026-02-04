@@ -14,4 +14,10 @@ public interface PricingPlanRepository extends JpaRepository<PricingPlan, Long> 
     Optional<PricingPlan> findPricingPlanByCodeForOrderId(String codeForOrderId);
     List<PricingPlan> findAllByBotIdentifier(BotIdentifier botIdentifier);
     List<PricingPlan> findAllByBotIdentifierAndPlanStatus(BotIdentifier botIdentifier, PricingPlan.PlanStatus planStatus);
+    List<PricingPlan> findPricingPlanByPlanStatusAndBotIdentifier(PricingPlan.PlanStatus planStatus, BotIdentifier botIdentifier);
+    Optional<PricingPlan> findFirstByBotIdentifierAndPlanStatus(
+            BotIdentifier botIdentifier,
+            PricingPlan.PlanStatus status
+    );
+
 }

@@ -47,6 +47,6 @@ public class PricingPlan {
     }
 
     public enum PlanStatus {
-        AVAILABLE, DISABLED;
+        AVAILABLE, DISABLED, SYSTEM_FREE, ARCHIVED, ARCHIVED_SYSTEM_FREE;
     }
 }
