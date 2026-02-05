@@ -2,8 +2,8 @@ package com.kuklin.manageapp.bots.aiassistantcalendar.telegram.handlers;
 
 import com.google.api.services.calendar.model.Event;
 import com.google.api.services.calendar.model.EventDateTime;
+import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcessor;
 import com.kuklin.manageapp.bots.aiassistantcalendar.configurations.TelegramAiAssistantCalendarBotKeyComponents;
-import com.kuklin.manageapp.bots.aiassistantcalendar.entities.UserGoogleCalendar;
 import com.kuklin.manageapp.bots.aiassistantcalendar.models.ActionKnot;
 import com.kuklin.manageapp.bots.aiassistantcalendar.models.CalendarEventAiResponse;
 import com.kuklin.manageapp.bots.aiassistantcalendar.services.ActionKnotService;
@@ -14,7 +14,6 @@ import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import com.kuklin.manageapp.common.library.tgutils.ThreadUtil;
-import com.kuklin.manageapp.common.services.OpenAiIntegrationService;
 import com.kuklin.manageapp.common.services.TelegramService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,7 +35,7 @@ import java.util.Locale;
 @Slf4j
 public class CalendarEventUpdateHandler implements AssistantUpdateHandler {
     private final AssistantTelegramBot assistantTelegramBot;
-    private final OpenAiIntegrationService openAiIntegrationService;
+    private final OpenAiProviderProcessor openAiProviderProcessor;
     private final CalendarService calendarService;
     private final ActionKnotService actionKnotService;
     private final TelegramService telegramService;
@@ -139,7 +138,12 @@ public class CalendarEventUpdateHandler implements AssistantUpdateHandler {
             log.info("Аудиофайла не существует.");
             return null;
         }
-        return openAiIntegrationService.fetchAudioResponse(components.getAiKey(), inputAudioFile);
+        return openAiProviderProcessor.fetchAudioResponse(
+                components.getAiKey(),
+                inputAudioFile,
+                AssistantTelegramBot.BOT_IDENTIFIER,
+                this.getClass().getSimpleName()
+        );
     }
 
     public static InlineKeyboardMarkup getInlineMessage(String eventId) {

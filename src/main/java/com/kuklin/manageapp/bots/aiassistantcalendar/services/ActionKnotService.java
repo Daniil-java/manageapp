@@ -2,9 +2,10 @@ package com.kuklin.manageapp.bots.aiassistantcalendar.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcessor;
 import com.kuklin.manageapp.bots.aiassistantcalendar.configurations.TelegramAiAssistantCalendarBotKeyComponents;
 import com.kuklin.manageapp.bots.aiassistantcalendar.models.ActionKnot;
-import com.kuklin.manageapp.common.services.OpenAiIntegrationService;
+import com.kuklin.manageapp.bots.aiassistantcalendar.telegram.AssistantTelegramBot;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -15,7 +16,7 @@ import java.time.LocalDate;
 @RequiredArgsConstructor
 @Slf4j
 public class ActionKnotService {
-    private final OpenAiIntegrationService aiService;
+    private final OpenAiProviderProcessor aiService;
     private final ObjectMapper objectMapper;
     private final TelegramAiAssistantCalendarBotKeyComponents components;
 
@@ -48,14 +49,17 @@ public class ActionKnotService {
                     8. Определи действие пользователя:
                        - Если он хочет добавить событие → action = "EVENT_ADD"
                        - Если он хочет удалить событие → action = "EVENT_DELETE"
-                    ВЕРНИ ТОЛЬКО JSON!!!
+                    ВЕРНИ ТОЛЬКО JSON, БЕЗ ЛИШНЕГО ТЕКСТА, ОБРАМЛЕНИЙ ИЛИ КОММЕНТАРИЕВ.!!!
                                         
                     """;
 
     public ActionKnot getActionKnotOrNull(String message) {
         String aiResponse = aiService.fetchResponse(
                 components.getAiKey(),
-                String.format(AI_REQUEST, message, LocalDate.now()));
+                String.format(AI_REQUEST, message, LocalDate.now()),
+                AssistantTelegramBot.BOT_IDENTIFIER,
+                this.getClass().getSimpleName()
+        );
         log.info(aiResponse);
         try {
             return objectMapper.readValue(aiResponse, ActionKnot.class);
