@@ -2,8 +2,8 @@ package com.kuklin.manageapp.bots.aiassistantcalendar.telegram.handlers;
 
 import com.google.api.services.calendar.model.Event;
 import com.google.api.services.calendar.model.EventDateTime;
+import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcessor;
 import com.kuklin.manageapp.bots.aiassistantcalendar.configurations.TelegramAiAssistantCalendarBotKeyComponents;
-import com.kuklin.manageapp.bots.aiassistantcalendar.entities.UserGoogleCalendar;
 import com.kuklin.manageapp.bots.aiassistantcalendar.models.ActionKnot;
 import com.kuklin.manageapp.bots.aiassistantcalendar.models.CalendarEventAiResponse;
 import com.kuklin.manageapp.bots.aiassistantcalendar.services.ActionKnotService;
@@ -14,7 +14,6 @@ import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import com.kuklin.manageapp.common.library.tgutils.ThreadUtil;
-import com.kuklin.manageapp.common.services.OpenAiIntegrationService;
 import com.kuklin.manageapp.common.services.TelegramService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +24,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMa
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
 import java.io.IOException;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
@@ -36,7 +36,7 @@ import java.util.Locale;
 @Slf4j
 public class CalendarEventUpdateHandler implements AssistantUpdateHandler {
     private final AssistantTelegramBot assistantTelegramBot;
-    private final OpenAiIntegrationService openAiIntegrationService;
+    private final OpenAiProviderProcessor openAiProviderProcessor;
     private final CalendarService calendarService;
     private final ActionKnotService actionKnotService;
     private final TelegramService telegramService;
@@ -44,8 +44,23 @@ public class CalendarEventUpdateHandler implements AssistantUpdateHandler {
     private final UserGoogleCalendarService userGoogleCalendarService;
     private static final String VOICE_ERROR_MESSAGE =
             "Ошибка! Не получилось обработать голосовое сообщение";
+    private static final String VOICE_DURATION_ERROR_MESSAGE =
+            "Ошибка! Голосовое сообщение слишком долгое!";
     private static final String ERROR_MESSAGE =
             "Не получилось добавить мероприятие в календарь!";
+    private static final String TEXT_TO_LONG_ERROR_MESSAGE =
+            "Ваше сообщение слишком длинное!";
+    private static final String EVENT_NOT_FOUND_ERROR_MESSAGE =
+            "Не получилось найти собитие";
+
+    private static final Locale RU = new Locale("ru");
+    private static final DateTimeFormatter DATE_TIME_FMT =
+            DateTimeFormatter.ofPattern("d MMMM yyyy 'года', HH:mm", RU);
+    private static final DateTimeFormatter DATE_ONLY_FMT =
+            DateTimeFormatter.ofPattern("d MMMM yyyy 'года'", RU);
+
+    private static final int MAX_VOICE_SECONDS = 60;
+    private static final int MAX_TEXT_CHARS = 2000;
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
@@ -57,7 +72,15 @@ public class CalendarEventUpdateHandler implements AssistantUpdateHandler {
             return;
         }
 
-        String request = message.hasVoice() ? processVoiceMessage(message) : message.getText();
+        //Проверка на количество символов в текстовом сообщении
+        int l = message.getText().length();
+        if (message.getText() != null && message.getText().length() > MAX_TEXT_CHARS) {
+            assistantTelegramBot.sendReturnedMessage(chatId, TEXT_TO_LONG_ERROR_MESSAGE);
+            return;
+        }
+
+        String request = message.hasVoice() ? processVoiceMessageOrSendError(message) : message.getText();
+        if (request == null) return;
 
         ActionKnot actionKnot = actionKnotService.getActionKnotOrNull(request);
         try {
@@ -70,12 +93,30 @@ public class CalendarEventUpdateHandler implements AssistantUpdateHandler {
 
             } else if (actionKnot.getAction() == ActionKnot.Action.EVENT_DELETE) {
                 List<Event> eventsForRemoving =
-                        calendarService.removeEventInCalendarByMessage(calendarId, actionKnot);
+                        calendarService.findCoincidedRemoveEventsForYear(calendarId, actionKnot);
+
+                if (eventsForRemoving.isEmpty()) {
+                    assistantTelegramBot.sendReturnedMessage(chatId, EVENT_NOT_FOUND_ERROR_MESSAGE);
+                    return;
+                }
 
                 eventsForRemoving.forEach(event -> {
                     sendEventMessage(chatId, event);
                     ThreadUtil.sleep(100);
                 });
+            } else if (actionKnot.getAction() == ActionKnot.Action.EVENT_EDIT) {
+                String eventId =
+                        calendarService.findCoincidedEditEventsForYear(calendarId, actionKnot);
+
+                if (eventId.isEmpty() || eventId.isBlank()) {
+                    assistantTelegramBot.sendReturnedMessage(chatId, EVENT_NOT_FOUND_ERROR_MESSAGE);
+                    return;
+                }
+
+                ActionKnot newActionKnot = actionKnotService.getActionKnotForEditMessageOrNull(request);
+
+                Event event = calendarService.editEventInCalendar(eventId, calendarId, newActionKnot);
+                sendEventMessage(chatId, event);
             }
         } catch (IOException e) {
             log.error(ERROR_MESSAGE, e);
@@ -88,12 +129,12 @@ public class CalendarEventUpdateHandler implements AssistantUpdateHandler {
         assistantTelegramBot.sendReturnedMessage(
                 chatId,
                 getResponseString(event),
-                getInlineMessage(event.getId()),
+                getInlineDeleteMessage(event.getId()),
                 null
         );
     }
 
-        public static String getResponseString(Event event) {
+    public static String getResponseString(Event event) {
 
         StringBuilder stringBuilder = new StringBuilder();
         String description = event.getDescription() != null
@@ -110,17 +151,32 @@ public class CalendarEventUpdateHandler implements AssistantUpdateHandler {
     }
 
     private static String formatHumanReadable(EventDateTime eventDateTime) {
-        OffsetDateTime offsetDateTime = OffsetDateTime.parse(eventDateTime.getDateTime().toString());
+        if (eventDateTime.getDateTime() != null) {
+            String rfc = eventDateTime.getDateTime().toStringRfc3339(); // безопаснее, чем toString()
+            OffsetDateTime odt = OffsetDateTime.parse(rfc);
+            return odt.format(DATE_TIME_FMT) + " (" + odt.getOffset().toString() + ")";
+        }
 
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("d MMMM yyyy 'года', HH:mm", new Locale("ru"));
-        String formatted = offsetDateTime.format(formatter);
+        // all-day event (dateTime == null, используем date)
+        if (eventDateTime.getDate() != null) {
+            LocalDate ld = LocalDate.parse(eventDateTime.getDate().toStringRfc3339()); // "YYYY-MM-DD"
+            return ld.format(DATE_ONLY_FMT) + " · весь день";
+        }
 
-        // Добавляем реальный оффсет
-        return formatted + " (" + offsetDateTime.getOffset().toString() + ")";
+        return "—";
     }
 
-    private String processVoiceMessage(Message message) {
+    private String processVoiceMessageOrSendError(Message message) {
         Long chatId = message.getChatId();
+
+        //Проверка длительности голосового сообщения
+        Integer duration = message.getVoice().getDuration();
+        if (duration != null && duration > MAX_VOICE_SECONDS) {
+            // Сообщаем пользователю и выходим
+            assistantTelegramBot.sendReturnedMessage(chatId, VOICE_DURATION_ERROR_MESSAGE);
+            return null;
+        }
+
         String request = convertVoiceToText(message);
 
         if (request == null) {
@@ -139,10 +195,10 @@ public class CalendarEventUpdateHandler implements AssistantUpdateHandler {
             log.info("Аудиофайла не существует.");
             return null;
         }
-        return openAiIntegrationService.fetchAudioResponse(components.getAiKey(), inputAudioFile);
+        return openAiProviderProcessor.fetchAudioResponse(components.getAiKey(), inputAudioFile);
     }
 
-    public static InlineKeyboardMarkup getInlineMessage(String eventId) {
+    public static InlineKeyboardMarkup getInlineDeleteMessage(String eventId) {
         String callbackData = Command.ASSISTANT_DELETE.getCommandText() + TelegramBot.DEFAULT_DELIMETER + eventId;
         String buttonText = "Удалить";
 
