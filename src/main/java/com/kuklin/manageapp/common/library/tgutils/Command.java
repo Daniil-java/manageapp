@@ -84,8 +84,7 @@ public enum Command {
     BOOKING_DELETE_BOOKING("/deletebook", BotIdentifier.BOOKING_BOT),
     BOOKING_NULL("null", BotIdentifier.BOOKING_BOT),
     BOOKING_YANDEX_TEST("/yandex", BotIdentifier.BOOKING_BOT),
-
-
+    BOOKING_MENU("/menu", BotIdentifier.BOOKING_BOT),
     //==========================HH============================
     HH_DECISION("/decision", BotIdentifier.HH_BOT),
 
