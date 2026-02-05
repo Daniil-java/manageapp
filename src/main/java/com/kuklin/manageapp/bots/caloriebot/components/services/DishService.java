@@ -39,7 +39,6 @@ public class DishService {
     private final OpenAiProviderProcessor openAiIntegrationService;
     private final TelegramCaloriesBotKeyComponents telegramCaloriesBotKeyComponents;
     private final ObjectMapper objectMapper;
-    private final ProviderProcessorHandler processorHandler;
     private final UserSettingsService userSettingsService;
 
     // --- Public Methods ---
