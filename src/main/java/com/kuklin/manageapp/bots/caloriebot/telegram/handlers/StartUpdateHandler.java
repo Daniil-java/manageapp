@@ -37,10 +37,14 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
         replyKeyboard.setOneTimeKeyboard(false);
 
         KeyboardRow row = new KeyboardRow();
-        row.add(Command.CALORIE_TODAY_LIST.getCommandText());
-        row.add(Command.CALORIE_WEEK_LIST.getCommandText());
+        row.add(Command.CALORIE_PROFILE.getCommandText());
+        row.add(Command.CALORIE_FAVORITE.getCommandText());
 
-        replyKeyboard.setKeyboard(List.of(row));
+        KeyboardRow nextRow = new KeyboardRow();
+        nextRow.add(Command.CALORIE_TODAY_LIST.getCommandText());
+        nextRow.add(Command.CALORIE_WEEK_LIST.getCommandText());
+
+        replyKeyboard.setKeyboard(List.of(row, nextRow));
         return replyKeyboard;
     }
 
