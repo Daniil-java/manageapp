@@ -139,4 +139,18 @@ public abstract class TelegramBot extends TelegramLongPollingBot implements Tele
                 .parseMode(ParseMode.HTML)
                 .build();
     }
+
+    public void sendEditMessageReplyMarkupNull(Long chatId, Integer messageId) {
+        EditMessageReplyMarkup editMarkup = new EditMessageReplyMarkup();
+        editMarkup.setChatId(chatId);
+        editMarkup.setMessageId(messageId);
+        editMarkup.setReplyMarkup(null);
+
+        try {
+            execute(editMarkup);
+        } catch (TelegramApiException e) {
+            log.error("Не получилось изменить клавиатуру");
+        }
+    }
 }
+
