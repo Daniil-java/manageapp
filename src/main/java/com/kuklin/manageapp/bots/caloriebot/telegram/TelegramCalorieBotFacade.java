@@ -43,6 +43,11 @@ public class TelegramCalorieBotFacade extends TelegramFacade {
 
         if (update.hasCallbackQuery()) {
             request = update.getCallbackQuery().getData().split(" ")[0];
+
+            UpdateHandler updateHandler = getUpdateHandlerMap().get(request);
+            if (updateHandler != null) {
+                return updateHandler;
+            }
             if (request == null) {
                 return null;
             } else {
