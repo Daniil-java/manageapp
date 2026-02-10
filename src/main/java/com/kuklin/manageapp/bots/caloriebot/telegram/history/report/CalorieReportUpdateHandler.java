@@ -37,7 +37,7 @@ public class CalorieReportUpdateHandler implements CalorieBotUpdateHandler {
     private final ReportService reportService;
     private final CalorieWeightHistoryUpdateHandler calorieWeightHistoryUpdateHandler;
 
-    private static final String MSG_CHOOSE_REPORT = "Выберите тип отчета";
+    private static final String MSG_CHOOSE_REPORT = "Выберите тип аналитики";
     private static final String CLB_DATA_ERROR = "Ошибка данных! Попробуйте повторить операцию позже!";
     private static final String DOC_ERROR = "Не получилось сгенерировать отчет! Попробуйте еще раз";
     private static final String AWAIT_MSG = "Генерирую документ...";

@@ -16,6 +16,12 @@ public class AviaTelegramBot extends TelegramBot {
     public AviaTelegramBot(TelegramAviaBotKeyComponent components) {
         super(components.getKey());
     }
+
+    @Override
+    public void handleUpdateDirectly(Update update) {
+        aviaTelegramFacade.handleUpdate(update);
+    }
+
     @Override
     public void onUpdateReceived(Update update) {
         aviaTelegramFacade.handleUpdate(update);

@@ -1,10 +1,10 @@
 package com.kuklin.manageapp.payment.handlers.telegrampay;
 
 import com.kuklin.manageapp.payment.entities.Payment;
+import com.kuklin.manageapp.payment.handlers.AdminPaymentUpdateHandler;
 import com.kuklin.manageapp.payment.services.exceptions.PricingPlanNotFoundException;
 import com.kuklin.manageapp.payment.services.exceptions.payment.PaymentException;
 import com.kuklin.manageapp.payment.services.exceptions.payment.PaymentValidationDataException;
-import com.kuklin.manageapp.payment.handlers.PaymentBalanceUpdateHandler;
 import com.kuklin.manageapp.payment.handlers.PaymentUpdateHandler;
 import com.kuklin.manageapp.common.components.TelegramBotRegistry;
 import com.kuklin.manageapp.common.entities.TelegramUser;
@@ -19,7 +19,7 @@ import org.telegram.telegrambots.meta.api.objects.payments.SuccessfulPayment;
 
 /**
  * Обработчик сообщения об успешной оплате, которое присылает Telegram.
- *
+ * <p>
  * Отвечает за:
  * - передачу SuccessfulPayment в CommonPaymentFacade;
  * - обработку случая, когда платёж уже был обработан (идемпотентность);
@@ -32,7 +32,7 @@ import org.telegram.telegrambots.meta.api.objects.payments.SuccessfulPayment;
 public class SuccessfulPaymentUpdateHandler implements PaymentUpdateHandler {
     private final TelegramBotRegistry telegramBotRegistry;
     private final CommonPaymentFacade commonPaymentFacade;
-    private final PaymentBalanceUpdateHandler balanceUpdateHandler;
+    private final AdminPaymentUpdateHandler adminPaymentUpdateHandler;
     private static final String SUCCESS_MSG = """
             Успешная оплата!
             """;
@@ -66,11 +66,15 @@ public class SuccessfulPaymentUpdateHandler implements PaymentUpdateHandler {
 
                 //Подменяем сообщение, чтобы вызвать нужный хендлер
                 update.getMessage().setText(Command.PAYMENT_BALANCE.getCommandText());
+                update.getMessage().setSuccessfulPayment(null);
                 //Получаем экземпляр бота, через которого прошла оплата
                 //И отправляем в метод, скоректирование сообщение, для вызова нужного хендлера
                 //Нужна соответствующая настройка через interface PaymentUpdateHandler
                 telegramBotRegistry.get(payment.getBotIdentifier())
-                        .onUpdateReceived(update);
+                        .handleUpdateDirectly(update);
+
+                //Уведомление админа
+                adminPaymentUpdateHandler.sendPaymentMessageToAdmin(payment);
             } catch (PaymentValidationDataException e) {
                 telegramBot.sendReturnedMessage(chatId, VALIDATION_ERROR_MSG);
             } catch (PricingPlanNotFoundException e) {

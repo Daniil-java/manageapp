@@ -111,15 +111,22 @@ public class PaymentService {
     @Transactional
     public Payment processTelegramSuccessfulPaymentAndGetOrNull(
             SuccessfulPayment successfulPayment, Long telegramId
-    )
-            throws PaymentException, PricingPlanNotFoundException {
-        Optional<Payment> byProviderId = paymentRepository
-                .findByProviderPaymentId(successfulPayment.getProviderPaymentChargeId());
+    ) throws PaymentException, PricingPlanNotFoundException {
+
+        // ИСПРАВЛЕНИЕ: Проверяем именно тот токен, который мы будем сохранять
+        // Определяем, какой ID является главным для этого типа валюты
+        String checkToken = successfulPayment.getCurrency().equals(Currency.XTR.name()) ?
+                successfulPayment.getTelegramPaymentChargeId() :
+                successfulPayment.getProviderPaymentChargeId();
+
+        Optional<Payment> byProviderId = paymentRepository.findByProviderPaymentId(checkToken);
+
         if (byProviderId.isPresent()) {
-            // уже обрабатывали этот платёж
-            return null;
+            log.info("Payment with ID {} has already been processed. Skipping.", checkToken);
+            return byProviderId.get(); // Или return null, если выше по стеку это обрабатывается
         }
 
+        // Находим оригинальный платеж по Payload
         Payment payment = getValidPayment(
                 successfulPayment.getInvoicePayload(),
                 telegramId,
@@ -127,18 +134,14 @@ public class PaymentService {
                 successfulPayment.getTotalAmount()
         );
 
+        PricingPlan plan = pricingPlanService.getPricingPlanById(payment.getPricingPlanId());
 
-        PricingPlan plan = pricingPlanService
-                .getPricingPlanById(payment.getPricingPlanId());
-        //Если статус любой, но не CREATED - это значит, что это повторный платеж
-        //Он может быть в случае телеграм-подписки
+        // Здесь создается новая запись, если это продление
         payment = processTelegramSubs(payment, plan, plan.getBotIdentifier());
 
-        String providerToken = payment.getCurrency().equals(Currency.XTR) ?
-                successfulPayment.getTelegramPaymentChargeId() :
-                successfulPayment.getProviderPaymentChargeId();
+        // Используем тот же самый токен для смены статуса
+        changeStatus(payment, Payment.PaymentStatus.SUCCESS, checkToken);
 
-        changeStatus(payment, Payment.PaymentStatus.SUCCESS, providerToken);
         return payment;
     }
 
@@ -155,7 +158,7 @@ public class PaymentService {
                             && plan.getCurrency().equals(Currency.XTR)
             ) {
                 //Если это подписка, то нам надо создать новый платеж
-                payment = paymentRepository.save(
+                Payment renewalPayment = paymentRepository.save(
                         new Payment()
                                 .setProvider(payment.getProvider())
                                 .setPricingPlanId(payment.getPricingPlanId())
@@ -165,10 +168,19 @@ public class PaymentService {
                                 .setStarsAmount(payment.getStarsAmount())
                                 .setStatus(Payment.PaymentStatus.CREATED)
                                 .setTelegramId(payment.getTelegramId())
-                                .setTelegramInvoicePayload(payment.getTelegramInvoicePayload())
                                 .setProviderStatus(Payment.ProviderStatus.SUCCEEDED)
                                 .setBotIdentifier(botIdentifier)
                 );
+
+                // 2. Сохраняем, чтобы получить ID
+                renewalPayment = paymentRepository.save(renewalPayment);
+
+                // 3. Генерируем новый Payload на основе нового ID
+                String newPayload = generateTelegramInvoicePayload(renewalPayment.getId(), plan);
+                renewalPayment.setTelegramInvoicePayload(newPayload);
+
+                // 4. Сохраняем обновленный payload
+                return paymentRepository.save(renewalPayment);
             }
         }
         return payment;

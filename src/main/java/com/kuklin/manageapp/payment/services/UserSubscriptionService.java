@@ -4,6 +4,7 @@ import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import com.kuklin.manageapp.payment.entities.Payment;
 import com.kuklin.manageapp.payment.entities.PricingPlan;
 import com.kuklin.manageapp.payment.entities.UserSubscription;
+import com.kuklin.manageapp.payment.handlers.AdminPaymentUpdateHandler;
 import com.kuklin.manageapp.payment.repositories.UserSubscriptionRepository;
 import com.kuklin.manageapp.payment.services.exceptions.PricingPlanNotFoundException;
 import com.kuklin.manageapp.payment.services.exceptions.subscription.SubscriptionInvalidDataException;
@@ -29,6 +30,9 @@ public class UserSubscriptionService {
 
     private final UserSubscriptionRepository userSubscriptionRepository;
     private final PricingPlanService pricingPlanService;
+    //TODO разработать нормальный метод для отправки сообщений
+    private final AdminPaymentUpdateHandler adminPaymentUpdateHandler;
+
 
     /**
      * Статусы, которые считаются "живыми" и участвуют в очередях
@@ -140,7 +144,15 @@ public class UserSubscriptionService {
                         ? UserSubscription.Status.SCHEDULED
                         : UserSubscription.Status.ACTIVE);
 
-        return userSubscriptionRepository.save(sub);
+        UserSubscription userSubscription = userSubscriptionRepository.save(sub);
+
+        try {
+            adminPaymentUpdateHandler.sendSubMessageToAdmin(userSubscription);
+        } catch (Exception e) {
+            log.error("Subscription message error! Cant send message about NEW subscription!");
+        }
+
+        return userSubscription;
     }
 
     //Метод для выдачи подписки пробного периода

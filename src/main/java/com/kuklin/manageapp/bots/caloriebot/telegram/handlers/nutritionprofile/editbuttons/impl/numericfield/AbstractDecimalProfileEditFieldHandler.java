@@ -131,7 +131,8 @@ public abstract class AbstractDecimalProfileEditFieldHandler
                         bigNeg,
                         neg,
                         pos,
-                        bigPos
+                        bigPos,
+                        action.getLabelFormat()
                 )
         );
     }

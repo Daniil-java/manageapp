@@ -69,43 +69,73 @@ public class KeyboardTemplates {
     //Клавиатура-счетчик для целочисленных значений
     public static InlineKeyboardMarkup buildNumericKeyboard(
             Command command,
-            ProfileEditAction action, Integer currentValue,
-            Integer defValue, Integer min, Integer max,
-            Integer bigNeg, Integer neg, Integer pos, Integer bigPos
+            ProfileEditAction action,
+            Integer currentValue,
+            Integer defValue,
+            Integer min,
+            Integer max,
+            Integer bigNeg,
+            Integer neg,
+            Integer pos,
+            Integer bigPos,
+            String labelFormat // <-- новый параметр
     ) {
 
         if (currentValue == null) currentValue = defValue;
+
         String callbackBase = command.getCommandText()
                 + TelegramBot.DEFAULT_DELIMETER + action.getCode()
                 + TelegramBot.DEFAULT_DELIMETER;
 
-        // Собираем кнопки динамически
+        List<InlineKeyboardButton> valueRow = new ArrayList<>();
         List<InlineKeyboardButton> row = new ArrayList<>();
         List<InlineKeyboardButton> row2 = new ArrayList<>();
 
+        // 🔹 Отдельная строка с текущим значением
+        valueRow.add(
+                TelegramKeyboard.button(
+                        String.format(labelFormat, currentValue),
+                        "noop" // заглушка, чтобы не реагировала
+                )
+        );
+
         if (currentValue - bigNeg >= min) {
-            row.add(TelegramKeyboard.button(bigNeg.toString(), callbackBase + ADJ_CMD + TelegramBot.DEFAULT_DELIMETER + (currentValue + bigNeg)));
-        }
-        if (currentValue - neg >= min) {
-            row.add(TelegramKeyboard.button(neg.toString(), callbackBase + ADJ_CMD + TelegramBot.DEFAULT_DELIMETER + (currentValue + neg)));
+            row.add(TelegramKeyboard.button(
+                    bigNeg.toString(),
+                    callbackBase + ADJ_CMD + TelegramBot.DEFAULT_DELIMETER + (currentValue + bigNeg)
+            ));
         }
 
-        // Центровая кнопка — текущее значение (оставил поведение как в исходнике)
-        row.add(TelegramKeyboard.button(currentValue.toString(), currentValue.toString()));
+        if (currentValue - neg >= min) {
+            row.add(TelegramKeyboard.button(
+                    neg.toString(),
+                    callbackBase + ADJ_CMD + TelegramBot.DEFAULT_DELIMETER + (currentValue + neg)
+            ));
+        }
 
         if (currentValue + pos <= max) {
-            row.add(TelegramKeyboard.button("+" + pos.toString(), callbackBase + ADJ_CMD + TelegramBot.DEFAULT_DELIMETER + (currentValue + pos)));
-        }
-        if (currentValue + bigPos <= max) {
-            row.add(TelegramKeyboard.button("+" + bigPos.toString(), callbackBase + ADJ_CMD + TelegramBot.DEFAULT_DELIMETER + (currentValue + bigPos)));
+            row.add(TelegramKeyboard.button(
+                    "+" + pos,
+                    callbackBase + ADJ_CMD + TelegramBot.DEFAULT_DELIMETER + (currentValue + pos)
+            ));
         }
 
-//        <handlecmd><action><set|adj><value>
-        row2.add(TelegramKeyboard.button("Сохранить",  callbackBase + SET_CMD + TelegramBot.DEFAULT_DELIMETER + currentValue));
+        if (currentValue + bigPos <= max) {
+            row.add(TelegramKeyboard.button(
+                    "+" + bigPos,
+                    callbackBase + ADJ_CMD + TelegramBot.DEFAULT_DELIMETER + (currentValue + bigPos)
+            ));
+        }
+
+        row2.add(TelegramKeyboard.button(
+                "Сохранить",
+                callbackBase + SET_CMD + TelegramBot.DEFAULT_DELIMETER + currentValue
+        ));
 
         return TelegramKeyboard.builder()
+                .row(valueRow.toArray(new InlineKeyboardButton[0])) // 🔹 строка значения
                 .row(row.toArray(new InlineKeyboardButton[0]))
-                .row(row2)
+                .row(row2.toArray(new InlineKeyboardButton[0]))
                 .build();
     }
 
@@ -120,63 +150,86 @@ public class KeyboardTemplates {
             BigDecimal bigNeg,
             BigDecimal neg,
             BigDecimal pos,
-            BigDecimal bigPos
+            BigDecimal bigPos,
+            String labelFormat // новый параметр
     ) {
+
         if (currentValue == null) currentValue = def;
 
         String callbackBase = command.getCommandText()
                 + TelegramBot.DEFAULT_DELIMETER + action.getCode()
                 + TelegramBot.DEFAULT_DELIMETER;
 
-        List<InlineKeyboardButton> row = new ArrayList<>();
-        List<InlineKeyboardButton> row2 = new ArrayList<>();
+        List<InlineKeyboardButton> valueRow = new ArrayList<>();
+        List<InlineKeyboardButton> adjustRow = new ArrayList<>();
+        List<InlineKeyboardButton> saveRow = new ArrayList<>();
 
-        if (currentValue.add(bigNeg).compareTo(min) >= 0) {
-            row.add(TelegramKeyboard.button(
-                    bigNeg.toPlainString(),
-                    callbackBase + ADJ_CMD + TelegramBot.DEFAULT_DELIMETER
-                            + currentValue.add(bigNeg)
-            ));
+        // ===== Строка с текущим значением =====
+        valueRow.add(
+                TelegramKeyboard.button(
+                        String.format(labelFormat, currentValue.toPlainString()),
+                        "noop"
+                )
+        );
+
+        // ===== Кнопки уменьшения =====
+        BigDecimal newValue;
+
+        newValue = currentValue.add(bigNeg);
+        if (newValue.compareTo(min) >= 0) {
+            adjustRow.add(
+                    TelegramKeyboard.button(
+                            bigNeg.toPlainString(),
+                            callbackBase + ADJ_CMD + TelegramBot.DEFAULT_DELIMETER + newValue
+                    )
+            );
         }
 
-        if (currentValue.add(neg).compareTo(min) >= 0) {
-            row.add(TelegramKeyboard.button(
-                    neg.toPlainString(),
-                    callbackBase + ADJ_CMD + TelegramBot.DEFAULT_DELIMETER
-                            + currentValue.add(neg)
-            ));
+        newValue = currentValue.add(neg);
+        if (newValue.compareTo(min) >= 0) {
+            adjustRow.add(
+                    TelegramKeyboard.button(
+                            neg.toPlainString(),
+                            callbackBase + ADJ_CMD + TelegramBot.DEFAULT_DELIMETER + newValue
+                    )
+            );
         }
 
-        row.add(TelegramKeyboard.button(
-                currentValue.toPlainString(),
-                currentValue.toPlainString()
-        ));
-
-        if (currentValue.add(pos).compareTo(max) <= 0) {
-            row.add(TelegramKeyboard.button(
-                    "+" + pos.toPlainString(),
-                    callbackBase + ADJ_CMD + TelegramBot.DEFAULT_DELIMETER
-                            + currentValue.add(pos)
-            ));
+        // ===== Кнопки увеличения =====
+        newValue = currentValue.add(pos);
+        if (newValue.compareTo(max) <= 0) {
+            adjustRow.add(
+                    TelegramKeyboard.button(
+                            "+" + pos.toPlainString(),
+                            callbackBase + ADJ_CMD + TelegramBot.DEFAULT_DELIMETER + newValue
+                    )
+            );
         }
 
-        if (currentValue.add(bigPos).compareTo(max) <= 0) {
-            row.add(TelegramKeyboard.button(
-                    "+" + bigPos.toPlainString(),
-                    callbackBase + ADJ_CMD + TelegramBot.DEFAULT_DELIMETER
-                            + currentValue.add(bigPos)
-            ));
+        newValue = currentValue.add(bigPos);
+        if (newValue.compareTo(max) <= 0) {
+            adjustRow.add(
+                    TelegramKeyboard.button(
+                            "+" + bigPos.toPlainString(),
+                            callbackBase + ADJ_CMD + TelegramBot.DEFAULT_DELIMETER + newValue
+                    )
+            );
         }
 
-        row2.add(TelegramKeyboard.button(
-                "Сохранить",
-                callbackBase + SET_CMD + TelegramBot.DEFAULT_DELIMETER + currentValue
-        ));
+        // ===== Кнопка сохранения =====
+        saveRow.add(
+                TelegramKeyboard.button(
+                        "Сохранить",
+                        callbackBase + SET_CMD + TelegramBot.DEFAULT_DELIMETER + currentValue
+                )
+        );
 
         return TelegramKeyboard.builder()
-                .row(row.toArray(new InlineKeyboardButton[0]))
-                .row(row2)
+                .row(valueRow.toArray(new InlineKeyboardButton[0]))
+                .row(adjustRow.toArray(new InlineKeyboardButton[0]))
+                .row(saveRow.toArray(new InlineKeyboardButton[0]))
                 .build();
     }
+
 
 }

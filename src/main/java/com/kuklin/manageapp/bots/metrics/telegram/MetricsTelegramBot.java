@@ -20,6 +20,11 @@ public class MetricsTelegramBot extends TelegramBot {
     }
 
     @Override
+    public void handleUpdateDirectly(Update update) {
+        metricsTelegramFacade.handleUpdate(update);
+    }
+
+    @Override
     public void onUpdateReceived(Update update) {
         metricsTelegramFacade.handleUpdate(update);
     }

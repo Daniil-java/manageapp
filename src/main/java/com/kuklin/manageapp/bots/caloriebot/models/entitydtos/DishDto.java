@@ -60,4 +60,18 @@ public class DishDto {
     private int nvl(Integer value) {
         return value != null ? value : 0;
     }
+
+    public void checkValuesNotNull() {
+        if (calories == null) calories = 0;
+        if (proteins == null) proteins = 0;
+        if (fats == null) fats = 0;
+        if (carbohydrates == null) carbohydrates = 0;
+
+        //значения, которые не могут быть меньше единицы
+        if (weightGrams == null) weightGrams = 1;
+        if (portions == null) portions = 1;
+        if (portionWeight == null) portionWeight = 1;
+
+        if (aiConfidence == null) aiConfidence = 0;
+    }
 }

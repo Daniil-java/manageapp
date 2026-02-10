@@ -127,7 +127,8 @@ public abstract class AbstractNumericProfileEditFieldHandler
                         bigNeg,
                         neg,
                         pos,
-                        bigPos
+                        bigPos,
+                        action.getLabelFormat()
                 )
         );
     }

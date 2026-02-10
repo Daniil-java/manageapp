@@ -43,6 +43,8 @@ public abstract class TelegramBot extends TelegramLongPollingBot implements Tele
         inProcess = new HashSet<>();
     }
 
+    public abstract void handleUpdateDirectly(Update update);
+
     @Override
     public abstract void onUpdateReceived(Update update);
 

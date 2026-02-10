@@ -23,6 +23,11 @@ public class PaymentTelegramBot extends TelegramBot {
     }
 
     @Override
+    public void handleUpdateDirectly(Update update) {
+        paymentTelegramFacade.handleUpdate(update);
+    }
+
+    @Override
     public void onUpdateReceived(Update update) {
         answerCallback(update);
         paymentTelegramFacade.handleUpdate(update);

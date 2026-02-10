@@ -16,6 +16,12 @@ public class KworkParserTelegramBot extends TelegramBot {
     public KworkParserTelegramBot(TelegramKworkParserBotKeyComponents components) {
         super(components.getKey());
     }
+
+    @Override
+    public void handleUpdateDirectly(Update update) {
+        kworkTelegramFacade.handleUpdate(update);
+    }
+
     @Override
     public void onUpdateReceived(Update update) {
         kworkTelegramFacade.handleUpdate(update);

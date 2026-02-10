@@ -1,6 +1,9 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.handlers;
 
+import com.kuklin.manageapp.bots.caloriebot.components.services.UserNutritionProfileService;
+import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
+import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.CalorieNutritionProfileUpdateHandler;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.paymentpart.SubscriptionStatusCalorieUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
@@ -23,11 +26,13 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
             """
                     Отправь фото блюда, напиши его описание или отправь голосовое сообщение, чтобы получить КБЖУ блюда!
                     Для более подробных инструкций нажми на кнопку "📖FAQ"! 
+                    Чтобы вызвать меню - напиши /menu
                     """;
     private final UserSubscriptionService userSubscriptionService;
     private final CalorieTelegramBot calorieTelegramBot;
     private final SubscriptionStatusCalorieUpdateHandler subscriptionStatusCalorieUpdateHandler;
-
+    private final UserNutritionProfileService userNutritionProfileService;
+    private final CalorieNutritionProfileUpdateHandler calorieNutritionProfileUpdateHandler;
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
         calorieTelegramBot.sendReturnedMessage(
@@ -36,6 +41,8 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
                 getCommandKeyboard(),
                 null
         );
+
+        sendUserNutritionFillRequest(update, telegramUser);
 
         //Пробный период
         UserSubscription userSubscription = userSubscriptionService
@@ -51,6 +58,15 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
                     update.getMessage().getChatId(),
                     text
             );
+        }
+    }
+
+    //Сообщение с просьбой заполнить профиль
+    private void sendUserNutritionFillRequest(Update update, TelegramUser telegramUser) {
+        UserNutritionProfile profile = userNutritionProfileService
+                .getOrCreateProfile(telegramUser.getTelegramId());
+        if (!profile.checkTargetCalculateParams()) {
+            calorieNutritionProfileUpdateHandler.handle(update, telegramUser);
         }
     }
 

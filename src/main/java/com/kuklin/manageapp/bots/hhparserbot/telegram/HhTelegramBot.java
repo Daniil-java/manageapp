@@ -15,6 +15,12 @@ public class HhTelegramBot extends TelegramBot {
     public HhTelegramBot(TelegramHhParserBotKeyComponents components) {
         super(components.getKey());
     }
+
+    @Override
+    public void handleUpdateDirectly(Update update) {
+        hhTelegramFacade.handleUpdate(update);
+    }
+
     @Override
     public void onUpdateReceived(Update update) {
         hhTelegramFacade.handleUpdate(update);

@@ -23,6 +23,11 @@ public class AssistantTelegramBot extends TelegramBot {
     }
 
     @Override
+    public void handleUpdateDirectly(Update update) {
+        assistantTelegramFacade.handleUpdate(update);
+    }
+
+    @Override
     public void onUpdateReceived(Update update) {
         boolean result = doAsync(asyncService, update, u -> assistantTelegramFacade.handleUpdate(update));
 

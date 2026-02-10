@@ -23,6 +23,11 @@ public class BookingTelegramBot extends TelegramBot {
     }
 
     @Override
+    public void handleUpdateDirectly(Update update) {
+        bookingTelegramFacade.handleUpdate(update);
+    }
+
+    @Override
     public void onUpdateReceived(Update update) {
         boolean result = doAsync(asyncService, update, u -> bookingTelegramFacade.handleUpdate(update));
 

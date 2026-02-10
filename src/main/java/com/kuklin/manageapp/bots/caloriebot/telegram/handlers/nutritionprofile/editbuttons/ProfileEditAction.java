@@ -6,18 +6,19 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum ProfileEditAction {
-    SEX("SEX", "Пол"),
-    AGE("AGE", "Возраст"),
-    HEIGHT("HEIGHT", "Рост"),
-    CURRENT_WEIGHT("CUR_WEIGHT", "Текущий вес"),
-    ACTIVITY("ACTIVITY", "Активность"),
-    GOAL("GOAL", "Цель"),
-    DIET_TYPE("DIET_TYPE", "Тип питания"),
-    CALORIE_NORM("CALORIES", "Норма калорий"),
-    WATER_TARGET("WATER", "Норма воды");
+    SEX("SEX", "Пол", "Ваш пол: %s"),
+    AGE("AGE", "Возраст", "Ваш возраст: %d"),
+    HEIGHT("HEIGHT", "Рост", "Ваш рост: %d см"),
+    CURRENT_WEIGHT("CUR_WEIGHT", "Текущий вес", "Ваш вес: %s кг"),
+    ACTIVITY("ACTIVITY", "Активность", "Ваша активность: %s"),
+    GOAL("GOAL", "Цель", "Ваша цель: %s"),
+    DIET_TYPE("DIET_TYPE", "Тип питания", "Ваш тип диеты: %s"),
+    CALORIE_NORM("CALORIES", "Норма калорий", "Ваша норма: %d ккал"),
+    WATER_TARGET("WATER", "Норма воды", "Ваша норма воды: %d мл");
 
     private final String code;
     private final String label;
+    private final String labelFormat;
 
     public static ProfileEditAction fromCode(String code) {
         if (code == null) return null;

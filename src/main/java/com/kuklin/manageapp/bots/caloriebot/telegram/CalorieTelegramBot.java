@@ -38,6 +38,11 @@ public class CalorieTelegramBot extends TelegramBot {
     }
 
     @Override
+    public void handleUpdateDirectly(Update update) {
+        telegramCalorieBotFacade.handleUpdate(update);
+    }
+
+    @Override
     public void onUpdateReceived(Update update) {
         if (update.hasCallbackQuery()) {
             answerCallbackQuery(update.getCallbackQuery());

@@ -23,6 +23,12 @@ public class PomidoroTelegramBot extends TelegramBot {
     public PomidoroTelegramBot(TelegramPomidoroTimerBotKeyComponents components) {
         super(components.getKey());
     }
+
+    @Override
+    public void handleUpdateDirectly(Update update) {
+        pomidoroTelegramFacade.handleUpdate(update);
+    }
+
     @Override
     public void onUpdateReceived(Update update) {
         boolean result = doAsync(asyncService, update, u ->  {

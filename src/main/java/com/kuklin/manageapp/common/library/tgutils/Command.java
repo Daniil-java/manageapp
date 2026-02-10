@@ -30,7 +30,7 @@ public enum Command {
     CALORIE_SETTINGS_TIMEZONE("tzset", BotIdentifier.CALORIE_BOT),
     CALORIE_SETTINGS_REMINDERS("remind", BotIdentifier.CALORIE_BOT),
     CALORIE_ADMIN_MESSAGE("/admin", BotIdentifier.CALORIE_BOT),
-    CALORIE_REPORT("\uD83D\uDCC4ОТЧЕТЫ", BotIdentifier.CALORIE_BOT),
+    CALORIE_REPORT("\uD83D\uDCC4АНАЛИТИКА", BotIdentifier.CALORIE_BOT),
     CALORIE_REMOVE_LIST("/remove", BotIdentifier.CALORIE_BOT),
     CALORIE_WELCOME("📖FAQ", BotIdentifier.CALORIE_BOT),
     CALORIE_PAYMENT_PAYLOAD_PLAN("\uD83D\uDCB3ПОДПИСКА", BotIdentifier.CALORIE_BOT),
@@ -100,7 +100,8 @@ public enum Command {
 
     //==========================METRICS============================
     METRICS_GET("/get", BotIdentifier.METRICS),
-    METRICS_TEST_ERROR("/test", BotIdentifier.METRICS);
+    METRICS_TEST_ERROR("/test", BotIdentifier.METRICS),
+    ADMIN_SEND_MSG("$@#dummy", BotIdentifier.PAYMENT);
     private final String commandText;
     private final BotIdentifier botIdentifier;
 

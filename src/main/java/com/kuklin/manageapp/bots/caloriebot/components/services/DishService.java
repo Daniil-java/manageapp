@@ -180,6 +180,10 @@ public class DishService {
                 return null;
             }
 
+            for (DishDto dto: dtos) {
+                dto.checkValuesNotNull();
+            }
+
             List<Dish> dishes = new ArrayList<>();
             for (DishDto dto : dtos) {
                 if (dto.getIsDish() != null && dto.getIsDish()) {
