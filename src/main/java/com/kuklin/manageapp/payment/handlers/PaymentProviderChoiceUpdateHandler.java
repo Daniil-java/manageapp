@@ -32,7 +32,7 @@ public class PaymentProviderChoiceUpdateHandler implements PaymentUpdateHandler 
     private final CommonPaymentFacade commonPaymentFacade;
     private static final String PROVIDER_TEXT =
             """
-                    Выберите один из способ оплаты:
+                    Выберите один из способов оплаты:
                     """;
     private static final String PLAN_LIST_ERROR_MSG =
             """

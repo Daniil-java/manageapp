@@ -81,7 +81,7 @@ public class SubscriptionStatusCalorieUpdateHandler implements CalorieBotUpdateH
                 ? String.format("%s — %s", sub.getStartAt().atZone(zoneId).format(fmt), sub.getEndAt().atZone(zoneId).format(fmt))
                 : "не задан";
 
-        return String.format("Полдписка: %s\n %s\n📌 Статус: %s\n⏳ Период: %s", name, description, sub.getStatus().getCommandText(), period);
+        return String.format("Подписка: %s\n %s\n📌 Статус: %s\n⏳ Период: %s", name, description, sub.getStatus().getCommandText(), period);
     }
 
     @Override

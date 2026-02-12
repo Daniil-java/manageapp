@@ -41,7 +41,7 @@ public class PaymentPayUpdateHandler implements PaymentUpdateHandler {
                         Бот не смог извлечь данные о платежном формате!
             """;
     private static final String TELEGRAM_ERROR_MSG = """
-                        Ошибка! Не получилось отправить форму оплаты! Попройбуйте заново
+                        Ошибка! Не получилось отправить форму оплаты! Попробуйте заново
             """;
 
     private static final String SUBSCRIPTION_PAY_TITLE = "💳 Оформить подписку";

@@ -213,8 +213,8 @@ public class ReportUtils {
         // Создаем колонки
         StringColumn dateCol = StringColumn.create("Дата");
         StringColumn nameCol = StringColumn.create("Блюдо");
-        StringColumn calCol = StringColumn.create("Каллории");
-        StringColumn targetCol = StringColumn.create("Цель каллорий");
+        StringColumn calCol = StringColumn.create("Калории");
+        StringColumn targetCol = StringColumn.create("Цель калорий");
         StringColumn pCol = StringColumn.create("Белки");
         StringColumn fCol = StringColumn.create("Жиры");
         StringColumn cCol = StringColumn.create("Углеводы");

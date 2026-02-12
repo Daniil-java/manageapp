@@ -51,7 +51,7 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
     private static final String PHOTO_ERROR_MESSAGE =
             "Ошибка! Не получилось обработать фото";
     private static final String ERROR_MESSAGE =
-            "Данное сообщение не поддержтвается";
+            "Данное сообщение не поддерживается";
     private static final String ERROR_CONTENT_MESSAGE =
             "Это не съедобно!";
     private static final String SUB_MESSAGE =
