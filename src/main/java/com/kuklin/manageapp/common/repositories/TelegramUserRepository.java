@@ -12,5 +12,6 @@ import java.util.Optional;
 public interface TelegramUserRepository extends JpaRepository<TelegramUser, Long> {
     Optional<TelegramUser> findTelegramUserByBotIdentifierAndTelegramId(BotIdentifier botIdentifier, Long telegramId);
     List<TelegramUser> findAllByBotIdentifier(BotIdentifier botIdentifier);
+    List<TelegramUser> findAllByBotIdentifierAndIsBotBlockedFalse(BotIdentifier botIdentifier);
 
 }

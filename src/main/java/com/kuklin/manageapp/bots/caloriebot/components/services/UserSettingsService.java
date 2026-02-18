@@ -213,7 +213,7 @@ public class UserSettingsService {
     }
 
     public List<UserSettings> getAllUserSettingWithEnabledDailySummary(boolean isEnabled) {
-        return userSettingsRepository.findAllByDailySummaryEnabled(isEnabled);
+        return userSettingsRepository.findActiveSettingsForEnabledDailySummary(isEnabled);
     }
 
     public List<UserSettings> getAllUserSettingWithEnabledMealReminder() {

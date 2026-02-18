@@ -12,13 +12,13 @@ public class CalorieSchedulerService {
     private final DailySummarySchedulerProcessor dailySummarySchedulerProcessor;
     private final MealReminderSchedulerProcessor mealReminderSchedulerProcessor;
 
-    @Scheduled(cron = "0 */30 * * * *")
+    @Scheduled(cron = "0 */1 * * * *")
     public void dailySummarySchedulerProcessor() {
         getInfo(dailySummarySchedulerProcessor.getSchedulerName());
         dailySummarySchedulerProcessor.process();
     }
 
-    @Scheduled(cron = "0 */20 * * * *")
+    @Scheduled(cron = "0 */2 * * * *")
     public void mealReminderSchedulerProcessor() {
         getInfo(mealReminderSchedulerProcessor.getSchedulerName());
         mealReminderSchedulerProcessor.process();

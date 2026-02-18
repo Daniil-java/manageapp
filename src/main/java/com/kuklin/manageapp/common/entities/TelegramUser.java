@@ -32,6 +32,7 @@ public class TelegramUser {
     @CreationTimestamp
     private LocalDateTime created;
     private Long responseCount;
+    private Boolean isBotBlocked;
 
     public static TelegramUser convertFromTelegram(User user) {
         return new TelegramUser()

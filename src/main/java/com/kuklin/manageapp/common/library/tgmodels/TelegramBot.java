@@ -1,9 +1,11 @@
 package com.kuklin.manageapp.common.library.tgmodels;
 
 import com.kuklin.manageapp.common.services.AsyncService;
+import com.kuklin.manageapp.common.services.TelegramUserService;
 import com.kuklin.manageapp.payment.entities.Payment;
 import com.kuklin.manageapp.payment.models.common.Currency;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.ActionType;
 import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
@@ -19,6 +21,7 @@ import org.telegram.telegrambots.meta.api.objects.payments.LabeledPrice;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboard;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException;
 
 import java.io.ByteArrayInputStream;
 import java.util.HashSet;
@@ -31,6 +34,8 @@ public abstract class TelegramBot extends TelegramLongPollingBot implements Tele
     private String botToken;
     public static final String DEFAULT_DELIMETER = " ";
     private final Set<Long> inProcess;
+    @Autowired
+    private TelegramUserService telegramUserService;
 
     @Override
     public String getToken() {
@@ -41,6 +46,21 @@ public abstract class TelegramBot extends TelegramLongPollingBot implements Tele
         super(key);
         botToken = key;
         inProcess = new HashSet<>();
+    }
+
+    private void handleApiError(TelegramApiException e, Long chatId) {
+        if (e instanceof TelegramApiRequestException apiEx) {
+            if (apiEx.getErrorCode() == 403) {
+                log.warn("Bot blocked by user: {}", chatId);
+                onBotBlocked(chatId);
+                return; // Выходим, чтобы не плодить лишние логи ошибок
+            }
+        }
+        log.error("Telegram API Error for bot {},  chat {}: {}", getBotIdentifier(), chatId, e.getMessage());
+    }
+
+    protected void onBotBlocked(Long chatId) {
+        telegramUserService.deactivateUser(chatId, getBotIdentifier());
     }
 
     public abstract void handleUpdateDirectly(Update update);
@@ -63,7 +83,8 @@ public abstract class TelegramBot extends TelegramLongPollingBot implements Tele
         try {
             return execute(document);
         } catch (TelegramApiException e) {
-            log.error("Send document error!");
+            log.warn("Telegram send document error!");
+            handleApiError(e, chatId);
             return null;
         }
     }
@@ -89,7 +110,8 @@ public abstract class TelegramBot extends TelegramLongPollingBot implements Tele
         try {
             return execute(sendPhoto);
         } catch (TelegramApiException e) {
-            log.error("Не получилось отправить фото", e);
+            log.warn("Telegram send photo error!");
+            handleApiError(e, chatId);
             return null;
         }
     }
@@ -113,7 +135,7 @@ public abstract class TelegramBot extends TelegramLongPollingBot implements Tele
         try {
             return execute(sendMessage);
         } catch (TelegramApiException e) {
-            log.error("Send returned message error!", e);
+            handleApiError(e, Long.valueOf(sendMessage.getChatId()));
         }
         return null;
     }

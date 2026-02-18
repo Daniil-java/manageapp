@@ -17,6 +17,7 @@ import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;
+import com.kuklin.manageapp.common.library.tgutils.ThreadUtil;
 import com.kuklin.manageapp.common.services.TelegramService;
 import com.kuklin.manageapp.payment.handlers.PaymentPlanListUpdateHandler;
 import lombok.RequiredArgsConstructor;
@@ -75,6 +76,7 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
                     getPortionWeightKeyboard(dish),
                     null
             );
+            ThreadUtil.sleep(100);
         }
     }
 
