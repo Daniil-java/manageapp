@@ -13,7 +13,7 @@ import java.util.List;
 public interface UserSettingsRepository extends JpaRepository<UserSettings, Long> {
     List<UserSettings> findAllByDailySummaryEnabled(boolean enabled);
     @Query("SELECT us FROM UserSettings us " +
-            "JOIN TelegramUser tu ON us.userId = tu.telegramId " + // Предполагаем связь по userId
+            "JOIN TelegramUser tu ON us.userId = tu.telegram_id " + // Предполагаем связь по userId
             "WHERE us.dailySummaryEnabled = :isEnabled " +
             "AND tu.isBotBlocked = false")
     List<UserSettings> findActiveSettingsForEnabledDailySummary(@Param("isEnabled") boolean isEnabled);
@@ -40,7 +40,7 @@ public interface UserSettingsRepository extends JpaRepository<UserSettings, Long
     @Query(value = """
     SELECT u.* FROM user_settings u 
     -- Присоединяем таблицу пользователей по userId
-    JOIN telegram_users tu ON u.user_id = tu.telegramId 
+    JOIN telegram_users tu ON u.user_id = tu.telegram_id 
     WHERE u.reminders_enabled = true 
       AND u.meal_reminder_enabled = true
       -- Проверка, что бот НЕ заблокирован
