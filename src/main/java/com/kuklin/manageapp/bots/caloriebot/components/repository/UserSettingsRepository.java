@@ -13,7 +13,7 @@ import java.util.List;
 public interface UserSettingsRepository extends JpaRepository<UserSettings, Long> {
     List<UserSettings> findAllByDailySummaryEnabled(boolean enabled);
     @Query("SELECT us FROM UserSettings us " +
-            "JOIN TelegramUser tu ON us.userId = tu.telegram_id " + // Предполагаем связь по userId
+            "JOIN TelegramUser tu ON us.userId = tu.telegramId " + // Предполагаем связь по userId
             "WHERE us.dailySummaryEnabled = :isEnabled " +
             "AND tu.isBotBlocked = false")
     List<UserSettings> findActiveSettingsForEnabledDailySummary(@Param("isEnabled") boolean isEnabled);
