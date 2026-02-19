@@ -2,6 +2,7 @@ package com.kuklin.manageapp.bots.caloriebot.components.services;
 
 import com.kuklin.manageapp.bots.caloriebot.components.repository.UserSettingsRepository;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserSettings;
+import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -213,11 +214,11 @@ public class UserSettingsService {
     }
 
     public List<UserSettings> getAllUserSettingWithEnabledDailySummary(boolean isEnabled) {
-        return userSettingsRepository.findActiveSettingsForEnabledDailySummary(isEnabled);
+        return userSettingsRepository.findActiveSettingsForEnabledDailySummary(isEnabled, BotIdentifier.CALORIE_BOT);
     }
 
     public List<UserSettings> getAllUserSettingWithEnabledMealReminder() {
-        return userSettingsRepository.findAllUsersReadyForMealReminder(Instant.now());
+        return userSettingsRepository.findAllUsersReadyForMealReminder(Instant.now(), BotIdentifier.CALORIE_BOT.name());
     }
 
     public void updateDailyLastReminder(Long userId) {

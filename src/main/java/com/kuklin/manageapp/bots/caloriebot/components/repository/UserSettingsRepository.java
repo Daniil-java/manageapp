@@ -1,6 +1,7 @@
 package com.kuklin.manageapp.bots.caloriebot.components.repository;
 
 import com.kuklin.manageapp.bots.caloriebot.entities.UserSettings;
+import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -12,13 +13,22 @@ import java.util.List;
 @Repository
 public interface UserSettingsRepository extends JpaRepository<UserSettings, Long> {
     List<UserSettings> findAllByDailySummaryEnabled(boolean enabled);
-    @Query("SELECT us FROM UserSettings us " +
-            "JOIN TelegramUser tu ON us.userId = tu.telegramId " + // Предполагаем связь по userId
-            "WHERE us.dailySummaryEnabled = :isEnabled " +
-            "AND tu.isBotBlocked = false")
-    List<UserSettings> findActiveSettingsForEnabledDailySummary(@Param("isEnabled") boolean isEnabled);
-    
+
+    @Query("""
+                SELECT DISTINCT us FROM UserSettings us
+                JOIN TelegramUser tu 
+                    ON us.userId = tu.telegramId
+                WHERE us.dailySummaryEnabled = :isEnabled
+                  AND tu.isBotBlocked = false
+                  AND tu.botIdentifier = :botIdentifier
+            """)
+    List<UserSettings> findActiveSettingsForEnabledDailySummary(
+            @Param("isEnabled") boolean isEnabled,
+            @Param("botIdentifier") BotIdentifier botIdentifier
+    );
+
     List<UserSettings> findAllByMealReminderEnabled(boolean enabled);
+
     /**
      * Находит пользователей, у которых:
      * 1. Включены напоминания вообще.
@@ -38,18 +48,22 @@ public interface UserSettingsRepository extends JpaRepository<UserSettings, Long
 //    """, nativeQuery = true)
 //    List<UserSettings> findAllUsersReadyForMealReminder(@Param("now") Instant now);
     @Query(value = """
-    SELECT u.* FROM user_settings u 
-    -- Присоединяем таблицу пользователей по userId
-    JOIN telegram_users tu ON u.user_id = tu.telegram_id 
-    WHERE u.reminders_enabled = true 
-      AND u.meal_reminder_enabled = true
-      -- Проверка, что бот НЕ заблокирован
-      AND tu.is_bot_blocked = false 
-      AND (
-          u.meal_last_reminder_utc IS NULL 
-          OR 
-          EXTRACT(EPOCH FROM (:now - u.meal_last_reminder_utc)) / 60 >= u.meal_reminder_interval_minutes
-      )
-""", nativeQuery = true)
-    List<UserSettings> findAllUsersReadyForMealReminder(@Param("now") Instant now);
+                SELECT u.* FROM user_settings u
+                JOIN telegram_users tu 
+                     ON u.user_id = tu.telegram_id
+                WHERE u.reminders_enabled = true
+                  AND u.meal_reminder_enabled = true
+                  AND tu.is_bot_blocked = false
+                  AND tu.bot_identifier = :botIdentifier
+                  AND (
+                      u.meal_last_reminder_utc IS NULL
+                      OR
+                      EXTRACT(EPOCH FROM (:now - u.meal_last_reminder_utc)) / 60 
+                          >= u.meal_reminder_interval_minutes
+                  )
+            """, nativeQuery = true)
+    List<UserSettings> findAllUsersReadyForMealReminder(
+            @Param("now") Instant now,
+            @Param("botIdentifier") String botIdentifier
+    );
 }
