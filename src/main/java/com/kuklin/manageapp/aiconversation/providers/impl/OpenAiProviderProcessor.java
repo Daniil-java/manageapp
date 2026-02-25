@@ -118,7 +118,7 @@ public class OpenAiProviderProcessor implements ProviderProcessor, AiTextClient 
     ) {
         log.info(botIdentifier + "AUDIO! Uniq log: " + uniqLog);
         MultipartFile multipartFile = new ByteArrayMultipartFile(
-                "file",
+                "file-rus-or-eng-language",
                 "audio.ogg",
                 "audio/ogg",
                 content

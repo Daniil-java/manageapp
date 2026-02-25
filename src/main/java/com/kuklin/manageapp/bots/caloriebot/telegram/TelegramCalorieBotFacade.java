@@ -57,6 +57,9 @@ public class TelegramCalorieBotFacade extends TelegramFacade {
         if (update.hasMessage() && update.getMessage().hasPhoto()) {
             return getUpdateHandlerMap().get(Command.CALORIE_GENERAL.getCommandText());
         }
+        if (update.hasMessage() && update.getMessage().hasVoice()) {
+            return getUpdateHandlerMap().get(Command.CALORIE_GENERAL.getCommandText());
+        }
         if (update.hasMessage() && update.getMessage().getText().startsWith(Command.CALORIE_WATER.getCommandText())) {
             return getUpdateHandlerMap().get(Command.CALORIE_WATER.getCommandText());
         }
