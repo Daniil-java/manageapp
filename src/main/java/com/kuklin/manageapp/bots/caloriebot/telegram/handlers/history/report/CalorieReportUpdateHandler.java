@@ -1,4 +1,4 @@
-package com.kuklin.manageapp.bots.caloriebot.telegram.history.report;
+package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.history.report;
 
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.MissingFeatureException;
 import com.kuklin.manageapp.bots.caloriebot.components.services.ReportService;

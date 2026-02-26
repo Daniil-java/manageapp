@@ -5,7 +5,7 @@ import com.kuklin.manageapp.bots.caloriebot.entities.UserSettings;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.MissingFeatureException;
 import com.kuklin.manageapp.bots.caloriebot.components.services.ReportService;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
-import com.kuklin.manageapp.bots.caloriebot.telegram.history.TodayUpdateHandler;
+import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.history.TodayUpdateHandler;
 import com.kuklin.manageapp.common.library.ScheduleProcessor;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

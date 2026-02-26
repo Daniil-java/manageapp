@@ -1,4 +1,4 @@
-package com.kuklin.manageapp.bots.caloriebot.telegram.history;
+package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.history;
 
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
