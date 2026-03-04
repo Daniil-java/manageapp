@@ -57,7 +57,8 @@ public class TelegramUserService {
         }
         TelegramUser tgUser = TelegramUser.convertFromTelegram(telegramUser)
                 .setBotIdentifier(botIdentifier)
-                .setResponseCount(DEFAULT_RESPONSE_COUNT);
+                .setResponseCount(DEFAULT_RESPONSE_COUNT)
+                .setIsBotBlocked(false);
         tgUser = telegramUserRepository.save(tgUser);
         generationBalanceService.createNewBalanceIfNotExist(
                 tgUser.getTelegramId(),
