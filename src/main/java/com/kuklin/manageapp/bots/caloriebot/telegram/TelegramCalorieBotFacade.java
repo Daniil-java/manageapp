@@ -103,6 +103,7 @@ public class TelegramCalorieBotFacade extends TelegramFacade {
         if (text.startsWith(Command.CALORIE_SETTINGS.getCommandText()))      return getHandler(Command.CALORIE_SETTINGS);
         if (text.startsWith(Command.CALORIE_ADMIN_MESSAGE.getCommandText())) return getHandler(Command.CALORIE_ADMIN_MESSAGE);
         if (text.startsWith(Command.CALORIE_FAVORITE.getCommandText()))      return getHandler(Command.CALORIE_FAVORITE);
+        if (text.startsWith(Command.CALORIE_PROFILE.getCommandText())) return getHandler(Command.CALORIE_PROFILE);
 
         // Попытка найти хендлер по первому слову (команде)
         String commandKey = text.split(TelegramBot.DEFAULT_DELIMETER)[0];
