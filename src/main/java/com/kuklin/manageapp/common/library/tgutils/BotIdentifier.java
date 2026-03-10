@@ -6,7 +6,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 @Getter
 public enum BotIdentifier {
-    CALORIE_BOT("@track_your_work_bot"),
+    CALORIE_BOT("@calorydairy_bot"),
     ASSISTANT_BOT("@personal_calen_bot"),
     KWORK("@kworker_parserbot"),
     BOOKING_BOT("@slotmanage_bot"),

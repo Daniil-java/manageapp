@@ -6,10 +6,15 @@ import org.springframework.web.bind.annotation.RequestMapping;
 
 @Controller
 @RequestMapping("/calorie")
-public class InstructionController {
+public class TelegramWebAppController {
 
     @GetMapping("/instruction")
     public String showInstruction() {
         return "calorieinstruction1";
+    }
+
+    @GetMapping("/utm-form")
+    public String showUtmCreatingForm() {
+        return "calorieutmcreate";
     }
 }

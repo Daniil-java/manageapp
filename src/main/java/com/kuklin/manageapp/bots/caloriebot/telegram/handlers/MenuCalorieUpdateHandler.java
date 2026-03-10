@@ -74,12 +74,18 @@ public class MenuCalorieUpdateHandler implements CalorieBotUpdateHandler {
                 .callbackData(Command.CALORIE_PAYMENT_PAYLOAD_PLAN.getCommandText())
                 .build();
 
+        InlineKeyboardButton utmBtn = InlineKeyboardButton.builder()
+                .text(Command.CALORIE_UTM.getCommandText())
+                .callbackData(Command.CALORIE_UTM.getCommandText())
+                .build();
+
         List<List<InlineKeyboardButton>> keyboard = List.of(
                 List.of(waterBtn, favoriteBtn),
                 List.of(settingsBtn, profileBtn),
                 List.of(reportBtn, welcomeBtn),
                 List.of(todayListBtn),
-                List.of(subBtn)
+                List.of(subBtn),
+                List.of(utmBtn)
         );
 
         markup.setKeyboard(keyboard);

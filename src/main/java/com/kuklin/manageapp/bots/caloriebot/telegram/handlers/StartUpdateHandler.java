@@ -1,11 +1,13 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.handlers;
 
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserNutritionProfileService;
+import com.kuklin.manageapp.bots.caloriebot.components.services.UtmService;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.CalorieNutritionProfileUpdateHandler;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.paymentpart.SubscriptionStatusCalorieUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
+import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import com.kuklin.manageapp.payment.entities.UserSubscription;
@@ -33,6 +35,7 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
     private final SubscriptionStatusCalorieUpdateHandler subscriptionStatusCalorieUpdateHandler;
     private final UserNutritionProfileService userNutritionProfileService;
     private final CalorieNutritionProfileUpdateHandler calorieNutritionProfileUpdateHandler;
+    private final UtmService utmService;
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
         calorieTelegramBot.sendReturnedMessage(
@@ -41,7 +44,12 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
                 getCommandKeyboard(),
                 null
         );
+        if (update.hasMessage() &&
+                update.getMessage().getText().split(TelegramBot.DEFAULT_DELIMETER).length > 1) {
+            processUtm(update, telegramUser);
+        }
 
+        //Сообщение с просьбой заполнить профиль
         sendUserNutritionFillRequest(update, telegramUser);
 
         //Пробный период
@@ -59,6 +67,11 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
                     text
             );
         }
+    }
+
+    private void processUtm(Update update, TelegramUser telegramUser) {
+        String code = update.getMessage().getText().split(TelegramBot.DEFAULT_DELIMETER)[1];
+        utmService.processClick(code, telegramUser.getTelegramId());
     }
 
     //Сообщение с просьбой заполнить профиль
@@ -93,13 +106,17 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
         KeyboardRow subRow = new KeyboardRow();
         subRow.add(Command.CALORIE_PAYMENT_PAYLOAD_PLAN.getCommandText());
 
+        KeyboardRow utmRow = new KeyboardRow();
+        utmRow.add(Command.CALORIE_UTM.getCommandText());
+
         // Собираем в список в том порядке, в котором они должны идти в интерфейсе
         markup.setKeyboard(List.of(
                 profileRow,
                 settingsRow,
                 reportRow,
                 statisticsRow,
-                subRow
+                subRow,
+                utmRow
         ));
 
         return markup;

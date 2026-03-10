@@ -44,7 +44,6 @@ public class TelegramCalorieBotFacade extends TelegramFacade {
         }
     }
 
-    //TODO метод стал слишком хардкодным. Необходим рефакторинг
     public UpdateHandler processInputUpdate(Update update) {
         // 1. Платежи и чеки (самый высокий приоритет)
         if (update.hasPreCheckoutQuery()) {
@@ -88,6 +87,10 @@ public class TelegramCalorieBotFacade extends TelegramFacade {
         // Медиа-контент
         if (message.hasPhoto() || message.hasVoice()) {
             return getHandler(Command.CALORIE_GENERAL);
+        }
+
+        if (message.getWebAppData() != null) {
+            return getHandler(Command.CALORIE_UTM);
         }
 
         String text = message.getText();
