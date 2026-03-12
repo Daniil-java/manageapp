@@ -185,9 +185,9 @@ public class Dish {
         return (int) result;
     }
 
-    public static String getDishesString(List<Dish> dishes, UserNutritionProfile profile) {
+    public static String getDishesString(List<Dish> dishes, UserNutritionProfile profile, String date) {
         StringBuilder sb = new StringBuilder();
-        sb.append("📖 <b>Дневник питания (сегодня)</b>\n\n");
+        sb.append("📖 <b>Дневник питания ("+ date + ")</b>\n\n");
 
         int cal = 0, fats = 0, proteins = 0, carbs = 0;
 

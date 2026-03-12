@@ -1,10 +1,12 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.history;
 
+import com.kuklin.manageapp.bots.caloriebot.components.services.UserSettingsService;
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
 import com.kuklin.manageapp.bots.caloriebot.components.services.AnalyticsService;
 import com.kuklin.manageapp.bots.caloriebot.components.services.DishService;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserNutritionProfileService;
+import com.kuklin.manageapp.bots.caloriebot.entities.UserSettings;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
@@ -17,7 +19,11 @@ import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Stream;
 
 import static com.kuklin.manageapp.bots.caloriebot.telegram.handlers.dish.DishUpdateHandler.getPortionWeightKeyboard;
@@ -29,7 +35,7 @@ import static com.kuklin.manageapp.bots.caloriebot.telegram.handlers.dish.DishUp
 @RequiredArgsConstructor
 @Slf4j
 public class TodayUpdateHandler implements CalorieBotUpdateHandler {
-
+    private final UserSettingsService userSettingsService;
     private final CalorieTelegramBot calorieTelegramBot;
     private final DishService dishService;
     private final AnalyticsService analyticsService;
@@ -104,6 +110,15 @@ public class TodayUpdateHandler implements CalorieBotUpdateHandler {
         }
     }
 
+    private String getUserTime(Long userId) {
+        UserSettings userSettings = userSettingsService.getOrCreate(userId);
+        LocalDate date = Instant.now().atZone(userSettings.getZoneId()).toLocalDate();
+
+        DateTimeFormatter formatter =
+                DateTimeFormatter.ofPattern("dd MMMM yyyy", new Locale("ru"));
+        return date.format(formatter).toUpperCase();
+    }
+
     /**
      * Обновляет текущее сообщение, заменяя клавиатуру статистики на список блюд для удаления.
      */
@@ -137,7 +152,7 @@ public class TodayUpdateHandler implements CalorieBotUpdateHandler {
     private String getTodaySummaryText(Long userId) {
         List<Dish> dishes = dishService.getTodayDishes(userId);
         UserNutritionProfile profile = userNutritionProfileService.getOrCreateProfile(userId);
-        return Dish.getDishesString(dishes, profile);
+        return Dish.getDishesString(dishes, profile, getUserTime(userId));
     }
 
     /**

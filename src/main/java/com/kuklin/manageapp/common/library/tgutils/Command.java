@@ -37,6 +37,7 @@ public enum Command {
     CALORIE_SUB_STATUS("\uD83D\uDD0DSTATUS", BotIdentifier.CALORIE_BOT),
     CALORIE_MENU("/menu", BotIdentifier.CALORIE_BOT),
     CALORIE_UTM("\uD83D\uDC8EПригласить", BotIdentifier.CALORIE_BOT),
+    CALORIE_SUPPORT("/support", BotIdentifier.CALORIE_BOT),
 
     //==========================PAYMENT============================
     PAYMENT_PRE_CHECK_QUERY("precheckquerynotcommand", BotIdentifier.PAYMENT),

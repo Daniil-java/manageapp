@@ -232,4 +232,5 @@ public class UserSettingsService {
         userSettings.setMealLastReminderUtc(Instant.now());
         userSettingsRepository.save(userSettings);
     }
+
 }
