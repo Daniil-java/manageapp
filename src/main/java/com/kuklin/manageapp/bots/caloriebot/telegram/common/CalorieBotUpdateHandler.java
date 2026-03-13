@@ -1,4 +1,4 @@
-package com.kuklin.manageapp.bots.caloriebot.telegram.handlers;
+package com.kuklin.manageapp.bots.caloriebot.telegram.common;
 
 import com.kuklin.manageapp.bots.caloriebot.telegram.TelegramCalorieBotFacade;
 import com.kuklin.manageapp.common.library.tgmodels.UpdateHandler;

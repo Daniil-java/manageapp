@@ -12,7 +12,8 @@ import com.kuklin.manageapp.bots.caloriebot.components.services.CalorieAccessSer
 import com.kuklin.manageapp.bots.caloriebot.components.services.DishChoiceChatModelService;
 import com.kuklin.manageapp.bots.caloriebot.components.services.DishService;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
-import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.CalorieBotUpdateHandler;
+import com.kuklin.manageapp.bots.caloriebot.telegram.KeyboardCalorieUpdateHandler;
+import com.kuklin.manageapp.bots.caloriebot.telegram.common.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.Command;
@@ -62,10 +63,6 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
-        Long chatId = update.hasPreCheckoutQuery()
-                ? update.getCallbackQuery().getMessage().getChatId()
-                : update.getMessage().getChatId();
-
         List<Dish> dishes = getDishOrNull(update, telegramUser);
         if (dishes == null || dishes.isEmpty()) return;
 
@@ -112,7 +109,12 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
         }
 
         if (dishes == null || dishes.isEmpty()) {
-            calorieTelegramBot.sendReturnedMessage(update.getMessage().getChatId(), ERROR_CONTENT_MESSAGE);
+            calorieTelegramBot.sendReturnedMessage(
+                    update.getMessage().getChatId(),
+                    ERROR_CONTENT_MESSAGE,
+                    KeyboardCalorieUpdateHandler.getCommandKeyboard(),
+                    null
+            );
             return null;
         }
         return dishes;
@@ -363,7 +365,7 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
                         model.getChatModel().getName(),
                         getCallbackData(model)
                 ))
-                .forEach(button -> builder.row(button));
+                .forEach(builder::row);
 
         return builder.build();
     }

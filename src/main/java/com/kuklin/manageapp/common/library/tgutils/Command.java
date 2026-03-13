@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 public enum Command {
     //==========================CALORIE============================
     CALORIE_START("/start", BotIdentifier.CALORIE_BOT),
+    CALORIE_START_FLOW_1("/start1", BotIdentifier.CALORIE_BOT),
     CALORIE_DELETE("/deleteDish", BotIdentifier.CALORIE_BOT),
     CALORIE_GENERAL("/general", BotIdentifier.CALORIE_BOT),
     CALORIE_TODAY_LIST("\uD83D\uDCCAСЕГОДНЯ", BotIdentifier.CALORIE_BOT),
@@ -38,6 +39,9 @@ public enum Command {
     CALORIE_MENU("/menu", BotIdentifier.CALORIE_BOT),
     CALORIE_UTM("\uD83D\uDC8EПригласить", BotIdentifier.CALORIE_BOT),
     CALORIE_SUPPORT("/support", BotIdentifier.CALORIE_BOT),
+    CALORIE_KEYBOARD("/keyboard", BotIdentifier.CALORIE_BOT),
+    CALORIE_TERMS("/terms", BotIdentifier.CALORIE_BOT),
+    CALORIE_PRIVACY("/privacy", BotIdentifier.CALORIE_BOT),
 
     //==========================PAYMENT============================
     PAYMENT_PRE_CHECK_QUERY("precheckquerynotcommand", BotIdentifier.PAYMENT),

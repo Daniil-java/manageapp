@@ -1,4 +1,4 @@
-package com.kuklin.manageapp.bots.caloriebot.telegram.handlers;
+package com.kuklin.manageapp.bots.caloriebot.telegram.common;
 
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.common.entities.TelegramUser;
@@ -18,11 +18,26 @@ import java.util.List;
 public class MenuCalorieUpdateHandler implements CalorieBotUpdateHandler {
     private final CalorieTelegramBot calorieTelegramBot;
     private static final String MSG = "FAQ - поможет вам разобраться в боте \uD83D\uDE0A";
+
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
         if (update.hasMessage()) {
             calorieTelegramBot.sendReturnedMessage(
                     update.getMessage().getChatId(),
+                    MSG,
+                    getCommandKeyboard(),
+                    null
+            );
+        } else if (update.hasCallbackQuery()) {
+            calorieTelegramBot.sendEditMessage(
+                    update.getCallbackQuery().getMessage().getChatId(),
+                    update.getCallbackQuery().getMessage().getText(),
+                    update.getCallbackQuery().getMessage().getMessageId(),
+                    null
+            );
+
+            calorieTelegramBot.sendReturnedMessage(
+                    update.getCallbackQuery().getMessage().getChatId(),
                     MSG,
                     getCommandKeyboard(),
                     null
@@ -80,12 +95,11 @@ public class MenuCalorieUpdateHandler implements CalorieBotUpdateHandler {
                 .build();
 
         List<List<InlineKeyboardButton>> keyboard = List.of(
+                List.of(todayListBtn),
                 List.of(waterBtn, favoriteBtn),
                 List.of(settingsBtn, profileBtn),
                 List.of(reportBtn, welcomeBtn),
-                List.of(todayListBtn),
-                List.of(subBtn),
-                List.of(utmBtn)
+                List.of(subBtn, utmBtn)
         );
 
         markup.setKeyboard(keyboard);

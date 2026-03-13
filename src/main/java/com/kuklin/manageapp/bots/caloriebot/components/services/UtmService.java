@@ -4,7 +4,7 @@ import com.kuklin.manageapp.bots.caloriebot.components.repository.UtmClickReposi
 import com.kuklin.manageapp.bots.caloriebot.components.repository.UtmLinkRepository;
 import com.kuklin.manageapp.bots.caloriebot.entities.utm.UtmClick;
 import com.kuklin.manageapp.bots.caloriebot.entities.utm.UtmLink;
-import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.UtmCalorieUpdateHandler;
+import com.kuklin.manageapp.bots.caloriebot.telegram.common.UtmCalorieUpdateHandler;
 import com.kuklin.manageapp.common.services.TelegramUserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

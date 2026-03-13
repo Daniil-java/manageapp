@@ -17,4 +17,14 @@ public class TelegramWebAppController {
     public String showUtmCreatingForm() {
         return "calorieutmcreate";
     }
+
+    @GetMapping("/privacy")
+    public String showPrivacyPolicy() {
+        return "calorieprivacy";
+    }
+
+    @GetMapping("/terms")
+    public String showTerms() {
+        return  "calorieterms";
+    }
 }

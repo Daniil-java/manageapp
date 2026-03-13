@@ -1,20 +1,24 @@
-package com.kuklin.manageapp.bots.caloriebot.telegram.handlers;
+package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.startflow;
 
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserNutritionProfileService;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UtmService;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
+import com.kuklin.manageapp.bots.caloriebot.telegram.KeyboardCalorieUpdateHandler;
+import com.kuklin.manageapp.bots.caloriebot.telegram.common.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.CalorieNutritionProfileUpdateHandler;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.paymentpart.SubscriptionStatusCalorieUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import com.kuklin.manageapp.common.library.tgutils.Command;
+import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;
 import com.kuklin.manageapp.payment.entities.UserSubscription;
 import com.kuklin.manageapp.payment.services.UserSubscriptionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 
@@ -26,9 +30,11 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
 
     private static final String START_MESSAGE =
             """
-                    Отправь фото блюда, напиши его описание или отправь голосовое сообщение, чтобы получить КБЖУ блюда!
-                    Для более подробных инструкций нажми на кнопку "📖FAQ"! 
-                    Чтобы вызвать меню - напиши /menu
+                    Добро пожаловать! 👋 Я превращаю фото еды в точные данные о калориях и БЖУ. Забудь о ручном вводе и весах: просто сфотографируй тарелку — и ты сразу увидишь свой прогресс на удобных графиках и шкалах. Это самый быстрый способ держать форму под контролем!
+                                        
+                    Кстати, я запустил канал ЗЕФИР, где рассказываю о питании и ИИ. Там мы разбираем мифы о диетах, делимся научными фактами и играем в интерактивы «Угадай КБЖУ по фото». Подписывайся, там много пользы и немного юмора: @zephyr_ai (или ссылка на канал).
+                                        
+                    Начиная работу с ботом, вы принимаете условия <a href="https://kuklin.dev/calorie/privacy">Политики конфиденциальности</a> и <a href="https://kuklin.dev/calorie/terms">Пользовательского соглашения</a>.
                     """;
     private final UserSubscriptionService userSubscriptionService;
     private final CalorieTelegramBot calorieTelegramBot;
@@ -36,12 +42,15 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
     private final UserNutritionProfileService userNutritionProfileService;
     private final CalorieNutritionProfileUpdateHandler calorieNutritionProfileUpdateHandler;
     private final UtmService utmService;
+    private final KeyboardCalorieUpdateHandler keyboardCalorieUpdateHandler;
+
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
+        keyboardCalorieUpdateHandler.updateKeyboard(update.getMessage().getChatId());
         calorieTelegramBot.sendReturnedMessage(
                 update.getMessage().getChatId(),
                 START_MESSAGE,
-                getCommandKeyboard(),
+                getStartFlowKeyboard(),
                 null
         );
         if (update.hasMessage() &&
@@ -50,7 +59,7 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
         }
 
         //Сообщение с просьбой заполнить профиль
-        sendUserNutritionFillRequest(update, telegramUser);
+//        sendUserNutritionFillRequest(update, telegramUser);
 
         //Пробный период
         UserSubscription userSubscription = userSubscriptionService
@@ -67,6 +76,18 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
                     text
             );
         }
+    }
+
+    private InlineKeyboardMarkup getStartFlowKeyboard() {
+        return new TelegramKeyboard.TelegramKeyboardBuilder()
+                .row(TelegramKeyboard.button(
+                        "Далее",
+                        Command.CALORIE_START_FLOW_1.getCommandText())
+                ).row(TelegramKeyboard.button(
+                        "Закрыть",
+                        Command.CALORIE_CLOSE.getCommandText()
+                        )
+                ).build();
     }
 
     private void processUtm(Update update, TelegramUser telegramUser) {
@@ -105,18 +126,15 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
 
         KeyboardRow subRow = new KeyboardRow();
         subRow.add(Command.CALORIE_PAYMENT_PAYLOAD_PLAN.getCommandText());
-
-        KeyboardRow utmRow = new KeyboardRow();
-        utmRow.add(Command.CALORIE_UTM.getCommandText());
+        subRow.add(Command.CALORIE_UTM.getCommandText());
 
         // Собираем в список в том порядке, в котором они должны идти в интерфейсе
         markup.setKeyboard(List.of(
+                statisticsRow,
                 profileRow,
                 settingsRow,
                 reportRow,
-                statisticsRow,
-                subRow,
-                utmRow
+                subRow
         ));
 
         return markup;
