@@ -44,6 +44,12 @@ public class CalorieTelegramBot extends TelegramBot {
 
     @Override
     public void onUpdateReceived(Update update) {
+        if (update.hasMyChatMember()) {
+            log.info("Received my_chat_member status (bot may be blocked). Chat ID: {}",
+                    update.getMyChatMember().getChat().getId());
+            return;
+        }
+
         if (update.hasCallbackQuery()) {
             answerCallbackQuery(update.getCallbackQuery());
         }

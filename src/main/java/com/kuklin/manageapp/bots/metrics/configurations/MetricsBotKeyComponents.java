@@ -16,6 +16,5 @@ public class MetricsBotKeyComponents {
     public MetricsBotKeyComponents(Environment environment) {
         this.key = environment.getProperty("METRICS_BOT_TOKEN");
         log.info("Generation key initiated (METRICS_BOT_TOKEN)");
-
     }
 }

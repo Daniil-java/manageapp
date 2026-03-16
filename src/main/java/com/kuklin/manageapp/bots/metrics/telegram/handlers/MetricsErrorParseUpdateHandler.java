@@ -18,6 +18,7 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 @Component
 @RequiredArgsConstructor
@@ -25,89 +26,149 @@ import java.util.List;
 public class MetricsErrorParseUpdateHandler implements MetricsUpdateHandler {
 
     private final MetricsTelegramBot metricsTelegramBot;
-    private static final Long ADMIN_TG_ID = 425120436L;
-    private static final Long ADMIN_TG_ID_2 = 420478432L;
+
+    // Список администраторов для рассылки
+    private static final List<Long> ADMIN_IDS = List.of(425120436L, 420478432L);
+    private static final int MAX_MESSAGE_LENGTH = 4000;
+
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
-        String message = update.getMessage().getText().split(TelegramBot.DEFAULT_DELIMETER)[1];
+        String[] parts = update.getMessage().getText().split(TelegramBot.DEFAULT_DELIMETER);
+        if (parts.length < 2) return;
 
-        log.info("Error bot processing received message");
-        if (message.equals("1")) {
-            log.error("test error message");
-        } else if (message.equals("2")) {
-            log.error("test error message {}", "test");
-        } else if (message.equals("3")) {
-            log.error("test error message {}", new Exception("test exception"));
-        } else if (message.equals("4")) {
-            log.error("test error message {} {} {}", "test", "longer", "123123");
-        } else if (message.equals("5")) {
-            log.error("test error message {}", new Exception("test exception", new IOException("test exception", new RuntimeException("test exception"))));
+        String message = parts[1];
+        log.info("Error bot processing received message: {}", message);
+
+        // Удобный switch для тестовых вызовов
+        switch (message) {
+            case "1" -> log.error("test error message");
+            case "2" -> log.error("test error message {}", "test");
+            case "3" -> log.error("test error message {}", new Exception("test exception"));
+            case "4" -> log.error("test error message {} {} {}", "test", "longer", "123123");
+            case "5" -> log.error("test error message {}", new Exception("test exception",
+                    new IOException("inner io", new RuntimeException("inner runtime"))));
+            default -> log.warn("Unknown test error code: {}", message);
         }
     }
 
     public void sendErrorMessageToAdmin(ILoggingEvent event) {
-        new Thread(() -> {
+        // Используем CompletableFuture (стандарт Spring/Java) вместо ручного создания Thread
+        CompletableFuture.runAsync(() -> {
             try {
                 sendErrorMessage(event);
             } catch (Exception e) {
-                e.printStackTrace();
+                log.error("Критическая ошибка при отправке лога в Telegram", e);
             }
-        }).start();
+        });
     }
 
-    public void sendErrorMessage(ILoggingEvent event) throws TelegramApiException {
+    public void sendErrorMessage(ILoggingEvent event) {
         String message = event.getFormattedMessage();
 
-        IThrowableProxy throwableProxy = event.getThrowableProxy();
-        String trace = null;
-        if (throwableProxy != null) {
-            trace = throwableProxyToString(throwableProxy);
+        // 1. Фильтр: Конфликт сессий (409)
+        if (message != null && message.contains("terminated by other getUpdates request")) {
+            broadcastToAdmins("⚠️ <b>Telegram 409 Conflict</b>: Похоже, запущено два инстанса бота.", ParseMode.HTML);
+            return;
         }
 
+        // 2. Фильтр: Сетевые проблемы (Unreachable / No Response)
+        if (handleNetworkErrors(event)) {
+            return;
+        }
+
+        // 3. Общий случай: Формируем полный лог со стектрейсом
         StringBuilder sb = new StringBuilder();
-        if (trace != null) {
-            sb.append("<b>Trace</b>: ").append(trace).append("\n");
+        IThrowableProxy throwableProxy = event.getThrowableProxy();
+        if (throwableProxy != null) {
+            sb.append("<b>Trace</b>: ").append(throwableProxyToString(throwableProxy)).append("\n");
         }
         sb.append("<b>Message</b>: ").append(message).append("\n");
 
-        List<String> chunks = new ArrayList<>();
-        for (int i = 0; i < sb.toString().length(); i += 4000) {
-            chunks.add(sb.substring(i, Math.min(sb.toString().length(), i + 4000)));
+        // Разбиваем длинный текст и отправляем
+        splitIntoChunks(sb.toString()).forEach(chunk -> broadcastToAdmins(chunk, ParseMode.HTML));
+    }
+
+    /**
+     * Распознает сетевые ошибки и отправляет короткие алерты
+     */
+    private boolean handleNetworkErrors(ILoggingEvent event) {
+        String message = event.getFormattedMessage();
+        IThrowableProxy tp = event.getThrowableProxy();
+        String exceptionData = (tp != null) ? (tp.getClassName() + " " + tp.getMessage()) : "";
+
+        // Создаем строку для поиска в нижнем регистре
+        String searchTarget = ((message != null ? message : "") + " " + exceptionData).toLowerCase();
+
+        // 1. Кейс: Сеть недоступна
+        if (searchTarget.contains("network is unreachable") || searchTarget.contains("socketexception")) {
+            broadcastToAdmins("🌐 <b>CRITICAL Network</b>: Сеть недоступна (Network unreachable). Проверьте хост/DNS.", ParseMode.HTML);
+            return true;
         }
 
-        for (String chunk : chunks) {
+        // 2. Кейс: Telegram молчит
+        if (searchTarget.contains("nohttpresponseexception") || searchTarget.contains("failed to respond")) {
+            broadcastToAdmins("🔌 <b>WARNING Network</b>: api.telegram.org не ответил. Возможен конфликт сессий.", ParseMode.HTML);
+            return true;
+        }
+
+        // 3. НОВЫЙ IF: Кейс: EditMessageText [400] Not Modified
+        if (searchTarget.contains("message is not modified")) {
+            StringBuilder sb = new StringBuilder();
+            sb.append("🖱️ <b>INFO 400 UI</b>: Сообщение не изменено.\n\n");
+
+            // Добавляем инфу из лога, чтобы видеть, где именно упало
+            sb.append("<b>Log Message:</b> ").append(message).append("\n");
+            if (tp != null) {
+                sb.append("<b>Exception:</b> ").append(tp.getClassName()).append(": ").append(tp.getMessage()).append("\n");
+            }
+
+            sb.append("\n<b>Анализ:</b>\n");
+            sb.append("• Если пришло сразу несколько таких логов — юзер <b>дважды кликнул</b> по кнопке.\n");
+            sb.append("• Если лог один — проверь код хендлера, он отправляет <b>старый текст/разметку</b> без изменений.");
+
+            broadcastToAdmins(sb.toString(), ParseMode.HTML);
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Отправка сообщения всем админам из списка
+     */
+    private void broadcastToAdmins(String text, String parseMode) {
+        for (Long chatId : ADMIN_IDS) {
             try {
-                metricsTelegramBot.execute(
-                        SendMessage.builder()
-                                .chatId(ADMIN_TG_ID)
-                                .text(chunk)
-                                .parseMode(ParseMode.HTML)
-                                .build()
-                );
-
-                metricsTelegramBot.execute(
-                        SendMessage.builder()
-                                .chatId(ADMIN_TG_ID_2)
-                                .text(chunk)
-                                .parseMode(ParseMode.HTML)
-                                .build()
-                );
+                executeSendMessage(chatId, text, parseMode);
             } catch (Exception ex) {
-                metricsTelegramBot.execute(
-                        SendMessage.builder()
-                                .chatId(ADMIN_TG_ID)
-                                .text(chunk)
-                                .build()
-                );
-
-                metricsTelegramBot.execute(
-                        SendMessage.builder()
-                                .chatId(ADMIN_TG_ID_2)
-                                .text(chunk)
-                                .build()
-                );
+                // Если ошибка в HTML-тегах, пробуем отправить голый текст
+                if (parseMode != null) {
+                    try {
+                        executeSendMessage(chatId, text, null);
+                    } catch (Exception ignore) {
+                        log.error("Не удалось отправить сообщение админу {}", chatId);
+                    }
+                }
             }
         }
+    }
+
+    private void executeSendMessage(Long chatId, String text, String parseMode) throws TelegramApiException {
+        metricsTelegramBot.execute(
+                SendMessage.builder()
+                        .chatId(chatId)
+                        .text(text)
+                        .parseMode(parseMode)
+                        .build()
+        );
+    }
+
+    private List<String> splitIntoChunks(String text) {
+        List<String> chunks = new ArrayList<>();
+        for (int i = 0; i < text.length(); i += MAX_MESSAGE_LENGTH) {
+            chunks.add(text.substring(i, Math.min(text.length(), i + MAX_MESSAGE_LENGTH)));
+        }
+        return chunks;
     }
 
     private String throwableProxyToString(IThrowableProxy throwableProxy) {
@@ -115,8 +176,8 @@ public class MetricsErrorParseUpdateHandler implements MetricsUpdateHandler {
         while (throwableProxy != null) {
             sb.append(throwableProxy.getClassName()).append(": ")
                     .append(throwableProxy.getMessage()).append("\n");
-            StackTraceElementProxy[] stackTrace = throwableProxy.getStackTraceElementProxyArray();
-            for (StackTraceElementProxy element : stackTrace) {
+
+            for (StackTraceElementProxy element : throwableProxy.getStackTraceElementProxyArray()) {
                 sb.append(element.toString()).append("\n");
             }
             throwableProxy = throwableProxy.getCause();
