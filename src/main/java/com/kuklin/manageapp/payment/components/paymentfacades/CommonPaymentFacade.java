@@ -21,6 +21,7 @@ import com.kuklin.manageapp.payment.services.exceptions.payment.PaymentNotFoundE
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import org.telegram.telegrambots.meta.api.methods.invoices.SendInvoice;
 import org.telegram.telegrambots.meta.api.objects.payments.PreCheckoutQuery;
 import org.telegram.telegrambots.meta.api.objects.payments.SuccessfulPayment;
@@ -186,6 +187,7 @@ public class CommonPaymentFacade implements PaymentFacade {
      * Возвращает Payment или null, если этот платёж уже был обработан (идемпотентность).
      */
     @Override
+    @Transactional
     public Payment handleSuccessfulPayment(SuccessfulPayment successfulPayment,
                                            Long telegramId)
             throws PaymentException, PricingPlanNotFoundException {

@@ -1,6 +1,7 @@
 package com.kuklin.manageapp.payment.services;
 
 import com.kuklin.manageapp.payment.entities.Payment;
+import com.kuklin.manageapp.payment.entities.PricingPlan;
 import com.kuklin.manageapp.payment.entities.WebhookEvent;
 import com.kuklin.manageapp.payment.components.integrations.YooKassaFeignClient;
 import com.kuklin.manageapp.payment.models.YooWebhook;
@@ -29,6 +30,7 @@ public class YooWebhookService {
     private final YooKassaFeignClient yooKassaFeignClient;
     private final WebhookEventRepository webhookEventRepository;
     private final PaymentService paymentService;
+    private final PricingPlanService pricingPlanService;
 
     /**
      * Обработка входящего вебхука от YooKassa.
@@ -129,6 +131,30 @@ public class YooWebhookService {
                 log.error("Amount/Currency mismatch: apiResponse={} {}, db={} {}, paymentId={}",
                         amountMinor, currency, payment.getAmount(), payment.getCurrency(), payment.getId());
                 saved.markError("Amount/Currency mismatch");
+                webhookEventRepository.save(saved);
+                return;
+            }
+
+            //ПРОВЕРКА АКТУАЛЬНОСТИ ТАРИФА
+            try {
+                PricingPlan currentPlan = pricingPlanService.getPricingPlanById(payment.getPricingPlanId());
+
+                // Сверяем сумму, которую пользователь реально заплатил (amountMinor),
+                // с той, которая установлена в тарифе СЕЙЧАС.
+                if (currentPlan.getPriceMinor() != amountMinor) {
+                    log.error("OUTDATED PRICE PAID: User paid {}, but current price is {}. Payment ID: {}",
+                            amountMinor, currentPlan.getPriceMinor(), payment.getId());
+
+                    saved.markError("OUTDATED_PRICE");
+                    webhookEventRepository.save(saved);
+
+                    // Тут решай сам: либо менять статус на какой-нибудь MANUAL_REVIEW,
+                    // либо просто не вызывать changeStatus(SUCCESS), чтобы услуга не начислилась.
+                    return;
+                }
+            } catch (Exception e) {
+                log.error("Could not verify plan price for payment {}", payment.getId());
+                saved.markError("PLAN_VERIFICATION_FAILED");
                 webhookEventRepository.save(saved);
                 return;
             }

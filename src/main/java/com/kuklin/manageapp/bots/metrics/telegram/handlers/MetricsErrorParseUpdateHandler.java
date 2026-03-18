@@ -146,7 +146,7 @@ public class MetricsErrorParseUpdateHandler implements MetricsUpdateHandler {
                     try {
                         executeSendMessage(chatId, text, null);
                     } catch (Exception ignore) {
-                        log.error("Не удалось отправить сообщение админу {}", chatId);
+                        log.info("Failed to send message to admin {}", chatId);
                     }
                 }
             }

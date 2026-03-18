@@ -104,6 +104,8 @@ public class PaymentService {
             return payment != null;
         } catch (PaymentValidationDataException e) {
             return false;
+        } catch (PricingPlanNotFoundException e) {
+            return false;
         }
     }
 
@@ -189,7 +191,7 @@ public class PaymentService {
     private Payment getValidPayment(String invoicePayload,
                                     Long telegramId,
                                     String currency,
-                                    Integer totalAmount) throws PaymentValidationDataException {
+                                    Integer totalAmount) throws PaymentValidationDataException, PricingPlanNotFoundException {
 
         Payment payment = paymentRepository
                 .findByTelegramInvoicePayload(invoicePayload)
@@ -201,6 +203,14 @@ public class PaymentService {
 
         log.info("For invoice payload: {} Payment not null: {}", invoicePayload, payment != null);
 
+        // Получаем актуальный тариф из БД прямо сейчас
+        PricingPlan actualPlan = pricingPlanService.getPricingPlanById(payment.getPricingPlanId());
+
+        // Определяем, какая цена сейчас в официальном прайс-листе
+        int actualPriceRightNow = actualPlan.getCurrency().equals(Currency.XTR)
+                ? actualPlan.getPriceMinor()
+                : actualPlan.getPriceMinor();
+
         int expectedAmount = payment.getCurrency() == Currency.XTR
                 ? payment.getStarsAmount()
                 : payment.getAmount();
@@ -209,7 +219,8 @@ public class PaymentService {
                 Objects.equals(invoicePayload, payment.getTelegramInvoicePayload()) &&
                         Objects.equals(telegramId, payment.getTelegramId()) &&
                         Objects.equals(currency, payment.getCurrency().name()) &&
-                        Objects.equals(totalAmount, expectedAmount);
+                        Objects.equals(totalAmount, expectedAmount) &&
+                        Objects.equals(totalAmount, actualPriceRightNow);
 
         if (!valid) {
             log.error(
