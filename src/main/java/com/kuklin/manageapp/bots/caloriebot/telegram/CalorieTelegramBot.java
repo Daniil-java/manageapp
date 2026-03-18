@@ -1,11 +1,13 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram;
 
 import com.kuklin.manageapp.bots.caloriebot.configurations.TelegramCaloriesBotKeyComponents;
+import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.paymentpart.PaymentPlanListCalorieUpdateHandler;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import com.kuklin.manageapp.common.services.AsyncService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
@@ -21,9 +23,18 @@ public class CalorieTelegramBot extends TelegramBot {
     private TelegramCalorieBotFacade telegramCalorieBotFacade;
     @Autowired
     private AsyncService asyncService;
+    @Autowired
+    @Lazy
+    private PaymentPlanListCalorieUpdateHandler paymentPlanListCalorieUpdateHandler;
 
     public CalorieTelegramBot(TelegramCaloriesBotKeyComponents telegramCaloriesBotKeyComponents) {
         super(telegramCaloriesBotKeyComponents.getKey());
+    }
+
+    @Override
+    public void sendSubExpiredMessage(Long chatId, String text) {
+        sendReturnedMessage(chatId, text);
+        paymentPlanListCalorieUpdateHandler.sendSubListMessage(chatId);
     }
 
     private void answerCallbackQuery(CallbackQuery callbackQuery) {

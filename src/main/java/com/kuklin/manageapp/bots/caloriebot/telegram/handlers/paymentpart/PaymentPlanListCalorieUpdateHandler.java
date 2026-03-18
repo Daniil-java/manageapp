@@ -1,7 +1,7 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.paymentpart;
 
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
-import com.kuklin.manageapp.bots.caloriebot.telegram.common.CalorieBotUpdateHandler;
+import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.Command;
@@ -49,12 +49,17 @@ public class PaymentPlanListCalorieUpdateHandler implements CalorieBotUpdateHand
                 ? update.getCallbackQuery().getMessage().getChatId()
                 : update.getMessage().getChatId();
 
+        sendSubListMessage(chatId);
+    }
+
+    public void sendSubListMessage(Long chatId) {
         List<PricingPlan> planList = commonPaymentFacade
-                .getPricingPlans(telegramUser.getBotIdentifier());
+                .getPricingPlans(calorieTelegramBot.getBotIdentifier());
 
         byte[] photoBytes = loadImageFromResourcesOrNull();
 
         if (photoBytes == null) {
+            log.error("Error returning message!");
             calorieTelegramBot.sendReturnedMessage(chatId, "Ошибка возврата сообщения!");
             return;
         }

@@ -1,4 +1,4 @@
-package com.kuklin.manageapp.bots.caloriebot.telegram.common;
+package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common;
 
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.startflow.StartUpdateHandler;
@@ -22,7 +22,6 @@ public class AdminMessageSenderUpdateHandler implements CalorieBotUpdateHandler 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
         if (!telegramUser.getTelegramId().equals(425120436L)) return;
-
         for (TelegramUser tgUser: telegramUserService.getAllTelegramUsersByBotIdentifierOrNull(BotIdentifier.CALORIE_BOT)) {
             calorieTelegramBot.sendReturnedMessage(
                     tgUser.getTelegramId(),

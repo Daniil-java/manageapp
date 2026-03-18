@@ -76,7 +76,7 @@ public class SubscriptionScheduleProcessor implements ScheduleProcessor {
     private void send(UserSubscription sub, String text) {
         try {
             botRegistry.get(sub.getBotIdentifier())
-                    .sendReturnedMessage(sub.getTelegramId(), text);
+                    .sendSubExpiredMessage(sub.getTelegramId(), text);
         } catch (Exception e) {
             log.error("Telegram notification failed for user {}", sub.getTelegramId(), e);
         }

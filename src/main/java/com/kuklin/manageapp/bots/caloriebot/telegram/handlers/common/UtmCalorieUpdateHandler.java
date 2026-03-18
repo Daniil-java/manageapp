@@ -1,4 +1,4 @@
-package com.kuklin.manageapp.bots.caloriebot.telegram.common;
+package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;

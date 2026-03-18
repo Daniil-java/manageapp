@@ -1,4 +1,4 @@
-package com.kuklin.manageapp.bots.caloriebot.telegram.common;
+package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common;
 
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.common.entities.TelegramUser;

@@ -48,6 +48,10 @@ public abstract class TelegramBot extends TelegramLongPollingBot implements Tele
         inProcess = new HashSet<>();
     }
 
+    public void sendSubExpiredMessage(Long chatId, String text) {
+        sendReturnedMessage(chatId, text);
+    }
+
     private void handleApiError(TelegramApiException e, Long chatId) {
         if (e instanceof TelegramApiRequestException apiEx) {
             if (apiEx.getErrorCode() == 403) {
