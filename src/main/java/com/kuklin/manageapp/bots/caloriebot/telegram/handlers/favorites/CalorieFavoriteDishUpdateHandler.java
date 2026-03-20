@@ -251,10 +251,6 @@ public class CalorieFavoriteDishUpdateHandler implements CalorieBotUpdateHandler
             String[] parts = data.split(TelegramBot.DEFAULT_DELIMETER);
             return parts[3];
         } catch (Exception e) {
-            calorieTelegramBot.sendReturnedMessage(
-                    chatId,
-                    EXTRACT_DATA_ERROR
-            );
             return null;
         }
     }
