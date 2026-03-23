@@ -34,7 +34,7 @@ public class CalorieTelegramBot extends TelegramBot {
     @Override
     public void sendSubExpiredMessage(Long chatId, String text) {
         sendReturnedMessage(chatId, text);
-        paymentPlanListCalorieUpdateHandler.sendSubListMessage(chatId);
+        paymentPlanListCalorieUpdateHandler.sendSubExpiredAdMessage (chatId);
     }
 
     private void answerCallbackQuery(CallbackQuery callbackQuery) {

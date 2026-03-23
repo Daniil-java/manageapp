@@ -30,16 +30,31 @@ public class PaymentPlanListCalorieUpdateHandler implements CalorieBotUpdateHand
 
     private static final String IMAGE_PATH =
             "static/images/caloriescreens/price/tarif.png";
+    private static final String PREMIUM_EXP =
+            """
+                    Premium закончился 👀
+                                
+                    Сейчас у тебя снова лимиты:
+                    • 2 фото-разбора
+                    • 2 AI-консультации
+                    • без полной статистики
+                                
+                    Хочешь без ограничений и с нормальным контролем питания?
+                                
+                    🚀 Безлимитные разборы
+                    🤖 AI без стопов + PDF
+                    📊 Полная статистика  
+                    """;
     private static final String PLAN_TEXT = """
             🆓 Базовый режим — «держим форму»:
-            • 📸 2 фото-разбора в день — чтобы не улететь в туман калорий
-            • 🧠 2 AI-консультации в день — быстрый чек-ап без занудства
-            • 🎙️ Текст и голос — без лимитов, говори, не стесняйся
+            📸 2 фото-разбора в день — чтобы не улететь в туман калорий
+            🧠 2 AI-консультации в день — быстрый чек-ап без занудства
+            🎙️ Текст и голос — без лимитов, говори, не стесняйся
 
             💎 Premium режим — «врубаем турбо»:
-            • 🚀 Фото-разборы без ограничений — хоть каждый укус фиксируй
-            • 🤖 AI-консультации без стопов + PDF с разбором рациона и пищевых привычек
-            • 📊 Полная статистика и история — видишь не догадки, а реальную картину
+            🚀 Фото-разборы без ограничений — хоть каждый укус фиксируй
+            🤖 AI-консультации без стопов + PDF с разбором рациона и пищевых привычек
+            📊 Полная статистика и история — видишь не догадки, а реальную картину
             """;
 
 
@@ -50,6 +65,27 @@ public class PaymentPlanListCalorieUpdateHandler implements CalorieBotUpdateHand
                 : update.getMessage().getChatId();
 
         sendSubListMessage(chatId);
+    }
+
+    public void sendSubExpiredAdMessage(Long chatId) {
+        calorieTelegramBot.sendReturnedMessage(
+                chatId,
+                PREMIUM_EXP,
+                getSubButton(),
+                null
+                );
+    }
+
+    private InlineKeyboardMarkup getSubButton() {
+        TelegramKeyboard.TelegramKeyboardBuilder builder = TelegramKeyboard.builder();
+
+        builder.row(
+                TelegramKeyboard.button(Command.CALORIE_PAYMENT_PAYLOAD_PLAN.getCommandText(), Command.CALORIE_PAYMENT_PAYLOAD_PLAN.getCommandText())
+        );
+        builder.row(
+                TelegramKeyboard.button("❌Закрыть", Command.CALORIE_CLOSE.getCommandText())
+        );
+        return builder.build();
     }
 
     public void sendSubListMessage(Long chatId) {

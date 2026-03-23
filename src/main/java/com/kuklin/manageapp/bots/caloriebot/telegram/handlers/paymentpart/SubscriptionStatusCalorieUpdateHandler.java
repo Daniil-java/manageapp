@@ -68,20 +68,20 @@ public class SubscriptionStatusCalorieUpdateHandler implements CalorieBotUpdateH
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
 
         String name;
-        String description;
+//        String description;
         try {
             PricingPlan pricingPlan = pricingPlanService.getPricingPlanById(sub.getPricingPlanId());
             name = pricingPlan.getTitle();
-            description = pricingPlan.getDescription();
+//            description = pricingPlan.getDescription();
         } catch (PricingPlanNotFoundException e) {
             name = "Неизвестно";
-            description = "Без описания";
+//            description = "Без описания";
         }
         String period = (sub.getStartAt() != null && sub.getEndAt() != null)
                 ? String.format("%s — %s", sub.getStartAt().atZone(zoneId).format(fmt), sub.getEndAt().atZone(zoneId).format(fmt))
                 : "не задан";
 
-        return String.format("Подписка: %s\n %s\n📌 Статус: %s\n⏳ Период: %s", name, description, sub.getStatus().getCommandText(), period);
+        return String.format("Подписка: %s\n📌 Статус: %s\n⏳ Период: %s", name, sub.getStatus().getCommandText(), period);
     }
 
     @Override
