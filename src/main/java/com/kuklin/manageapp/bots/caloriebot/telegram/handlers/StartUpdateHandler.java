@@ -1,8 +1,12 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.handlers;
 
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
+import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.paymentpart.SubscriptionStatusCalorieUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
+import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import com.kuklin.manageapp.common.library.tgutils.Command;
+import com.kuklin.manageapp.payment.entities.UserSubscription;
+import com.kuklin.manageapp.payment.services.UserSubscriptionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Update;
@@ -18,8 +22,11 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
     private static final String START_MESSAGE =
             """
                     Отправь фото блюда, напиши его описание или отправь голосовое сообщение, чтобы получить КБЖУ блюда!
+                    Для более подробных инструкций нажми на кнопку "📖FAQ"! 
                     """;
+    private final UserSubscriptionService userSubscriptionService;
     private final CalorieTelegramBot calorieTelegramBot;
+    private final SubscriptionStatusCalorieUpdateHandler subscriptionStatusCalorieUpdateHandler;
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
@@ -29,19 +36,57 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
                 getCommandKeyboard(),
                 null
         );
+
+        //Пробный период
+        UserSubscription userSubscription = userSubscriptionService
+                .createSubscriptionByFreePlanOrNull(
+                        telegramUser.getTelegramId(), BotIdentifier.CALORIE_BOT);
+        //Если null - значит пробный период уже был у пользователя
+        if (userSubscription != null) {
+            String text = subscriptionStatusCalorieUpdateHandler.getSubscriptionStatusMessage(
+                    telegramUser.getTelegramId(),
+                    userSubscription
+            );
+            calorieTelegramBot.sendReturnedMessage(
+                    update.getMessage().getChatId(),
+                    text
+            );
+        }
     }
 
     public static ReplyKeyboardMarkup getCommandKeyboard() {
-        ReplyKeyboardMarkup replyKeyboard = new ReplyKeyboardMarkup();
-        replyKeyboard.setResizeKeyboard(true);
-        replyKeyboard.setOneTimeKeyboard(false);
+        ReplyKeyboardMarkup markup = new ReplyKeyboardMarkup();
+        markup.setResizeKeyboard(true);
+        markup.setOneTimeKeyboard(false);
 
-        KeyboardRow row = new KeyboardRow();
-        row.add(Command.CALORIE_TODAY_LIST.getCommandText());
-        row.add(Command.CALORIE_WEEK_LIST.getCommandText());
+        KeyboardRow settingsRow = new KeyboardRow();
+        settingsRow.add(Command.CALORIE_SETTINGS.getCommandText());
+        settingsRow.add(Command.CALORIE_PROFILE.getCommandText());
 
-        replyKeyboard.setKeyboard(List.of(row));
-        return replyKeyboard;
+        KeyboardRow profileRow = new KeyboardRow();
+        profileRow.add(Command.CALORIE_WATER.getCommandText());
+        profileRow.add(Command.CALORIE_FAVORITE.getCommandText());
+
+        KeyboardRow statisticsRow = new KeyboardRow();
+        statisticsRow.add(Command.CALORIE_TODAY_LIST.getCommandText());
+
+        KeyboardRow reportRow = new KeyboardRow();
+        reportRow.add(Command.CALORIE_REPORT.getCommandText());
+        reportRow.add(Command.CALORIE_WELCOME.getCommandText());
+
+        KeyboardRow subRow = new KeyboardRow();
+        subRow.add(Command.CALORIE_PAYMENT_PAYLOAD_PLAN.getCommandText());
+
+        // Собираем в список в том порядке, в котором они должны идти в интерфейсе
+        markup.setKeyboard(List.of(
+                profileRow,
+                settingsRow,
+                reportRow,
+                statisticsRow,
+                subRow
+        ));
+
+        return markup;
     }
 
     @Override
