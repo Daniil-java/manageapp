@@ -31,7 +31,7 @@ public class PostPublishChannelScheduleProcessor implements ScheduleProcessor {
                 Integer tgMessageId = posterUpdateHandler.sendApproveMessage(-1003745287241L, post.getId());
 
                 // Маркируем как отправленный
-                postQueueService.markAsSent(post.getId(), tgMessageId);
+                postQueueService.markAsSentAndDeleteFile(post.getId(), tgMessageId);
             } catch (Exception e) {
                 log.error("Error while posting message ID: {}", post.getId(), e);
                 postQueueService.markAsFailed(post.getId());

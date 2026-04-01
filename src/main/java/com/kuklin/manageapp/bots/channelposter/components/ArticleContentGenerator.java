@@ -19,6 +19,8 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.UUID;
 
+import static com.kuklin.manageapp.bots.channelposter.services.PostImageService.IMG_DIR;
+
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -133,7 +135,7 @@ public class ArticleContentGenerator implements ContentGenerator {
 
         String fileName = supportedType().name() + UUID.randomUUID() + ".png";
 
-        String path = FilesUtils.saveImage(bytes, fileName, "poster/article");
+        String path = FilesUtils.saveImage(bytes, fileName, IMG_DIR);
         return postImageService.saveNewImage(
                 PostImage.ImageSource.AI_GENERATED,
                 PostImage.ImageStatus.READY,

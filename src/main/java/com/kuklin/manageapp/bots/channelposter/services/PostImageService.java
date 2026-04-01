@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class PostImageService {
     private final PostImageRepository postImageRepository;
+    public static final String IMG_DIR = "poster/article";
 
     public PostImage saveNewImage(
             PostImage.ImageSource imageSource, PostImage.ImageStatus status,

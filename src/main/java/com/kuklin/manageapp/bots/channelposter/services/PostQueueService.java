@@ -11,7 +11,6 @@ import com.kuklin.manageapp.bots.channelposter.model.TopicCategoryNotFoundExcept
 import com.kuklin.manageapp.bots.channelposter.repositories.PostQueueRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.time.*;
@@ -36,13 +35,15 @@ public class PostQueueService {
     }
 
     // Маркировка как "Отправлено"
-    public void markAsSent(Long id, Integer tgMessageId) {
+    public void markAsSentAndDeleteFile(Long id, Integer tgMessageId) {
         postQueueRepository.findById(id).ifPresent(post -> {
             post.setStatus(PostQueue.PostQueueStatus.SENT);
             post.setSentAt(Instant.now());
             post.setTgMessageId(tgMessageId);
             postQueueRepository.save(post);
         });
+
+        postImageService.deletePostImageByPostQueueId(id);
     }
 
     // Маркировка ошибки

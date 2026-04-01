@@ -10,11 +10,18 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class ChannelPosterSchedulerService {
     private final PostPublishChannelScheduleProcessor postPublishChannelScheduleProcessor;
+    private final PathImageCleanerScheduleProcessor pathImageCleanerScheduleProcessor;
 
     @Scheduled(cron = "0 0/10 * * * *")
     private void postPublishChannelScheduler() {
         getInfo(postPublishChannelScheduleProcessor.getSchedulerName());
         postPublishChannelScheduleProcessor.process();
+    }
+
+    @Scheduled(cron = "0 0 3 * * *")
+    private void pathImageCleanerScheduleProcessor() {
+        getInfo(pathImageCleanerScheduleProcessor.getSchedulerName());
+        pathImageCleanerScheduleProcessor.getSchedulerName();
     }
 
     private void getInfo(String name) {
