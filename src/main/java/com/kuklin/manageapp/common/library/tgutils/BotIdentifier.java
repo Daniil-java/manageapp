@@ -15,7 +15,8 @@ public enum BotIdentifier {
     AVIA_BOT("@deparr_bot"),
     PAYMENT("@payment"),
     INTERVIEW("@interviewtrainer_bot"),
-    METRICS("@metrics")
+    METRICS("@metrics"),
+    CHANNEL_POSTER("@speakinghat")
     ;
 
     private final String botUsername;

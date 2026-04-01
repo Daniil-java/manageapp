@@ -1,11 +1,14 @@
 package com.kuklin.manageapp.aiconversation.providers.impl;
 
 import com.kuklin.manageapp.aiconversation.integrations.OpenAiFeignClient;
+import com.kuklin.manageapp.aiconversation.models.AiProcessorException;
 import com.kuklin.manageapp.aiconversation.models.AiResponse;
 import com.kuklin.manageapp.aiconversation.models.enums.ChatModel;
 import com.kuklin.manageapp.aiconversation.models.enums.ProviderVariant;
 import com.kuklin.manageapp.aiconversation.models.openai.OpenAiChatCompletionRequest;
 import com.kuklin.manageapp.aiconversation.models.openai.OpenAiChatCompletionResponse;
+import com.kuklin.manageapp.aiconversation.models.openai.image.OpenAiImageRequest;
+import com.kuklin.manageapp.aiconversation.models.openai.image.OpenAiImageResponse;
 import com.kuklin.manageapp.aiconversation.providers.AiTextClient;
 import com.kuklin.manageapp.aiconversation.providers.ProviderProcessor;
 import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
@@ -14,10 +17,13 @@ import com.kuklin.manageapp.bots.metrics.services.MetricsAiLogService;
 import com.kuklin.manageapp.common.library.models.ByteArrayMultipartFile;
 import com.kuklin.manageapp.common.library.models.TranscriptionResponse;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.library.utils.FilesUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.Base64;
 
 @Component
 @Slf4j
@@ -143,6 +149,49 @@ public class OpenAiProviderProcessor implements ProviderProcessor, AiTextClient 
         );
 
         return response.getText();
+    }
+
+    public byte[] generateImageBytes(
+            String aiKey,
+            String prompt,
+            BotIdentifier botIdentifier,
+            String uniqLog
+    ) throws AiProcessorException {
+        log.info(botIdentifier + " IMAGE! Uniq log: " + uniqLog);
+
+        increaseMetricsLog();
+
+        OpenAiImageRequest request = OpenAiImageRequest.builder()
+                .prompt(prompt)
+                .model(OpenAiImageRequest.MODEL_GPT_IMAGE_1)
+                .size(OpenAiImageRequest.SIZE_1024)
+                .build();
+
+        OpenAiImageResponse response =
+                openAiFeignClient.generateImage("Bearer " + aiKey, request);
+
+        if (response == null || response.getData() == null || response.getData().isEmpty()) {
+            throw new AiProcessorException("Failed to generate image: empty response");
+        }
+
+        OpenAiImageResponse.ImageData image = response.getData().get(0);
+
+        try {
+            // 1. Если пришел base64 — декодим
+            if (image.getB64Json() != null) {
+                return Base64.getDecoder().decode(image.getB64Json());
+            }
+
+            // ✅ 2. Если пришел URL — скачиваем
+            if (image.getUrl() != null) {
+                return FilesUtils.downloadImage(image.getUrl());
+            }
+
+        } catch (Exception e) {
+            throw new AiProcessorException("Failed to process image response", e);
+        }
+
+        throw new AiProcessorException("Image response has no usable data");
     }
 
     private void increaseMetricsLog() {

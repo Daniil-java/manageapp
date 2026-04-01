@@ -17,7 +17,7 @@ public class AssistantUserLogHandler implements AssistantUpdateHandler {
     private final AssistantTelegramBot assistantTelegramBot;
     private final UserMessagesLogExportService exportService;
     private static final Set<Long> ADMIN_IDS = Set.of(
-            425120436L //kuklin_daniil
+            425120436L
     );
     @Override
     public void handle(Update update, TelegramUser telegramUser) {

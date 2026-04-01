@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.bots.metrics.telegram.handlers;
 
+import com.kuklin.manageapp.bots.metrics.configurations.MetricsBotKeyComponents;
 import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
 import com.kuklin.manageapp.bots.metrics.entities.MetricsAiLog;
 import com.kuklin.manageapp.bots.metrics.services.MetricsAiInteractionRecordService;
@@ -18,6 +19,7 @@ public class MetricsLogUpdateHandler implements MetricsUpdateHandler {
     private final MetricsTelegramBot telegramBot;
     private final MetricsAiLogService metricsAiLogService;
     private final MetricsAiInteractionRecordService metricsAiInteractionRecordService;
+    private final MetricsBotKeyComponents metricsBotKeyComponents;
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
         Long chatId = update.getMessage().getChatId();
@@ -26,10 +28,9 @@ public class MetricsLogUpdateHandler implements MetricsUpdateHandler {
 
     @Scheduled(cron = "0 50 23 * * ?", zone = "Asia/Ho_Chi_Minh")
     public void sendLog() {
-        Long adminId = 425120436L;
-        Long adminId2 = 420478432L;
-        send(adminId);
-        send(adminId2);
+        for (Long id: metricsBotKeyComponents.getAdminIds()) {
+            send(id);
+        }
     }
 
     private void send(Long chatId) {

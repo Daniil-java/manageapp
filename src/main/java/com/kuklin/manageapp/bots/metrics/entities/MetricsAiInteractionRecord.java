@@ -37,7 +37,7 @@ public class MetricsAiInteractionRecord {
     private Instant created;
 
     public enum AiMessageType {
-        TEXT, VOICE, PHOTO;
+        TEXT, VOICE, PHOTO, IMAGE;
     }
 
 }

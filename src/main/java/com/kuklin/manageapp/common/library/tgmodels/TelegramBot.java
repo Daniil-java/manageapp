@@ -24,6 +24,7 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -46,6 +47,24 @@ public abstract class TelegramBot extends TelegramLongPollingBot implements Tele
         super(key);
         botToken = key;
         inProcess = new HashSet<>();
+    }
+
+    public Message sendPhotoMessage(Long chatId, String path, String caption, ReplyKeyboard replyKeyboard) {
+        SendPhoto sendPhoto = new SendPhoto();
+        sendPhoto.setChatId(chatId.toString());
+
+        File file = new File(path);
+        sendPhoto.setPhoto(new InputFile(file));
+        sendPhoto.setReplyMarkup(replyKeyboard);
+        sendPhoto.setCaption(caption);
+
+        try {
+            return execute(sendPhoto);
+        } catch (TelegramApiException e) {
+            log.warn("Telegram send photo error!");
+            handleApiError(e, chatId);
+            return null;
+        }
     }
 
     public void sendSubExpiredMessage(Long chatId, String text) {

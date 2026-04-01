@@ -1,4 +1,4 @@
-package com.kuklin.manageapp.bots.deparrbot.telegram;
+package com.kuklin.manageapp.bots.channelposter.telegram;
 
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
@@ -7,15 +7,19 @@ import com.kuklin.manageapp.common.library.tgmodels.UpdateHandler;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import com.kuklin.manageapp.common.services.TelegramUserService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.User;
 
 @Component
-public class AviaTelegramFacade extends TelegramFacade {
+@Slf4j
+public class ChannelPosterTelegramFacade extends TelegramFacade {
+
     @Autowired
     private TelegramUserService telegramUserService;
+
     @Override
     public void handleUpdate(Update update) {
         if (!update.hasCallbackQuery() && !update.hasMessage()) return;
@@ -24,25 +28,29 @@ public class AviaTelegramFacade extends TelegramFacade {
                 update.getCallbackQuery().getFrom();
 
         TelegramUser telegramUser = telegramUserService
-                .createOrGetUserByTelegram(BotIdentifier.AVIA_BOT, user);
+                .createOrGetUserByTelegram(BotIdentifier.CHANNEL_POSTER, user);
 
-        processInputUpdate(update).handle(update, telegramUser);
+        UpdateHandler updateHandler = processInputUpdate(update);
+        if (updateHandler != null) {
+            updateHandler.handle(update, telegramUser);
+        }
     }
 
     public UpdateHandler processInputUpdate(Update update) {
         String request;
         if (update.hasCallbackQuery()) {
-            return getUpdateHandlerMap().get(Command.AVIA_SUBSCRIBE.getCommandText());
+            request = update.getCallbackQuery().getData().split(TelegramBot.DEFAULT_DELIMETER)[0];
         } else {
+            if (update.getMessage().hasDocument()) {
+                return getUpdateHandlerMap().get(Command.POSTER_GET_ARTICLE.getCommandText());
+            }
             request = update.getMessage().getText().split(TelegramBot.DEFAULT_DELIMETER)[0];
         }
 
         UpdateHandler updateHandler = getUpdateHandlerMap().get(request);
         if (updateHandler == null) {
-            return getUpdateHandlerMap().get(Command.AVIA_ERROR.getCommandText());
+            log.info("ChannelPosterFacade: no handler!");
         }
         return updateHandler;
-
     }
-
 }

@@ -3,6 +3,8 @@ package com.kuklin.manageapp.aiconversation.integrations;
 import com.kuklin.manageapp.aiconversation.configurations.FeignClientConfig;
 import com.kuklin.manageapp.aiconversation.models.openai.OpenAiChatCompletionRequest;
 import com.kuklin.manageapp.aiconversation.models.openai.OpenAiChatCompletionResponse;
+import com.kuklin.manageapp.aiconversation.models.openai.image.OpenAiImageRequest;
+import com.kuklin.manageapp.aiconversation.models.openai.image.OpenAiImageResponse;
 import com.kuklin.manageapp.common.library.models.TranscriptionResponse;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.MediaType;
@@ -30,5 +32,11 @@ public interface OpenAiFeignClient {
             @RequestHeader("Authorization") String key,
             @RequestPart("file") MultipartFile file,
             @RequestPart("model") String model
+    );
+
+    @PostMapping("images/generations")
+    OpenAiImageResponse generateImage(
+            @RequestHeader("Authorization") String key,
+            @RequestBody OpenAiImageRequest request
     );
 }
