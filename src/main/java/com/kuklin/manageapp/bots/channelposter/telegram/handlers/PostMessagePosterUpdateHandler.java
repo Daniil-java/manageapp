@@ -110,7 +110,7 @@ public class PostMessagePosterUpdateHandler implements ChannelPosterUpdateHandle
     /**
      * Общая логика получения сущностей и отправки сообщения с фото или без
      */
-    private Integer sendPostContent(Long chatId, Long postId, InlineKeyboardMarkup keyboard) throws PostQueueNotFoundException {
+    public Integer sendPostContent(Long chatId, Long postId, InlineKeyboardMarkup keyboard) throws PostQueueNotFoundException {
         PostQueue postQueue = postQueueService.getPostQueueById(postId);
         PostImage postImage = postImageService.getByPostQueueIdOrNull(postId);
 

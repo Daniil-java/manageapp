@@ -28,7 +28,7 @@ public class PostPublishChannelScheduleProcessor implements ScheduleProcessor {
                 log.info("Publishing a post ID: {}", post.getId());
 
                 // Используем метод отправки (нужно вынести ID канала в конфиг)
-                Integer tgMessageId = posterUpdateHandler.sendApproveMessage(-1003745287241L, post.getId());
+                Integer tgMessageId = posterUpdateHandler.sendPostContent(-1003745287241L, post.getId(), null);
 
                 // Маркируем как отправленный
                 postQueueService.markAsSentAndDeleteFile(post.getId(), tgMessageId);
