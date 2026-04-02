@@ -33,7 +33,7 @@ public class PostMessagePosterUpdateHandler implements ChannelPosterUpdateHandle
     private static final String REJECT_CMD = "REJECT";
     private static final String SCHEDULE_CMD = "SCHEDULE";
     // дефолтная таймзона канала
-    private static final ZoneId defChannelZoneId = ZoneId.of("Europe/Moscow");
+    public static final ZoneId defChannelZoneId = ZoneId.of("Europe/Moscow");
     // id канала, куда публикуем
 
     private final ChannelPosterBotKeyComponent botKeyComponent;

@@ -109,6 +109,7 @@ public enum Command {
     POSTER_POST("/post", BotIdentifier.CHANNEL_POSTER),
     POSTER_MINI_APP("/app", BotIdentifier.CHANNEL_POSTER),
     POSTER_SCHEDULE_ARTICLE("/artsch", BotIdentifier.CHANNEL_POSTER),
+    POSTER_GET_QUEUE("/q", BotIdentifier.CHANNEL_POSTER),
 
     //==========================METRICS============================
     METRICS_GET("/get", BotIdentifier.METRICS),

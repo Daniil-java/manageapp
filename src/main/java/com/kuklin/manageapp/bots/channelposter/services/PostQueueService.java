@@ -28,9 +28,8 @@ public class PostQueueService {
 
     // посты, готовые к публикации
     public List<PostQueue> getPostsReadyToPublish() {
-        return postQueueRepository.findAllByStatusAndScheduledAtBefore(
-                PostQueue.PostQueueStatus.QUEUED,
-                Instant.now()
+        return postQueueRepository.findAllByStatus(
+                PostQueue.PostQueueStatus.QUEUED
         );
     }
 

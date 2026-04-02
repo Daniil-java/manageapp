@@ -32,7 +32,6 @@ public class PostImageService {
     public void deletePostImageByPostQueueId(Long postQueueId) {
         PostImage postImage = getByPostQueueIdOrNull(postQueueId);
         if (postImage == null) {
-            log.error("PostImage not found! Check dir!");
             return;
         }
         if (postImage.getFilePath() != null) {
