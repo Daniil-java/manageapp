@@ -33,7 +33,7 @@ public class GetQueuePosterUpdateHandler implements ChannelPosterUpdateHandler{
             ZonedDateTime moscowTime = time.atZone(defChannelZoneId);
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss");
 
-            sb.append(post.getTextContent().substring(0, 50))
+            sb.append(post.getTitle())
                     .append("\nПост будет опубликован: " + moscowTime.format(formatter))
                     .append("\n");
         }

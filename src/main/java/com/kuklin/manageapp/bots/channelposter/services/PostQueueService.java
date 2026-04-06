@@ -67,8 +67,9 @@ public class PostQueueService {
                 .setTextContent(content.getPostText())
                 .setCategoryId(topicCategory.getId())
                 .setStatus(PostQueue.PostQueueStatus.TEXT_GENERATED)
-                .setImageDescription(content.getImagePrompt()))
-                ;
+                .setImageDescription(content.getImagePrompt())
+                .setTitle(content.getPostTitle())
+        );
     }
 
     // генерация изображения для поста

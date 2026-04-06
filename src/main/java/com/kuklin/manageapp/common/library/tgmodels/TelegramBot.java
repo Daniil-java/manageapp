@@ -188,6 +188,14 @@ public abstract class TelegramBot extends TelegramLongPollingBot implements Tele
         return message;
     }
 
+    //Для callback или message
+    public Message sendReturnedMessage(Update update, String text) {
+        Long chatId = update.hasMessage() ?
+                update.getMessage().getChatId() :
+                update.getCallbackQuery().getMessage().getChatId();
+
+        return sendReturnedMessage(chatId, text);
+    }
     public Message sendReturnedMessage(long chatId, String text) {
         return sendReturnedMessage(chatId, text, null, null);
     }

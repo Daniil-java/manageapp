@@ -8,9 +8,10 @@ import lombok.Data;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AiGeneratedContent {
 
+    @JsonProperty("post_title")
+    private String postTitle;
     @JsonProperty("post_text")
     private String postText;
-
     @JsonProperty("image_prompt")
     private String imagePrompt;
 }

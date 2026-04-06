@@ -18,7 +18,7 @@ public class PostQueue {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private Long categoryId;
-    private Long topicId;
+    private String title;
     private String textContent;
     private String imageDescription;
     private Instant scheduledAt;
@@ -27,7 +27,6 @@ public class PostQueue {
     private Instant sentAt;
     private Integer tgMessageId;
     private Integer parentPostId;
-    private Long sourceArticleId;
     @CreationTimestamp
     private Instant created;
     public enum PostQueueStatus {

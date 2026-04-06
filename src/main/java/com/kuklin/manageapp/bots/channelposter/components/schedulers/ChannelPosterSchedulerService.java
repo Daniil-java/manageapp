@@ -21,7 +21,7 @@ public class ChannelPosterSchedulerService {
     @Scheduled(cron = "0 0 3 * * *")
     private void pathImageCleanerScheduleProcessor() {
         getInfo(pathImageCleanerScheduleProcessor.getSchedulerName());
-        pathImageCleanerScheduleProcessor.getSchedulerName();
+        pathImageCleanerScheduleProcessor.process();
     }
 
     private void getInfo(String name) {

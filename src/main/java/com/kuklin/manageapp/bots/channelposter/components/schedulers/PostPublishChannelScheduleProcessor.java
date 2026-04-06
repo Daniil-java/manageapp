@@ -2,6 +2,7 @@ package com.kuklin.manageapp.bots.channelposter.components.schedulers;
 
 import com.kuklin.manageapp.bots.channelposter.entities.PostQueue;
 import com.kuklin.manageapp.bots.channelposter.services.PostQueueService;
+import com.kuklin.manageapp.bots.channelposter.telegram.ChannelPosterBotKeyComponent;
 import com.kuklin.manageapp.bots.channelposter.telegram.handlers.PostMessagePosterUpdateHandler;
 import com.kuklin.manageapp.common.library.ScheduleProcessor;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +18,7 @@ public class PostPublishChannelScheduleProcessor implements ScheduleProcessor {
 
     private final PostQueueService postQueueService;
     private final PostMessagePosterUpdateHandler posterUpdateHandler;
+    private final ChannelPosterBotKeyComponent component;
 
     @Override
     public void process() {
@@ -27,8 +29,8 @@ public class PostPublishChannelScheduleProcessor implements ScheduleProcessor {
             try {
                 log.info("Publishing a post ID: {}", post.getId());
 
-                // Используем метод отправки (нужно вынести ID канала в конфиг)
-                Integer tgMessageId = posterUpdateHandler.sendPostContent(-1003745287241L, post.getId(), null);
+                // Используем метод отправки
+                Integer tgMessageId = posterUpdateHandler.sendPostContent(component.getChannelId(), post.getId(), null);
 
                 // Маркируем как отправленный
                 postQueueService.markAsSentAndDeleteFile(post.getId(), tgMessageId);

@@ -19,10 +19,6 @@ public class PostImage {
     private Long id;
 
     private Long postQueueId;
-
-    @Column(columnDefinition = "TEXT")
-    private String imagePrompt;       // промпт для генерации изображения
-
     private String filePath;          // путь к файлу на диске
 
     @Enumerated(EnumType.STRING)

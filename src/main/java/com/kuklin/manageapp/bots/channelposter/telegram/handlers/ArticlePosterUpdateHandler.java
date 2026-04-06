@@ -73,7 +73,7 @@ public class ArticlePosterUpdateHandler implements ChannelPosterUpdateHandler {
         String filename = doc.getFileName().toLowerCase();
 
         // нормальная проверка
-        if (!(filename.endsWith(".txt") || filename.endsWith(".pdf"))) {
+        if (!(filename.endsWith(".txt") || filename.endsWith(".pdf") || filename.endsWith(".html"))) {
             channelPosterTelegramBot.sendReturnedMessage(
                     chatId,
                     "Обрабатываются только документы .txt или .pdf"
@@ -87,17 +87,28 @@ public class ArticlePosterUpdateHandler implements ChannelPosterUpdateHandler {
                 throw new RuntimeException("Не удалось скачать файл");
             }
 
-            String text;
+            String text = null;
             if (filename.endsWith(".txt")) {
                 text = new String(bytes, StandardCharsets.UTF_8);
 
-            } else { // pdf
+            } else if (filename.endsWith(".pdf")) { // pdf
                 try (PDDocument document = PDDocument.load(new ByteArrayInputStream(bytes))) {
                     PDFTextStripper stripper = new PDFTextStripper();
                     text = stripper.getText(document);
                 }
+            } else if (filename.endsWith(".html")) {
+                // Декодируем байты в строку (обычно UTF-8)
+                String html = new String(bytes, StandardCharsets.UTF_8);
+
+                // Используем Jsoup для парсинга
+                // .text() извлекает только чистый текст без тегов и скриптов
+                text = org.jsoup.Jsoup.parse(html).text();
             }
 
+            if (text == null) {
+                channelPosterTelegramBot.sendReturnedMessage(update, "Не получилось извлечь данные");
+                return;
+            }
             channelPosterTelegramBot.sendReturnedMessage(
                     update.getMessage().getChatId(),
                     text.substring(0, 128)
