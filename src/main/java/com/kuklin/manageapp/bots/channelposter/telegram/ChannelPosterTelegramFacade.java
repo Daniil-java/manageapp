@@ -44,6 +44,9 @@ public class ChannelPosterTelegramFacade extends TelegramFacade {
             if (update.getMessage().hasDocument()) {
                 return getUpdateHandlerMap().get(Command.POSTER_GET_ARTICLE.getCommandText());
             }
+            if (update.getMessage().getText().contains(Command.POSTER_SUBREDDIT.getCommandText())) {
+                return getUpdateHandlerMap().get(Command.POSTER_SUBREDDIT.getCommandText());
+            }
             request = update.getMessage().getText().split(TelegramBot.DEFAULT_DELIMETER)[0];
         }
 

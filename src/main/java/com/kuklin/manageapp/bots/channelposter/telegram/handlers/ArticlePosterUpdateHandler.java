@@ -29,6 +29,7 @@ public class ArticlePosterUpdateHandler implements ChannelPosterUpdateHandler {
     // команды для callback-кнопок
     private static final String APPROVE_CMD = "APPROVE";
     private static final String REJECT_CMD = "REJECT";
+    private static final String SHORT_CMD = "SHORT";
     // следующая стадия пайплайна (переход к обработке изображений)
     private static final Command nextHandlerCommand = Command.POSTER_IMAGE;
 
@@ -128,7 +129,7 @@ public class ArticlePosterUpdateHandler implements ChannelPosterUpdateHandler {
      * APPROVE → отправить дальше в пайплайн
      * REJECT → отклонить
      */
-    private InlineKeyboardMarkup getGeneratedTextKeyboard(Long postQueueId) {
+    public static InlineKeyboardMarkup getGeneratedTextKeyboard(Long postQueueId) {
         //аппрув, перегенерация, удалить
         TelegramKeyboard.TelegramKeyboardBuilder builder =
                 new TelegramKeyboard.TelegramKeyboardBuilder();
@@ -137,7 +138,10 @@ public class ArticlePosterUpdateHandler implements ChannelPosterUpdateHandler {
                 .row(
                         TelegramKeyboard.button("✅APPROVE", nextHandlerCommand.getCommandText() + TelegramBot.DEFAULT_DELIMETER + ImagePosterUpdateHandler.APPROVE_CMD + TelegramBot.DEFAULT_DELIMETER + postQueueId),
                         TelegramKeyboard.button("❌REJECT", nextHandlerCommand.getCommandText() + TelegramBot.DEFAULT_DELIMETER + ImagePosterUpdateHandler.REJECT_CMD + TelegramBot.DEFAULT_DELIMETER + postQueueId)
-                );
+                ).row(
+                        TelegramKeyboard.button("КОРОЧЕ", Command.POSTER_GET_ARTICLE.getCommandText() + TelegramBot.DEFAULT_DELIMETER + SHORT_CMD + TelegramBot.DEFAULT_DELIMETER + postQueueId)
+                )
+        ;
 
         return builder.build();
     }
@@ -164,6 +168,15 @@ public class ArticlePosterUpdateHandler implements ChannelPosterUpdateHandler {
                 channelPosterTelegramBot.sendReturnedMessage(
                         update.getCallbackQuery().getMessage().getChatId(),
                         "Отклонено"
+                );
+            } else if (cmd.equals(SHORT_CMD)) {
+                Long postId = Long.parseLong(data.split(TelegramBot.DEFAULT_DELIMETER)[2]);
+                PostQueue postQueue = postQueueService.makePostQueueContentShorter(postId);
+                channelPosterTelegramBot.sendReturnedMessage(
+                        update.getCallbackQuery().getMessage().getChatId(),
+                        postQueue.getTextContent(),
+                        getGeneratedTextKeyboard(postQueue.getId()),
+                        null
                 );
             }
         } catch (Exception e) {

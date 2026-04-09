@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.bots.channelposter.services;
 
+import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcessor;
 import com.kuklin.manageapp.bots.channelposter.components.ArticleContentGenerator;
 import com.kuklin.manageapp.bots.channelposter.entities.PostImage;
 import com.kuklin.manageapp.bots.channelposter.entities.PostQueue;
@@ -9,6 +10,9 @@ import com.kuklin.manageapp.bots.channelposter.model.AiGeneratedContent;
 import com.kuklin.manageapp.bots.channelposter.model.PostQueueNotFoundException;
 import com.kuklin.manageapp.bots.channelposter.model.TopicCategoryNotFoundException;
 import com.kuklin.manageapp.bots.channelposter.repositories.PostQueueRepository;
+import com.kuklin.manageapp.bots.channelposter.telegram.ChannelPosterBotKeyComponent;
+import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
+import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -25,6 +29,17 @@ public class PostQueueService {
     private final ArticleContentGenerator articleContentGenerator;
     private final PostImageService postImageService;
     private final ScheduleSlotService scheduleSlotService;
+    private final OpenAiProviderProcessor openAiProviderProcessor;
+    private final ChannelPosterBotKeyComponent component;
+    private static final String SHORT_PROMPT =
+            """
+                    Сделай данную статью в половину короче.            
+                    Сохрани стиль повествования.
+                    Не пиши ничего больше, кроме сокращенной статьи.
+                    Только сокращенная статья, которую я тебе отправил.
+                    Текст статьи: 
+                    %s
+                        """;
 
     // посты, готовые к публикации
     public List<PostQueue> getPostsReadyToPublish() {
@@ -70,6 +85,19 @@ public class PostQueueService {
                 .setImageDescription(content.getImagePrompt())
                 .setTitle(content.getPostTitle())
         );
+    }
+
+    public PostQueue makePostQueueContentShorter(Long postId) throws PostQueueNotFoundException {
+        PostQueue postQueue = getPostQueueById(postId);
+        String raw = openAiProviderProcessor.fetchResponse(
+                component.getAiKey(),
+                String.format(SHORT_PROMPT, postQueue.getTextContent()),
+                BotIdentifier.CHANNEL_POSTER,
+                getClass().getSimpleName() + " short prompt",
+                MetricsAiInteractionRecord.AiMessageType.TEXT
+        );
+        postQueue.setTextContent(raw);
+        return postQueueRepository.save(postQueue);
     }
 
     // генерация изображения для поста
@@ -120,6 +148,7 @@ public class PostQueueService {
     public PostQueue assignNextAvailableSlot(Long postId, ZoneId zoneId) throws PostQueueNotFoundException {
         return assignNextAvailableSlot(getPostQueueById(postId), zoneId);
     }
+
     public PostQueue assignNextAvailableSlot(PostQueue postQueue, ZoneId zoneId) {
         if (postQueue.getScheduledAt() != null) {
             return postQueue;
