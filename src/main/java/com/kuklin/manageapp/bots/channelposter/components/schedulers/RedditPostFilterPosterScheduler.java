@@ -69,7 +69,7 @@ public class RedditPostFilterPosterScheduler implements ScheduleProcessor {
             // Парсим строку напрямую в список ID
 //            List<Long> approvedIds = objectMapper.readValue(raw, new TypeReference<List<Long>>() {});
 
-            if (raw == null || raw.isBlank() || raw.isEmpty()) {
+            if (!(raw == null || raw.isBlank())) {
                 List<Long> approvedIds = Arrays.stream(raw.split(" "))
                         .map(Long::parseLong)
                         .toList();
