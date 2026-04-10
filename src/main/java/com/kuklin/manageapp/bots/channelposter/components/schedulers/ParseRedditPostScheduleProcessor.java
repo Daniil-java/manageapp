@@ -12,6 +12,7 @@ import com.kuklin.manageapp.bots.channelposter.telegram.ChannelPosterTelegramBot
 import com.kuklin.manageapp.common.library.ScheduleProcessor;
 import com.kuklin.manageapp.common.library.tgutils.ThreadUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -21,6 +22,7 @@ import static com.kuklin.manageapp.bots.channelposter.telegram.handlers.ArticleP
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class ParseRedditPostScheduleProcessor implements ScheduleProcessor {
     private final RedditPostService redditPostService;
     private final PostParser parser;
@@ -35,6 +37,7 @@ public class ParseRedditPostScheduleProcessor implements ScheduleProcessor {
 
         List<RedditPost> redditPosts =
                 redditPostService.getByStatus(RedditPost.PostStatus.APPROVED);
+        log.info("{} has {} approved posts!", getSchedulerName(), redditPosts.size());
 
         if (redditPosts == null || redditPosts.isEmpty()) return;
 
@@ -66,6 +69,8 @@ public class ParseRedditPostScheduleProcessor implements ScheduleProcessor {
                 failedIds.add(post.getId());
             }
         }
+        log.info("{} has {} success posts!", getSchedulerName(), success.size());
+        log.info("{} has {} failed posts!", getSchedulerName(), failedIds.size());
 
         // сохраняем успешно обработанные
         if (!success.isEmpty()) {

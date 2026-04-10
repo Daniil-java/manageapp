@@ -55,7 +55,7 @@ public class RedditPostFilterPosterScheduler implements ScheduleProcessor {
     @Override
     public void process() {
         List<RedditPost> redditPosts = redditPostService.getByStatus(RedditPost.PostStatus.NEW);
-
+        log.info("{} find {} NEW reddit posts!", getSchedulerName(), redditPosts.size());
         String raw = openAiProviderProcessor.fetchResponse(
                 botKeyComponent.getAiKey(),
                 String.format(PROMPT, buildAiInputOrNull(redditPosts)),
@@ -70,6 +70,7 @@ public class RedditPostFilterPosterScheduler implements ScheduleProcessor {
 
             // Обновляем статусы в базе
             if (approvedIds != null && !approvedIds.isEmpty()) {
+                log.info("{} has {} approved Ids!", getSchedulerName(), approvedIds.size());
                 redditPostService.updateStatuses(approvedIds, RedditPost.PostStatus.APPROVED);
 
                 // Все, что не попало в список approved, помечаем как REJECTED
@@ -81,6 +82,7 @@ public class RedditPostFilterPosterScheduler implements ScheduleProcessor {
                 redditPostService.updateStatuses(rejectedIds, RedditPost.PostStatus.REJECTED);
             } else {
                 // Если массив пустой, значит ИИ ничего не выбрал
+                log.info("{} doesn't have approved Ids!", getSchedulerName());
                 redditPostService.updateStatuses(
                         redditPosts.stream().map(RedditPost::getId).toList(),
                         RedditPost.PostStatus.REJECTED
@@ -102,6 +104,7 @@ public class RedditPostFilterPosterScheduler implements ScheduleProcessor {
         int i = 1;
         for (RedditPost post : posts) {
             sb.append("Пост ").append(i++).append(":\n")
+                    .append("ID: ").append(post.getId()).append("\n")
                     .append("Title: ").append(safe(post.getTitle())).append("\n")
                     .append("Content: ").append(safeSubstring(safe(post.getContent()), 300)).append("\n")
                     .append("Author: ").append(safe(post.getAuthor())).append("\n")

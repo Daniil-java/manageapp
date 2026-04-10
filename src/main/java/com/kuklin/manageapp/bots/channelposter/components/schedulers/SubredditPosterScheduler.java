@@ -33,12 +33,12 @@ public class SubredditPosterScheduler implements ScheduleProcessor {
         int queueSize = postQueueService.getPostsByStatus(PostQueue.PostQueueStatus.QUEUED).size();
         if (queueSize > POST_COUNT_MAX) return;
         List<Subreddit> subreddits = subredditService.getAllActive();
-
+        log.info(getSchedulerName() + " has " + subreddits.size() + " subreddit list size!");
         for (Subreddit subreddit : subreddits) {
             try {
                 ThreadUtil.sleep(1000);
                 List<RedditPostDto> posts = parser.parseSubreddit(subreddit);
-
+                log.info("{} find {} posts for {} subreddit!", getSchedulerName(), posts.size(), subreddit.getName());
                 redditPostService.saveIfNotExistsAll(posts);
 
             } catch (Exception e) {

@@ -18,30 +18,25 @@ public class HhScheduleService {
     private final HhVacancyScheduleProcessor hhVacancyScheduleProcessor;
     private final HhNotificationScheduleProcessor hhNotificationScheduleProcessor;
 
-    @Scheduled(cron = "0 */20 * * * *")
-//    @Scheduled(cron = "0 */1 * * * *")
+    @Scheduled(cron = "0 0 */4 * * *")   // каждые 4 часа: 00:00, 04:00, 08:00...
     public void workFilterScheduleProcess() {
         getInfo(hhWorkFilterScheduleProcessor.getSchedulerName());
         hhWorkFilterScheduleProcessor.process();
     }
 
-
-    @Scheduled(cron = "0 */15 * * * *")
-//    @Scheduled(cron = "0 */1 * * * *")
+    @Scheduled(cron = "0 15 */4 * * *")  // каждые 4 часа + сдвиг 15 мин
     public void openAiScheduleProcess() {
         getInfo(hhOpenAiScheduleProcessor.getSchedulerName());
         hhOpenAiScheduleProcessor.process();
     }
 
-    @Scheduled(cron = "0 */25 * * * *")
-//    @Scheduled(cron = "0 */1 * * * *")
+    @Scheduled(cron = "0 30 */4 * * *")  // каждые 4 часа + сдвиг 30 мин
     public void vacancyScheduleProcess() {
         getInfo(hhVacancyScheduleProcessor.getSchedulerName());
         hhVacancyScheduleProcessor.process();
     }
 
-    @Scheduled(cron = "0 0 * * * *")
-//    @Scheduled(cron = "0 */1 * * * *")
+    @Scheduled(cron = "0 45 */4 * * *")  // каждые 4 часа + сдвиг 45 мин
     public void notificationScheduleProcess() {
         getInfo(hhNotificationScheduleProcessor.getSchedulerName());
         hhNotificationScheduleProcessor.process();
