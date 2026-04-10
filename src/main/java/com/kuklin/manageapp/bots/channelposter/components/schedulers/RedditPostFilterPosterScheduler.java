@@ -68,22 +68,25 @@ public class RedditPostFilterPosterScheduler implements ScheduleProcessor {
         try {
             // Парсим строку напрямую в список ID
 //            List<Long> approvedIds = objectMapper.readValue(raw, new TypeReference<List<Long>>() {});
-            List<Long> approvedIds = Arrays.stream(raw.split(" "))
-                    .map(Long::parseLong)
-                    .toList();
 
-            // Обновляем статусы в базе
-            if (approvedIds != null && !approvedIds.isEmpty()) {
-                log.info("{} has {} approved Ids!", getSchedulerName(), approvedIds.size());
-                redditPostService.updateStatuses(approvedIds, RedditPost.PostStatus.APPROVED);
-
-                // Все, что не попало в список approved, помечаем как REJECTED
-                List<Long> allIds = redditPosts.stream().map(RedditPost::getId).toList();
-                List<Long> rejectedIds = allIds.stream()
-                        .filter(id -> !approvedIds.contains(id))
+            if (raw == null || raw.isBlank() || raw.isEmpty()) {
+                List<Long> approvedIds = Arrays.stream(raw.split(" "))
+                        .map(Long::parseLong)
                         .toList();
 
-                redditPostService.updateStatuses(rejectedIds, RedditPost.PostStatus.REJECTED);
+                // Обновляем статусы в базе
+                if (approvedIds != null && !approvedIds.isEmpty()) {
+                    log.info("{} has {} approved Ids!", getSchedulerName(), approvedIds.size());
+                    redditPostService.updateStatuses(approvedIds, RedditPost.PostStatus.APPROVED);
+
+                    // Все, что не попало в список approved, помечаем как REJECTED
+                    List<Long> allIds = redditPosts.stream().map(RedditPost::getId).toList();
+                    List<Long> rejectedIds = allIds.stream()
+                            .filter(id -> !approvedIds.contains(id))
+                            .toList();
+
+                    redditPostService.updateStatuses(rejectedIds, RedditPost.PostStatus.REJECTED);
+                }
             } else {
                 // Если массив пустой, значит ИИ ничего не выбрал
                 log.info("{} doesn't have approved Ids!", getSchedulerName());
