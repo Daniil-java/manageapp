@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.Arrays;
 import java.util.List;
 
 @Component
@@ -41,13 +42,13 @@ public class RedditPostFilterPosterScheduler implements ScheduleProcessor {
                        Для каждого поста ты должен дать краткий вердикт.
                        
                        ФОРМАТ ОТВЕТА (СТРОГО):
-                       Верни ТОЛЬКО валидный JSON-массив, содержащий ID постов, которые прошли отбор.\s
+                       Верни ТОЛЬКО валидная строка, содержащий ID постов, которые прошли отбор.\s
                        Запрещено писать любой другой текст, комментарии, приветствия или причины.\s
                        Запрещено использовать markdown-разметку (никаких ```json и ```).\s
-                       Твой ответ должен начинаться с символа [ и заканчиваться символом ].
+                       ID должны быть написаны через пробел
                        
                        Пример идеального ответа:
-                       [10423, 10425, 10500]
+                       10423 10425 10500
                        
                        Список постов: %s 
                     """;
@@ -66,7 +67,10 @@ public class RedditPostFilterPosterScheduler implements ScheduleProcessor {
 
         try {
             // Парсим строку напрямую в список ID
-            List<Long> approvedIds = objectMapper.readValue(raw, new TypeReference<List<Long>>() {});
+//            List<Long> approvedIds = objectMapper.readValue(raw, new TypeReference<List<Long>>() {});
+            List<Long> approvedIds = Arrays.stream(raw.split(" "))
+                    .map(Long::parseLong)
+                    .toList();
 
             // Обновляем статусы в базе
             if (approvedIds != null && !approvedIds.isEmpty()) {
