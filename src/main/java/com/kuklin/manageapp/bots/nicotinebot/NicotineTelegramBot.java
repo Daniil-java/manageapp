@@ -10,7 +10,7 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 @Component
 public class NicotineTelegramBot extends TelegramBot {
 
-    public NicotineTelegramBot(ChannelPosterBotKeyComponent components) {
+    public NicotineTelegramBot(NicotineBotKeyComponent components) {
         super(components.getKey());
     }
 
