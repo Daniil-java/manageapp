@@ -9,11 +9,11 @@ CREATE TABLE smoking_record (
 
 -- Индексы под реальные запросы
 CREATE INDEX idx_smoking_record_user_id
-    ON smoking_event (user_id);
+    ON smoking_record (user_id);
 
 CREATE INDEX idx_smoking_record_smoked_at
-    ON smoking_event (smoked_at);
+    ON smoking_record (smoked_at);
 
 -- Часто самый полезный (юзер + время)
 CREATE INDEX idx_smoking_record_user_time
-    ON smoking_event (user_id, smoked_at DESC);
+    ON smoking_record (user_id, smoked_at DESC);
