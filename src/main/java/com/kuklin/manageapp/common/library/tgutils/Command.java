@@ -112,6 +112,11 @@ public enum Command {
     POSTER_GET_QUEUE("/q", BotIdentifier.CHANNEL_POSTER),
     POSTER_SUBREDDIT("/sub", BotIdentifier.CHANNEL_POSTER),
 
+    //==========================NICOTINE============================
+    NICOTINE_GET_LAST("Крайняя\uD83D\uDEAC", BotIdentifier.NICOTINE_BOT),
+    NICOTINE_MAKE_NEW("Закурил\uD83D\uDD25", BotIdentifier.NICOTINE_BOT),
+    NICOTINE_TODAY("Сегодня\uD83D\uDCCA", BotIdentifier.NICOTINE_BOT),
+    NICOTINE_START("/start", BotIdentifier.NICOTINE_BOT),
     //==========================METRICS============================
     METRICS_GET("/get", BotIdentifier.METRICS),
     METRICS_TEST_ERROR("/test", BotIdentifier.METRICS),

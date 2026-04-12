@@ -16,7 +16,8 @@ public enum BotIdentifier {
     PAYMENT("@payment"),
     INTERVIEW("@interviewtrainer_bot"),
     METRICS("@metrics"),
-    CHANNEL_POSTER("@speakinghat")
+    CHANNEL_POSTER("@speakinghat"),
+    NICOTINE_BOT("@temp")
     ;
 
     private final String botUsername;
