@@ -32,6 +32,7 @@ public class KworkScheduleProcessor implements ScheduleProcessor {
         for (Url url: urls) {
             //Получение распаршенных данных
             List<KworkDto> kworkDtos = kworkParser.getKworksOrNull(url.getUrl());
+            if (kworkDtos == null) continue;
             for (KworkDto dto: kworkDtos) {
                 //Сохранение данных, с учетом существования дубликатов
                 kworkService.saveOrNull(dto, url.getId());
