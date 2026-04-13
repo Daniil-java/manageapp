@@ -30,7 +30,7 @@ public class PostQueue {
     @CreationTimestamp
     private Instant created;
     public enum PostQueueStatus {
-        TEXT_GENERATED, IMAGE_GENERATED, SENT, PENDING, QUEUED, FAILED
+        TEXT_GENERATED, IMAGE_GENERATED, SENT, PENDING, QUEUED, FAILED, PROCESSED
 
     }
 }

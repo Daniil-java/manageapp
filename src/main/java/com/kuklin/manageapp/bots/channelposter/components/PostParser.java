@@ -3,6 +3,7 @@ package com.kuklin.manageapp.bots.channelposter.components;
 import com.kuklin.manageapp.bots.channelposter.entities.parser.RedditPost;
 import com.kuklin.manageapp.bots.channelposter.entities.parser.Subreddit;
 import com.kuklin.manageapp.bots.channelposter.model.RedditPostDto;
+import com.openhtmltopdf.css.parser.ParserTest;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -241,6 +242,54 @@ public class PostParser {
             return null;
         }
     }
+
+    /**
+     * Универсальный парсер для внешних ссылок.
+     * Вырезает навигацию, скрипты и футеры, оставляя только текст статьи.
+     */
+    public String extractGenericContent(String url) {
+        if (url == null || url.isEmpty()) return null;
+
+        try {
+            // Используем твой существующий метод для загрузки
+            Document doc = fetchWithRetry(url, 2);
+
+            // 1. Удаляем всё, где точно не бывает контента статьи
+            doc.select("script, style, noscript, iframe, svg, header, footer, nav, aside, form, " +
+                    ".menu, .navigation, .sidebar, .footer, .ads, .social-share").remove();
+
+            // 2. Пытаемся найти основной контейнер (стандарт для современных сайтов)
+            Element mainContent = doc.selectFirst("article");
+            if (mainContent == null) {
+                mainContent = doc.selectFirst("main");
+            }
+
+            // 3. Если стандартных тегов нет, ищем по классам, которые часто юзают для статей
+            if (mainContent == null) {
+                mainContent = doc.selectFirst("[class*='article'], [id*='article'], [class*='content'], [class*='post-body']");
+            }
+
+            // 4. Если вообще ничего не нашли — берем очищенный body
+            if (mainContent == null) {
+                mainContent = doc.body();
+            }
+
+            if (mainContent != null) {
+                // Возвращаем текст. Jsoup автоматически склеит текст из параграфов.
+                String text = mainContent.text();
+
+                // Если текста слишком мало (меньше 200 символов), скорее всего, там только заголовок или ошибка
+                return (text.length() > 200) ? text : null;
+            }
+
+        } catch (Exception e) {
+            log.warn("Ошибка при парсинге внешней ссылки {}: {}", url, e.getMessage());
+        }
+
+        return null;
+    }
+
+
 
     /**
      * Определяет тип контента по ссылке

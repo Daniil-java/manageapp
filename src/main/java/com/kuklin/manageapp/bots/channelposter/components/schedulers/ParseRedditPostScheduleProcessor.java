@@ -86,28 +86,67 @@ public class ParseRedditPostScheduleProcessor implements ScheduleProcessor {
     }
 
     private void generateAiArticle(List<RedditPost> posts) {
-
         for (RedditPost post : posts) {
-            if (post.getContent() == null || post.getContent().isBlank()) continue;
-
             try {
-                PostQueue postQueue = postQueueService.createPostQueueByText(
-                        post.getContent(),
-                        TopicCategory.TopicType.ARTICLE
-                );
-
-                for (Long id: botKeyComponent.getAdminIds()) {
-                    channelPosterTelegramBot.sendReturnedMessage(
-                            id,
-                            postQueue.getTextContent(),
-                            getGeneratedTextKeyboard(postQueue.getId()),
-                            null
-                    );
-                }
-            } catch (TopicCategoryNotFoundException e) {
+                processSinglePost(post);
+            } catch (Exception e) {
+                log.error("Критическая ошибка при обработке поста {}: {}", post.getId(), e.getMessage());
                 postQueueService.markAsFailed(post.getId());
             }
         }
+    }
+
+    private void processSinglePost(RedditPost post) {
+        if (post.getContent() == null || post.getContent().isBlank()) {
+            return;
+        }
+
+        String finalContent = post.getContent();
+
+        // 1. Извлекаем контент, если это ссылка
+        if (post.getContentType().equals(RedditPost.ContentType.LINK)) {
+            String extractedArticle = parser.extractGenericContent(post.getUrl());
+            if (extractedArticle == null) {
+                log.warn("Не удалось извлечь контент по ссылке: {}", post.getUrl());
+                postQueueService.markAsFailed(post.getId());
+                return;
+            }
+            finalContent = extractedArticle;
+        }
+
+        // 2. Создаем запись в очереди (уже с финальным текстом)
+        PostQueue postQueue;
+        try {
+            postQueue = postQueueService.createPostQueueByText(
+                    finalContent,
+                    TopicCategory.TopicType.ARTICLE
+            );
+        } catch (TopicCategoryNotFoundException e) {
+            log.error("Категория ARTICLE не найдена для поста {}", post.getId());
+            postQueueService.markAsFailed(post.getId());
+            return;
+        }
+
+        // 3. Рассылка админам
+        notifyAdmins(postQueue);
+    }
+
+    private void notifyAdmins(PostQueue postQueue) {
+        for (Long adminId : botKeyComponent.getAdminIds()) {
+            try {
+                channelPosterTelegramBot.sendReturnedMessage(
+                        adminId,
+                        postQueue.getTextContent(),
+                        getGeneratedTextKeyboard(postQueue.getId()),
+                        null
+                );
+            } catch (Exception e) {
+                log.error("Ошибка отправки админу {}: {}", adminId, e.getMessage());
+                // Если одному админу не ушло, не помечаем всю очередь как PROCESSED сразу,
+                // чтобы не стопнуть процесс для остальных.
+            }
+        }
+        // Здесь можно обновить статус очереди, если это необходимо по твоей бизнес-логике
     }
 
     @Override
