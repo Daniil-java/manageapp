@@ -158,6 +158,23 @@ public class ArticlePosterUpdateHandler implements ChannelPosterUpdateHandler {
         try {
             String cmd = data.split(TelegramBot.DEFAULT_DELIMETER)[1];
             if (cmd.equals(APPROVE_CMD)) {
+                Long postId = Long.parseLong(data.split(TelegramBot.DEFAULT_DELIMETER)[2]);
+                PostQueue postQueueCheck = postQueueService.getPostQueueById(postId);
+
+                if (postQueueCheck == null) {
+                    channelPosterTelegramBot.sendReturnedMessage(
+                            update.getCallbackQuery().getMessage().getChatId(),
+                            "Пост уже был удален!"
+                    );
+                    return;
+                }
+                if (!postQueueCheck.getStatus().equals(PostQueue.PostQueueStatus.TEXT_GENERATED)) {
+                    channelPosterTelegramBot.sendReturnedMessage(
+                            update.getCallbackQuery().getMessage().getChatId(),
+                            "Текст уже был подтвержден!"
+                    );
+                    return;
+                }
                 channelPosterTelegramBot.sendReturnedMessage(
                         update.getCallbackQuery().getMessage().getChatId(),
                         "Принято"
@@ -171,6 +188,23 @@ public class ArticlePosterUpdateHandler implements ChannelPosterUpdateHandler {
                 );
             } else if (cmd.equals(SHORT_CMD)) {
                 Long postId = Long.parseLong(data.split(TelegramBot.DEFAULT_DELIMETER)[2]);
+
+                try {
+                    PostQueue postQueueCheck = postQueueService.getPostQueueById(postId);
+                    if (postQueueCheck.getStatus() != PostQueue.PostQueueStatus.TEXT_GENERATED) {
+                        channelPosterTelegramBot.sendReturnedMessage(
+                                update.getCallbackQuery().getMessage().getChatId(),
+                                "⚠️ Этот пост уже переведен на следующий этап другим админом."
+                        );
+                        return; // Прерываем выполнение
+                    }
+                } catch (Exception e) {
+                    channelPosterTelegramBot.sendReturnedMessage(
+                            update.getCallbackQuery().getMessage().getChatId(),
+                            "⚠️ Пост уже удален."
+                    );
+                    return;
+                }
                 PostQueue postQueue = postQueueService.makePostQueueContentShorter(postId);
                 channelPosterTelegramBot.sendReturnedMessage(
                         update.getCallbackQuery().getMessage().getChatId(),

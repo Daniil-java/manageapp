@@ -6,20 +6,15 @@ import com.kuklin.manageapp.bots.channelposter.entities.PostImage;
 import com.kuklin.manageapp.bots.channelposter.entities.PostQueue;
 import com.kuklin.manageapp.bots.channelposter.entities.TopicCategory;
 import com.kuklin.manageapp.bots.channelposter.model.AiGeneratedContent;
-import com.kuklin.manageapp.bots.channelposter.model.TopicCategoryNotFoundException;
 import com.kuklin.manageapp.bots.channelposter.services.PostImageService;
 import com.kuklin.manageapp.bots.channelposter.telegram.ChannelPosterBotKeyComponent;
 import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
-import com.kuklin.manageapp.common.library.utils.FilesUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.UUID;
-
-import static com.kuklin.manageapp.bots.channelposter.services.PostImageService.IMG_DIR;
 
 @Component
 @RequiredArgsConstructor
@@ -118,31 +113,49 @@ public class ArticleContentGenerator implements ContentGenerator {
     }
 
     @Override
-    public PostImage generateImage(PostQueue post) throws IOException {
+    public byte[] generateImage(PostQueue post) throws IOException {
         postImageService.deletePostImageByPostQueueId(post.getId());
-        byte[] bytes = null;
+
         try {
-            bytes = openAiProviderProcessor.generateImageBytes(
+            return openAiProviderProcessor.generateImageBytes(
                     component.getAiKey(),
                     post.getImageDescription(),
                     BotIdentifier.CHANNEL_POSTER,
                     "img content generator"
             );
         } catch (Exception e) {
-            log.error("Image generating error!");
+            log.error("Image generating error!", e);
             return null;
         }
 
+//        PostImage postImage = postImageService.saveNewImage(
+//                PostImage.ImageSource.AI_GENERATED,
+//                PostImage.ImageStatus.READY,
+//                chatId,
+//                messageId,
+//                post.getId()
+//        );
+//        String fileName = supportedType().name() + UUID.randomUUID() + ".png";
+//        String path = FilesUtils.saveImage(bytes, fileName, IMG_DIR);
+    }
 
-        String fileName = supportedType().name() + UUID.randomUUID() + ".png";
+    public class GeneratedImageResult {
 
-        String path = FilesUtils.saveImage(bytes, fileName, IMG_DIR);
-        return postImageService.saveNewImage(
-                PostImage.ImageSource.AI_GENERATED,
-                PostImage.ImageStatus.READY,
-                path,
-                post.getId()
-        );
+        private final byte[] bytes;
+        private final PostImage postImage;
+
+        public GeneratedImageResult(byte[] bytes, PostImage postImage) {
+            this.bytes = bytes;
+            this.postImage = postImage;
+        }
+
+        public byte[] getBytes() {
+            return bytes;
+        }
+
+        public PostImage getPostImage() {
+            return postImage;
+        }
     }
 
     @Override

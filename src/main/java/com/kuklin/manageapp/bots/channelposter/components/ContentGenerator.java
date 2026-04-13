@@ -1,6 +1,5 @@
 package com.kuklin.manageapp.bots.channelposter.components;
 
-import com.kuklin.manageapp.bots.channelposter.entities.PostImage;
 import com.kuklin.manageapp.bots.channelposter.entities.PostQueue;
 import com.kuklin.manageapp.bots.channelposter.entities.TopicCategory;
 import com.kuklin.manageapp.bots.channelposter.model.AiGeneratedContent;
@@ -19,7 +18,7 @@ public interface ContentGenerator {
 
     // Генерирует картинку для уже готового текста поста.
     // Сохраняет PostImage, обновляет статус PostQueue → IMAGE_GENERATED.
-    PostImage generateImage(PostQueue post) throws IOException;
+    byte[] generateImage(PostQueue post) throws IOException;
 
     // Какой тип поста умеет обрабатывать эта реализация.
     TopicCategory.TopicType supportedType();

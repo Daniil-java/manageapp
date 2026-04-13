@@ -14,7 +14,23 @@ public class PostImageService {
     private final PostImageRepository postImageRepository;
     public static final String IMG_DIR = "poster/article";
 
+    public PostImage save(PostImage postImage) {
+        return postImageRepository.save(postImage);
+    }
     public PostImage saveNewImage(
+            PostImage.ImageSource imageSource, PostImage.ImageStatus status,
+            String tgFileId,  Long postQueueId
+    ) {
+        return postImageRepository.save(new PostImage()
+                .setSource(imageSource)
+                .setStatus(status)
+                .setTgFileId(tgFileId)
+                .setPostQueueId(postQueueId)
+        );
+    }
+
+//    Работает с реальными директориями
+    public PostImage saveNewImageFilePath(
             PostImage.ImageSource imageSource, PostImage.ImageStatus status,
             String filepath, Long postQueueId
     ) {
@@ -29,6 +45,7 @@ public class PostImageService {
     public PostImage getByPostQueueIdOrNull(Long postQueueId) {
         return postImageRepository.findByPostQueueId(postQueueId).orElse(null);
     }
+
     public void deletePostImageByPostQueueId(Long postQueueId) {
         PostImage postImage = getByPostQueueIdOrNull(postQueueId);
         if (postImage == null) {

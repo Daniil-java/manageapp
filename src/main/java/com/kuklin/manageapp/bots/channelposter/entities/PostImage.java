@@ -26,6 +26,7 @@ public class PostImage {
 
     @Enumerated(EnumType.STRING)
     private ImageStatus status;
+    private String tgFileId;
 
     @CreationTimestamp
     private Instant created;

@@ -15,25 +15,22 @@ public class ChannelPosterSchedulerService {
     private final RedditPostFilterPosterScheduler redditPostFilterPosterScheduler;
     private final SubredditPosterScheduler subredditPosterScheduler;
 
-    // 00:00, 08:00, 16:00
-//    @Scheduled(cron = "0 0 0,8,16 * * *")
-    @Scheduled(cron = "0 0/50 * * * *")
+    // 00:00, 06:00, 12:00, 18:00
+    @Scheduled(cron = "0 0 0,6,12,18 * * *")
     private void subredditPosterScheduler() {
         getInfo(subredditPosterScheduler.getSchedulerName());
         subredditPosterScheduler.process();
     }
 
-    // 00:20, 08:20, 16:20
-//    @Scheduled(cron = "0 20 0,8,16 * * *")
-    @Scheduled(cron = "0 0/30 * * * *")
+    // 00:20, 06:20, 12:20, 18:20
+    @Scheduled(cron = "0 20 0,6,12,18 * * *")
     private void redditPostFilterPosterScheduler() {
         getInfo(redditPostFilterPosterScheduler.getSchedulerName());
         redditPostFilterPosterScheduler.process();
     }
 
-    // 00:40, 08:40, 16:40
-//    @Scheduled(cron = "0 40 0,8,16 * * *")
-    @Scheduled(cron = "0 0/50 * * * *")
+    // 00:40, 06:40, 12:40, 18:40
+    @Scheduled(cron = "0 40 0,6,12,18 * * *")
     private void parseRedditPostScheduleProcessor() {
         getInfo(parseRedditPostScheduleProcessor.getSchedulerName());
         parseRedditPostScheduleProcessor.process();
@@ -45,7 +42,7 @@ public class ChannelPosterSchedulerService {
         postPublishChannelScheduleProcessor.process();
     }
 
-    @Scheduled(cron = "0 0 3 * * *")
+//    @Scheduled(cron = "0 0 3 * * *")
     private void pathImageCleanerScheduleProcessor() {
         getInfo(pathImageCleanerScheduleProcessor.getSchedulerName());
         pathImageCleanerScheduleProcessor.process();

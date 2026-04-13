@@ -1,6 +1,9 @@
 package com.kuklin.manageapp.bots.channelposter.telegram.handlers;
 
+import com.kuklin.manageapp.bots.channelposter.components.ArticleContentGenerator;
 import com.kuklin.manageapp.bots.channelposter.entities.PostImage;
+import com.kuklin.manageapp.bots.channelposter.entities.PostQueue;
+import com.kuklin.manageapp.bots.channelposter.services.PostImageService;
 import com.kuklin.manageapp.bots.channelposter.services.PostQueueService;
 import com.kuklin.manageapp.bots.channelposter.telegram.ChannelPosterTelegramBot;
 import com.kuklin.manageapp.common.entities.TelegramUser;
@@ -10,8 +13,11 @@ import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
+
+import java.util.UUID;
 
 @RequiredArgsConstructor
 @Component
@@ -20,6 +26,8 @@ public class ImagePosterUpdateHandler implements ChannelPosterUpdateHandler {
 
     private final ChannelPosterTelegramBot channelPosterTelegramBot;
     private final PostQueueService postQueueService;
+    private final ArticleContentGenerator articleContentGenerator;
+    private final PostImageService postImageService;
     private final PostMessagePosterUpdateHandler postMessagePosterUpdateHandler;
 
     // команды для callback'ов
@@ -46,15 +54,41 @@ public class ImagePosterUpdateHandler implements ChannelPosterUpdateHandler {
             String cmd = data.split(TelegramBot.DEFAULT_DELIMETER)[1];
             Long postId = Long.parseLong(data.split(TelegramBot.DEFAULT_DELIMETER)[2]);
 
+            PostQueue postQueue = postQueueService.getPostQueueById(postId);
+            if (postQueue.getStatus().equals(PostQueue.PostQueueStatus.IMAGE_GENERATED)
+                    || postQueue.getStatus().equals(PostQueue.PostQueueStatus.SENT)
+            ) {
+                channelPosterTelegramBot.sendReturnedMessage(
+                        chatId,
+                        "Изображение уже было утверждено!"
+                );
+                return;
+            }
             // генерация картинки или повторная генерация
             if (cmd.equals(APPROVE_CMD) || cmd.equals(REPEAT_IMG_CMD)) {
-                PostImage postImage = postQueueService.generateImage(postId);
-                channelPosterTelegramBot.sendPhotoMessage(
+                byte[] image =  articleContentGenerator.generateImage(postQueue);
+                if (image == null) {
+                    channelPosterTelegramBot.sendReturnedMessage(
+                            chatId, "Ошибка генерации"
+                    );
+                    return;
+                }
+                Message message = channelPosterTelegramBot.sendPhotoMessage(
                         chatId,
-                        postImage.getFilePath(),
+                        image,
+                        UUID.randomUUID().toString(),
                         null,
                         getImgKeyboard(postId)
                 );
+
+                String tgFileId = message.getPhoto().get(message.getPhoto().size() - 1).getFileId();
+                postImageService.saveNewImage(
+                        PostImage.ImageSource.AI_GENERATED,
+                        PostImage.ImageStatus.READY,
+                        tgFileId,
+                        postId
+                );
+
                 // удаление поста (как до генерации картинки, так и после)
             } else if (cmd.equals(REJECT_CMD) || cmd.equals(REJECT_IMG_CMD)) {
                 postQueueService.removePost(postId);

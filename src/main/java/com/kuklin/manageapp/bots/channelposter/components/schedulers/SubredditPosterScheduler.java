@@ -26,7 +26,7 @@ public class SubredditPosterScheduler implements ScheduleProcessor {
     private final SubredditService subredditService;
     private final RedditPostService redditPostService;
     private final PostQueueService postQueueService;
-    private static final int POST_COUNT_MAX = 50;
+    private static final int POST_COUNT_MAX = 25;
 
     @Override
     public void process() {

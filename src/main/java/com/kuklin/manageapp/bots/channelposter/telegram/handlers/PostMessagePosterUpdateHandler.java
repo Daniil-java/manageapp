@@ -11,6 +11,7 @@ import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;
+import com.kuklin.manageapp.common.services.TelegramService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -22,6 +23,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.UUID;
 
 @RequiredArgsConstructor
 @Component
@@ -40,6 +42,7 @@ public class PostMessagePosterUpdateHandler implements ChannelPosterUpdateHandle
     private final ChannelPosterTelegramBot channelPosterTelegramBot;
     private final PostQueueService postQueueService;
     private final PostImageService postImageService;
+    private final TelegramService telegramService;
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
@@ -50,24 +53,47 @@ public class PostMessagePosterUpdateHandler implements ChannelPosterUpdateHandle
 
     private void processCallback(Update update) {
         String data = update.getCallbackQuery().getData();
+        // Сразу получаем chatId безопасным методом
+        Long chatId = extractChatId(update);
+
         try {
-            // Убираем дублирование split()
             String[] callbackData = data.split(TelegramBot.DEFAULT_DELIMETER);
             String cmd = callbackData[1];
             Long postId = Long.parseLong(callbackData[2]);
 
-            // Используем константы первыми (защита от NullPointerException)
-            switch (cmd) {
-                case APPROVE_CMD -> sendPostContent(botKeyComponent.getChannelId(), postId, null);
-                case REJECT_CMD -> postQueueService.removePost(postId);
-                case SCHEDULE_CMD -> processScheduleCmd(update.getCallbackQuery().getMessage().getChatId(), postId);
+            PostQueue postQueue = postQueueService.getPostQueueById(postId);
+
+            // Проверяем статус для ВСЕХ кнопок.
+            // Если он не IMAGE_GENERATED, значит кто-то уже нажал кнопку на этом этапе.
+            if (postQueue.getStatus() != PostQueue.PostQueueStatus.IMAGE_GENERATED) {
+                channelPosterTelegramBot.sendReturnedMessage(
+                        chatId,
+                        "⚠️ Этот пост уже обработан (опубликован, запланирован или удален) другим админом."
+                );
+                return;
             }
 
+            switch (cmd) {
+                case APPROVE_CMD -> {
+                    Integer msgId = sendPostContent(botKeyComponent.getChannelId(), postId, null);
+                    // Если пост успешно отправлен в канал, меняем статус на SENT и удаляем картинку с диска
+                    if (msgId != null) {
+                        postQueueService.markAsSentAndDeleteFile(postId, msgId);
+                        channelPosterTelegramBot.sendReturnedMessage(chatId, "✅ Пост моментально опубликован в канале.");
+                    }
+                }
+                case REJECT_CMD -> {
+                    postQueueService.removePost(postId);
+                    channelPosterTelegramBot.sendReturnedMessage(chatId, "🗑 Пост отменен и удален.");
+                }
+                case SCHEDULE_CMD -> processScheduleCmd(chatId, postId);
+            }
+
+        } catch (PostQueueNotFoundException e) {
+            channelPosterTelegramBot.sendReturnedMessage(chatId, "⚠️ Пост уже был удален другим админом.");
         } catch (Exception e) {
-            channelPosterTelegramBot.sendReturnedMessage(
-                    extractChatId(update),
-                    "не получилось"
-            );
+            log.error("Error processing callback in PostMessagePosterUpdateHandler", e);
+            channelPosterTelegramBot.sendReturnedMessage(chatId, "❌ Произошла ошибка при обработке команды.");
         }
     }
 
@@ -116,9 +142,14 @@ public class PostMessagePosterUpdateHandler implements ChannelPosterUpdateHandle
 
         Message message = null;
         if (postImage != null) {
+            byte[] image = telegramService.downloadFileOrNull(
+                    channelPosterTelegramBot,
+                    postImage.getTgFileId()
+            );
             channelPosterTelegramBot.sendPhotoMessage(
                     chatId,
-                    postImage.getFilePath(),
+                    image,
+                    UUID.randomUUID().toString(),
                     null,
                     null
             );

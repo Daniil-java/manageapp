@@ -16,7 +16,6 @@ import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.time.*;
 import java.util.Comparator;
 import java.util.List;
@@ -101,10 +100,10 @@ public class PostQueueService {
     }
 
     // генерация изображения для поста
-    public PostImage generateImage(Long postId) throws PostQueueNotFoundException, IOException {
-        PostQueue postQueue = getPostQueueById(postId);
-        return articleContentGenerator.generateImage(postQueue);
-    }
+//    public PostImage generateImage(Long postId) throws PostQueueNotFoundException, IOException {
+//        PostQueue postQueue = getPostQueueById(postId);
+//        return articleContentGenerator.generateImage(postQueue);
+//    }
 
     public void removePost(Long postId) {
         postImageService.deletePostImageByPostQueueId(postId);
