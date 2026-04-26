@@ -34,4 +34,7 @@ public class SmokingRecordService {
         return repository.findTopByUserIdOrderBySmokedAtDesc(userId);
     }
 
+    public void deleteById(Long logId) {
+        repository.deleteById(logId);
+    }
 }

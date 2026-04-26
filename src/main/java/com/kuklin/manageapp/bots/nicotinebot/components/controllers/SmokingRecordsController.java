@@ -36,4 +36,9 @@ public class SmokingRecordsController {
         return smokingRecordService.getAllByUser(id);
     }
 
+    @DeleteMapping("/{id}/{logId}")
+    public void deleteSmokingRecordById(@PathVariable("id") Long id, @PathVariable("logId") Long logId) {
+        smokingRecordService.deleteById(logId);
+    }
+
 }
