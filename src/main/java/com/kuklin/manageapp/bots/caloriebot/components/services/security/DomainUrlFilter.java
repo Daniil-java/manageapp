@@ -19,15 +19,17 @@ public class DomainUrlFilter extends OncePerRequestFilter {
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
     private final Map<String, List<String>> allowedPathsByDomain = Map.of(
-            "test1.com", List.of(
-                    "/api/test1/**",
-                    "/public/test1/**"
+            "zefir.fit", List.of(
+                    "/calorie/**"
             ),
-            "test2.com", List.of(
-                    "/api/test2/**",
-                    "/public/test2/**"
+            "kuklin.dev", List.of(
+                    "/**"
             )
     );
+
+    public static void main(String[] args) {
+
+    }
 
     @Override
     protected void doFilterInternal(
