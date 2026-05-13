@@ -23,8 +23,8 @@ public class WeightEntry {
 
     private Long userId;
     private LocalDate entryDate;
-    @Column(name = "weight_kg", precision = 5, scale = 2)
-    private BigDecimal weightKg;
+    @Column(name = "weight", precision = 5, scale = 2)
+    private BigDecimal weight;
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

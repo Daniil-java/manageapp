@@ -32,7 +32,7 @@ public class ReportUtils {
 
         // Индексируем вес по датам для быстрого доступа
         Map<LocalDate, BigDecimal> weightByDate = weightEntries.stream()
-                .collect(Collectors.toMap(WeightEntry::getEntryDate, WeightEntry::getWeightKg, (a, b) -> b));
+                .collect(Collectors.toMap(WeightEntry::getEntryDate, WeightEntry::getWeight, (a, b) -> b));
 
         // Группируем блюда по датам с учетом часового пояса пользователя
         Map<LocalDate, List<Dish>> dishesByDate = dishes.stream()
@@ -111,7 +111,7 @@ public class ReportUtils {
 
         // Используем NavigableMap для эффективного поиска "последнего известного веса" на дату
         NavigableMap<LocalDate, BigDecimal> weightByDate = new TreeMap<>();
-        for (WeightEntry w : weightEntries) weightByDate.put(w.getEntryDate(), w.getWeightKg());
+        for (WeightEntry w : weightEntries) weightByDate.put(w.getEntryDate(), w.getWeight());
 
         StringColumn dateCol = StringColumn.create("Дата");
         StringColumn weightCol = StringColumn.create("Вес");
@@ -261,15 +261,15 @@ public class ReportUtils {
 
         for (WeightEntry entry : sortedEntries) {
             dateCol.append(entry.getEntryDate().format(dateFormatter));
-            weightCol.append(entry.getWeightKg().stripTrailingZeros().toPlainString());
+            weightCol.append(entry.getWeight().stripTrailingZeros().toPlainString());
 
             if (previousWeight != null) {
-                BigDecimal delta = entry.getWeightKg().subtract(previousWeight);
+                BigDecimal delta = entry.getWeight().subtract(previousWeight);
                 deltaCol.append(String.format("%+.1f", delta));
             } else {
                 deltaCol.append("—");
             }
-            previousWeight = entry.getWeightKg();
+            previousWeight = entry.getWeight();
         }
 
         return Table.create("Таблица веса", dateCol, weightCol, deltaCol);

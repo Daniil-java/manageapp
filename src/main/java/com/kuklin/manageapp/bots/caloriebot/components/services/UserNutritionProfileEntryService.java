@@ -3,6 +3,7 @@ package com.kuklin.manageapp.bots.caloriebot.components.services;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfileEntry;
 import com.kuklin.manageapp.bots.caloriebot.components.repository.UserNutritionProfileEntryRepository;
+import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.UserNutritionProfileEntryDto;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,5 +48,9 @@ public class UserNutritionProfileEntryService {
 
     public List<UserNutritionProfileEntry> getAllByUserId(Long userId) {
         return userNutritionProfileEntryRepository.findAllByUserId(userId);
+    }
+
+    public List<UserNutritionProfileEntryDto> getAllDtoByUserId(Long userId) {
+        return UserNutritionProfileEntryDto.fromEntities(getAllByUserId(userId));
     }
 }

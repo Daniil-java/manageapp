@@ -1,16 +1,16 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.dish;
 
 import com.kuklin.manageapp.aiconversation.models.enums.ChatModel;
-import com.kuklin.manageapp.bots.caloriebot.configurations.TelegramCaloriesBotKeyComponents;
-import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
-import com.kuklin.manageapp.bots.caloriebot.entities.DishChoiceChatModel;
-import com.kuklin.manageapp.bots.caloriebot.models.feature.AccessResult;
-import com.kuklin.manageapp.bots.caloriebot.models.exceptions.MissingFeatureException;
-import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.DishDto;
 import com.kuklin.manageapp.bots.caloriebot.components.services.AnalyticsService;
 import com.kuklin.manageapp.bots.caloriebot.components.services.CalorieAccessService;
 import com.kuklin.manageapp.bots.caloriebot.components.services.DishChoiceChatModelService;
 import com.kuklin.manageapp.bots.caloriebot.components.services.DishService;
+import com.kuklin.manageapp.bots.caloriebot.configurations.TelegramCaloriesBotKeyComponents;
+import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
+import com.kuklin.manageapp.bots.caloriebot.entities.DishChoiceChatModel;
+import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.DishDto;
+import com.kuklin.manageapp.bots.caloriebot.models.exceptions.MissingFeatureException;
+import com.kuklin.manageapp.bots.caloriebot.models.feature.AccessResult;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.KeyboardCalorieUpdateHandler;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;

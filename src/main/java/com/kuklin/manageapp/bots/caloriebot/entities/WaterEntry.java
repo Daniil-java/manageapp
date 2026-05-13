@@ -21,7 +21,7 @@ public class WaterEntry {
 
     private Long userId;
     private LocalDate entryDate;
-    private Integer amountMl;
+    private Integer amount;
     @CreationTimestamp
     private Instant createdAt;
 

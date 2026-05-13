@@ -2,6 +2,7 @@ package com.kuklin.manageapp.bots.nicotinebot.components.controllers;
 
 import com.kuklin.manageapp.bots.nicotinebot.components.SmokingRecord;
 import com.kuklin.manageapp.bots.nicotinebot.components.SmokingRecordService;
+import io.swagger.v3.oas.annotations.Hidden;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -11,6 +12,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/nicotine")
 @RequiredArgsConstructor
+@Hidden
 public class SmokingRecordsController {
     private final SmokingRecordService smokingRecordService;
 

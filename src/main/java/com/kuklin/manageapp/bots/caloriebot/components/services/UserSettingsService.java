@@ -2,6 +2,7 @@ package com.kuklin.manageapp.bots.caloriebot.components.services;
 
 import com.kuklin.manageapp.bots.caloriebot.components.repository.UserSettingsRepository;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserSettings;
+import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.UserSettingsDto;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +21,20 @@ import java.util.Optional;
 @Slf4j
 public class UserSettingsService {
     private final UserSettingsRepository userSettingsRepository;
+
+    public UserSettingsDto getSettingsDto(Long userId) {
+        UserSettings settings = getOrCreate(userId);
+        return UserSettingsDto.fromEntity(settings);
+    }
+
+    @Transactional
+    public UserSettingsDto updateSettingsDto(Long userId, UserSettingsDto dto) {
+        UserSettings settings = getOrCreate(userId);
+
+        // Обновляем поля сущности данными из DTO
+        settings = dto.mergeToEntity(settings);
+        return UserSettingsDto.fromEntity(userSettingsRepository.save(settings));
+    }
 
     /**
      * Устанавливает таймзону пользователя с предварительной валидацией.

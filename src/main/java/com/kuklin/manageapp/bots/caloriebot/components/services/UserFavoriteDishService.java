@@ -2,6 +2,10 @@ package com.kuklin.manageapp.bots.caloriebot.components.services;
 
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserFavoriteDish;
+import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.DishDto;
+import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.UserFavoriteDishDto;
+import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
+import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.AccessResult;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.BotFeature;
 import com.kuklin.manageapp.bots.caloriebot.components.RequiresFeature;
@@ -22,6 +26,30 @@ public class UserFavoriteDishService {
     private final UserFavoriteDishRepository userFavoriteDishRepository;
     private final DishService dishService;
     private final UserFeatureUsageService userFeatureUsageService;
+
+    public List<UserFavoriteDishDto> getAllForUserDto(Long userId) {
+        return UserFavoriteDishDto.fromEntities(getAllForUser(userId));
+    }
+
+    public UserFavoriteDishDto saveFromDishDto(Long userId, Long dishId) {
+        Dish dish = dishService.getDishByIdOrNull(dishId);
+
+        if (dish == null || !dish.getUserId().equals(userId)) {
+            throw new ErrorResponseException(ErrorStatus.DISH_NOT_FOUND);
+        }
+
+        // Не даём одинаковые названия у одного пользователя
+        if (userFavoriteDishRepository.existsByUserIdAndNameIgnoreCase(userId, dish.getName())) {
+            throw new ErrorResponseException(ErrorStatus.FAVORITE_DISH_ALREADY_EXISTS);
+        }
+
+        return UserFavoriteDishDto.fromEntity(userFavoriteDishRepository.save(UserFavoriteDish.fromDish(dish)));
+
+    }
+
+    public DishDto addDishFromFavoriteDto(Long userId, Long favoriteId) {
+        return DishDto.fromEntity(addDishFromFavorite(userId, favoriteId));
+    }
 
     public List<UserFavoriteDish> getAllForUser(Long userId) {
         return userFavoriteDishRepository.findAllByUserIdOrderByLastUsedAtDescCreatedAtDesc(userId);

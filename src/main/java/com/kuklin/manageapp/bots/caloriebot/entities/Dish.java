@@ -34,7 +34,8 @@ public class Dish {
     private Integer carbohydrates;
 
     // --- Количество ---
-    private Integer weightGrams;       // фактический вес блюда
+    @Column(name = "weight")
+    private Integer weight;       // фактический вес блюда
     private Integer portions;          // количество порций
     private Integer portionWeight;     // вес одной порции (если известно)
 
@@ -80,7 +81,7 @@ public class Dish {
                 .setProteins(dto.getProteins())
                 .setFats(dto.getFats())
                 .setCarbohydrates(dto.getCarbohydrates())
-                .setWeightGrams(dto.getWeightGrams())
+                .setWeight(dto.getWeight())
                 .setPortions(dto.getPortions())
                 .setPortionWeight(dto.getPortionWeight())
                 .setCategory(dto.getCategory())
@@ -107,8 +108,8 @@ public class Dish {
                 .append("🥑 Ж: <b>").append(nvl(dish.getFats())).append(" г</b> ")
                 .append("🍞 У: <b>").append(nvl(dish.getCarbohydrates())).append(" г</b>\n");
 
-        if (dish.getWeightGrams() != null) {
-            sb.append("⚖️ Вес: <b>").append(dish.getWeightGrams()).append(" г</b>\n");
+        if (dish.getWeight() != null) {
+            sb.append("⚖️ Вес: <b>").append(dish.getWeight()).append(" г</b>\n");
         } else if (dish.getPortions() != null) {
             sb.append("🍽 Порции: <b>").append(dish.getPortions()).append("</b>\n");
         }
@@ -158,7 +159,7 @@ public class Dish {
         this.portionWeight = scale(this.portionWeight, multiplier);
 
         // 2. Пересчитываем общий вес
-        this.weightGrams = this.portionWeight * this.portions;
+        this.weight = this.portionWeight * this.portions;
 
         // 3. Масштабируем КБЖУ
         this.calories      = scale(this.calories, multiplier);
@@ -241,7 +242,7 @@ public class Dish {
         sb.append(", p=").append(proteins);
         sb.append(", f=").append(fats);
         sb.append(", c=").append(carbohydrates);
-        sb.append(", weight=").append(weightGrams);
+        sb.append(", weight=").append(weight);
         sb.append(", cat=").append(category);
         sb.append(", conf=").append(aiConfidence);
         sb.append(", created=").append(created); // Instant в формате UTC ISO-8601

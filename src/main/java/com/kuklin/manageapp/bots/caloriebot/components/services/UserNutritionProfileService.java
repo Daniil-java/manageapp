@@ -4,10 +4,12 @@ import com.kuklin.manageapp.bots.caloriebot.components.services.exceptions.valid
 import com.kuklin.manageapp.bots.caloriebot.components.services.exceptions.validation.InvalidHeightException;
 import com.kuklin.manageapp.bots.caloriebot.components.services.exceptions.validation.UserNutritionProfileValidationException;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
-import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.UserNutritionDto;
+import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.UserNutritionProfileDto;
 import com.kuklin.manageapp.bots.caloriebot.components.repository.UserNutritionProfileRepository;
 import com.kuklin.manageapp.bots.caloriebot.components.services.exceptions.InsufficientProfileDataException;
 import com.kuklin.manageapp.bots.caloriebot.components.services.exceptions.validation.InvalidWeightException;
+import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
+import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,9 +20,9 @@ import java.math.BigDecimal;
 import static com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile.*;
 
 /*
-* Сервис профиля питания пользователя
-*
-*
+ * Сервис профиля питания пользователя
+ *
+ *
  */
 @Service
 @RequiredArgsConstructor
@@ -30,6 +32,11 @@ public class UserNutritionProfileService {
     private final UserNutritionProfileRepository userNutritionProfileRepository;
     private final WeightEntryService weightEntryService;
     private final UserNutritionProfileEntryService userNutritionProfileEntryService;
+
+    @Transactional
+    public UserNutritionProfileDto getOrCreateProfileDto(Long userId) {
+        return UserNutritionProfileDto.fromEntity(getOrCreateProfile(userId));
+    }
 
     /**
      * Получить профиль или создать пустой (только userId).
@@ -105,8 +112,8 @@ public class UserNutritionProfileService {
     //Пересчет пользовательских целей и сохранение
     @Transactional
     public UserNutritionProfile recalculateAndSave(UserNutritionProfile profile) throws InsufficientProfileDataException, UserNutritionProfileValidationException {
-        UserNutritionDto dto = recalcTargets(profile);
-        profile = UserNutritionDto.updateNutritionData(profile, dto);
+        UserNutritionProfileDto dto = recalcTargets(profile);
+        profile = UserNutritionProfileDto.updateNutritionData(profile, dto);
         profile = validateAndSave(profile);
         userNutritionProfileEntryService.syncWithProfile(profile);
         return profile;
@@ -115,7 +122,7 @@ public class UserNutritionProfileService {
     /**
      * Пересчёт нормы калорий и БЖУ.
      */
-    private UserNutritionDto recalcTargets(UserNutritionProfile profile)
+    private UserNutritionProfileDto recalcTargets(UserNutritionProfile profile)
             throws InsufficientProfileDataException {
 
         checkTargetCalculateParamsOrThrow(profile);
@@ -158,7 +165,7 @@ public class UserNutritionProfileService {
                 weight * profile.getActivityLevel().getWaterMlPerKg()
         );
 
-        return new UserNutritionDto()
+        return new UserNutritionProfileDto()
                 .setCaloriesNormPerDay(caloriesTarget)
                 .setProteinsNormGramsPerDay(proteins)
                 .setFatsNormGramsPerDay(fats)
@@ -175,6 +182,7 @@ public class UserNutritionProfileService {
             return false;
         }
     }
+
     //Проверка достаточности существующих данных или выброс ошибки
     private void checkTargetCalculateParamsOrThrow(UserNutritionProfile profile)
             throws InsufficientProfileDataException {
@@ -218,7 +226,7 @@ public class UserNutritionProfileService {
             UserNutritionProfile.Goal goal,
             Integer waterTargetMlPerDay,
             DietType dietType
-    ) throws UserNutritionProfileValidationException{
+    ) throws UserNutritionProfileValidationException {
 
         UserNutritionProfile profile = getOrCreateProfile(userId);
 
@@ -234,5 +242,29 @@ public class UserNutritionProfileService {
         profile = validateAndSave(profile);
         userNutritionProfileEntryService.syncWithProfile(profile);
         return profile;
+    }
+
+    @Transactional
+    public UserNutritionProfileDto patchProfileDto(
+            Long userId,
+            UserNutritionProfileDto dto
+    ) {
+        try {
+            return UserNutritionProfileDto.fromEntity(recalculateAndSave(patchProfile(
+                    userId,
+                    dto.getSex(),
+                    dto.getAgeYears(),
+                    dto.getHeightCm(),
+                    dto.getCurrentWeightKg(),
+                    dto.getActivityLevel(),
+                    dto.getGoal(),
+                    dto.getWaterTargetMlPerDay(),
+                    dto.getDietType()
+            )));
+        } catch (InsufficientProfileDataException e) {
+            throw new ErrorResponseException(ErrorStatus.PROFILE_INSUFFICIENT_DATA);
+        } catch (UserNutritionProfileValidationException e) {
+            throw new ErrorResponseException(ErrorStatus.USER_NUTRITION_PROFILE_VALIDATION_EXCEPTION);
+        }
     }
 }

@@ -2,12 +2,14 @@ package com.kuklin.manageapp.bots.aiassistantcalendar.controllers;
 
 import com.kuklin.manageapp.bots.aiassistantcalendar.entities.AssistantGoogleOAuth;
 import com.kuklin.manageapp.bots.aiassistantcalendar.services.google.TokenService;
+import io.swagger.v3.oas.annotations.Hidden;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/account/google")
 @RequiredArgsConstructor
+@Hidden
 public class AccountController {
     private final TokenService tokenService;
 

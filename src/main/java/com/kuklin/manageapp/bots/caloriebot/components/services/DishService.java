@@ -10,21 +10,26 @@ import com.kuklin.manageapp.bots.caloriebot.configurations.TelegramCaloriesBotKe
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserFavoriteDish;
 import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.DishDto;
+import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
+import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
+import com.kuklin.manageapp.bots.caloriebot.models.exceptions.MissingFeatureException;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.AccessResult;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.BotFeature;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
+import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.services.TelegramUserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.time.*;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.kuklin.manageapp.bots.caloriebot.entities.Dish.scale;
 import static com.kuklin.manageapp.bots.caloriebot.utils.DishCalorieBotPrompts.AI_PHOTO_REQUEST;
@@ -39,22 +44,44 @@ public class DishService {
     private final TelegramCaloriesBotKeyComponents telegramCaloriesBotKeyComponents;
     private final ObjectMapper objectMapper;
     private final UserSettingsService userSettingsService;
+    private final CalorieAccessService calorieAccessService;
+    private final TelegramUserService telegramUserService;
+    private final ObjectProvider<DishService> selfProvider;
 
     // --- Public Methods ---
 
+    //TODO Исправить на запрос премиума
+    @Transactional
+    public List<DishDto> processPhotoAndGetListDto(Long userId, String photoBase64, String message) {
+        AccessResult<List<Dish>> result = selfProvider.getIfAvailable().getDishDtoByPhoto(userId, "data:image/jpeg;base64," + photoBase64, message);
+        try {
+            List<Dish> dishes = result.getOrThrow();
+            TelegramUser user = telegramUserService.getTelegramUserByTelegramIdAndBotIdentifierOrNull(userId, BotIdentifier.CALORIE_BOT);
+            calorieAccessService.incrementResponses(user);
+            return DishDto.fromEntities(dishes);
+        } catch (MissingFeatureException e) {
+            throw new ErrorResponseException(ErrorStatus.MISSING_FEATURE);
+        }
+    }
+
+
     @Transactional
     @RequiresFeature(value = BotFeature.DISH_AI_VISION, botIdentifier = BotIdentifier.CALORIE_BOT)
-    public AccessResult<List<Dish>> getDishDtoByPhoto(Long userId, String imageUrl, String message) {
+    public AccessResult<List<Dish>> getDishDtoByPhoto(Long userId, String photoBase64, String message) {
         String aiPhotoPrompt = String.format(AI_PHOTO_REQUEST, message);
         String aiResponse = openAiIntegrationService.fetchPhotoResponse(
                 telegramCaloriesBotKeyComponents.getAiKey(),
                 aiPhotoPrompt,
-                imageUrl,
+                photoBase64,
                 BotIdentifier.CALORIE_BOT
         );
         return AccessResult.success(getDishListByAiResponseOrNull(userId, aiResponse));
     }
 
+    @Transactional
+    public List<DishDto> getDishDtoByDescriptionOrNull(Long userId, String text) {
+        return DishDto.fromEntities(getDishByDescriptionOrNull(userId, text));
+    }
     @Transactional
     public List<Dish> getDishByDescriptionOrNull(Long userId, String text) {
         String aiResponse = openAiIntegrationService.fetchResponse(
@@ -70,6 +97,13 @@ public class DishService {
     @Transactional
     public void removeByDishId(Long id) {
         dishRepository.deleteById(id);
+    }
+
+    @Transactional(readOnly = true)
+    public List<DishDto> getTodayDishesDto(Long userId) {
+        List<Dish> dishes = getTodayDishes(userId);
+
+        return DishDto.fromEntities(dishes);
     }
 
     @Transactional(readOnly = true)
@@ -140,7 +174,7 @@ public class DishService {
             dish.setPortions(newPortions);
 
             if (dish.getPortionWeight() != null) {
-                dish.setWeightGrams(dish.getPortionWeight() * newPortions);
+                dish.setWeight(dish.getPortionWeight() * newPortions);
             }
 
             return dishRepository.save(dish);
@@ -151,9 +185,9 @@ public class DishService {
         dish.setPortions(newPortions);
 
         if (dish.getPortionWeight() != null) {
-            dish.setWeightGrams(dish.getPortionWeight() * newPortions);
-        } else if (dish.getWeightGrams() != null) {
-            dish.setWeightGrams(scale(dish.getWeightGrams(), multiplier));
+            dish.setWeight(dish.getPortionWeight() * newPortions);
+        } else if (dish.getWeight() != null) {
+            dish.setWeight(scale(dish.getWeight(), multiplier));
         }
 
         dish.setCalories(scale(dish.getCalories(), multiplier));
@@ -173,18 +207,18 @@ public class DishService {
 
     private List<Dish> getDishListByAiResponseOrNull(Long userId, String response) {
         try {
-            List<DishDto> dtos = parseJsonOrNull(response, new TypeReference<List<DishDto>>() {});
+            List<com.kuklin.manageapp.bots.caloriebot.models.entitydtos.DishDto> dtos = parseJsonOrNull(response, new TypeReference<List<com.kuklin.manageapp.bots.caloriebot.models.entitydtos.DishDto>>() {});
 
             if (dtos == null || dtos.isEmpty()) {
                 return null;
             }
 
-            for (DishDto dto: dtos) {
+            for (com.kuklin.manageapp.bots.caloriebot.models.entitydtos.DishDto dto: dtos) {
                 dto.checkValuesNotNull();
             }
 
             List<Dish> dishes = new ArrayList<>();
-            for (DishDto dto : dtos) {
+            for (com.kuklin.manageapp.bots.caloriebot.models.entitydtos.DishDto dto : dtos) {
                 if (dto.getIsDish() != null && dto.getIsDish()) {
                     dto.setUserId(userId);
                     Dish dish = Dish.toEntity(dto);
@@ -229,6 +263,102 @@ public class DishService {
             }
         }
         return s;
+    }
+
+    public DishDto updateDishPortion(Long userId, Long dishId, DishDto request) {
+        Dish dish = getDishByIdOrNull(dishId);
+        if (!dish.getUserId().equals(userId)) {
+            //TODO выкидывать ошибку
+            return null;
+        }
+
+        dish = request.mergeToEntity(dish);
+        dish = dishRepository.save(dish);
+        return DishDto.fromEntity(dish);
+
+    }
+
+    @Transactional(readOnly = true)
+    public List<DishDto> getDishesByPeriodDto(Long userId, LocalDate from, LocalDate to) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
+
+        // Выдаст ровно "2026-04-29T00:00:00"
+        String fromStr = from.atStartOfDay().format(formatter);
+
+        // Выдаст ровно "2026-05-28T23:59:59"
+        String toStr = to.atTime(23, 59, 59).format(formatter);
+
+        List<Dish> dishes = getDishesByPeriod(userId, fromStr, toStr);
+        return DishDto.fromEntities(dishes);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Dish> getDishesByPeriod(Long userId, String from, String to) {
+        ZoneId userZone = userSettingsService.getOrCreate(userId).getZoneId();
+
+        ZonedDateTime fromZdt = ZonedDateTime.of(
+                LocalDateTime.parse(from),
+                userZone
+        );
+
+        ZonedDateTime toZdt = ZonedDateTime.of(
+                LocalDateTime.parse(to),
+                userZone
+        );
+
+        return dishRepository.findAllByUserIdAndCreatedBetween(
+                userId,
+                fromZdt.toInstant(),
+                toZdt.toInstant()
+        );
+    }
+
+    public List<DishDto> processVoiceAndGetListDto(Long tgUserId, String base64Audio, String format) {
+        String request = openAiIntegrationService.fetchAudioResponse(
+                telegramCaloriesBotKeyComponents.getAiKey(),
+                Base64.getDecoder().decode(base64Audio),
+                BotIdentifier.CALORIE_BOT,
+                getClass().getSimpleName() + ": processVoice!"
+        );
+
+        return getDishDtoByDescriptionOrNull(tgUserId, request);
+    }
+
+    @Transactional(readOnly = true)
+    public int getCurrentStreak(Long userId) {
+
+        ZoneId zone = userSettingsService.getOrCreate(userId).getZoneId();
+
+        LocalDate today = LocalDate.now(zone);
+
+        Instant start = today.minusYears(1)
+                .atStartOfDay(zone)
+                .toInstant();
+
+        Instant end = today.plusDays(1)
+                .atStartOfDay(zone)
+                .toInstant();
+
+        Set<LocalDate> activeDays = new HashSet<>(
+                dishRepository.findDistinctDaysByUserIdAndCreatedBetween(
+                        userId,
+                        start,
+                        end
+                )
+        );
+
+        LocalDate currentDay = activeDays.contains(today)
+                ? today
+                : today.minusDays(1);
+
+        int streak = 0;
+
+        while (activeDays.contains(currentDay)) {
+            streak++;
+            currentDay = currentDay.minusDays(1);
+        }
+
+        return streak;
     }
 
     // --- Commented Methods ---

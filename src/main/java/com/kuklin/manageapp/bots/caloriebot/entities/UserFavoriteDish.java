@@ -63,7 +63,7 @@ public class UserFavoriteDish {
         dish.setFats(fav.getFats());
         dish.setCarbohydrates(fav.getCarbohydrates());
 
-        dish.setWeightGrams(fav.getWeightGrams());
+        dish.setWeight(fav.getWeightGrams());
         dish.setPortions(fav.getPortions());
         dish.setPortionWeight(fav.getPortionWeight());
 
@@ -97,7 +97,7 @@ public class UserFavoriteDish {
         fav.setCarbohydrates(dish.getCarbohydrates());
 
         // --- Количество ---
-        fav.setWeightGrams(dish.getWeightGrams());
+        fav.setWeightGrams(dish.getWeight());
         fav.setPortions(dish.getPortions());
         fav.setPortionWeight(dish.getPortionWeight());
 

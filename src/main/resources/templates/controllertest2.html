@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calorie Bot Tester</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root { --bg: #f4f4f9; --card: #fff; --text: #333; --border: #ddd; --primary: #0088cc; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; }
+    .container { max-width: 800px; margin: 0 auto; }
+    h1 { text-align: center; font-size: 1.5em; margin-bottom: 20px; }
+    .config-box { background: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #bbdefb; }
+    .grid { display: grid; grid-template-columns: 1fr; gap: 15px; }
+    @media(min-width: 600px) { .grid { grid-template-columns: 1fr 1fr; } }
+    .card { background: var(--card); padding: 15px; border-radius: 8px; border: 1px solid var(--border); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .card h2 { margin-top: 0; font-size: 1.1em; border-bottom: 2px solid var(--border); padding-bottom: 5px; margin-bottom: 15px; }
+    .row { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; flex-wrap: wrap; }
+    input, select, textarea { padding: 6px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px; flex-grow: 1; min-width: 60px; }
+    button { cursor: pointer; padding: 6px 12px; background: var(--primary); color: white; border: none; border-radius: 4px; font-weight: bold; font-size: 12px; }
+    button:hover { opacity: 0.8; }
+    button.get { background: #2980b9; } button.post { background: #27ae60; } button.patch { background: #8e44ad; } button.delete { background: #c0392b; } button.put { background: #f39c12; }
+    .log-container { margin-top: 20px; background: #1e1e1e; color: #4af626; padding: 15px; border-radius: 8px; font-family: monospace; font-size: 12px; height: 300px; overflow-y: auto; white-space: pre-wrap; }
+    .log-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; color: #fff; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>🛠 Calorie API Tester</h1>
+
+  <div class="config-box row">
+    <label><b>Ngrok URL:</b></label>
+    <input type="text" id="baseUrl" value="https://tvoy-ngrok-url.ngrok-free.dev" placeholder="https://...">
+  </div>
+
+  <div class="config-box row" style="justify-content: space-between;">
+    <div>
+      <label><b>Авторизация через сайт (OAuth2):</b></label>
+      <script async src="https://telegram.org/js/telegram-widget.js?22"
+              data-telegram-login="medidairy_bot"
+              data-size="large"
+              data-onauth="onTelegramAuth(user)"
+              data-request-access="write"></script>
+    </div>
+    <button class="delete" onclick="logoutWeb()">Выйти (Очистить LocalStorage)</button>
+  </div>
+
+  <div class="grid">
+    <!-- DISHES CONTROLLER -->
+    <div class="card">
+      <h2>💰 Оплата (Telegram Stars)</h2>
+      <div class="row">
+        <button class="get" onclick="api('GET', '/calorie/payment/plans')">Список тарифов</button>
+        <button class="get" style="background: #2ecc71;" onclick="checkSubscription()">Статус подписки</button>
+      </div>
+      <div class="row">
+        <input type="number" id="plan_id" placeholder="ID тарифа (planId)">
+        <button class="post" style="background: #f1c40f; color: #000;" onclick="payWithStars()">Оплатить звездами ⭐</button>
+      </div>
+      <small style="color: #666; font-size: 10px;">Для оплаты звездами валюта в тарифе должна быть XTR</small>
+    </div>
+
+    <div class="card">
+      <h2>🍽 Блюда (Dishes)</h2>
+      <div class="row">
+        <button class="get" onclick="api('GET', '/calorie/dishes/today')">За сегодня</button>
+      </div>
+      <div class="row">
+        <input type="date" id="d_from"> <input type="date" id="d_to">
+        <button class="get" onclick="api('GET', `/calorie/dishes/period?from=${val('d_from')}&to=${val('d_to')}`)">За период</button>
+      </div>
+      <div class="row">
+        <input type="text" id="d_text" placeholder="Текст: '2 яйца'">
+        <button class="post" onclick="api('POST', '/calorie/dishes/text', {text: val('d_text')})">Текст +</button>
+      </div>
+      <div class="row">
+        <input type="file" id="d_photo" accept="image/*" style="max-width: 150px;">
+        <input type="text" id="d_photo_msg" placeholder="Сообщение к фото">
+        <button class="post" onclick="sendPhoto()">Фото +</button>
+      </div>
+      <div class="row">
+        <input type="file" id="d_voice" accept="audio/*" style="max-width: 150px;">
+        <button class="post" onclick="sendVoice()">Голос +</button>
+      </div>
+      <div class="row">
+        <input type="number" id="d_id" placeholder="ID блюда" style="max-width: 70px;">
+        <input type="text" id="d_portion" placeholder='JSON: {"weight": 100}'>
+        <button class="patch" onclick="api('PATCH', `/calorie/dishes/${val('d_id')}/portion`, JSON.parse(val('d_portion') || '{}'))">Изменить</button>
+        <button class="delete" onclick="api('DELETE', `/calorie/dishes/${val('d_id')}`)">Удалить</button>
+      </div>
+    </div>
+
+    <!-- PROFILE & SETTINGS -->
+    <div class="card">
+      <h2>👤 Профиль и Настройки</h2>
+      <div class="row">
+        <button class="get" onclick="api('GET', '/calorie/profile')">Профиль</button>
+        <button class="get" onclick="api('GET', '/calorie/profile/entries')">История профиля</button>
+      </div>
+      <div class="row">
+        <input type="text" id="p_json" placeholder='JSON профиля'>
+        <button class="put" onclick="api('PUT', '/calorie/profile', JSON.parse(val('p_json') || '{}'))">Обновить профиль</button>
+      </div>
+      <div class="row" style="margin-top: 15px; border-top: 1px solid #ddd; padding-top: 10px;">
+        <button class="get" onclick="api('GET', '/calorie/settings')">Настройки</button>
+      </div>
+      <div class="row">
+        <input type="text" id="s_json" placeholder='JSON настроек'>
+        <button class="put" onclick="api('PUT', '/calorie/settings', JSON.parse(val('s_json') || '{}'))">Обновить настройки</button>
+      </div>
+    </div>
+
+    <!-- WATER & WEIGHT -->
+    <div class="card">
+      <h2>💧 Вода и Вес</h2>
+      <div class="row">
+        <button class="get" onclick="api('GET', '/calorie/water')">Вода за сегодня</button>
+      </div>
+      <div class="row">
+        <input type="number" id="w_amount" placeholder="мл (напр. 250)">
+        <button class="post" onclick="api('POST', `/calorie/water?amountMl=${val('w_amount')}`)">Добавить воду</button>
+      </div>
+      <div class="row" style="margin-top: 15px; border-top: 1px solid #ddd; padding-top: 10px;">
+        <button class="get" onclick="api('GET', '/calorie/weight')">История веса</button>
+      </div>
+      <div class="row">
+        <input type="number" step="0.1" id="weight_val" placeholder="Вес кг (напр. 75.5)">
+        <button class="put" onclick="api('PUT', '/calorie/weight', parseFloat(val('weight_val')))">Записать вес</button>
+      </div>
+    </div>
+
+    <!-- FAVORITES -->
+    <div class="card">
+      <h2>⭐ Избранное</h2>
+      <div class="row">
+        <button class="get" onclick="api('GET', '/calorie/favorites')">Все избранные</button>
+      </div>
+      <div class="row">
+        <input type="number" id="f_dish_id" placeholder="ID блюда (Dish)">
+        <button class="post" onclick="api('POST', `/calorie/favorites/from-dish?dishId=${val('f_dish_id')}`)">В избранное</button>
+      </div>
+      <div class="row">
+        <input type="number" id="f_fav_id" placeholder="ID избранного (Fav)">
+        <button class="post" onclick="api('POST', `/calorie/favorites/${val('f_fav_id')}/use`)">Съесть</button>
+        <button class="delete" onclick="api('DELETE', `/calorie/favorites/${val('f_fav_id')}`)">Удалить</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ЛОГИ -->
+  <div class="log-container">
+    <div class="log-header">
+      <strong>КОНСОЛЬ ЗАПРОСОВ:</strong>
+      <button onclick="document.getElementById('out').innerText = ''" style="background: #555;">Очистить</button>
+    </div>
+    <div id="out">Ожидание команд... Telegram InitData: Проверяем...</div>
+  </div>
+</div>
+
+<script>
+  const tg = window.Telegram.WebApp;
+  tg.ready();
+  tg.expand();
+
+  const out = document.getElementById('out');
+  const val = (id) => document.getElementById(id).value;
+
+  // 1. Проверяем источник авторизации
+  let currentAuthData = tg.initData || localStorage.getItem('tg_web_auth') || "";
+
+  if (tg.initData) {
+    out.innerText = `✅ Вход через Mini App (initData).\n` + out.innerText;
+  } else if (localStorage.getItem('tg_web_auth')) {
+    out.innerText = `✅ Вход через Web Widget (LocalStorage).\n` + out.innerText;
+  } else {
+    out.innerText = `⚠️ ОШИБКА: Нет данных авторизации! Войдите через виджет или запустите в боте.\n` + out.innerText;
+  }
+
+  // 2. Обработчик успешного входа через виджет Telegram
+  function onTelegramAuth(user) {
+    // Превращаем объект user {id: 123, hash: "...", auth_date: 123} в строку формата URL
+    const authDataString = Object.keys(user)
+            .map(key => `${key}=${encodeURIComponent(user[key])}`)
+            .join('&');
+
+    localStorage.setItem('tg_web_auth', authDataString);
+    currentAuthData = authDataString;
+    out.innerText = `✅ Web-авторизация успешна! ID: ${user.id}\n` + out.innerText;
+  }
+
+  // 3. Выход (очистка сессии сайта)
+  function logoutWeb() {
+    localStorage.removeItem('tg_web_auth');
+    currentAuthData = tg.initData || "";
+    out.innerText = "🚪 Вышли из Web-сессии. Данные стерты.\n" + out.innerText;
+  }
+
+  // Конвертер файлов в Base64 (без заголовка data:image/png;base64,)
+  const fileToBase64 = file => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = error => reject(error);
+  });
+
+  // Отправка фото
+  async function sendPhoto() {
+    const file = document.getElementById('d_photo').files[0];
+    if (!file) return alert('Выберите фото!');
+    out.innerText = "⏳ Конвертация фото в Base64...\n" + out.innerText;
+    const base64 = await fileToBase64(file);
+    api('POST', '/calorie/dishes/photo', { base64Image: base64, message: val('d_photo_msg') });
+  }
+
+  // Отправка аудио
+  async function sendVoice() {
+    const file = document.getElementById('d_voice').files[0];
+    if (!file) return alert('Выберите аудиофайл!');
+    out.innerText = "⏳ Конвертация аудио в Base64...\n" + out.innerText;
+    const base64 = await fileToBase64(file);
+    // Берем расширение файла как формат
+    const format = file.name.split('.').pop() || "webm";
+    api('POST', '/calorie/dishes/voice', { base64Audio: base64, format: format });
+  }
+
+  // Главная функция запросов
+  async function api(method, path, body = null) {
+    let url = val('baseUrl').replace(/\/$/, '') + path; // Убираем слэш в конце URL если есть
+
+    let logMsg = `\n-------------------------\n📡 [${method}] ${path}`;
+    if (body) logMsg += `\n📦 Тело: ${JSON.stringify(body)}`;
+    out.innerText = logMsg + "\n⏳ Ожидание ответа..." + out.innerText;
+
+    const options = {
+      method: method,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-TG-INIT-DATA': currentAuthData, // Обязательно передаем хеш
+        'ngrok-skip-browser-warning': 'true' // Для обхода заглушки ngrok
+      }
+    };
+
+    if (body && method !== 'GET') {
+      options.body = JSON.stringify(body);
+    }
+
+    try {
+      const response = await fetch(url, options);
+
+      let resData = "";
+      // Проверяем 204 No Content (для DELETE)
+      if (response.status === 204) {
+        resData = "Успешно удалено (204 No Content)";
+      } else {
+        const text = await response.text();
+        try {
+          resData = JSON.stringify(JSON.parse(text), null, 2); // Пытаемся красиво вывести JSON
+        } catch(e) {
+          resData = text; // Если пришел простой текст или ошибка
+        }
+      }
+
+      const statusIcon = response.ok ? '✅' : '❌';
+      out.innerText = `\n${statusIcon} Статус: ${response.status}\nОтвет:\n${resData}\n` + out.innerText;
+
+    } catch (err) {
+      out.innerText = `\n🔥 ОШИБКА СЕТИ: ${err.message}\n` + out.innerText;
+    }
+  }
+
+  // Специальная функция для оплаты
+  async function payWithStars() {
+    const planId = val('plan_id');
+    if (!planId) return alert('Сначала введите ID тарифа!');
+
+    out.innerText = `\n-------------------------\n💰 [PAYMENT] Инициализация оплаты для плана ID: ${planId}...\n` + out.innerText;
+
+    // 1. Запрашиваем ссылку на оплату у нашего контроллера
+    let url = val('baseUrl').replace(/\/$/, '') + `/calorie/payment/create?planId=${planId}`;
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-TG-INIT-DATA': currentAuthData,
+          'ngrok-skip-browser-warning': 'true'
+        }
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Ошибка сервера (${response.status}): ${errorText}`);
+      }
+
+      const data = await response.json();
+
+      // В ответе мы ожидаем поле paymentUrl (invoiceLink)
+      if (data.paymentUrl) {
+        out.innerText = `✅ Ссылка получена: ${data.paymentUrl.substring(0, 30)}...\n` + out.innerText;
+
+        // 2. Если мы внутри Telegram Mini App — открываем нативное окно
+        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
+          window.Telegram.WebApp.openInvoice(data.paymentUrl, function(status) {
+            out.innerText = `\n🔔 Результат Telegram: [${status}]\n` + out.innerText;
+
+            if (status === 'paid') {
+              // Вместо простого алерта вызываем нашу новую функцию через небольшую паузу,
+              // чтобы бэкенд успел обработать webhook от Telegram (PreCheckout/SuccessfulPayment)
+              setTimeout(() => {
+                checkSubscription();
+              }, 1500);
+            } else if (status === 'cancelled') {
+              window.Telegram.WebApp.showAlert("Оплата отменена");
+            }
+          });
+        } else {
+          // 3. Если открыли просто в браузере (вне бота), перенаправляем на ссылку
+          out.innerText = `⚠️ Тестер запущен вне Mini App. Открываю ссылку в новой вкладке...\n` + out.innerText;
+          window.open(data.paymentUrl, '_blank');
+        }
+      } else {
+        out.innerText = `❌ Ошибка: Поле paymentUrl не найдено в ответе бэкенда.\n` + out.innerText;
+      }
+    } catch (err) {
+      out.innerText = `\n🔥 ОШИБКА ПРИ СОЗДАНИИ ПЛАТЕЖА: ${err.message}\n` + out.innerText;
+      console.error(err);
+    }
+  }
+
+  async function checkSubscription() {
+    out.innerText = `\n-------------------------\n🔄 Запрос статуса подписки...\n` + out.innerText;
+
+    let url = val('baseUrl').replace(/\/$/, '') + '/calorie/payment/subscription-status';
+
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'X-TG-INIT-DATA': currentAuthData,
+          'ngrok-skip-browser-warning': 'true'
+        }
+      });
+
+      if (!response.ok) throw new Error('Ошибка при получении статуса');
+
+      const data = await response.json(); // Теперь это массив []
+
+      // Выводим сырой JSON в консоль тестера для отладки
+      out.innerText = `\nℹ️ Получено подписок: ${data.length}\n` + out.innerText;
+
+      if (!data || data.length === 0) {
+        const msg = "❌ У вас нет активных или запланированных подписок.";
+        if (window.Telegram?.WebApp) window.Telegram.WebApp.showAlert(msg);
+        else alert(msg);
+        return;
+      }
+
+      // Формируем общее сообщение из всех элементов списка
+      let fullMessage = "📋 Ваши подписки:\n\n";
+
+      data.forEach((sub, index) => {
+        const icon = sub.status === 'ACTIVE' ? '✅' : '⏳';
+        fullMessage += `${icon} ${sub.planName}\n`;
+        fullMessage += `   Статус: ${sub.statusMessage}\n`;
+        fullMessage += `   Истекает: ${sub.expiryDate}\n`;
+        if (index < data.length - 1) fullMessage += `-------------------\n`;
+      });
+
+      // Выводим красивое нативное окно в Telegram
+      if (window.Telegram && window.Telegram.WebApp) {
+        window.Telegram.WebApp.showAlert(fullMessage);
+      } else {
+        alert(fullMessage);
+      }
+
+    } catch (err) {
+      out.innerText = `\n🔥 Ошибка: ${err.message}\n` + out.innerText;
+    }
+  }
+
+</script>
+
+</body>
+</html>

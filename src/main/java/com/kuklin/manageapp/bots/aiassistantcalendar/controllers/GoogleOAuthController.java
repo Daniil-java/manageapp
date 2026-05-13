@@ -1,6 +1,7 @@
 package com.kuklin.manageapp.bots.aiassistantcalendar.controllers;
 
 import com.kuklin.manageapp.bots.aiassistantcalendar.services.google.GoogleOAuthService;
+import io.swagger.v3.oas.annotations.Hidden;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +16,7 @@ import java.util.UUID;
 @RequestMapping("/auth/google")
 @RequiredArgsConstructor
 @Slf4j
+@Hidden
 public class GoogleOAuthController {
     private final GoogleOAuthService googleOAuthService;
 

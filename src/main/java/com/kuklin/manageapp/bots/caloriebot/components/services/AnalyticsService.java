@@ -174,7 +174,7 @@ public class AnalyticsService {
             // Теперь сравниваем с ПРЕДЫДУЩИМ элементом (i-1), так как идем от старых к новым
             if (i > 0) {
                 WeightEntry previous = weightEntries.get(i - 1);
-                double diff = current.getWeightKg().subtract(previous.getWeightKg()).doubleValue();
+                double diff = current.getWeight().subtract(previous.getWeight()).doubleValue();
 
                 if (diff > 0) {
                     trend = " 📈 <b>+" + String.format("%.1f", diff) + "</b>";
@@ -195,14 +195,14 @@ public class AnalyticsService {
 
             sb.append("• ").append(current.getEntryDate())
                     .append(time)
-                    .append(": <b>").append(current.getWeightKg()).append(" кг</b>")
+                    .append(": <b>").append(current.getWeight()).append(" кг</b>")
                     .append(trend).append("\n");
         }
 
         if (weightEntries.size() > 1) {
             WeightEntry latest = weightEntries.get(weightEntries.size() - 1);
             WeightEntry first = weightEntries.get(0);
-            double totalDiff = latest.getWeightKg().subtract(first.getWeightKg()).doubleValue();
+            double totalDiff = latest.getWeight().subtract(first.getWeight()).doubleValue();
 
             sb.append("⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n");
             String progEmoji = totalDiff <= 0 ? "✅" : "⚠️";

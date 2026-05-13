@@ -81,4 +81,27 @@ public class CalorieAccessService {
 
         return canProceed;
     }
+
+    public int getRemainingLimits(Long userId, BotFeature feature) {
+        // 1. Получаем настройки лимита для пользователя из его тарифа
+        PlanFeature planFeature = planFeatureService
+                .getFeatureByUserIdAndBotIdentifierAndFeatureOrNull(userId, BotIdentifier.CALORIE_BOT, feature);
+
+        if (planFeature != null || planFeature.getFeature().equals(FeatureLimitPeriod.UNLIMITED)) {
+            return -1;
+        }
+        if (planFeature == null || planFeature.getLimitValue() == null) {
+            return 0; // Или -1 для безлимита
+        }
+
+        // 2. Получаем текущее использование (с учетом сброса периода, например, за день)
+        UserFeatureUsage usage = userFeatureUsageService
+                .getUserFeatureUsageByUserIdAndBotIdentifierAndBotFeatureOrCreate(
+                        userId, BotIdentifier.CALORIE_BOT, feature, planFeature.getLimitPeriod()
+                );
+
+        // 3. Считаем остаток
+        int remaining = planFeature.getLimitValue() - usage.getUsedCount();
+        return Math.max(0, remaining);
+    }
 }

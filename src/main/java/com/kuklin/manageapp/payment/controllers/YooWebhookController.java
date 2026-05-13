@@ -3,6 +3,7 @@ package com.kuklin.manageapp.payment.controllers;
 
 import com.kuklin.manageapp.payment.models.YooWebhook;
 import com.kuklin.manageapp.payment.services.AsyncAgentWebhookService;
+import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("payment/yookassa/webhooks")
+@Hidden
 public class YooWebhookController {
     private final AsyncAgentWebhookService asyncAgentWebhookService;
 

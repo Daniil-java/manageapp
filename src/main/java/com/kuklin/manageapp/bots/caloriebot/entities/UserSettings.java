@@ -1,9 +1,6 @@
 package com.kuklin.manageapp.bots.caloriebot.entities;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Data;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.CreationTimestamp;
@@ -71,6 +68,10 @@ public class UserSettings {
     @Column(name = "meal_last_reminder_utc")
     private Instant mealLastReminderUtc;
 
+    @Column(name = "user_theme")
+    @Enumerated(EnumType.STRING)
+    private UserTheme userTheme;
+
     // --- Служебные поля ---
     @CreationTimestamp
     @Column(name = "created_at", updatable = false, nullable = false)
@@ -79,6 +80,10 @@ public class UserSettings {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
+
+    public enum UserTheme {
+        DAY, NIGHT
+    }
 
     // --- Утилиты ---
 

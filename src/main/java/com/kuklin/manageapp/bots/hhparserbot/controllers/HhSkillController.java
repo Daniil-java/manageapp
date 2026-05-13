@@ -4,6 +4,7 @@ import com.kuklin.manageapp.bots.hhparserbot.entities.HhSkill;
 import com.kuklin.manageapp.bots.hhparserbot.models.SkillSource;
 import com.kuklin.manageapp.bots.hhparserbot.models.SkillSummaryRow;
 import com.kuklin.manageapp.bots.hhparserbot.services.HhSkillService;
+import io.swagger.v3.oas.annotations.Hidden;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
@@ -14,6 +15,7 @@ import java.util.List;
 @RequestMapping("/hhbot/skills")
 @RequiredArgsConstructor
 @Slf4j
+@Hidden
 public class HhSkillController {
     private final HhSkillService hhSkillService;
 
