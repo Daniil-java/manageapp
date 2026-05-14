@@ -29,8 +29,8 @@ public class DomainUrlFilter extends OncePerRequestFilter {
             List.of("/calorie/**")),
         "railway.app", new DomainRules(
             List.of("/nicotine"),
-            List.of()
-        ));
+            List.of())
+                                                                 );
 
     @Override
     protected void doFilterInternal(
