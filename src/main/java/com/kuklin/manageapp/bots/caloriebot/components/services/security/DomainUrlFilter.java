@@ -4,6 +4,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
@@ -14,6 +15,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+@Slf4j
 @Component
 public class DomainUrlFilter extends OncePerRequestFilter {
 
@@ -29,8 +31,11 @@ public class DomainUrlFilter extends OncePerRequestFilter {
             List.of("/calorie/**")),
         "railway.app", new DomainRules(
             List.of("/nicotine"),
+            List.of()),
+        "manageapp-production.up.railway.app", new DomainRules(
+            List.of("/nicotine"),
             List.of())
-                                                                 );
+    );
 
     @Override
     protected void doFilterInternal(
@@ -44,6 +49,7 @@ public class DomainUrlFilter extends OncePerRequestFilter {
         DomainRules rules = findRulesForHost(host);
 
         if (rules == null) {
+            log.info("[DOMAIN_URL_FILTER] Host {}, path {}, rules not found", host, path);
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
             return;
         }
@@ -52,6 +58,7 @@ public class DomainUrlFilter extends OncePerRequestFilter {
                                 .anyMatch(pattern -> pathMatcher.match(pattern, path));
 
         if (excluded) {
+            log.info("[DOMAIN_URL_FILTER] Host {}, path {}, excluded", host, path);
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
             return;
         }
@@ -60,6 +67,7 @@ public class DomainUrlFilter extends OncePerRequestFilter {
                                .anyMatch(pattern -> pathMatcher.match(pattern, path));
 
         if (!allowed) {
+            log.info("[DOMAIN_URL_FILTER] Host {}, path {}, not allowed", host, path);
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
             return;
         }
