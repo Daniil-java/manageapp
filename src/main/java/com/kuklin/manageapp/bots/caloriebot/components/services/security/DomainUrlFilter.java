@@ -26,7 +26,10 @@ public class DomainUrlFilter extends OncePerRequestFilter {
         ),
         "kuklin.dev", new DomainRules(
             List.of("/**"),
-            List.of("/calorie/**")
+            List.of("/calorie/**")),
+        "railway.app", new DomainRules(
+            List.of("/nicotine"),
+            List.of()
         ));
 
     @Override
