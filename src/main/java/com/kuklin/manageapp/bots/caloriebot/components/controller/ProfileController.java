@@ -3,8 +3,6 @@ package com.kuklin.manageapp.bots.caloriebot.components.controller;
 import com.kuklin.manageapp.bots.caloriebot.components.services.CalorieAccessService;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserNutritionProfileEntryService;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserNutritionProfileService;
-import com.kuklin.manageapp.bots.caloriebot.components.services.exceptions.InsufficientProfileDataException;
-import com.kuklin.manageapp.bots.caloriebot.components.services.exceptions.validation.UserNutritionProfileValidationException;
 import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.UserNutritionProfileDto;
 import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.UserNutritionProfileEntryDto;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.BotFeature;

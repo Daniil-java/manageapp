@@ -1,13 +1,13 @@
 package com.kuklin.manageapp.bots.caloriebot.components.services;
 
+import com.kuklin.manageapp.bots.caloriebot.components.repository.UserNutritionProfileRepository;
+import com.kuklin.manageapp.bots.caloriebot.components.services.exceptions.InsufficientProfileDataException;
 import com.kuklin.manageapp.bots.caloriebot.components.services.exceptions.validation.InvalidAgeException;
 import com.kuklin.manageapp.bots.caloriebot.components.services.exceptions.validation.InvalidHeightException;
+import com.kuklin.manageapp.bots.caloriebot.components.services.exceptions.validation.InvalidWeightException;
 import com.kuklin.manageapp.bots.caloriebot.components.services.exceptions.validation.UserNutritionProfileValidationException;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
 import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.UserNutritionProfileDto;
-import com.kuklin.manageapp.bots.caloriebot.components.repository.UserNutritionProfileRepository;
-import com.kuklin.manageapp.bots.caloriebot.components.services.exceptions.InsufficientProfileDataException;
-import com.kuklin.manageapp.bots.caloriebot.components.services.exceptions.validation.InvalidWeightException;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +32,43 @@ public class UserNutritionProfileService {
     private final UserNutritionProfileRepository userNutritionProfileRepository;
     private final WeightEntryService weightEntryService;
     private final UserNutritionProfileEntryService userNutritionProfileEntryService;
+
+    public UserNutritionProfile updateCaloriesNorms(Long userId, Integer calories, Integer water) {
+        UserNutritionProfile profile = getOrCreateProfile(userId);
+
+        if (calories != null) {
+            profile.setCaloriesNormPerDay(calories);
+        } else {
+            return null;
+        }
+
+        // Сохраняем напрямую в репозиторий, минуя метод recalculateAndSave,
+        // который вызывает recalcTargets() и затирает всё формулами
+        UserNutritionProfile saved = userNutritionProfileRepository.save(profile);
+        userNutritionProfileEntryService.syncWithProfile(saved);
+
+        return saved;
+    }
+
+    public UserNutritionProfile updateWaterNorms(Long userId, Integer water) {
+        UserNutritionProfile profile = getOrCreateProfile(userId);
+
+        if (water != null) {
+            profile.setWaterTargetMlPerDay(water);
+        } else {
+            return null;
+        }
+
+        // Сохраняем напрямую в репозиторий, минуя метод recalculateAndSave,
+        // который вызывает recalcTargets() и затирает всё формулами
+        UserNutritionProfile saved = userNutritionProfileRepository.save(profile);
+
+        // Важно: обновляем текущие записи (Entry), чтобы в отчетах за сегодня
+        // сразу отобразилась новая норма
+        userNutritionProfileEntryService.syncWithProfile(saved);
+
+        return saved;
+    }
 
     @Transactional
     public UserNutritionProfileDto getOrCreateProfileDto(Long userId) {
@@ -209,39 +246,13 @@ public class UserNutritionProfileService {
             throw new InsufficientProfileDataException("Цель");
     }
 
-    /**
-     * PATCH-подобное обновление профиля.
-     * null-поля игнорируются.
-     * Метод либо возвращает валидный профиль,
-     * либо кидает UserNutritionProfileException.
-     */
+
     @Transactional
-    public UserNutritionProfile patchProfile(
-            Long userId,
-            UserNutritionProfile.Sex sex,
-            Integer ageYears,
-            Integer heightCm,
-            BigDecimal currentWeightKg,
-            UserNutritionProfile.ActivityLevel activityLevel,
-            UserNutritionProfile.Goal goal,
-            Integer waterTargetMlPerDay,
-            DietType dietType
-    ) throws UserNutritionProfileValidationException {
-
-        UserNutritionProfile profile = getOrCreateProfile(userId);
-
-        if (sex != null) profile.setSex(sex);
-        if (ageYears != null) profile.setAgeYears(ageYears);
-        if (heightCm != null) profile.setHeightCm(heightCm);
-        if (currentWeightKg != null) profile.setCurrentWeightKg(currentWeightKg);
-        if (activityLevel != null) profile.setActivityLevel(activityLevel);
-        if (goal != null) profile.setGoal(goal);
-        if (waterTargetMlPerDay != null) profile.setWaterTargetMlPerDay(waterTargetMlPerDay);
-        if (dietType != null) profile.setDietType(dietType);
-
-        profile = validateAndSave(profile);
-        userNutritionProfileEntryService.syncWithProfile(profile);
-        return profile;
+    public UserNutritionProfile patchProfile(UserNutritionProfile userNutritionProfile) throws UserNutritionProfileValidationException {
+        if (userNutritionProfile.getUserId() == null) return null;
+        userNutritionProfile = validateAndSave(userNutritionProfile);
+        userNutritionProfileEntryService.syncWithProfile(userNutritionProfile);
+        return userNutritionProfile;
     }
 
     @Transactional
@@ -250,21 +261,46 @@ public class UserNutritionProfileService {
             UserNutritionProfileDto dto
     ) {
         try {
-            return UserNutritionProfileDto.fromEntity(recalculateAndSave(patchProfile(
-                    userId,
-                    dto.getSex(),
-                    dto.getAgeYears(),
-                    dto.getHeightCm(),
-                    dto.getCurrentWeightKg(),
-                    dto.getActivityLevel(),
-                    dto.getGoal(),
-                    dto.getWaterTargetMlPerDay(),
-                    dto.getDietType()
-            )));
+            return UserNutritionProfileDto.fromEntity(recalculateAndSave(patchProfile(dto.toEntity(userId))));
         } catch (InsufficientProfileDataException e) {
             throw new ErrorResponseException(ErrorStatus.PROFILE_INSUFFICIENT_DATA);
         } catch (UserNutritionProfileValidationException e) {
             throw new ErrorResponseException(ErrorStatus.USER_NUTRITION_PROFILE_VALIDATION_EXCEPTION);
         }
     }
+
+//    /**
+//     * PATCH-подобное обновление профиля.
+//     * null-поля игнорируются.
+//     * Метод либо возвращает валидный профиль,
+//     * либо кидает UserNutritionProfileException.
+//     */
+//    @Transactional
+//    public UserNutritionProfile patchProfile(
+//            Long userId,
+//            UserNutritionProfile.Sex sex,
+//            Integer ageYears,
+//            Integer heightCm,
+//            BigDecimal currentWeightKg,
+//            UserNutritionProfile.ActivityLevel activityLevel,
+//            UserNutritionProfile.Goal goal,
+//            Integer waterTargetMlPerDay,
+//            DietType dietType
+//    ) throws UserNutritionProfileValidationException {
+//
+//        UserNutritionProfile profile = getOrCreateProfile(userId);
+//
+//        if (sex != null) profile.setSex(sex);
+//        if (ageYears != null) profile.setAgeYears(ageYears);
+//        if (heightCm != null) profile.setHeightCm(heightCm);
+//        if (currentWeightKg != null) profile.setCurrentWeightKg(currentWeightKg);
+//        if (activityLevel != null) profile.setActivityLevel(activityLevel);
+//        if (goal != null) profile.setGoal(goal);
+//        if (waterTargetMlPerDay != null) profile.setWaterTargetMlPerDay(waterTargetMlPerDay);
+//        if (dietType != null) profile.setDietType(dietType);
+//
+//        profile = validateAndSave(profile);
+//        userNutritionProfileEntryService.syncWithProfile(profile);
+//        return profile;
+//    }
 }

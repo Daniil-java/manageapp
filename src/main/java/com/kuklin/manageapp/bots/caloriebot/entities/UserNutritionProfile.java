@@ -11,6 +11,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.Objects;
 
 @Entity
 @Table(name = "user_nutrition_profiles")
@@ -113,6 +114,28 @@ public class UserNutritionProfile {
         private final String label;
     }
 
+
+    public UserNutritionProfile copy() {
+        return new UserNutritionProfile()
+                .setId(this.id)
+                .setUserId(this.userId)
+                .setAgeYears(this.ageYears)
+                .setHeightCm(this.heightCm)
+                .setCurrentWeightKg(this.currentWeightKg)
+                .setSex(this.sex)
+                .setActivityLevel(this.activityLevel)
+                .setGoal(this.goal)
+                .setDietType(this.dietType)
+                .setUserProfileFillingState(this.userProfileFillingState)
+                .setCaloriesNormPerDay(this.caloriesNormPerDay)
+                .setProteinsNormGramsPerDay(this.proteinsNormGramsPerDay)
+                .setFatsNormGramsPerDay(this.fatsNormGramsPerDay)
+                .setCarbsNormGramsPerDay(this.carbsNormGramsPerDay)
+                .setWaterTargetMlPerDay(this.waterTargetMlPerDay)
+                .setCreatedAt(this.createdAt)
+                .setUpdatedAt(this.updatedAt);
+    }
+
     public String toTelegramView() {
         StringBuilder sb = new StringBuilder();
 
@@ -188,6 +211,141 @@ public class UserNutritionProfile {
         }
 
         return sb.toString();
+    }
+
+    public String toTelegramDiffView(UserNutritionProfile oldProfile) {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append("📊 Нормы пересчитаны\n");
+        sb.append("──────────────────────\n\n");
+
+        appendDiff(
+                sb,
+                "⚖️ Вес",
+                oldProfile.getCurrentWeightKg(),
+                currentWeightKg,
+                "кг"
+        );
+
+        appendDiff(
+                sb,
+                "🔥 Калории",
+                oldProfile.getCaloriesNormPerDay(),
+                caloriesNormPerDay,
+                "ккал"
+        );
+
+        appendDiff(
+                sb,
+                "🥩 Белки",
+                oldProfile.getProteinsNormGramsPerDay(),
+                proteinsNormGramsPerDay,
+                "г"
+        );
+
+        appendDiff(
+                sb,
+                "🧈 Жиры",
+                oldProfile.getFatsNormGramsPerDay(),
+                fatsNormGramsPerDay,
+                "г"
+        );
+
+        appendDiff(
+                sb,
+                "🍞 Углеводы",
+                oldProfile.getCarbsNormGramsPerDay(),
+                carbsNormGramsPerDay,
+                "г"
+        );
+
+        appendDiff(
+                sb,
+                "💧 Вода",
+                oldProfile.getWaterTargetMlPerDay(),
+                waterTargetMlPerDay,
+                "мл"
+        );
+
+        return sb.toString();
+    }
+
+    private void appendDiff(
+            StringBuilder sb,
+            String label,
+            Number oldValue,
+            Number newValue,
+            String unit
+    ) {
+        sb.append(label).append(": ");
+
+        if (oldValue == null && newValue == null) {
+            sb.append("нет данных\n");
+            return;
+        }
+
+        if (Objects.equals(oldValue, newValue)) {
+            sb.append(format(newValue))
+                    .append(" ")
+                    .append(unit)
+                    .append(" (=)\n");
+            return;
+        }
+
+        if (oldValue == null) {
+            sb.append("— → ")
+                    .append(format(newValue))
+                    .append(" ")
+                    .append(unit)
+                    .append(" (новое)\n");
+            return;
+        }
+
+        if (newValue == null) {
+            sb.append(format(oldValue))
+                    .append(" → — (удалено)\n");
+            return;
+        }
+
+        double diff = newValue.doubleValue() - oldValue.doubleValue();
+
+        sb.append(format(oldValue))
+                .append(" → ")
+                .append(format(newValue))
+                .append(" ")
+                .append(unit)
+                .append(" (")
+                .append(diff > 0 ? "+" : "")
+                .append(trimZero(diff))
+                .append(" ")
+                .append(unit)
+                .append(")\n");
+    }
+
+    private String format(Number value) {
+        if (value == null) {
+            return "—";
+        }
+
+        if (value instanceof Integer || value instanceof Long) {
+            return String.valueOf(value.longValue());
+        }
+
+        double d = value.doubleValue();
+
+        if (d == Math.floor(d)) {
+            return String.valueOf((long) d);
+        }
+
+        return String.format("%.1f", d);
+    }
+
+    private String trimZero(double value) {
+        if (value == Math.floor(value)) {
+            return String.valueOf((long) value);
+        }
+
+        return String.format("%.1f", value);
     }
 
     @Override

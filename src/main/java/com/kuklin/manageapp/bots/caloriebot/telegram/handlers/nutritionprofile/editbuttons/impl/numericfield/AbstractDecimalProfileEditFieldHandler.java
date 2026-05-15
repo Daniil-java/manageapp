@@ -154,17 +154,7 @@ public abstract class AbstractDecimalProfileEditFieldHandler
     protected abstract UserNutritionProfile applyValue(UserNutritionProfile profile, BigDecimal value);
 
     protected UserNutritionProfile patchProfile(UserNutritionProfile profile) throws UserNutritionProfileValidationException {
-        return profileService.patchProfile(
-                profile.getUserId(),
-                profile.getSex(),
-                profile.getAgeYears(),
-                profile.getHeightCm(),
-                profile.getCurrentWeightKg(),
-                profile.getActivityLevel(),
-                profile.getGoal(),
-                profile.getWaterTargetMlPerDay(),
-                profile.getDietType()
-        );
+        return profileService.patchProfile(profile);
     }
 
     protected abstract String buildText(UserNutritionProfile profile);

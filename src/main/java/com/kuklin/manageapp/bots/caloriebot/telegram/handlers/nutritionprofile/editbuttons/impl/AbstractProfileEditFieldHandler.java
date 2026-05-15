@@ -93,17 +93,7 @@ public abstract class AbstractProfileEditFieldHandler<T>
 
     protected UserNutritionProfile patchProfile(UserNutritionProfile profile)
             throws UserNutritionProfileValidationException {
-        return profileService.patchProfile(
-                profile.getUserId(),
-                profile.getSex(),
-                profile.getAgeYears(),
-                profile.getHeightCm(),
-                profile.getCurrentWeightKg(),
-                profile.getActivityLevel(),
-                profile.getGoal(),
-                profile.getWaterTargetMlPerDay(),
-                profile.getDietType()
-        );
+        return profileService.patchProfile(profile);
     }
 
     /* ===== шаблонные методы ===== */

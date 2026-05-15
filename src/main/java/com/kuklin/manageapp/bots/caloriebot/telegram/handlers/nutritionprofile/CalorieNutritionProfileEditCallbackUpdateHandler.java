@@ -114,7 +114,7 @@ public class CalorieNutritionProfileEditCallbackUpdateHandler implements Calorie
         }
     }
 
-    private InlineKeyboardMarkup buildKeyboard() {
+    public InlineKeyboardMarkup buildKeyboard() {
         return TelegramKeyboard.builder().row(
                         buildActivityButton(ProfileEditAction.SEX),
                         buildActivityButton(ProfileEditAction.AGE)
@@ -129,6 +129,8 @@ public class CalorieNutritionProfileEditCallbackUpdateHandler implements Calorie
                 ).row(
                         buildActivityButton(ProfileEditAction.CALORIE_NORM),
                         buildActivityButton(ProfileEditAction.WATER_TARGET)
+                ).row(
+                        TelegramKeyboard.button("Пересчитать нормы", Command.CALORIE_PROFILE_RECALCULATE.getCommandText())
                 ).row(
                         TelegramKeyboard.button("Вернуться", Command.CALORIE_PROFILE.getCommandText())
                 )

@@ -99,16 +99,6 @@ public abstract class AbstractEnumProfileEditFieldHandler<
     /** Применение значения */
     protected abstract UserNutritionProfile applyValue(UserNutritionProfile profile, E value);
     protected UserNutritionProfile patchProfile(UserNutritionProfile profile) throws UserNutritionProfileValidationException {
-        return profileService.patchProfile(
-                profile.getUserId(),
-                profile.getSex(),
-                profile.getAgeYears(),
-                profile.getHeightCm(),
-                profile.getCurrentWeightKg(),
-                profile.getActivityLevel(),
-                profile.getGoal(),
-                profile.getWaterTargetMlPerDay(),
-                profile.getDietType()
-        );
+        return profileService.patchProfile(profile);
     }
 }

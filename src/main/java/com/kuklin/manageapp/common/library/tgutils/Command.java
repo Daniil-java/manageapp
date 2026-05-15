@@ -21,6 +21,7 @@ public enum Command {
     CALORIE_FAVORITE_DELETE("/favoritedel", BotIdentifier.CALORIE_BOT),
     CALORIE_CLOSE("/close", BotIdentifier.CALORIE_BOT),
     CALORIE_PROFILE("\uD83D\uDC64Мой профиль", BotIdentifier.CALORIE_BOT),
+    CALORIE_PROFILE_RECALCULATE("/recalculate", BotIdentifier.CALORIE_BOT),
     CALORIE_PROFILE_EDIT("/profileedit", BotIdentifier.CALORIE_BOT),
     CALORIE_PROFILE_DIALOGUE("/profiledialogue", BotIdentifier.CALORIE_BOT),
     CALORIE_WATER("💧", BotIdentifier.CALORIE_BOT),

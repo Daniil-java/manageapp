@@ -99,14 +99,12 @@ public abstract class AbstractNumericProfileEditFieldHandler
                 profile = applyValue(profile, value);
                 try {
                     //Обновляем данные
-                    profile = patchProfile(profile);
+                    patchProfile(profile);
                     //Пересчитываем нормы КБЖУ
-                    profileService.recalculateAndSave(profile);
+//                    profileService.recalculateAndSave(profile);
                 } catch (UserNutritionProfileValidationException e) {
                     //Недопустимые данные
                     telegramBot.sendReturnedMessage(chatId, VALIDATION_ERROR);
-                } catch (InsufficientProfileDataException e) {
-                    return;
                 }
                 return;
             }
@@ -148,17 +146,7 @@ public abstract class AbstractNumericProfileEditFieldHandler
     //Изменение профиля, в соответствии с обработчиком
     protected abstract UserNutritionProfile applyValue(UserNutritionProfile profile, Integer value);
     protected UserNutritionProfile patchProfile(UserNutritionProfile profile) throws UserNutritionProfileValidationException {
-        return profileService.patchProfile(
-                profile.getUserId(),
-                profile.getSex(),
-                profile.getAgeYears(),
-                profile.getHeightCm(),
-                profile.getCurrentWeightKg(),
-                profile.getActivityLevel(),
-                profile.getGoal(),
-                profile.getWaterTargetMlPerDay(),
-                profile.getDietType()
-        );
+        return profileService.patchProfile(profile);
     }
 
     protected abstract String buildText(UserNutritionProfile profile);
