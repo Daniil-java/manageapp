@@ -18,6 +18,8 @@ import java.time.LocalDateTime;
 @Accessors(chain = true)
 public class TelegramUser {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
     private Long telegramId;
     private String username;
     private String firstname;
@@ -29,6 +31,8 @@ public class TelegramUser {
     private LocalDateTime updated;
     @CreationTimestamp
     private LocalDateTime created;
+    private Long responseCount;
+    private Boolean isBotBlocked;
 
     public static TelegramUser convertFromTelegram(User user) {
         return new TelegramUser()
