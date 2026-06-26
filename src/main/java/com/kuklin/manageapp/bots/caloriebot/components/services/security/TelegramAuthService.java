@@ -50,14 +50,14 @@ public class TelegramAuthService {
             if (params.containsKey("user")) {
                 // Это Mini App
                 secretKey = hmacSha256(
-                        botKeyComponents.getKey().getBytes(StandardCharsets.UTF_8),
+                        botKeyComponents.getTestMiniAppKey().getBytes(StandardCharsets.UTF_8),
                         "WebAppData"
                 );
             } else {
                 // Это Web-сайт (Telegram Login Widget)
                 // Для виджета ключ — это стандартный SHA-256 хэш от токена бота
                 MessageDigest digest = MessageDigest.getInstance("SHA-256");
-                secretKey = digest.digest(botKeyComponents.getKey().getBytes(StandardCharsets.UTF_8));
+                secretKey = digest.digest(botKeyComponents.getTestMiniAppKey().getBytes(StandardCharsets.UTF_8));
             }
 
             // 4. Вычисление контрольного хэша
