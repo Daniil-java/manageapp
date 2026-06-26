@@ -33,6 +33,7 @@ public class TelegramAuthService {
 
             // Извлечение хэша из параметров
             String hash = params.remove("hash");
+            params.remove("signature"); //Telegram 9.x — exclude from data-check string
             if (hash == null) return false;
 
             // 2. Формирование строки для проверки (data_check_string)
