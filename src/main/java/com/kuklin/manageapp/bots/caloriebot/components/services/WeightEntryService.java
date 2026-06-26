@@ -71,7 +71,7 @@ public class WeightEntryService {
         weightEntryRepository.deleteByIdAndUserId(weightId, tgUserId);
     }
 
-    public List<WeightEntryDto> getAllWeightByPeriod(Long tgUserId, LocalDate from, LocalDate to) {
+    public List<WeightEntry> getAllWeightByPeriod(Long appUserId, LocalDate from, LocalDate to) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
 
         // Выдаст ровно "2026-04-29T00:00:00"
@@ -81,7 +81,7 @@ public class WeightEntryService {
         String toStr = to.atTime(23, 59, 59).format(formatter);
 
 
-        ZoneId userZone = userSettingsService.getOrCreate(tgUserId).getZoneId();
+        ZoneId userZone = userSettingsService.getOrCreate(appUserId).getZoneId();
 
         ZonedDateTime fromZdt = ZonedDateTime.of(
                 LocalDateTime.parse(fromStr),
@@ -94,12 +94,17 @@ public class WeightEntryService {
         );
 
         List<WeightEntry> weightEntryDtos = weightEntryRepository.findAllByUserIdAndCreatedAtBetween(
-                tgUserId,
+                appUserId,
                 fromZdt.toInstant(),
                 toZdt.toInstant()
         );
 
-        return WeightEntryDto.fromEntities(weightEntryDtos);
+        return weightEntryDtos;
+
+    }
+
+    public List<WeightEntryDto> getDtoAllWeightByPeriod(Long appUserId, LocalDate from, LocalDate to) {
+        return WeightEntryDto.fromEntities(getAllWeightByPeriod(appUserId, from, to));
 
     }
 }

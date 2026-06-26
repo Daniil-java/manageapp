@@ -1,6 +1,5 @@
 package com.kuklin.manageapp.payment.services;
 
-import com.kuklin.manageapp.common.components.TelegramBotRegistry;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import com.kuklin.manageapp.payment.entities.GenerationBalanceOperation;
 import com.kuklin.manageapp.payment.entities.Payment;
@@ -54,7 +53,7 @@ public class PaymentService {
     @Transactional
     public Payment createNewPayment(
             BotIdentifier botIdentifier,
-            Long telegramId, PricingPlan pricingPlan,
+            Long appUserId, PricingPlan pricingPlan,
             Payment.Provider provider
     ) {
 
@@ -67,7 +66,7 @@ public class PaymentService {
 
         Payment payment = paymentRepository.save(
                 new Payment()
-                        .setTelegramId(telegramId)
+                        .setAppUserId(appUserId)
                         .setCurrency(pricingPlan.getCurrency())
                         .setStatus(Payment.PaymentStatus.CREATED)
                         .setProviderStatus(Payment.ProviderStatus.NEW)
@@ -93,11 +92,11 @@ public class PaymentService {
     }
 
     //Валидация оплаты
-    public Boolean checkPreCheckoutQuery(PreCheckoutQuery query) {
+    public Boolean checkPreCheckoutQuery(PreCheckoutQuery query, Long appUserId) {
         try {
             Payment payment = getValidPayment(
                     query.getInvoicePayload(),
-                    query.getFrom().getId(),
+                    appUserId,
                     query.getCurrency(),
                     query.getTotalAmount()
             );
@@ -112,7 +111,7 @@ public class PaymentService {
     // Обработка успешной оплаты
     @Transactional
     public Payment processTelegramSuccessfulPaymentAndGetOrNull(
-            SuccessfulPayment successfulPayment, Long telegramId
+            SuccessfulPayment successfulPayment, Long appUserId
     ) throws PaymentException, PricingPlanNotFoundException {
 
         // ИСПРАВЛЕНИЕ: Проверяем именно тот токен, который мы будем сохранять
@@ -131,7 +130,7 @@ public class PaymentService {
         // Находим оригинальный платеж по Payload
         Payment payment = getValidPayment(
                 successfulPayment.getInvoicePayload(),
-                telegramId,
+                appUserId,
                 successfulPayment.getCurrency(),
                 successfulPayment.getTotalAmount()
         );
@@ -148,7 +147,8 @@ public class PaymentService {
     }
 
     //Обработка телеграммовской подписки. Работает вместе с методом processTelegramSuccessfulPaymentAndGetOrNull
-    private Payment processTelegramSubs(Payment payment, PricingPlan plan, BotIdentifier botIdentifier) {
+    private Payment processTelegramSubs(
+            Payment payment, PricingPlan plan, BotIdentifier botIdentifier) {
         if (!payment.getStatus().equals(Payment.PaymentStatus.CREATED)) {
             //Длительность подписки, допустимая в телеграмме.
             int telegramSubsDaysDuration = 30;
@@ -169,7 +169,7 @@ public class PaymentService {
                                 .setAmount(payment.getAmount())
                                 .setStarsAmount(payment.getStarsAmount())
                                 .setStatus(Payment.PaymentStatus.CREATED)
-                                .setTelegramId(payment.getTelegramId())
+                                .setAppUserId(payment.getAppUserId())
                                 .setProviderStatus(Payment.ProviderStatus.SUCCEEDED)
                                 .setBotIdentifier(botIdentifier)
                 );
@@ -189,7 +189,7 @@ public class PaymentService {
     }
 
     private Payment getValidPayment(String invoicePayload,
-                                    Long telegramId,
+                                    Long appUserId,
                                     String currency,
                                     Integer totalAmount) throws PaymentValidationDataException, PricingPlanNotFoundException {
 
@@ -217,7 +217,7 @@ public class PaymentService {
 
         boolean valid =
                 Objects.equals(invoicePayload, payment.getTelegramInvoicePayload()) &&
-                        Objects.equals(telegramId, payment.getTelegramId()) &&
+                        Objects.equals(appUserId, payment.getAppUserId()) &&
                         Objects.equals(currency, payment.getCurrency().name()) &&
                         Objects.equals(totalAmount, expectedAmount) &&
                         Objects.equals(totalAmount, actualPriceRightNow);
@@ -225,12 +225,12 @@ public class PaymentService {
         if (!valid) {
             log.error(
                     "{}: validation failed. " +
-                            "invoicePayload={}, telegramId={}, currency={}, totalAmount={}, " +
-                            "dbInvoicePayload={}, dbTelegramId={}, dbCurrency={}, dbAmount={}, dbStarsAmount={}",
+                            "invoicePayload={}, appUserId={}, currency={}, totalAmount={}, " +
+                            "dbInvoicePayload={}, dbAppUserId={}, dbCurrency={}, dbAmount={}, dbStarsAmount={}",
                     PaymentValidationDataException.DEF_MSG,
-                    invoicePayload, telegramId, currency, totalAmount,
+                    invoicePayload, appUserId, currency, totalAmount,
                     payment.getTelegramInvoicePayload(),
-                    payment.getTelegramId(),
+                    payment.getAppUserId(),
                     payment.getCurrency().name(),
                     payment.getAmount(),
                     payment.getStarsAmount()
@@ -360,7 +360,7 @@ public class PaymentService {
                     generationBalanceOperationService.createNewBalanceOperationDebit(
                             GenerationBalanceOperation.OperationSource.PAYMENT,
                             plan.getBotIdentifier(),
-                            payment.getTelegramId(),
+                            payment.getAppUserId(),
                             payment.getId(),
                             plan.getGenerationsCount(),
                             plan.getTitle(),

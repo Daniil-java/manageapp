@@ -20,15 +20,15 @@ public class UserSettingsController {
 
     @GetMapping
     @Operation(summary = "Получить настройки", description = "Возвращает текущие настройки пользователя")
-    public UserSettingsDto getSettings(@Parameter(hidden = true) @AuthenticationPrincipal Long tgUserId) {
-        return settingsService.getSettingsDto(tgUserId);
+    public UserSettingsDto getSettings(@Parameter(hidden = true) @AuthenticationPrincipal Long appUserId) {
+        return settingsService.getSettingsDto(appUserId);
     }
 
     @PutMapping
     @Operation(summary = "Обновить настройки", description = "Полностью (Put) или частично (Patch) обновляет настройки пользователя")
     public UserSettingsDto updateSettings(
-            @Parameter(hidden = true) @AuthenticationPrincipal Long tgUserId,
+            @Parameter(hidden = true) @AuthenticationPrincipal Long appUserId,
             @Valid @RequestBody UserSettingsDto dto) {
-        return settingsService.updateSettingsDto(tgUserId, dto);
+        return settingsService.updateSettingsDto(appUserId, dto);
     }
 }

@@ -32,7 +32,7 @@ public class CalorieSettingsUpdateHandler implements CalorieBotUpdateHandler {
 
         calorieTelegramBot.sendReturnedMessage(
                 update.getMessage().getChatId(),
-                userSettingsService.getOrCreate(telegramUser.getTelegramId()).toPrettyText(),
+                userSettingsService.getOrCreate(telegramUser.getAppUserId()).toPrettyText(),
                 getSettingsKeyboard(),
                 null
         );
@@ -45,7 +45,7 @@ public class CalorieSettingsUpdateHandler implements CalorieBotUpdateHandler {
     private void processCallback(Update update, TelegramUser telegramUser) {
         calorieTelegramBot.sendEditMessage(
                 update.getCallbackQuery().getMessage().getChatId(),
-                userSettingsService.getOrCreate(telegramUser.getTelegramId()).toPrettyText(),
+                userSettingsService.getOrCreate(telegramUser.getAppUserId()).toPrettyText(),
                 update.getCallbackQuery().getMessage().getMessageId(),
                 getSettingsKeyboard()
         );

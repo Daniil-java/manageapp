@@ -34,7 +34,7 @@ public class PreCheckoutQueryUpdateHandler implements PaymentUpdateHandler {
         //Сравнение с записью из БД
         TelegramBot telegramBot = telegramBotRegistry.get(telegramUser.getBotIdentifier());
 
-        if (!commonPaymentFacade.checkPreCheckoutQuery(query)) {
+        if (!commonPaymentFacade.checkPreCheckoutQuery(query, telegramUser.getAppUserId())) {
             //Ответ о неудаче
             answer.setOk(false);
             answer.setErrorMessage("Ошибка данных платежа");

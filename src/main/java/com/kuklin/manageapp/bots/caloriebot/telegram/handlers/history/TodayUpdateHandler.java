@@ -62,7 +62,7 @@ public class TodayUpdateHandler implements CalorieBotUpdateHandler {
         if (update.hasCallbackQuery()) {
             handleCallback(update, telegramUser);
         } else {
-            sendTodayMessage(telegramUser.getTelegramId());
+            sendTodayMessage(update.getMessage().getChatId(), telegramUser.getAppUserId());
         }
     }
 
@@ -73,7 +73,7 @@ public class TodayUpdateHandler implements CalorieBotUpdateHandler {
         String data = update.getCallbackQuery().getData();
         Long chatId = update.getCallbackQuery().getMessage().getChatId();
         Integer messageId = update.getCallbackQuery().getMessage().getMessageId();
-        Long userId = telegramUser.getTelegramId();
+        Long userId = telegramUser.getAppUserId();
 
         // Если нажата кнопка возврата к списку/обновления
         if (data.equals(getHandlerListName())) {
@@ -123,7 +123,7 @@ public class TodayUpdateHandler implements CalorieBotUpdateHandler {
      * Обновляет текущее сообщение, заменяя клавиатуру статистики на список блюд для удаления.
      */
     private void sendRemoveMessage(Update update, TelegramUser telegramUser) {
-        Long userId = telegramUser.getTelegramId();
+        Long userId = telegramUser.getAppUserId();
         List<Dish> dishes = dishService.getTodayDishes(userId);
 
         calorieTelegramBot.sendEditMessage(
@@ -137,9 +137,9 @@ public class TodayUpdateHandler implements CalorieBotUpdateHandler {
     /**
      * Отправляет новое сообщение со сводкой за день и клавиатурой статистики.
      */
-    public void sendTodayMessage(Long userId) {
+    public void sendTodayMessage(Long chatId, Long userId) {
         calorieTelegramBot.sendReturnedMessage(
-                userId,
+                chatId,
                 getTodaySummaryText(userId),
                 getStatsKeyboard(userId),
                 null

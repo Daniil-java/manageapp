@@ -59,7 +59,7 @@ public class CalorieWaterUpdateHandler implements CalorieBotUpdateHandler {
         if (ADJ_CMD.equals(cmd)) {
             // Логика изменения данных остается только здесь
             Integer waterMl = extractWaterValueOrNull(data);
-            waterEntryService.addWater(telegramUser.getTelegramId(), waterMl);
+            waterEntryService.addWater(telegramUser.getAppUserId(), waterMl);
 
             // Перерисовываем интерфейс
             refreshWaterInterface(
@@ -77,8 +77,8 @@ public class CalorieWaterUpdateHandler implements CalorieBotUpdateHandler {
     private void refreshWaterInterface(TelegramUser telegramUser, Long chatId, Integer messageId) {
         // 1. Общая логика получения данных
         UserNutritionProfile profile = userNutritionProfileService
-                .getOrCreateProfile(telegramUser.getTelegramId());
-        Integer currentWater = analyticsService.getTodayWaterMl(telegramUser.getTelegramId());
+                .getOrCreateProfile(telegramUser.getAppUserId());
+        Integer currentWater = analyticsService.getTodayWaterMl(telegramUser.getAppUserId());
 
         InlineKeyboardMarkup markup = buildNumericKeyboard(
                 currentWater, 0,

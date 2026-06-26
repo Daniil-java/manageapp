@@ -26,11 +26,11 @@ public class GenerationBalanceService {
 
     //Создание нового баланса, если не существует старый
     public GenerationBalance createNewBalanceIfNotExist(
-            Long telegramId, BotIdentifier botIdentifier
+            Long appUserId, BotIdentifier botIdentifier
     ) {
         //Поиск существующего баланса
         Optional<GenerationBalance> optGenerationBalance =
-                generationBalanceRepository.findByTelegramIdAndBotIdentifier(telegramId, botIdentifier);
+                generationBalanceRepository.findByAppUserIdAndBotIdentifier(appUserId, botIdentifier);
 
         //Если существует баналанс - возврат существующего
         if (optGenerationBalance.isPresent()) {
@@ -39,18 +39,18 @@ public class GenerationBalanceService {
 
         return generationBalanceRepository.save(
                 new GenerationBalance()
-                        .setTelegramId(telegramId)
+                        .setAppUserId(appUserId)
                         .setGenerationRequests(0L)
                         .setBotIdentifier(botIdentifier)
         );
     }
 
-    public GenerationBalance getBalanceByTelegramIdAndBotIdentifier(
-            Long telegramId, BotIdentifier botIdentifier)
+    public GenerationBalance getBalanceByAppUserIdAndBotIdentifier(
+            Long appUserId, BotIdentifier botIdentifier)
             throws GenerationBalanceNotFoundException {
 
         return generationBalanceRepository
-                .findByTelegramIdAndBotIdentifier(telegramId, botIdentifier)
+                .findByAppUserIdAndBotIdentifier(appUserId, botIdentifier)
                 .orElseThrow(GenerationBalanceNotFoundException::new);
     }
 

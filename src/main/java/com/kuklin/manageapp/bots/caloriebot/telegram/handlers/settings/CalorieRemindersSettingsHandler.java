@@ -44,7 +44,7 @@ public class CalorieRemindersSettingsHandler implements CalorieSettingsHandler{
 
         //Получаем настройки пользователя
         UserSettings settings =
-                userSettingsService.getOrCreate(telegramUser.getTelegramId());
+                userSettingsService.getOrCreate(telegramUser.getAppUserId());
 
         //Если калбэк пришел с начальными данными
         if (data.equals(getHandlerListName())) {
@@ -114,11 +114,11 @@ public class CalorieRemindersSettingsHandler implements CalorieSettingsHandler{
                 case "DEC" -> hour = (hour + 23) % 24;
                 case "TOGGLE" -> enabled = !enabled;
                 case "SAVE" -> {
-                    userSettingsService.setDailySummaryTimeOrNull(user.getTelegramId(), hour);
+                    userSettingsService.setDailySummaryTimeOrNull(user.getAppUserId(), hour);
                     if (enabled)
-                        userSettingsService.enableDailySummaryOrNull(user.getTelegramId());
+                        userSettingsService.enableDailySummaryOrNull(user.getAppUserId());
                     else
-                        userSettingsService.disableDailySummary(user.getTelegramId());
+                        userSettingsService.disableDailySummary(user.getAppUserId());
 
                     calorieTelegramBot.sendEditMessage(
                             chatId,
@@ -157,13 +157,13 @@ public class CalorieRemindersSettingsHandler implements CalorieSettingsHandler{
             UserSettings userSettings
     ) {
         if (userSettings.isMealReminderEnabled()) {
-            userSettingsService.disableMealReminder(user.getTelegramId());
+            userSettingsService.disableMealReminder(user.getAppUserId());
         } else {
-            userSettingsService.enableMealReminderOrNull(user.getTelegramId());
+            userSettingsService.enableMealReminderOrNull(user.getAppUserId());
         }
 
         UserSettings updated =
-                userSettingsService.getOrCreate(user.getTelegramId());
+                userSettingsService.getOrCreate(user.getAppUserId());
 
         calorieTelegramBot.sendEditMessage(
                 query.getMessage().getChatId(),

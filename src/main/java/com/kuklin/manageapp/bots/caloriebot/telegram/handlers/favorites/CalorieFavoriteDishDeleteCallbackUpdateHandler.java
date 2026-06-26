@@ -71,7 +71,7 @@ public class CalorieFavoriteDishDeleteCallbackUpdateHandler implements CalorieBo
         Long chatId = query.getMessage().getChatId();
 
         List<UserFavoriteDish> favorites =
-                userFavoriteDishService.getAllForUser(telegramUser.getTelegramId());
+                userFavoriteDishService.getAllForUser(telegramUser.getAppUserId());
 
         if (favorites == null || favorites.isEmpty()) {
             calorieTelegramBot.sendEditMessage(
@@ -151,12 +151,12 @@ public class CalorieFavoriteDishDeleteCallbackUpdateHandler implements CalorieBo
 
         userFavoriteDishService.deleteFavorite(
                 favoriteId,
-                telegramUser.getTelegramId()
+                telegramUser.getAppUserId()
         );
 
         // Обновляем клавиатуру со списком (чтобы не ломалась навигация)
         List<UserFavoriteDish> favorites =
-                userFavoriteDishService.getAllForUser(telegramUser.getTelegramId());
+                userFavoriteDishService.getAllForUser(telegramUser.getAppUserId());
 
         if (favorites == null || favorites.isEmpty()) {
             calorieTelegramBot.sendEditMessage(

@@ -55,7 +55,7 @@ public class SuccessfulPaymentUpdateHandler implements PaymentUpdateHandler {
 
             //Обработка успешного сообщенияя в paymentService
             try {
-                Payment payment = commonPaymentFacade.handleSuccessfulPayment(success, telegramUser.getTelegramId());
+                Payment payment = commonPaymentFacade.handleSuccessfulPayment(success, telegramUser.getAppUserId());
                 if (payment == null) {
                     telegramBot.sendReturnedMessage(
                             chatId, PAYMENT_ERROR_MSG);

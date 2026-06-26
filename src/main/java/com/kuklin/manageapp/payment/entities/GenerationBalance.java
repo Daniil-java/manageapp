@@ -24,7 +24,8 @@ public class GenerationBalance {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Long telegramId;
+    @Column(name = "app_user_id")
+    private Long appUserId;
     private Long generationRequests;
     @Enumerated(EnumType.STRING)
     private BotIdentifier botIdentifier;

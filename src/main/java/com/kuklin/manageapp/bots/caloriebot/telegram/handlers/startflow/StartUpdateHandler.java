@@ -64,11 +64,11 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
         //Пробный период
         UserSubscription userSubscription = userSubscriptionService
                 .createSubscriptionByFreePlanOrNull(
-                        telegramUser.getTelegramId(), BotIdentifier.CALORIE_BOT);
+                        telegramUser.getAppUserId(), BotIdentifier.CALORIE_BOT);
         //Если null - значит пробный период уже был у пользователя
         if (userSubscription != null) {
             String text = subscriptionStatusCalorieUpdateHandler.getSubscriptionStatusMessage(
-                    telegramUser.getTelegramId(),
+                    telegramUser.getAppUserId(),
                     userSubscription
             );
             calorieTelegramBot.sendReturnedMessage(
@@ -92,13 +92,13 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
 
     private void processUtm(Update update, TelegramUser telegramUser) {
         String code = update.getMessage().getText().split(TelegramBot.DEFAULT_DELIMETER)[1];
-        utmService.processClick(code, telegramUser.getTelegramId());
+        utmService.processClick(code, telegramUser.getAppUserId());
     }
 
     //Сообщение с просьбой заполнить профиль
     private void sendUserNutritionFillRequest(Update update, TelegramUser telegramUser) {
         UserNutritionProfile profile = userNutritionProfileService
-                .getOrCreateProfile(telegramUser.getTelegramId());
+                .getOrCreateProfile(telegramUser.getAppUserId());
         if (!profile.checkTargetCalculateParams()) {
             calorieNutritionProfileUpdateHandler.handle(update, telegramUser);
         }

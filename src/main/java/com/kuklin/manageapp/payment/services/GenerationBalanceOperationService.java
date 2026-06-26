@@ -25,7 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class GenerationBalanceOperationService {
+public class    GenerationBalanceOperationService {
     private final GenerationBalanceOperationRepository repository;
     private final GenerationBalanceService generationBalanceService;
     private final PricingPlanService pricingPlanService;
@@ -41,7 +41,7 @@ public class GenerationBalanceOperationService {
         GenerationBalanceOperation operation = createNewBalanceOperationCredit(
                 GenerationBalanceOperation.OperationSource.PAYMENT,
                 payment.getBotIdentifier(),
-                payment.getTelegramId(),
+                payment.getAppUserId(),
                 payment.getId(),
                 plan.getGenerationsCount(),
                 plan.getTitle()
@@ -96,7 +96,7 @@ public class GenerationBalanceOperationService {
             boolean isRefund
     ) throws GenerationBalanceNotFoundException, GenerationBalanceIllegalOperationDataException, GenerationBalanceNotEnoughBalanceException {
         GenerationBalance balance = generationBalanceService
-                .getBalanceByTelegramIdAndBotIdentifier(telegramId, botIdentifier);
+                .getBalanceByAppUserIdAndBotIdentifier(telegramId, botIdentifier);
 
         if (requestCount < 0) {
             log.error(GenerationBalanceIllegalOperationDataException.DEF_MSG);
@@ -124,7 +124,7 @@ public class GenerationBalanceOperationService {
                 new GenerationBalanceOperation()
                         .setType(operationType)
                         .setSource(source)
-                        .setTelegramId(telegramId)
+                        .setAppUserId(telegramId)
                         .setPaymentId(paymentId)
                         .setComment(comment)
                         .setRequestCount(requestCount)

@@ -28,7 +28,8 @@ public class GenerationBalanceOperation {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Long telegramId;
+    @Column(name = "app_user_id")
+    private Long appUserId;
 
     @Enumerated(EnumType.STRING)
     private OperationType type;

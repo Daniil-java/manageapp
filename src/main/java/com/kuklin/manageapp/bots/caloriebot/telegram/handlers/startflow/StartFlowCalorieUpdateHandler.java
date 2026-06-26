@@ -42,7 +42,7 @@ public class StartFlowCalorieUpdateHandler implements CalorieBotUpdateHandler {
     public void handle(Update update, TelegramUser telegramUser) {
         if (!update.hasCallbackQuery()) return;
         boolean isFilledProfile = userNutritionProfileService
-                .getOrCreateProfile(telegramUser.getTelegramId())
+                .getOrCreateProfile(telegramUser.getAppUserId())
                 .checkTargetCalculateParams();
 
         Integer lastMsgId = update.getCallbackQuery().getMessage().getMessageId();

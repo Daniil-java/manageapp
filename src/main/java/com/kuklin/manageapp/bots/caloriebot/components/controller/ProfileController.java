@@ -27,31 +27,32 @@ public class ProfileController {
 
     @GetMapping
     @Operation(summary = "Получить профиль", description = "Возвращает текущие настройки профиля питания пользователя")
-    public UserNutritionProfileDto getProfile(@Parameter(hidden = true) @AuthenticationPrincipal Long tgUserId) {
-        return profileService.getOrCreateProfileDto(tgUserId);
+    public UserNutritionProfileDto getProfile(
+            @Parameter(hidden = true) @AuthenticationPrincipal Long appUserId) {
+        return profileService.getOrCreateProfileDto(appUserId);
     }
 
     @PutMapping
     @Operation(summary = "Обновить профиль", description = "Обновляет данные профиля (рост, вес, возраст, цели)")
     public UserNutritionProfileDto updateProfile(
-            @Parameter(hidden = true) @AuthenticationPrincipal Long tgUserId,
+            @Parameter(hidden = true) @AuthenticationPrincipal Long appUserId,
             @Valid @RequestBody UserNutritionProfileDto dto) {
-        return profileService.patchProfileDto(tgUserId, dto);
+        return profileService.patchProfileDto(appUserId, dto);
     }
 
     @GetMapping("/entries")
     @Operation(summary = "История целей КБЖУ", description = "Возвращает историю изменений целевых показателей пользователя")
     public List<UserNutritionProfileEntryDto> getAllUserProfilesEntries(
-            @Parameter(hidden = true) @AuthenticationPrincipal Long tgUserId) {
-        return userNutritionProfileEntryService.getAllDtoByUserId(tgUserId);
+            @Parameter(hidden = true) @AuthenticationPrincipal Long appUserId) {
+        return userNutritionProfileEntryService.getAllDtoByUserId(appUserId);
     }
 
     @GetMapping("/limits")
     @Operation(summary = "Оставшийся лимит попыток", description = "Возвращает количество оставшихся попыток использования функции")
     public int getRemainingLimits(
-            @Parameter(hidden = true) @AuthenticationPrincipal Long tgUserId,
+            @Parameter(hidden = true) @AuthenticationPrincipal Long appUserId,
             @RequestBody BotFeature botFeature) {
-        return calorieAccessService.getRemainingLimits(tgUserId, botFeature);
+        return calorieAccessService.getRemainingLimits(appUserId, botFeature);
     }
 
 }

@@ -25,27 +25,27 @@ public class WaterEntryController {
     @PostMapping
     @Operation(summary = "Добавить воду", description = "Фиксирует количество выпитой воды в миллилитрах")
     public WaterEntryDto addWater(
-            @Parameter(hidden = true) @AuthenticationPrincipal Long tgUserId,
+            @Parameter(hidden = true) @AuthenticationPrincipal Long appUserId,
             @Parameter(description = "Количество воды (мл)", example = "250") @RequestParam @Min(1) Integer amountMl) {
-        return waterEntryService.addWaterDto(tgUserId, amountMl);
+        return waterEntryService.addWaterDto(appUserId, amountMl);
     }
 
     @GetMapping
     @Operation(summary = "Итог за день", description = "Возвращает общее количество выпитой воды за сегодня в миллилитрах")
-    public Integer getTodayTotal(@Parameter(hidden = true) @AuthenticationPrincipal Long tgUserId) {
-        return waterEntryService.getTodayTotal(tgUserId);
+    public Integer getTodayTotal(@Parameter(hidden = true) @AuthenticationPrincipal Long appUserId) {
+        return waterEntryService.getTodayTotal(appUserId);
     }
 
     @GetMapping("/period")
     @Operation(summary = "Вода за период", description = "Получение записей о воде за определенный период")
     public List<WaterEntryDto> getAllWeightByPeriod(
-            @Parameter(hidden = true) @AuthenticationPrincipal Long tgUserId,
+            @Parameter(hidden = true) @AuthenticationPrincipal Long appUserId,
 
             @Parameter(description = "Дата начала (YYYY-MM-DD)", example = "2023-10-01")
             @RequestParam(name = "from") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
 
             @Parameter(description = "Дата конца (YYYY-MM-DD)", example = "2023-10-07")
             @RequestParam(name = "to") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
-        return waterEntryService.getAllWaterEntryByPeriod(tgUserId, from, to);
+        return waterEntryService.getAllWaterEntryByPeriod(appUserId, from, to);
     }
 }

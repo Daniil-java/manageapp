@@ -21,34 +21,35 @@ public class UserFavoriteDishController {
 
     @GetMapping
     @Operation(summary = "Получить избранное", description = "Возвращает список всех избранных блюд")
-    public List<UserFavoriteDishDto> getAll(@Parameter(hidden = true) @AuthenticationPrincipal Long tgUserId) {
-        return userFavoriteDishService.getAllForUserDto(tgUserId);
+    public List<UserFavoriteDishDto> getAll(
+            @Parameter(hidden = true) @AuthenticationPrincipal Long appUserId) {
+        return userFavoriteDishService.getAllForUserDto(appUserId);
     }
 
     @PostMapping("/from-dish")
     @Operation(summary = "Сохранить из истории", description = "Добавляет ранее съеденное блюдо в список избранных по его ID")
     public UserFavoriteDishDto saveFromDish(
-            @Parameter(hidden = true) @AuthenticationPrincipal Long tgUserId,
+            @Parameter(hidden = true) @AuthenticationPrincipal Long appUserId,
             @Parameter(description = "ID существующего блюда") @RequestParam Long dishId
     ) {
-        return userFavoriteDishService.saveFromDishDto(tgUserId, dishId);
+        return userFavoriteDishService.saveFromDishDto(appUserId, dishId);
     }
 
     @PostMapping("/{favoriteId}/use")
     @Operation(summary = "Добавить из избранного в дневник", description = "Создает новую запись о приеме пищи на основе избранного блюда")
     public DishDto useFavorite(
-            @Parameter(hidden = true) @AuthenticationPrincipal Long tgUserId,
+            @Parameter(hidden = true) @AuthenticationPrincipal Long appUserId,
             @Parameter(description = "ID избранного шаблона") @PathVariable Long favoriteId
     ) {
-        return userFavoriteDishService.addDishFromFavoriteDto(tgUserId, favoriteId);
+        return userFavoriteDishService.addDishFromFavoriteDto(appUserId, favoriteId);
     }
 
     @DeleteMapping("/{favoriteId}")
     @Operation(summary = "Удалить из избранного", description = "Убирает блюдо из списка избранных")
     public void delete(
-            @Parameter(hidden = true) @AuthenticationPrincipal Long tgUserId,
+            @Parameter(hidden = true) @AuthenticationPrincipal Long appUserId,
             @Parameter(description = "ID избранного шаблона") @PathVariable Long favoriteId
     ) {
-        userFavoriteDishService.deleteFavorite(favoriteId, tgUserId);
+        userFavoriteDishService.deleteFavorite(favoriteId, appUserId);
     }
 }

@@ -72,7 +72,7 @@ public class UtmCalorieUpdateHandler implements CalorieBotUpdateHandler {
         }
 
         // 2. Логика для обычного вызова команды (показать ссылки)
-        String userCode = utmService.getOrCreateReferralLink(telegramUser.getTelegramId());
+        String userCode = utmService.getOrCreateReferralLink(telegramUser.getAppUserId());
         String botUrl = buildBotLink(userCode);
 
         // Админу даем кнопку создания, юзеру — кнопку "Переслать"
@@ -91,7 +91,7 @@ public class UtmCalorieUpdateHandler implements CalorieBotUpdateHandler {
             String jsonData = update.getMessage().getWebAppData().getData();
             UtmDto dto = objectMapper.readValue(jsonData, UtmDto.class);
 
-            UtmLink link = utmService.saveLink(dto, telegramUser.getTelegramId());
+            UtmLink link = utmService.saveLink(dto, telegramUser.getAppUserId());
             String fullBotLink = buildBotLink(link.getCode());
 
             String responseText = UTM_SUCCESS_TEMPLATE.formatted(

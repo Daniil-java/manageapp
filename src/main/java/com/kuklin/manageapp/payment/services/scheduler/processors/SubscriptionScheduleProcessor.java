@@ -1,7 +1,9 @@
 package com.kuklin.manageapp.payment.services.scheduler.processors;
 
 import com.kuklin.manageapp.common.components.TelegramBotRegistry;
+import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.ScheduleProcessor;
+import com.kuklin.manageapp.common.services.TelegramUserService;
 import com.kuklin.manageapp.payment.entities.UserSubscription;
 import com.kuklin.manageapp.payment.services.UserSubscriptionService;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +23,7 @@ import java.util.function.Function;
 public class SubscriptionScheduleProcessor implements ScheduleProcessor {
     private final UserSubscriptionService userSubscriptionService;
     private final TelegramBotRegistry botRegistry;
+    private final TelegramUserService telegramUserService;
 
     private static final int BATCH_SIZE = 100;
 
@@ -75,10 +78,17 @@ public class SubscriptionScheduleProcessor implements ScheduleProcessor {
 
     private void send(UserSubscription sub, String text) {
         try {
-            botRegistry.get(sub.getBotIdentifier())
-                    .sendSubExpiredMessage(sub.getTelegramId(), text);
+            // Конвертируем AppUserId обратно в Telegram ID для отправки
+            TelegramUser tgUser = telegramUserService
+                    .findByAppUserIdAndBotIdentifier(sub.getAppUserId(), sub.getBotIdentifier())
+                    .orElse(null);
+
+            if (tgUser != null) {
+                botRegistry.get(sub.getBotIdentifier())
+                        .sendSubExpiredMessage(tgUser.getTelegramId(), text);
+            }
         } catch (Exception e) {
-            log.error("Telegram notification failed for user {}", sub.getTelegramId(), e);
+            log.error("Telegram notification failed for appUser {}", sub.getAppUserId(), e);
         }
     }
 

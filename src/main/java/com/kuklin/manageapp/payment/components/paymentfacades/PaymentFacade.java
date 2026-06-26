@@ -1,6 +1,5 @@
 package com.kuklin.manageapp.payment.components.paymentfacades;
 
-import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import com.kuklin.manageapp.payment.entities.GenerationBalance;
 import com.kuklin.manageapp.payment.entities.GenerationBalanceOperation;
@@ -47,7 +46,7 @@ public interface PaymentFacade {
      * Проверка данных pre-checkout.
      * true — всё ок, можно подтверждать платёж; false — отклонять.
      */
-    boolean checkPreCheckoutQuery(PreCheckoutQuery query);
+    boolean checkPreCheckoutQuery(PreCheckoutQuery query, Long appUserId);
 
     /**
      * Обработка успешного Telegram-платежа.
@@ -85,7 +84,7 @@ public interface PaymentFacade {
             GenerationBalanceIllegalOperationDataException,
             GenerationBalanceNotEnoughBalanceException;
 
-    String getBalanceSubscriptionString(TelegramUser telegramUser, BotIdentifier botIdentifier
+    String getBalanceSubscriptionString(Long appUserId, BotIdentifier botIdentifier
     );
 }
 

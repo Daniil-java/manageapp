@@ -74,7 +74,7 @@ public class NutritionProfileDialogueUpdateHandler implements CalorieBotUpdateHa
 
         //Получение профиля пользователя
         UserNutritionProfile profile = userNutritionProfileService
-                .getOrCreateProfile(telegramUser.getTelegramId());
+                .getOrCreateProfile(telegramUser.getAppUserId());
 
         // старт диалога
         if (data.equals(getHandlerListName())) {

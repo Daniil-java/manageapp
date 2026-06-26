@@ -6,7 +6,10 @@ import com.kuklin.manageapp.bots.caloriebot.models.exceptions.MissingFeatureExce
 import com.kuklin.manageapp.bots.caloriebot.components.services.ReportService;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.history.TodayUpdateHandler;
+import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.ScheduleProcessor;
+import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.services.TelegramUserService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -27,6 +30,7 @@ public class DailySummarySchedulerProcessor implements ScheduleProcessor {
     private final TodayUpdateHandler todayUpdateHandler;
     private final ReportService reportService;
     private final CalorieTelegramBot calorieTelegramBot;
+    private final TelegramUserService telegramUserService;
 
     //TODO сделать отправку не только в телеграм
     @Override
@@ -95,12 +99,17 @@ public class DailySummarySchedulerProcessor implements ScheduleProcessor {
     //TODO Универсальное средство отправки
     private void sendDailySummary(UserSettings settings) {
         try {
-            todayUpdateHandler.sendTodayMessage(settings.getUserId());
-            String dayReport = reportService.getDayAiReport(settings.getUserId()).getOrThrow();
-            calorieTelegramBot.sendReturnedMessage(
-                    settings.getUserId(),
-                    dayReport
-            );
+            Long appUserId = settings.getUserId();
+            TelegramUser tgUser = telegramUserService
+                    .findByAppUserIdAndBotIdentifier(appUserId, BotIdentifier.CALORIE_BOT)
+                    .orElse(null);
+            if (tgUser == null) return;
+
+            Long chatId = tgUser.getTelegramId();
+
+            todayUpdateHandler.sendTodayMessage(chatId, appUserId);
+            String dayReport = reportService.getDayAiReport(appUserId).getOrThrow();
+            calorieTelegramBot.sendReturnedMessage(chatId, dayReport);
         } catch (MissingFeatureException e) {
             log.warn("scheduler day report access denied!");
         }

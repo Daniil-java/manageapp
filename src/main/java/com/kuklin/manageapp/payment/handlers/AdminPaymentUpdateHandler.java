@@ -35,7 +35,7 @@ public class AdminPaymentUpdateHandler implements PaymentUpdateHandler {
         StringBuilder builder = new StringBuilder();
 
         builder.append("ID: ").append(payment.getId()).append("\n")
-                .append("TG_ID: ").append(payment.getTelegramId()).append("\n")
+                .append("TG_ID: ").append(payment.getAppUserId()).append("\n")
                 .append("STATUS: ").append(payment.getStatus()).append("\n")
                 .append("BOT_ID: ").append(payment.getBotIdentifier()).append("\n")
                 .append("PROV_PAY_ID: ").append(payment.getProviderPaymentId()).append("\n")
@@ -54,7 +54,7 @@ public class AdminPaymentUpdateHandler implements PaymentUpdateHandler {
         StringBuilder builder = new StringBuilder();
 
         builder.append("ID: ").append(sub.getId()).append("\n")
-                .append("TG_ID: ").append(sub.getTelegramId()).append("\n")
+                .append("TG_ID: ").append(sub.getAppUserId()).append("\n")
                 .append("PLAN_ID: ").append(sub.getPricingPlanId()).append("\n");
 
         return builder.toString();

@@ -56,8 +56,11 @@ public class DishService {
         AccessResult<List<Dish>> result = selfProvider.getIfAvailable().getDishDtoByPhoto(userId, "data:image/jpeg;base64," + photoBase64, message);
         try {
             List<Dish> dishes = result.getOrThrow();
-            TelegramUser user = telegramUserService.getTelegramUserByTelegramIdAndBotIdentifierOrNull(userId, BotIdentifier.CALORIE_BOT);
-            calorieAccessService.incrementResponses(user);
+            Optional<TelegramUser> optUser = telegramUserService.findByAppUserIdAndBotIdentifier(userId, BotIdentifier.CALORIE_BOT);
+            if (optUser.isEmpty()) {
+                throw new ErrorResponseException(ErrorStatus.USER_NOT_FOUND);
+            }
+            calorieAccessService.incrementResponses(optUser.get());
             return DishDto.fromEntities(dishes);
         } catch (MissingFeatureException e) {
             throw new ErrorResponseException(ErrorStatus.MISSING_FEATURE);
@@ -294,25 +297,32 @@ public class DishService {
 
     @Transactional(readOnly = true)
     public List<Dish> getDishesByPeriod(Long userId, String from, String to) {
-        ZoneId userZone = userSettingsService.getOrCreate(userId).getZoneId();
-
-        ZonedDateTime fromZdt = ZonedDateTime.of(
-                LocalDateTime.parse(from),
-                userZone
-        );
-
-        ZonedDateTime toZdt = ZonedDateTime.of(
-                LocalDateTime.parse(to),
-                userZone
-        );
-
-        return dishRepository.findAllByUserIdAndCreatedBetween(
+        return getDishesByPeriod(
                 userId,
-                fromZdt.toInstant(),
-                toZdt.toInstant()
+                LocalDateTime.parse(from),
+                LocalDateTime.parse(to)
         );
     }
 
+    @Transactional(readOnly = true)
+    public List<Dish> getDishesByPeriod(Long userId, LocalDateTime from, LocalDateTime to) {
+        ZoneId userZone = userSettingsService.getOrCreate(userId).getZoneId();
+
+        return dishRepository.findAllByUserIdAndCreatedBetween(
+                userId,
+                from.atZone(userZone).toInstant(),
+                to.atZone(userZone).toInstant()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public List<Dish> getDishesByPeriod(Long userId, LocalDate from, LocalDate to) {
+        return getDishesByPeriod(
+                userId,
+                from.atStartOfDay(),
+                to.plusDays(1).atStartOfDay().minusNanos(1)
+        );
+    }
     public List<DishDto> processVoiceAndGetListDto(Long tgUserId, String base64Audio, String format) {
         String request = openAiIntegrationService.fetchAudioResponse(
                 telegramCaloriesBotKeyComponents.getAiKey(),

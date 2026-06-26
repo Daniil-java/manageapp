@@ -45,8 +45,8 @@ public class UserSubscriptionService {
      * Быстрая проверка — есть ли сейчас активная подписка
      * Используется в user-flow (бот, UI и т.п.)
      */
-    public boolean hasActiveSubscription(Long telegramId, BotIdentifier botIdentifier) {
-        return getActiveSubscriptionOrNull(telegramId, botIdentifier) != null;
+    public boolean hasActiveSubscription(Long appUserId, BotIdentifier botIdentifier) {
+        return getActiveSubscriptionOrNull(appUserId, botIdentifier) != null;
     }
 
     /**
@@ -57,13 +57,13 @@ public class UserSubscriptionService {
      *
      * Важно: используется только в user-flow, НЕ в cron
      */
-    public UserSubscription getActiveSubscriptionOrNull(Long telegramId, BotIdentifier botIdentifier) {
-        refreshStatuses(telegramId, botIdentifier);
+    public UserSubscription getActiveSubscriptionOrNull(Long appUserId, BotIdentifier botIdentifier) {
+        refreshStatuses(appUserId, botIdentifier);
         Instant now = Instant.now();
 
         return userSubscriptionRepository
-                .findFirstByTelegramIdAndBotIdentifierAndStatusAndStartAtLessThanEqualAndEndAtGreaterThanOrderByStartAtAsc(
-                        telegramId,
+                .findFirstByAppUserIdAndBotIdentifierAndStatusAndStartAtLessThanEqualAndEndAtGreaterThanOrderByStartAtAsc(
+                        appUserId,
                         botIdentifier,
                         UserSubscription.Status.ACTIVE,
                         now,
@@ -76,13 +76,13 @@ public class UserSubscriptionService {
      * Возвращает активные + запланированные подписки пользователя
      * Используется для отображения очереди подписок
      */
-    public List<UserSubscription> getActiveAndScheduledSubscriptions(Long telegramId, BotIdentifier botIdentifier) {
-        refreshStatuses(telegramId, botIdentifier);
+    public List<UserSubscription> getActiveAndScheduledSubscriptions(Long appUserId, BotIdentifier botIdentifier) {
+        refreshStatuses(appUserId, botIdentifier);
         Instant now = Instant.now();
 
         return userSubscriptionRepository
-                .findAllByTelegramIdAndBotIdentifierAndStatusInAndEndAtGreaterThanOrderByStartAtAsc(
-                        telegramId,
+                .findAllByAppUserIdAndBotIdentifierAndStatusInAndEndAtGreaterThanOrderByStartAtAsc(
+                        appUserId,
                         botIdentifier,
                         WORKING_STATUSES,
                         now
@@ -114,16 +114,16 @@ public class UserSubscriptionService {
             throw new SubscriptionInvalidDataException();
         }
 
-        Long telegramId = payment.getTelegramId();
+        Long appUserId = payment.getAppUserId();
         BotIdentifier botIdentifier = payment.getBotIdentifier();
         Instant now = Instant.now();
 
-        refreshStatuses(telegramId, botIdentifier);
+        refreshStatuses(appUserId, botIdentifier);
 
         // Блокируем очередь, чтобы избежать гонок при покупке
         List<UserSubscription> queue =
-                userSubscriptionRepository.findAllByTelegramIdAndBotIdentifierAndStatusInForUpdate(
-                        telegramId, botIdentifier, WORKING_STATUSES);
+                userSubscriptionRepository.findAllByAppUserIdAndBotIdentifierAndStatusInForUpdate(
+                        appUserId, botIdentifier, WORKING_STATUSES);
 
         Instant startAt = queue.stream()
                 .map(UserSubscription::getEndAt)
@@ -134,7 +134,7 @@ public class UserSubscriptionService {
         Instant endAt = startAt.plus(plan.getDurationDays(), ChronoUnit.DAYS);
 
         UserSubscription sub = new UserSubscription()
-                .setTelegramId(telegramId)
+                .setAppUserId(appUserId)
                 .setPricingPlanId(plan.getId())
                 .setPaymentId(payment.getId())
                 .setBotIdentifier(botIdentifier)
@@ -158,21 +158,21 @@ public class UserSubscriptionService {
     //Метод для выдачи подписки пробного периода
     //Одному пользователю - выдается лишь раз
     @Transactional
-    public UserSubscription createSubscriptionByFreePlanOrNull(Long telegramId, BotIdentifier botIdentifier) {
+    public UserSubscription createSubscriptionByFreePlanOrNull(Long appUserId, BotIdentifier botIdentifier) {
         // 1. Получаем сам план
         PricingPlan plan = pricingPlanService.getFreePricingPlanOrNull(botIdentifier);
         if (plan == null) return null;
 
         // 2. Проверяем, не была ли уже выдана ЭТА конкретная бесплатная подписка
         boolean alreadyUsed = userSubscriptionRepository
-                .existsByTelegramIdAndBotIdentifierAndPricingPlanId(telegramId, botIdentifier, plan.getId());
+                .existsByAppUserIdAndBotIdentifierAndPricingPlanId(appUserId, botIdentifier, plan.getId());
 
         if (alreadyUsed) {
             return null;
         }
 
         // 3. Смотрим текущие подписки (Активные + Запланированные)
-        List<UserSubscription> currentSubscriptions = getActiveAndScheduledSubscriptions(telegramId, botIdentifier);
+        List<UserSubscription> currentSubscriptions = getActiveAndScheduledSubscriptions(appUserId, botIdentifier);
 
         Instant startAt;
         UserSubscription.Status status;
@@ -195,7 +195,7 @@ public class UserSubscriptionService {
         // 4. Создаем и сохраняем подписку
         long dummyPaymentId = -1l;
         UserSubscription sub = new UserSubscription()
-                .setTelegramId(telegramId)
+                .setAppUserId(appUserId)
                 .setPricingPlanId(plan.getId())
                 .setPaymentId(dummyPaymentId)
                 .setBotIdentifier(botIdentifier)
@@ -217,12 +217,12 @@ public class UserSubscriptionService {
      * НЕ предназначен для глобального cron
      */
     @Transactional
-    protected void refreshStatuses(Long telegramId, BotIdentifier botIdentifier) {
+    protected void refreshStatuses(Long appUserId, BotIdentifier botIdentifier) {
         Instant now = Instant.now();
 
         List<UserSubscription> subs =
-                userSubscriptionRepository.findAllByTelegramIdAndBotIdentifierAndStatusIn(
-                        telegramId, botIdentifier, WORKING_STATUSES);
+                userSubscriptionRepository.findAllByAppUserIdAndBotIdentifierAndStatusIn(
+                        appUserId, botIdentifier, WORKING_STATUSES);
 
         boolean changed = false;
 
@@ -256,10 +256,10 @@ public class UserSubscriptionService {
      */
     @Transactional
     public void cancelByPayment(Payment payment) throws SubscriptionNotFound {
-        Long telegramId = payment.getTelegramId();
+        Long appUserId = payment.getAppUserId();
         BotIdentifier botIdentifier = payment.getBotIdentifier();
 
-        refreshStatuses(telegramId, botIdentifier);
+        refreshStatuses(appUserId, botIdentifier);
 
         List<UserSubscription> toCancel =
                 userSubscriptionRepository.findAllByPaymentIdAndBotIdentifier(
@@ -283,24 +283,24 @@ public class UserSubscriptionService {
                     ? now
                     : sub.getStartAt();
 
-            shiftFutureSubscriptions(telegramId, sub, anchor, botIdentifier);
+            shiftFutureSubscriptions(appUserId, sub, anchor, botIdentifier);
         }
 
-        refreshStatuses(telegramId, botIdentifier);
+        refreshStatuses(appUserId, botIdentifier);
     }
 
     /**
      * Сдвиг будущих подписок после отмены
      * Используется ТОЛЬКО из cancelByPayment
      */
-    private void shiftFutureSubscriptions(Long telegramId,
+    private void shiftFutureSubscriptions(Long appUserId,
                                           UserSubscription cancelled,
                                           Instant anchorStart,
                                           BotIdentifier botIdentifier) {
 
         List<UserSubscription> queue =
-                userSubscriptionRepository.findAllByTelegramIdAndBotIdentifierAndStatusInOrderByStartAtAsc(
-                        telegramId, botIdentifier, WORKING_STATUSES);
+                userSubscriptionRepository.findAllByAppUserIdAndBotIdentifierAndStatusInOrderByStartAtAsc(
+                        appUserId, botIdentifier, WORKING_STATUSES);
 
         queue = queue.stream()
                 .filter(s -> s.getStartAt().isAfter(cancelled.getStartAt()))
@@ -360,9 +360,9 @@ public class UserSubscriptionService {
 
         // Проверяем, не появилась ли у пользователя активная подписка в этом боте.
         // Это предотвращает наслоение подписок, если крон сработал некорректно.
-        if (userSubscriptionRepository.existsByTelegramIdAndBotIdentifierAndStatus(
-                sub.getTelegramId(), sub.getBotIdentifier(), UserSubscription.Status.ACTIVE)) {
-            log.warn("Cannot activate sub {} for user {}: already has ACTIVE", id, sub.getTelegramId());
+        if (userSubscriptionRepository.existsByAppUserIdAndBotIdentifierAndStatus(
+                sub.getAppUserId(), sub.getBotIdentifier(), UserSubscription.Status.ACTIVE)) {
+            log.warn("Cannot activate sub {} for user {}: already has ACTIVE", id, sub.getAppUserId());
             return Optional.empty();
         }
 

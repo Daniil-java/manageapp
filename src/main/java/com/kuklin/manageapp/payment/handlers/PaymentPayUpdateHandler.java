@@ -63,18 +63,20 @@ public class PaymentPayUpdateHandler implements PaymentUpdateHandler {
         if (provider == null) {
             telegramBotRegistry.get(telegramUser.getBotIdentifier())
                     .sendReturnedMessage(chatId, DATA_EXTRACT_ERROR_MSG);
+            return;
         }
 
         Long pricingPlanId = extractPricingPlanId(callbackQuery.getData());
         if (pricingPlanId == null) {
             telegramBotRegistry.get(telegramUser.getBotIdentifier())
                     .sendReturnedMessage(chatId, PLAN_ERROR_MSG);
+            return;
         }
 
         try {
             PlanPaymentResult result = commonPaymentFacade.startPlanPayment(
                     telegramBot.getBotIdentifier(),
-                    telegramUser.getTelegramId(),
+                    telegramUser.getAppUserId(),
                     chatId,
                     pricingPlanId,
                     provider,

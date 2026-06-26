@@ -23,8 +23,7 @@ public class CalorieNutritionProfileRecalculate implements CalorieBotUpdateHandl
     private final CalorieTelegramBot calorieTelegramBot;
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
-        Long userId = telegramUser.getTelegramId();
-        UserNutritionProfile profile = userNutritionProfileService.getOrCreateProfile(userId);
+        UserNutritionProfile profile = userNutritionProfileService.getOrCreateProfile(telegramUser.getAppUserId());
         UserNutritionProfile oldProfile = profile.copy();
         try {
             profile = userNutritionProfileService.recalculateAndSave(profile);

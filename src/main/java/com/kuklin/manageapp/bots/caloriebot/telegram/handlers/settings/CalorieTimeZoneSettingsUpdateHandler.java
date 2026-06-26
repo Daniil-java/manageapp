@@ -59,7 +59,7 @@ public class CalorieTimeZoneSettingsUpdateHandler implements CalorieSettingsHand
             //Извлекаем, выбранную из данных колбэка пользователем, таймзону
             String tz = extractTzOrNull(data);
             //Сохранение таймзоны
-            userSettingsService.setTimeZoneOrNull(telegramUser.getTelegramId(), tz);
+            userSettingsService.setTimeZoneOrNull(telegramUser.getAppUserId(), tz);
 
             //Возращаю сообщение с кнопкой возврата к настройкам
             calorieTelegramBot.sendEditMessage(

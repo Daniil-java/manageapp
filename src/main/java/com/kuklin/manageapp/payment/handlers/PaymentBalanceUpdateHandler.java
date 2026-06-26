@@ -32,7 +32,7 @@ public class PaymentBalanceUpdateHandler implements PaymentUpdateHandler {
                 .sendReturnedMessage(
                         chatId,
                         commonPaymentFacade.getBalanceSubscriptionString(
-                                telegramUser, telegramUser.getBotIdentifier()
+                                telegramUser.getAppUserId(), telegramUser.getBotIdentifier()
                         ));
     }
 

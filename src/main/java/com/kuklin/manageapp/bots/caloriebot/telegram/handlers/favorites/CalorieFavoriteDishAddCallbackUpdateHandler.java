@@ -27,7 +27,7 @@ public class CalorieFavoriteDishAddCallbackUpdateHandler implements CalorieBotUp
 
         Long dishId = extractDishIdOrNull(query.getData());
         var favoriteDish = userFavoriteDishService
-                .saveFromDish(telegramUser.getTelegramId(), dishId);
+                .saveFromDish(telegramUser.getAppUserId(), dishId);
 
         if (favoriteDish == null) {
             calorieTelegramBot.sendReturnedMessage(

@@ -50,7 +50,7 @@ public class CalorieNutritionProfileEditCallbackUpdateHandler implements Calorie
             sendMainMessage(update, telegramUser);
         } else {
             UserNutritionProfile profile = userNutritionProfileService
-                    .getOrCreateProfile(telegramUser.getTelegramId());
+                    .getOrCreateProfile(telegramUser.getAppUserId());
             handleAction(profile, update, telegramUser);
             if (update.getCallbackQuery().getData().contains(SET_CMD)) {
                 sendMainMessage(update, telegramUser);
@@ -61,7 +61,7 @@ public class CalorieNutritionProfileEditCallbackUpdateHandler implements Calorie
     //Отправка главного сообщения редактирования
     public void sendMainMessage(Update update, TelegramUser telegramUser) {
         UserNutritionProfile profile = userNutritionProfileService
-                .getOrCreateProfile(telegramUser.getTelegramId());
+                .getOrCreateProfile(telegramUser.getAppUserId());
         Message message = update.getCallbackQuery().getMessage();
 
         calorieTelegramBot.sendEditMessage(

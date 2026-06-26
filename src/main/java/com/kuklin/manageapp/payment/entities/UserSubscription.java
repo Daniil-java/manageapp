@@ -10,9 +10,6 @@ import lombok.experimental.Accessors;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 
 /**
  * Подписка пользователя на тарифный план.
@@ -37,7 +34,8 @@ public class UserSubscription {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private Long telegramId;
+    @Column(name = "app_user_id")
+    private Long appUserId;
     private Long pricingPlanId;
     private Long paymentId;
 

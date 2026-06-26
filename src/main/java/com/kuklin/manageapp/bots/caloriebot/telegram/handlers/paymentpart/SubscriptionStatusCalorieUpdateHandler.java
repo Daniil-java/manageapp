@@ -39,13 +39,13 @@ public class SubscriptionStatusCalorieUpdateHandler implements CalorieBotUpdateH
 
         calorieTelegramBot.sendReturnedMessage(
                 chatId,
-                getTextStatus(telegramUser.getTelegramId())
+                getTextStatus(telegramUser.getAppUserId())
         );
     }
 
-    private String getTextStatus(Long telegramId) {
+    private String getTextStatus(Long appUserId) {
         List<UserSubscription> subscriptions = userSubscriptionService
-                .getActiveAndScheduledSubscriptions(telegramId, BotIdentifier.CALORIE_BOT);
+                .getActiveAndScheduledSubscriptions(appUserId, BotIdentifier.CALORIE_BOT);
 
         if (subscriptions.isEmpty()) {
             return "У вас пока нет активных или запланированных подписок.";
@@ -55,14 +55,14 @@ public class SubscriptionStatusCalorieUpdateHandler implements CalorieBotUpdateH
                 // Нам нужны только ACTIVE и SCHEDULED (хотя сервис и так должен их вернуть)
                 .filter(sub -> sub.getStatus() == UserSubscription.Status.ACTIVE ||
                         sub.getStatus() == UserSubscription.Status.SCHEDULED)
-                .map(sub -> getSubscriptionStatusMessage(telegramId, sub))
+                .map(sub -> getSubscriptionStatusMessage(appUserId, sub))
                 .collect(Collectors.joining("\n\n"));
 
         return "Статус подписки:\n\n" + details;
     }
 
-    public String getSubscriptionStatusMessage(Long telegramId, UserSubscription sub) {
-        UserSettings userSettings = userSettingsService.getOrCreate(telegramId);
+    public String getSubscriptionStatusMessage(Long appUserId, UserSubscription sub) {
+        UserSettings userSettings = userSettingsService.getOrCreate(appUserId);
 
         ZoneId zoneId = userSettings.getZoneId();
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");

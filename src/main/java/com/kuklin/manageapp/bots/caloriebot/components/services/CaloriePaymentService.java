@@ -5,13 +5,14 @@ import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.PaymentResponse;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
+import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.CreateInvoiceLinkWithTelegramSubscription;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.services.TelegramUserService;
 import com.kuklin.manageapp.payment.components.paymentfacades.CommonPaymentFacade;
 import com.kuklin.manageapp.payment.entities.Payment;
 import com.kuklin.manageapp.payment.entities.PricingPlan;
-import com.kuklin.manageapp.payment.entities.UserSubscription;
 import com.kuklin.manageapp.payment.models.common.Currency;
 import com.kuklin.manageapp.payment.services.PaymentService;
 import com.kuklin.manageapp.payment.services.PricingPlanService;
@@ -23,7 +24,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -36,6 +36,7 @@ public class CaloriePaymentService {
     private final PricingPlanService pricingPlanService;
     private final CalorieTelegramBot calorieTelegramBot;
     private final UserSubscriptionService userSubscriptionService;
+    private final TelegramUserService telegramUserService;
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd")
             .withZone(ZoneId.systemDefault());
 
@@ -43,7 +44,7 @@ public class CaloriePaymentService {
         return commonPaymentFacade.getPricingPlans(BotIdentifier.CALORIE_BOT);
     }
 
-    public PaymentResponse createPaymentLink(Long tgUserId, Long planId) {
+    public PaymentResponse createPaymentLink(Long appUserId, Long planId) {
         try {
             // 1. Получаем выбранный тариф
             PricingPlan plan = pricingPlanService.getPricingPlanById(planId);
@@ -51,7 +52,7 @@ public class CaloriePaymentService {
             // 2. Создаем системную запись о платеже
             Payment payment = paymentService.createNewPayment(
                     BotIdentifier.CALORIE_BOT,
-                    tgUserId,
+                    appUserId,
                     plan,
                     Payment.Provider.STARS
             );
@@ -79,15 +80,15 @@ public class CaloriePaymentService {
                     .build();
 
         } catch (Exception e) {
-            log.error("Ошибка при генерации ссылки на оплату звездами для пользователя {}", tgUserId, e);
+            log.error("Ошибка при генерации ссылки на оплату звездами для пользователя {}", appUserId, e);
             throw new ErrorResponseException(ErrorStatus.PAYMENT_FAILED);
         }
     }
 
     @Transactional
-    public List<SubscriptionStatusDto> getSubscriptionStatus(Long tgUserId) {
+    public List<SubscriptionStatusDto> getSubscriptionStatus(Long appUserId) {
         return userSubscriptionService
-                .getActiveAndScheduledSubscriptions(tgUserId, BotIdentifier.CALORIE_BOT)
+                .getActiveAndScheduledSubscriptions(appUserId, BotIdentifier.CALORIE_BOT)
                 .stream()
                 .map(subscription -> new SubscriptionStatusDto()
                         .setStatus(subscription.getStatus())

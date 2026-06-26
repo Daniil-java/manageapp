@@ -77,7 +77,7 @@ public class CalorieFavoriteDishUpdateHandler implements CalorieBotUpdateHandler
     private void showFavorites(Long chatId, TelegramUser telegramUser) {
 
         List<UserFavoriteDish> favoriteDishes =
-                userFavoriteDishService.getAllForUser(telegramUser.getTelegramId());
+                userFavoriteDishService.getAllForUser(telegramUser.getAppUserId());
 
         if (favoriteDishes == null || favoriteDishes.isEmpty()) {
             calorieTelegramBot.sendReturnedMessage(
@@ -105,7 +105,7 @@ public class CalorieFavoriteDishUpdateHandler implements CalorieBotUpdateHandler
         Long chatId = query.getMessage().getChatId();
 
         List<UserFavoriteDish> favorites =
-                userFavoriteDishService.getAllForUser(telegramUser.getTelegramId());
+                userFavoriteDishService.getAllForUser(telegramUser.getAppUserId());
 
         if (favorites == null || favorites.isEmpty()) {
             calorieTelegramBot.sendEditMessage(
@@ -138,7 +138,7 @@ public class CalorieFavoriteDishUpdateHandler implements CalorieBotUpdateHandler
         if (page == null || favoriteId == null) return;
 
         Dish dish = userFavoriteDishService.addDishFromFavorite(
-                telegramUser.getTelegramId(),
+                telegramUser.getAppUserId(),
                 favoriteId
         );
 
@@ -153,14 +153,14 @@ public class CalorieFavoriteDishUpdateHandler implements CalorieBotUpdateHandler
         // Отправляем отдельное сообщение с добавленным блюдом
         calorieTelegramBot.sendReturnedMessage(
                 chatId,
-                analyticsService.getInfo(dish, telegramUser.getTelegramId()),
+                analyticsService.getInfo(dish, telegramUser.getAppUserId()),
                 DishUpdateHandler.getPortionWeightKeyboard(dish),
                 null
         );
 
         // Обновляем клавиатуру со списком (чтобы не ломалась навигация)
         List<UserFavoriteDish> favorites =
-                userFavoriteDishService.getAllForUser(telegramUser.getTelegramId());
+                userFavoriteDishService.getAllForUser(telegramUser.getAppUserId());
 
         InlineKeyboardMarkup keyboard = buildFavoritesKeyboard(favorites, page);
         String text = buildListTitle(favorites.size(), page);

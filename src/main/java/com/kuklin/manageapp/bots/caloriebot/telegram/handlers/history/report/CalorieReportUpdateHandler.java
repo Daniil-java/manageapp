@@ -76,9 +76,9 @@ public class CalorieReportUpdateHandler implements CalorieBotUpdateHandler {
             // Обертка с индикацией загрузки
             executeWithAwait(chatId, () -> {
                 switch (reportType) {
-                    case DAY -> handleDayReport(chatId, telegramUser.getTelegramId());
-                    case WEEK -> handleWeeklyDeepReport(chatId, telegramUser.getTelegramId());
-                    case MONTH -> handleStandardPdfReport(chatId, telegramUser.getTelegramId(), reportType);
+                    case DAY -> handleDayReport(chatId, telegramUser.getAppUserId());
+                    case WEEK -> handleWeeklyDeepReport(chatId, telegramUser.getAppUserId());
+                    case MONTH -> handleStandardPdfReport(chatId, telegramUser.getAppUserId(), reportType);
                     case WEIGHT -> calorieWeightHistoryUpdateHandler.handle(update, telegramUser);
                 }
             });
@@ -111,23 +111,23 @@ public class CalorieReportUpdateHandler implements CalorieBotUpdateHandler {
         }
     }
 
-    private void handleDayReport(Long chatId, Long telegramId) {
+    private void handleDayReport(Long chatId, Long appUserId) {
         String aiReport = null;
         try {
-            aiReport = reportService.getDayAiReport(telegramId).getOrThrow();
+            aiReport = reportService.getDayAiReport(appUserId).getOrThrow();
         } catch (MissingFeatureException e) {
             aiReport = ACCESS_DENIED_MSG;
         }
         calorieTelegramBot.sendReturnedMessage(chatId, aiReport);
     }
 
-    private void handleWeeklyDeepReport(Long chatId, Long telegramId) {
+    private void handleWeeklyDeepReport(Long chatId, Long appUserId) {
         try {
             Instant now = Instant.now();
             byte[] report = reportService.buildWeeklyDeepPdfReportOrNull(
                     ReportType.WEEK.getFrom(now),
                     now,
-                    telegramId
+                    appUserId
             ).getOrThrow();
             sendPdfOrError(chatId, report, ReportType.WEEK);
         } catch (MissingFeatureException e) {
@@ -136,13 +136,13 @@ public class CalorieReportUpdateHandler implements CalorieBotUpdateHandler {
 
     }
 
-    private void handleStandardPdfReport(Long chatId, Long telegramId, ReportType type) {
+    private void handleStandardPdfReport(Long chatId, Long appUserId, ReportType type) {
         try {
             Instant now = Instant.now();
             byte[] report = reportService.buildPdfReportOrNull(
                     type.getFrom(now),
                     now,
-                    telegramId
+                    appUserId
             ).getOrThrow();
             sendPdfOrError(chatId, report, type);
         } catch (MissingFeatureException e) {

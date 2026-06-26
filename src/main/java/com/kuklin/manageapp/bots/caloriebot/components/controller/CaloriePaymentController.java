@@ -30,15 +30,15 @@ public class CaloriePaymentController {
     @PostMapping("/create")
     @Operation(summary = "Создать платеж", description = "Генерирует инвойс-ссылку для оплаты выбранного тарифа")
     public PaymentResponse createPayment(
-            @Parameter(hidden = true) @AuthenticationPrincipal Long tgUserId,
+            @Parameter(hidden = true) @AuthenticationPrincipal Long appUserId, // Переименовано для ясности
             @Parameter(description = "ID тарифного плана", example = "1") @RequestParam Long planId) {
-        return paymentService.createPaymentLink(tgUserId, planId);
+        return paymentService.createPaymentLink(appUserId, planId);
     }
 
     @GetMapping("/subscription-status")
     @Operation(summary = "Статус подписок", description = "Возвращает список активных и запланированных подписок пользователя")
     public List<SubscriptionStatusDto> getSubscriptionStatus(
-            @Parameter(hidden = true) @AuthenticationPrincipal Long tgUserId) {
-        return paymentService.getSubscriptionStatus(tgUserId);
+            @Parameter(hidden = true) @AuthenticationPrincipal Long appUserId) { // Переименовано для ясности
+        return paymentService.getSubscriptionStatus(appUserId);
     }
 }

@@ -1,6 +1,5 @@
 package com.kuklin.manageapp.payment.components.paymentfacades;
 
-import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.CreateInvoiceLinkWithTelegramSubscription;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
@@ -10,7 +9,6 @@ import com.kuklin.manageapp.payment.components.providerprocessors.SendInvoiceBui
 import com.kuklin.manageapp.payment.entities.*;
 import com.kuklin.manageapp.payment.models.PlanPaymentResult;
 import com.kuklin.manageapp.payment.models.PlanPaymentResultType;
-import com.kuklin.manageapp.payment.models.common.Currency;
 import com.kuklin.manageapp.payment.services.*;
 import com.kuklin.manageapp.payment.services.exceptions.PricingPlanNotFoundException;
 import com.kuklin.manageapp.payment.services.exceptions.generationbalance.GenerationBalanceIllegalOperationDataException;
@@ -28,7 +26,6 @@ import org.telegram.telegrambots.meta.api.objects.payments.SuccessfulPayment;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import java.util.List;
-import java.util.Objects;
 
 @Component
 @RequiredArgsConstructor
@@ -63,7 +60,7 @@ public class CommonPaymentFacade implements PaymentFacade {
     @Override
     public PlanPaymentResult startPlanPayment(
             BotIdentifier botIdentifier,
-            Long telegramId,
+            Long appUserId,
             Long chatId,
             Long pricingPlanId,
             Payment.Provider provider,
@@ -76,7 +73,7 @@ public class CommonPaymentFacade implements PaymentFacade {
         // 2. Платёж
         Payment payment = paymentService.createNewPayment(
                 botIdentifier,
-                telegramId,
+                appUserId,
                 plan,
                 provider
         );
@@ -170,8 +167,8 @@ public class CommonPaymentFacade implements PaymentFacade {
     // === Telegram pre-checkout ===
 
     @Override
-    public boolean checkPreCheckoutQuery(PreCheckoutQuery query) {
-        return paymentService.checkPreCheckoutQuery(query);
+    public boolean checkPreCheckoutQuery(PreCheckoutQuery query, Long appUserId) {
+        return paymentService.checkPreCheckoutQuery(query, appUserId);
     }
 
     // === Успешная оплата ===
@@ -189,7 +186,7 @@ public class CommonPaymentFacade implements PaymentFacade {
     @Override
     @Transactional
     public Payment handleSuccessfulPayment(SuccessfulPayment successfulPayment,
-                                           Long telegramId)
+                                           Long appUserId)
             throws PaymentException, PricingPlanNotFoundException {
         // Внутри paymentService:
         // - валидация
@@ -198,29 +195,29 @@ public class CommonPaymentFacade implements PaymentFacade {
         // - логирование
         return paymentService.processTelegramSuccessfulPaymentAndGetOrNull(
                 successfulPayment,
-                telegramId
+                appUserId
         );
     }
 
     // === Подписки ===
 
     @Override
-    public boolean hasActiveSubscription(BotIdentifier botIdentifier, Long telegramId) {
-        return userSubscriptionService.hasActiveSubscription(telegramId, botIdentifier);
+    public boolean hasActiveSubscription(BotIdentifier botIdentifier, Long appUserId) {
+        return userSubscriptionService.hasActiveSubscription(appUserId, botIdentifier);
     }
 
     // === Баланс генераций ===
 
     @Override
     public GenerationBalance getOrCreateGenerationBalance(BotIdentifier botIdentifier,
-                                                          Long telegramId) {
-        return generationBalanceService.createNewBalanceIfNotExist(telegramId, botIdentifier);
+                                                          Long appUserId) {
+        return generationBalanceService.createNewBalanceIfNotExist(appUserId, botIdentifier);
     }
 
     @Override
     public GenerationBalanceOperation consumeGenerationsOrThrow(
             BotIdentifier botIdentifier,
-            Long telegramId,
+            Long appUserId,
             Long requestCount,
             Long paymentId,
             String comment,
@@ -232,7 +229,7 @@ public class CommonPaymentFacade implements PaymentFacade {
         return generationBalanceOperationService.createNewBalanceOperationDebit(
                 GenerationBalanceOperation.OperationSource.GENERATION,
                 botIdentifier,
-                telegramId,
+                appUserId,
                 paymentId,           // paymentId — не из платежа, а из БД
                 requestCount,
                 comment,
@@ -241,25 +238,25 @@ public class CommonPaymentFacade implements PaymentFacade {
     }
 
     @Override
-    public String getBalanceSubscriptionString(TelegramUser telegramUser, BotIdentifier botIdentifier) {
+    public String getBalanceSubscriptionString(Long appUserId, BotIdentifier botIdentifier) {
         StringBuilder sb = new StringBuilder();
 
         List<UserSubscription> subscriptions = userSubscriptionService
                 .getActiveAndScheduledSubscriptions(
-                        telegramUser.getTelegramId(),
+                        appUserId,
                         botIdentifier
                 );
 
         UserSubscription subscription = userSubscriptionService
                 .getActiveSubscriptionOrNull(
-                        telegramUser.getTelegramId(),
+                        appUserId,
                         botIdentifier
                 );
 
         GenerationBalance generationBalance =
                 getOrCreateGenerationBalance(
                         botIdentifier,
-                        telegramUser.getTelegramId()
+                        appUserId
                 );
 
         String sub = (subscription != null && subscription.getStatus() == UserSubscription.Status.ACTIVE)
@@ -267,7 +264,7 @@ public class CommonPaymentFacade implements PaymentFacade {
                 : "не активна";
 
         sb
-                .append("ID: ").append(telegramUser.getTelegramId()).append("\n")
+                .append("ID: ").append(appUserId).append("\n")
                 .append("Баланс генераций: ").append(generationBalance.getGenerationRequests()).append(" запросов на генерацию").append("\n")
                 .append("Подписка: ").append(sub).append("\n")
         ;

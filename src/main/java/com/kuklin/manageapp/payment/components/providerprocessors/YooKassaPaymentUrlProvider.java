@@ -24,7 +24,7 @@ public class YooKassaPaymentUrlProvider implements PaymentUrlProvider {
                 payment.getAmount(),
                 payment.getCurrency().name(),
                 payment.getDescription(),
-                payment.getTelegramId(),
+                payment.getAppUserId(),
                 chatId,
                 pricingPlan.getCodeForOrderId(),
                 payment.getTelegramInvoicePayload()

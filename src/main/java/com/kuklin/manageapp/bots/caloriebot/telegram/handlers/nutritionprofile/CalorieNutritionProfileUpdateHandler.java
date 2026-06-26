@@ -41,7 +41,7 @@ public class CalorieNutritionProfileUpdateHandler implements CalorieBotUpdateHan
     public void handle(Update update, TelegramUser telegramUser) {
         //Получение профиля пользователя
         UserNutritionProfile profile = userNutritionProfileService
-                .getOrCreateProfile(telegramUser.getTelegramId());
+                .getOrCreateProfile(telegramUser.getAppUserId());
 
         InlineKeyboardMarkup keyboardMarkup;
         String text;

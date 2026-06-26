@@ -3,7 +3,10 @@ package com.kuklin.manageapp.bots.caloriebot.components.services.scheduler;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserSettingsService;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserSettings;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
+import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.ScheduleProcessor;
+import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.services.TelegramUserService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -22,6 +25,7 @@ import java.util.List;
 public class MealReminderSchedulerProcessor implements ScheduleProcessor {
     private final UserSettingsService userSettingsService;
     private final CalorieTelegramBot calorieTelegramBot;
+    private final TelegramUserService telegramUserService;
     private final Integer QUIET_HOUR_START = 23;
     private final Integer QUIET_HOUR_END = 7;
     @Override
@@ -77,10 +81,15 @@ public class MealReminderSchedulerProcessor implements ScheduleProcessor {
         }
 
         // --- ОТПРАВКА ---
-        calorieTelegramBot.sendReturnedMessage(
-                settings.getUserId(),
-                "🍽 Ты давно не ел.\nНе забудь добавить приём пищи 🙂"
-        );
+        TelegramUser tgUser = telegramUserService
+                .findByAppUserIdAndBotIdentifier(settings.getUserId(), BotIdentifier.CALORIE_BOT)
+                .orElse(null);
+        if (tgUser != null) {
+            calorieTelegramBot.sendReturnedMessage(
+                    tgUser.getTelegramId(),
+                    "🍽 Ты давно не ел.\nНе забудь добавить приём пищи 🙂"
+            );
+        }
 
         // Фиксируем момент отправки (UTC)
         userSettingsService.updateMealLastReminder(settings.getUserId());

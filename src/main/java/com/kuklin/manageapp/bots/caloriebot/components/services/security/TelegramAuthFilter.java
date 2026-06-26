@@ -1,5 +1,7 @@
 package com.kuklin.manageapp.bots.caloriebot.components.services.security;
 
+import com.kuklin.manageapp.common.entities.TelegramUser;
+import com.kuklin.manageapp.common.services.TelegramUserService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -21,6 +23,7 @@ public class TelegramAuthFilter extends OncePerRequestFilter {
 
     // Сервис для валидации initData и извлечения данных пользователя
     private final TelegramAuthService telegramAuthService;
+    private final TelegramUserService telegramUserService;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -34,13 +37,17 @@ public class TelegramAuthFilter extends OncePerRequestFilter {
             Long telegramId = telegramAuthService.extractTelegramId(initData);
 
             if (telegramId != null) {
-                // Кладем Long напрямую в качестве Principal
-                UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
-                        telegramId, // Теперь Principal — это Long
-                        null,
-                        Collections.emptyList()
-                );
-                SecurityContextHolder.getContext().setAuthentication(auth);
+                // Берем ЛЮБУЮ запись с этим telegramId (ведь AppUser у них общий)
+                TelegramUser tgUser = telegramUserService.findFirstByTelegramId(telegramId).orElse(null);
+
+                if (tgUser != null && tgUser.getAppUserId() != null) {
+                    UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
+                            tgUser.getAppUserId(),
+                            null,
+                            Collections.emptyList()
+                    );
+                    SecurityContextHolder.getContext().setAuthentication(auth);
+                }
             }
         }
         filterChain.doFilter(request, response);

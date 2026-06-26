@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Calorie Bot Tester</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root { --bg: #f4f4f9; --card: #fff; --text: #333; --border: #ddd; --primary: #0088cc; }
     body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; }
@@ -22,6 +23,16 @@
     button.get { background: #2980b9; } button.post { background: #27ae60; } button.patch { background: #8e44ad; } button.delete { background: #c0392b; } button.put { background: #f39c12; }
     .log-container { margin-top: 20px; background: #1e1e1e; color: #4af626; padding: 15px; border-radius: 8px; font-family: monospace; font-size: 12px; height: 300px; overflow-y: auto; white-space: pre-wrap; }
     .log-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; color: #fff; }
+
+    /* Стили для новых элементов Дашборда */
+    .full-width { grid-column: 1 / -1; }
+    .dashboard-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 20px; }
+    .summary-item { background: #f8f9fa; padding: 10px; border-radius: 6px; text-align: center; border: 1px solid #eee; }
+    .summary-item .value { font-size: 1.3em; font-weight: bold; color: var(--primary); margin: 5px 0; }
+    .summary-item .target { font-size: 11px; color: #777; }
+    .charts-grid { display: grid; grid-template-columns: 1fr; gap: 20px; margin-top: 15px; }
+    @media(min-width: 600px) { .charts-grid { grid-template-columns: 1fr 1fr; } }
+    .chart-container { position: relative; height: 220px; width: 100%; }
   </style>
 </head>
 <body>
@@ -30,8 +41,8 @@
   <h1>🛠 Calorie API Tester</h1>
 
   <div class="config-box row">
-    <label><b>Ngrok URL:</b></label>
-    <input type="text" id="baseUrl" value="https://tvoy-ngrok-url.ngrok-free.dev" placeholder="https://...">
+    <label><b>URL:</b></label>
+    <input type="text" id="baseUrl" value="https://tvoy-url.ngrok-free.dev" placeholder="https://...">
   </div>
 
   <div class="config-box row" style="justify-content: space-between;">
@@ -47,7 +58,60 @@
   </div>
 
   <div class="grid">
-    <!-- DISHES CONTROLLER -->
+
+    <div class="card full-width">
+      <h2>📊 Панель аналитики (Dashboard)</h2>
+      <div class="row" style="background: #f0f4f8; padding: 10px; border-radius: 6px;">
+        <label>Период:</label>
+        <input type="date" id="dash_from">
+        <input type="date" id="dash_to">
+        <button class="post" onclick="loadDashboard()">Обновить данные дашборда 🔄</button>
+      </div>
+
+      <h3 style="font-size: 1em; margin: 15px 0 10px 0; color: #555;">📍 Прогресс за сегодня</h3>
+      <div class="dashboard-summary">
+        <div class="summary-item">
+          <div>🔥 Калории</div>
+          <div class="value" id="sum_cal">0</div>
+          <div class="target" id="tar_cal">Цель: --</div>
+        </div>
+        <div class="summary-item">
+          <div>🥩 Белки</div>
+          <div class="value" id="sum_prot">0г</div>
+          <div class="target" id="tar_prot">Цель: --</div>
+        </div>
+        <div class="summary-item">
+          <div>🧀 Жиры</div>
+          <div class="value" id="sum_fats">0г</div>
+          <div class="target" id="tar_fats">Цель: --</div>
+        </div>
+        <div class="summary-item">
+          <div>🍞 Углеводы</div>
+          <div class="value" id="sum_carbs">0г</div>
+          <div class="target" id="tar_carbs">Цель: --</div>
+        </div>
+      </div>
+
+      <div class="charts-grid">
+        <div class="summary-item">
+          <strong style="font-size:12px;">📆 Динамика КБЖУ по дням</strong>
+          <div class="chart-container"><canvas id="chartPeriod"></canvas></div>
+        </div>
+        <div class="summary-item">
+          <strong style="font-size:12px;">⚖️ Изменение веса (кг)</strong>
+          <div class="chart-container"><canvas id="chartWeight"></canvas></div>
+        </div>
+        <div class="summary-item">
+          <strong style="font-size:12px;">🍕 Калории по категориям</strong>
+          <div class="chart-container"><canvas id="chartCategory"></canvas></div>
+        </div>
+        <div class="summary-item">
+          <strong style="font-size:12px;">🕒 Ритм питания (по часам суток)</strong>
+          <div class="chart-container"><canvas id="chartRhythm"></canvas></div>
+        </div>
+      </div>
+    </div>
+
     <div class="card">
       <h2>💰 Оплата (Telegram Stars)</h2>
       <div class="row">
@@ -91,7 +155,6 @@
       </div>
     </div>
 
-    <!-- PROFILE & SETTINGS -->
     <div class="card">
       <h2>👤 Профиль и Настройки</h2>
       <div class="row">
@@ -111,7 +174,6 @@
       </div>
     </div>
 
-    <!-- WATER & WEIGHT -->
     <div class="card">
       <h2>💧 Вода и Вес</h2>
       <div class="row">
@@ -130,7 +192,6 @@
       </div>
     </div>
 
-    <!-- FAVORITES -->
     <div class="card">
       <h2>⭐ Избранное</h2>
       <div class="row">
@@ -148,7 +209,6 @@
     </div>
   </div>
 
-  <!-- ЛОГИ -->
   <div class="log-container">
     <div class="log-header">
       <strong>КОНСОЛЬ ЗАПРОСОВ:</strong>
@@ -166,6 +226,22 @@
   const out = document.getElementById('out');
   const val = (id) => document.getElementById(id).value;
 
+  // Хранилище объектов графиков, чтобы уничтожать старые перед обновлением
+  let charts = {};
+
+  // Инициализация дефолтных дат для дашборда (последние 7 дней)
+  window.addEventListener('DOMContentLoaded', () => {
+    const today = new Date();
+    const weekAgo = new Date();
+    weekAgo.setDate(today.getDate() - 7);
+
+    document.getElementById('dash_to').value = today.toISOString().split('T')[0];
+    document.getElementById('dash_from').value = weekAgo.toISOString().split('T')[0];
+
+    document.getElementById('d_to').value = today.toISOString().split('T')[0];
+    document.getElementById('d_from').value = today.toISOString().split('T')[0];
+  });
+
   // 1. Проверяем источник авторизации
   let currentAuthData = tg.initData || localStorage.getItem('tg_web_auth') || "";
 
@@ -177,9 +253,119 @@
     out.innerText = `⚠️ ОШИБКА: Нет данных авторизации! Войдите через виджет или запустите в боте.\n` + out.innerText;
   }
 
+  // Функция загрузки и отрисовки Дашборда
+  async function loadDashboard() {
+    const from = val('dash_from');
+    const to = val('dash_to');
+    if(!from || !to) return alert("Выберите даты!");
+
+    let url = val('baseUrl').replace(/\/$/, '') + `/calorie/reports/dashboard?from=${from}&to=${to}`;
+    out.innerText = `\n📊 [GET] /calorie/reports/ui/dashboard\n⏳ Загрузка графиков...` + out.innerText;
+
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-TG-INIT-DATA': currentAuthData,
+          'ngrok-skip-browser-warning': 'true'
+        }
+      });
+
+      if (!response.ok) throw new Error(`Статус: ${response.status}`);
+      const data = await response.json();
+
+      out.innerText = `✅ Данные дашборда успешно получены!\n` + out.innerText;
+
+      // 1. Заполняем текстовые виджеты за сегодня
+      const today = data.todayProgress;
+      document.getElementById('sum_cal').innerText = today.caloriesFact;
+      document.getElementById('tar_cal').innerText = today.caloriesTarget ? `Цель: ${today.caloriesTarget}` : 'Цель: --';
+
+      document.getElementById('sum_prot').innerText = today.proteinsFact + 'г';
+      document.getElementById('tar_prot').innerText = today.proteinsTarget ? `Цель: ${today.proteinsTarget}г` : 'Цель: --';
+
+      document.getElementById('sum_fats').innerText = today.fatsFact + 'г';
+      document.getElementById('tar_fats').innerText = today.fatsTarget ? `Цель: ${today.fatsTarget}г` : 'Цель: --';
+
+      document.getElementById('sum_carbs').innerText = today.carbsFact + 'г';
+      document.getElementById('tar_carbs').innerText = today.carbsTarget ? `Цель: ${today.carbsTarget}г` : 'Цель: --';
+
+      // Функция безопасного пересоздания графика
+      const initChart = (id, config) => {
+        if (charts[id]) charts[id].destroy();
+        charts[id] = new Chart(document.getElementById(id), config);
+      };
+
+      // 2. График 1: Стек КБЖУ по дням (Stacked Bar Chart)
+      const dates = data.periodStats.map(s => s.date);
+      initChart('chartPeriod', {
+        type: 'bar',
+        data: {
+          labels: dates,
+          datasets: [
+            { label: 'Белки (г)', data: data.periodStats.map(s => s.proteins), backgroundColor: '#3498db' },
+            { label: 'Жиры (г)', data: data.periodStats.map(s => s.fats), backgroundColor: '#e67e22' },
+            { label: 'Углеводы (г)', data: data.periodStats.map(s => s.carbs), backgroundColor: '#2ecc71' }
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true } } }
+      });
+
+      // 3. График 2: Тренд изменения веса (Line Chart)
+      initChart('chartWeight', {
+        type: 'line',
+        data: {
+          labels: data.weightTrend.map(w => w.date),
+          datasets: [{
+            label: 'Вес (кг)',
+            data: data.weightTrend.map(w => w.weight),
+            borderColor: '#e74c3c',
+            backgroundColor: 'rgba(231, 76, 60, 0.1)',
+            tension: 0.3,
+            fill: true,
+            spanGaps: true
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+
+      // 4. График 3: Калории по категориям (Doughnut Chart)
+      initChart('chartCategory', {
+        type: 'doughnut',
+        data: {
+          labels: data.categoryDistribution.map(c => c.categoryName),
+          datasets: [{
+            data: data.categoryDistribution.map(c => c.calories),
+            backgroundColor: ['#9b59b6', '#34495e', '#16a085', '#f1c40f', '#e74c3c', '#95a5a6']
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
+      });
+
+      // 5. График 4: Ритм питания по часам (Bar Chart)
+      const hoursLabels = Array.from({length: 24}, (_, i) => `${i}:00`);
+      const hoursData = Array.from({length: 24}, (_, i) => data.hourlyRhythm[i] || 0);
+      initChart('chartRhythm', {
+        type: 'bar',
+        data: {
+          labels: hoursLabels,
+          datasets: [{
+            label: 'Калории',
+            data: hoursData,
+            backgroundColor: '#f39c12'
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+
+    } catch (err) {
+      out.innerText = `\n🔥 ОШИБКА ДАШБОРДА: ${err.message}\n` + out.innerText;
+    }
+  }
+
   // 2. Обработчик успешного входа через виджет Telegram
   function onTelegramAuth(user) {
-    // Превращаем объект user {id: 123, hash: "...", auth_date: 123} в строку формата URL
     const authDataString = Object.keys(user)
             .map(key => `${key}=${encodeURIComponent(user[key])}`)
             .join('&');
@@ -196,7 +382,7 @@
     out.innerText = "🚪 Вышли из Web-сессии. Данные стерты.\n" + out.innerText;
   }
 
-  // Конвертер файлов в Base64 (без заголовка data:image/png;base64,)
+  // Конвертер файлов в Base64
   const fileToBase64 = file => new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.readAsDataURL(file);
@@ -219,14 +405,13 @@
     if (!file) return alert('Выберите аудиофайл!');
     out.innerText = "⏳ Конвертация аудио в Base64...\n" + out.innerText;
     const base64 = await fileToBase64(file);
-    // Берем расширение файла как формат
     const format = file.name.split('.').pop() || "webm";
     api('POST', '/calorie/dishes/voice', { base64Audio: base64, format: format });
   }
 
   // Главная функция запросов
   async function api(method, path, body = null) {
-    let url = val('baseUrl').replace(/\/$/, '') + path; // Убираем слэш в конце URL если есть
+    let url = val('baseUrl').replace(/\/$/, '') + path;
 
     let logMsg = `\n-------------------------\n📡 [${method}] ${path}`;
     if (body) logMsg += `\n📦 Тело: ${JSON.stringify(body)}`;
@@ -236,8 +421,8 @@
       method: method,
       headers: {
         'Content-Type': 'application/json',
-        'X-TG-INIT-DATA': currentAuthData, // Обязательно передаем хеш
-        'ngrok-skip-browser-warning': 'true' // Для обхода заглушки ngrok
+        'X-TG-INIT-DATA': currentAuthData,
+        'ngrok-skip-browser-warning': 'true'
       }
     };
 
@@ -247,17 +432,15 @@
 
     try {
       const response = await fetch(url, options);
-
       let resData = "";
-      // Проверяем 204 No Content (для DELETE)
       if (response.status === 204) {
         resData = "Успешно удалено (204 No Content)";
       } else {
         const text = await response.text();
         try {
-          resData = JSON.stringify(JSON.parse(text), null, 2); // Пытаемся красиво вывести JSON
+          resData = JSON.stringify(JSON.parse(text), null, 2);
         } catch(e) {
-          resData = text; // Если пришел простой текст или ошибка
+          resData = text;
         }
       }
 
@@ -269,14 +452,12 @@
     }
   }
 
-  // Специальная функция для оплаты
+  // Функция для оплаты
   async function payWithStars() {
     const planId = val('plan_id');
     if (!planId) return alert('Сначала введите ID тарифа!');
 
     out.innerText = `\n-------------------------\n💰 [PAYMENT] Инициализация оплаты для плана ID: ${planId}...\n` + out.innerText;
-
-    // 1. Запрашиваем ссылку на оплату у нашего контроллера
     let url = val('baseUrl').replace(/\/$/, '') + `/calorie/payment/create?planId=${planId}`;
 
     try {
@@ -296,27 +477,19 @@
 
       const data = await response.json();
 
-      // В ответе мы ожидаем поле paymentUrl (invoiceLink)
       if (data.paymentUrl) {
         out.innerText = `✅ Ссылка получена: ${data.paymentUrl.substring(0, 30)}...\n` + out.innerText;
 
-        // 2. Если мы внутри Telegram Mini App — открываем нативное окно
         if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
           window.Telegram.WebApp.openInvoice(data.paymentUrl, function(status) {
             out.innerText = `\n🔔 Результат Telegram: [${status}]\n` + out.innerText;
-
             if (status === 'paid') {
-              // Вместо простого алерта вызываем нашу новую функцию через небольшую паузу,
-              // чтобы бэкенд успел обработать webhook от Telegram (PreCheckout/SuccessfulPayment)
-              setTimeout(() => {
-                checkSubscription();
-              }, 1500);
+              setTimeout(() => { checkSubscription(); }, 1500);
             } else if (status === 'cancelled') {
               window.Telegram.WebApp.showAlert("Оплата отменена");
             }
           });
         } else {
-          // 3. Если открыли просто в браузере (вне бота), перенаправляем на ссылку
           out.innerText = `⚠️ Тестер запущен вне Mini App. Открываю ссылку в новой вкладке...\n` + out.innerText;
           window.open(data.paymentUrl, '_blank');
         }
@@ -325,13 +498,11 @@
       }
     } catch (err) {
       out.innerText = `\n🔥 ОШИБКА ПРИ СОЗДАНИИ ПЛАТЕЖА: ${err.message}\n` + out.innerText;
-      console.error(err);
     }
   }
 
   async function checkSubscription() {
     out.innerText = `\n-------------------------\n🔄 Запрос статуса подписки...\n` + out.innerText;
-
     let url = val('baseUrl').replace(/\/$/, '') + '/calorie/payment/subscription-status';
 
     try {
@@ -344,10 +515,8 @@
       });
 
       if (!response.ok) throw new Error('Ошибка при получении статуса');
+      const data = await response.json();
 
-      const data = await response.json(); // Теперь это массив []
-
-      // Выводим сырой JSON в консоль тестера для отладки
       out.innerText = `\nℹ️ Получено подписок: ${data.length}\n` + out.innerText;
 
       if (!data || data.length === 0) {
@@ -357,9 +526,7 @@
         return;
       }
 
-      // Формируем общее сообщение из всех элементов списка
       let fullMessage = "📋 Ваши подписки:\n\n";
-
       data.forEach((sub, index) => {
         const icon = sub.status === 'ACTIVE' ? '✅' : '⏳';
         fullMessage += `${icon} ${sub.planName}\n`;
@@ -368,19 +535,15 @@
         if (index < data.length - 1) fullMessage += `-------------------\n`;
       });
 
-      // Выводим красивое нативное окно в Telegram
       if (window.Telegram && window.Telegram.WebApp) {
         window.Telegram.WebApp.showAlert(fullMessage);
       } else {
         alert(fullMessage);
       }
-
     } catch (err) {
       out.innerText = `\n🔥 Ошибка: ${err.message}\n` + out.innerText;
     }
   }
-
 </script>
-
 </body>
 </html>

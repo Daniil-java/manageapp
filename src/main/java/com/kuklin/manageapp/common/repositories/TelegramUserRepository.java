@@ -13,5 +13,11 @@ public interface TelegramUserRepository extends JpaRepository<TelegramUser, Long
     Optional<TelegramUser> findTelegramUserByBotIdentifierAndTelegramId(BotIdentifier botIdentifier, Long telegramId);
     List<TelegramUser> findAllByBotIdentifier(BotIdentifier botIdentifier);
     List<TelegramUser> findAllByBotIdentifierAndIsBotBlockedFalse(BotIdentifier botIdentifier);
+    Optional<TelegramUser> findTelegramUserByTelegramId(Long tgId);
+
+    Optional<TelegramUser> findFirstByTelegramIdAndAppUserIdIsNotNull(Long tgId);
+
+    Optional<TelegramUser> findFirstByTelegramId(Long tgId);
+    Optional<TelegramUser> findTelegramUserByAppUserIdAndBotIdentifier(Long appUserId, BotIdentifier botIdentifier);
 
 }

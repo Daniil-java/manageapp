@@ -20,12 +20,12 @@ public class CalorieWeightHistoryUpdateHandler implements CalorieBotUpdateHandle
         if (update.hasCallbackQuery()) {
             calorieTelegramBot.sendReturnedMessage(
                     update.getCallbackQuery().getMessage().getChatId(),
-                    analyticsService.getWeightHistoryTextList(telegramUser.getTelegramId())
+                    analyticsService.getWeightHistoryTextList(telegramUser.getAppUserId())
             );
         } else if (update.hasMessage()) {
             calorieTelegramBot.sendReturnedMessage(
                     update.getMessage().getChatId(),
-                    analyticsService.getWeightHistoryTextList(telegramUser.getTelegramId())
+                    analyticsService.getWeightHistoryTextList(telegramUser.getAppUserId())
             );
         }
     }

@@ -3,7 +3,9 @@ package com.kuklin.manageapp.bots.caloriebot.components.services;
 import com.kuklin.manageapp.bots.caloriebot.entities.PlanFeature;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.BotFeature;
 import com.kuklin.manageapp.bots.caloriebot.components.repository.PlanFeatureRepository;
+import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.services.TelegramUserService;
 import com.kuklin.manageapp.payment.components.paymentfacades.CommonPaymentFacade;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -18,17 +20,22 @@ import static com.kuklin.manageapp.bots.caloriebot.components.services.CalorieAc
 public class PlanFeatureService {
     private final PlanFeatureRepository planFeatureRepository;
     private final CommonPaymentFacade commonPaymentFacade;
+    private final TelegramUserService telegramUserService;
 
     public List<PlanFeature> getFeaturesByPlanCode(String planCode, BotIdentifier botIdentifier) {
         return planFeatureRepository.findAllByPlanCodeAndBotIdentifier(planCode, botIdentifier);
     }
 
     //Препдолагается, что у пользователя только одна активная подписка
-    public PlanFeature getFeatureByUserIdAndBotIdentifierAndFeatureOrNull(Long userId,
+    public PlanFeature getFeatureByUserIdAndBotIdentifierAndFeatureOrNull(Long appUserId,
                                                                           BotIdentifier botIdentifier,
                                                                           BotFeature feature) {
-        String planCode = commonPaymentFacade.getActivePlanCodeByUserIdOrNull(userId, botIdentifier);
-        if (planCode == null) planCode = FREE_PLAN_CODE;
+
+        String planCode = FREE_PLAN_CODE;
+        String activePlan = commonPaymentFacade.getActivePlanCodeByUserIdOrNull(appUserId, botIdentifier);
+        if (activePlan != null) {
+            planCode = activePlan;
+        }
 
         Optional<PlanFeature> optionalPlanFeature =  planFeatureRepository
                 .findAllByPlanCodeAndBotIdentifier(planCode, botIdentifier)

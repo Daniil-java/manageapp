@@ -20,27 +20,27 @@ import java.util.Set;
 @Repository
 public interface UserSubscriptionRepository extends JpaRepository<UserSubscription, Long> {
     // Вся история подписок пользователя
-    List<UserSubscription> findAllByTelegramIdOrderByStartAtAsc(Long telegramId);
+    List<UserSubscription> findAllByAppUserIdOrderByStartAtAsc(Long appUserId);
 
     // Активные + запланированные подписки, которые ещё не закончились
-    List<UserSubscription> findAllByTelegramIdAndBotIdentifierAndStatusInAndEndAtGreaterThanOrderByStartAtAsc(
-            Long telegramId,
+    List<UserSubscription> findAllByAppUserIdAndBotIdentifierAndStatusInAndEndAtGreaterThanOrderByStartAtAsc(
+            Long appUserId,
             BotIdentifier botIdentifier,
             Collection<UserSubscription.Status> statuses,
             Instant now
     );
 
     // Последняя (по времени окончания) активная/запланированная подписка
-    Optional<UserSubscription> findFirstByTelegramIdAndBotIdentifierAndStatusInAndEndAtGreaterThanOrderByEndAtDesc(
-            Long telegramId,
+    Optional<UserSubscription> findFirstByAppUserIdAndBotIdentifierAndStatusInAndEndAtGreaterThanOrderByEndAtDesc(
+            Long appUserId,
             BotIdentifier botIdentifier,
             Collection<UserSubscription.Status> statuses,
             Instant now
     );
 
     // Текущая активная подписка (с учётом интервала)
-    Optional<UserSubscription> findFirstByTelegramIdAndBotIdentifierAndStatusAndStartAtLessThanEqualAndEndAtGreaterThanOrderByStartAtAsc(
-            Long telegramId,
+    Optional<UserSubscription> findFirstByAppUserIdAndBotIdentifierAndStatusAndStartAtLessThanEqualAndEndAtGreaterThanOrderByStartAtAsc(
+            Long appUserId,
             BotIdentifier botIdentifier,
             UserSubscription.Status status,
             Instant from,
@@ -48,8 +48,8 @@ public interface UserSubscriptionRepository extends JpaRepository<UserSubscripti
     );
 
     // Для внутреннего обновления статусов
-    List<UserSubscription> findAllByTelegramIdAndBotIdentifierAndStatusIn(
-            Long telegramId,
+    List<UserSubscription> findAllByAppUserIdAndBotIdentifierAndStatusIn(
+            Long appUserId,
             BotIdentifier botIdentifier,
             Collection<UserSubscription.Status> statuses
     );
@@ -58,18 +58,18 @@ public interface UserSubscriptionRepository extends JpaRepository<UserSubscripti
     List<UserSubscription> findAllByPaymentIdAndBotIdentifier(Long paymentId, BotIdentifier botIdentifier);
 
     // все “рабочие” подписки по пользователю, отсортированные по старту
-    List<UserSubscription> findAllByTelegramIdAndBotIdentifierAndStatusInOrderByStartAtAsc(
-            Long telegramId,
+    List<UserSubscription> findAllByAppUserIdAndBotIdentifierAndStatusInOrderByStartAtAsc(
+            Long appUserId,
             BotIdentifier botIdentifier,
             Collection<UserSubscription.Status> statuses
 
     );
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT s FROM UserSubscription s WHERE s.telegramId = :tgId " +
+    @Query("SELECT s FROM UserSubscription s WHERE s.appUserId = :tgId " +
             "AND s.botIdentifier = :botId AND s.status IN :statuses")
-    List<UserSubscription> findAllByTelegramIdAndBotIdentifierAndStatusInForUpdate(
-            @Param("tgId") Long tgId,
+    List<UserSubscription> findAllByAppUserIdAndBotIdentifierAndStatusInForUpdate(
+            @Param("tgId") Long appUserId,
             @Param("botId") BotIdentifier botId,
             @Param("statuses") Set<UserSubscription.Status> statuses
     );
@@ -91,14 +91,14 @@ public interface UserSubscriptionRepository extends JpaRepository<UserSubscripti
     );
 
     // Проверка наличия активной подписки (используется при активации запланированной)
-    boolean existsByTelegramIdAndBotIdentifierAndStatus(
-            Long telegramId,
+    boolean existsByAppUserIdAndBotIdentifierAndStatus(
+            Long appUserId,
             BotIdentifier botIdentifier,
             UserSubscription.Status status
     );
 
-    boolean existsByTelegramIdAndBotIdentifierAndPricingPlanId(
-            Long telegramId,
+    boolean existsByAppUserIdAndBotIdentifierAndPricingPlanId(
+            Long appUserId,
             BotIdentifier botIdentifier,
             Long pricingPlanId
     );

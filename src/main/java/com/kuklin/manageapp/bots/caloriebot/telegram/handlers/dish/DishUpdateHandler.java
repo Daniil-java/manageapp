@@ -69,7 +69,7 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
         for (Dish dish: dishes) {
             calorieTelegramBot.sendReturnedMessage(
                     update.getMessage().getChatId(),
-                    analyticsService.getInfo(dish, telegramUser.getTelegramId()),
+                    analyticsService.getInfo(dish, telegramUser.getAppUserId()),
                     getPortionWeightKeyboard(dish),
                     null
             );
@@ -84,7 +84,7 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
      * - null, если были ошибки (при этом в большинстве случаев уже отправлены сообщения пользователю).
      */
     private List<Dish> getDishOrNull(Update update, TelegramUser telegramUser) {
-        Long userId = telegramUser.getTelegramId();
+        Long userId = telegramUser.getAppUserId();
         List<Dish> dishes;
 
         // ==== ВЕТКА 1: пользователь прислал фото ====
@@ -165,7 +165,7 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
         try {
             String photoBase64 = telegramService.downloadPhotoFileBase64OrNull(calorieTelegramBot, message);
             AccessResult<List<Dish>> dishResult = dishService.getDishDtoByPhoto(
-                    telegramUser.getTelegramId(), photoBase64, message.getCaption());
+                    telegramUser.getAppUserId(), photoBase64, message.getCaption());
             List<Dish> dishes = dishResult.getOrThrow();
             calorieAccessService.incrementResponses(telegramUser);
             if (dishes == null || dishes.isEmpty()) return null;

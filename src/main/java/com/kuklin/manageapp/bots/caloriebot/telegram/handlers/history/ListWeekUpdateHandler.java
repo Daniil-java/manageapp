@@ -30,8 +30,8 @@ public class ListWeekUpdateHandler implements CalorieBotUpdateHandler {
     private final UserSettingsService userSettingsService;
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
-        List<Dish> dishes = dishService.getWeekDishes(telegramUser.getTelegramId());
-        UserNutritionProfile profile = userNutritionProfileService.getOrCreateProfile(telegramUser.getTelegramId());
+        List<Dish> dishes = dishService.getWeekDishes(telegramUser.getAppUserId());
+        UserNutritionProfile profile = userNutritionProfileService.getOrCreateProfile(telegramUser.getAppUserId());
         calorieTelegramBot.sendReturnedMessage(
                 update.getMessage().getChatId(),
                 getWeeklyAnalytics(dishes, profile, telegramUser),
@@ -44,7 +44,7 @@ public class ListWeekUpdateHandler implements CalorieBotUpdateHandler {
         StringBuilder sb = new StringBuilder();
 
         // Группируем по дате
-        ZoneId userZone = userSettingsService.getOrCreate(telegramUser.getTelegramId()).getZoneId();
+        ZoneId userZone = userSettingsService.getOrCreate(telegramUser.getAppUserId()).getZoneId();
 
         Map<LocalDate, List<Dish>> byDay = dishes.stream()
                 .collect(Collectors.groupingBy(d -> d.getCreated()

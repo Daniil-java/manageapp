@@ -38,7 +38,8 @@ public class Payment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private Long telegramId;
+    @Column(name = "app_user_id")
+    private Long appUserId;
     @Enumerated(EnumType.STRING)
     private Provider provider; // "STARS" | "YOOKASSA"
     private String providerPaymentId; // id платежа в ЮKassa

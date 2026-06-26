@@ -51,7 +51,7 @@ public class CalorieScaleCallbackUpdateHandler implements CalorieBotUpdateHandle
         }
         calorieTelegramBot.sendEditMessage(
                 update.getCallbackQuery().getMessage().getChatId(),
-                analyticsService.getInfo(dish, telegramUser.getTelegramId()),
+                analyticsService.getInfo(dish, telegramUser.getAppUserId()),
                 update.getCallbackQuery().getMessage().getMessageId(),
                 DishUpdateHandler.getPortionWeightKeyboard(dish)
         );

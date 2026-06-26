@@ -21,7 +21,6 @@ import org.springframework.stereotype.Service;
 public class CalorieAccessService {
     private static final Long RESPONSE_LIMIT = 10L;
 
-    private final CommonPaymentFacade commonPaymentFacade;
     private final TelegramUserService telegramUserService;
     private final PlanFeatureService planFeatureService;
     private final UserFeatureUsageService userFeatureUsageService;
@@ -44,15 +43,15 @@ public class CalorieAccessService {
      * @param feature Тип функции, к которой запрашивается доступ
      * @return true, если доступ разрешен (лимит не исчерпан или безлимит)
      */
-    public boolean hasAccess(Long userId, BotIdentifier botIdentifier, BotFeature feature) {
+    public boolean hasAccess(Long appUserId, BotIdentifier botIdentifier, BotFeature feature) {
         // 1. Ищем настройки запрашиваемой фичи в текущем плане
         PlanFeature config = planFeatureService
                 .getFeatureByUserIdAndBotIdentifierAndFeatureOrNull(
-                        userId, botIdentifier, feature);
+                        appUserId, botIdentifier, feature);
 
         // Если фича не описана для плана, значит доступ к ней по умолчанию закрыт
         if (config == null) {
-            log.warn("Feature {} not found! userId {}", feature, userId);
+            log.warn("Feature {} not found! userId {}", feature, appUserId);
             return false;
         }
 
@@ -68,7 +67,7 @@ public class CalorieAccessService {
         // при наступлении нового периода (например, нового дня для DAILY лимитов).
         UserFeatureUsage usage = userFeatureUsageService
                 .getUserFeatureUsageByUserIdAndBotIdentifierAndBotFeatureOrCreate(
-                        userId, botIdentifier, feature, config.getLimitPeriod()
+                        appUserId, botIdentifier, feature, config.getLimitPeriod()
                 );
 
         // Разрешаем, если количество использований строго меньше установленного лимита
@@ -76,16 +75,16 @@ public class CalorieAccessService {
 
         if (!canProceed) {
             log.info("User {} exhausted limit for feature {}: {}/{}",
-                    userId, feature, usage.getUsedCount(), config.getLimitValue());
+                    appUserId, feature, usage.getUsedCount(), config.getLimitValue());
         }
 
         return canProceed;
     }
 
-    public int getRemainingLimits(Long userId, BotFeature feature) {
+    public int getRemainingLimits(Long appUserId, BotFeature feature) {
         // 1. Получаем настройки лимита для пользователя из его тарифа
         PlanFeature planFeature = planFeatureService
-                .getFeatureByUserIdAndBotIdentifierAndFeatureOrNull(userId, BotIdentifier.CALORIE_BOT, feature);
+                .getFeatureByUserIdAndBotIdentifierAndFeatureOrNull(appUserId, BotIdentifier.CALORIE_BOT, feature);
 
         if (planFeature != null || planFeature.getFeature().equals(FeatureLimitPeriod.UNLIMITED)) {
             return -1;
@@ -97,7 +96,7 @@ public class CalorieAccessService {
         // 2. Получаем текущее использование (с учетом сброса периода, например, за день)
         UserFeatureUsage usage = userFeatureUsageService
                 .getUserFeatureUsageByUserIdAndBotIdentifierAndBotFeatureOrCreate(
-                        userId, BotIdentifier.CALORIE_BOT, feature, planFeature.getLimitPeriod()
+                        appUserId, BotIdentifier.CALORIE_BOT, feature, planFeature.getLimitPeriod()
                 );
 
         // 3. Считаем остаток

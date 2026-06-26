@@ -25,37 +25,37 @@ public class WeightEntryController {
 
     @GetMapping
     @Operation(summary = "История взвешиваний", description = "Возвращает полную историю изменения веса пользователя")
-    public List<WeightEntryDto> getAllWeightHistory(@Parameter(hidden = true) @AuthenticationPrincipal Long tgUserId) {
-        return weightEntryService.getAllWeightHistoryDto(tgUserId);
+    public List<WeightEntryDto> getAllWeightHistory(@Parameter(hidden = true) @AuthenticationPrincipal Long appUserId) {
+        return weightEntryService.getAllWeightHistoryDto(appUserId);
     }
 
     @PutMapping
     @Operation(summary = "Обновить текущий вес", description = "Добавляет новую запись о весе или обновляет существующую за сегодня")
     public WeightEntryDto updateWeight(
-            @Parameter(hidden = true) @AuthenticationPrincipal Long tgUserId,
+            @Parameter(hidden = true) @AuthenticationPrincipal Long appUserId,
             @Parameter(description = "Вес в кг", example = "75.5")
             @NotNull @DecimalMin(value = "0.0", inclusive = false) @RequestBody BigDecimal weightKg) {
-        return weightEntryService.updateWeightDto(tgUserId, weightKg);
+        return weightEntryService.updateWeightDto(appUserId, weightKg);
     }
 
     @DeleteMapping("/{weightId}")
     @Operation(summary = "Удаление записи о весе", description = "Удаляет запись о весе")
     public void deleteWeight(
-            @Parameter(hidden = true) @AuthenticationPrincipal Long tgUserId,
+            @Parameter(hidden = true) @AuthenticationPrincipal Long appUserId,
             @Parameter(description = "ID записи веса") @PathVariable Long weightId) {
-        weightEntryService.deleteWeightEntryById(tgUserId, weightId);
+        weightEntryService.deleteWeightEntryById(appUserId, weightId);
     }
 
     @GetMapping("/period")
     @Operation(summary = "Вес за период", description = "Получение записей о весе за определенный период\"")
     public List<WeightEntryDto> getAllWeightByPeriod(
-            @Parameter(hidden = true) @AuthenticationPrincipal Long tgUserId,
+            @Parameter(hidden = true) @AuthenticationPrincipal Long appUserId,
 
             @Parameter(description = "Дата начала (YYYY-MM-DD)", example = "2023-10-01")
             @RequestParam(name = "from") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
 
             @Parameter(description = "Дата конца (YYYY-MM-DD)", example = "2023-10-07")
             @RequestParam(name = "to") @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
-        return weightEntryService.getAllWeightByPeriod(tgUserId, from, to);
+        return weightEntryService.getDtoAllWeightByPeriod(appUserId, from, to);
     }
 }

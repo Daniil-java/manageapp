@@ -9,5 +9,5 @@ import java.util.Optional;
 
 @Repository
 public interface GenerationBalanceRepository extends JpaRepository<GenerationBalance, Long> {
-    Optional<GenerationBalance> findByTelegramIdAndBotIdentifier(Long telegramId, BotIdentifier botIdentifier);
+    Optional<GenerationBalance> findByAppUserIdAndBotIdentifier(Long appUserId, BotIdentifier botIdentifier);
 }
