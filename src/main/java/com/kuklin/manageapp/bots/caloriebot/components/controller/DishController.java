@@ -86,7 +86,7 @@ public class DishController {
     public void deleteDish(
             @Parameter(hidden = true) @AuthenticationPrincipal Long appUserId,
             @Parameter(description = "ID блюда") @PathVariable Long dishId) {
-        dishService.removeByDishId(dishId);
+        dishService.removeByDishId(appUserId, dishId);
     }
 
     @GetMapping("/streak")

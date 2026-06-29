@@ -102,6 +102,16 @@ public class DishService {
         dishRepository.deleteById(id);
     }
 
+    @Transactional
+    public void removeByDishId(Long appUserId, Long id) {
+        Dish dish = dishRepository.findById(id).orElseThrow(
+                () -> new ErrorResponseException(ErrorStatus.DISH_NOT_FOUND));
+        if (!dish.getUserId().equals(appUserId)) {
+            throw new ErrorResponseException(ErrorStatus.DISH_NOT_BELONG_USER);
+        }
+        dishRepository.deleteById(id);
+    }
+
     @Transactional(readOnly = true)
     public List<DishDto> getTodayDishesDto(Long userId) {
         List<Dish> dishes = getTodayDishes(userId);

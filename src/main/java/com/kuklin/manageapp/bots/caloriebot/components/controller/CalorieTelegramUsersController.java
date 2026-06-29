@@ -16,8 +16,9 @@ public class CalorieTelegramUsersController {
     private final TelegramUserService telegramUserService;
 
     @GetMapping
-    public TelegramUser getTelegramUserByTelegramId(@RequestParam Long appUserId) {
-        return telegramUserService.getTelegramUserByTelegramIdAndBotIdentifierOrNull(appUserId, BotIdentifier.CALORIE_BOT);
+    public TelegramUser getTelegramUserByTelegramId(@RequestParam Long telegramUserId) {
+        return telegramUserService.getTelegramUserByTelegramIdAndBotIdentifierOrNull(
+                telegramUserId, BotIdentifier.CALORIE_BOT);
     }
 
 //    @PostMapping

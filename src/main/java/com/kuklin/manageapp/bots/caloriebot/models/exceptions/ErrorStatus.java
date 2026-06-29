@@ -14,7 +14,9 @@ public enum ErrorStatus {
     DISH_EMPTY_FOOD_DESCRIPTION(HttpStatus.BAD_REQUEST, "Empty food description!"),
     FAVORITE_DISH_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, "Favorite dish already exists!"),
     PAYMENT_FAILED(HttpStatus.BAD_REQUEST, "Payment failed!"),
-    USER_NOT_FOUND(HttpStatus.BAD_REQUEST, "User not found!" );
+    USER_NOT_FOUND(HttpStatus.BAD_REQUEST, "User not found!" ),
+    DISH_NOT_BELONG_USER(HttpStatus.BAD_REQUEST, "Dish not belong user!")
+    ;
 
     private HttpStatus httpStatus;
     private String message;
