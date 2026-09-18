@@ -82,25 +82,22 @@ public class CalorieAccessService {
     }
 
     public int getRemainingLimits(Long appUserId, BotFeature feature) {
-        // 1. Получаем настройки лимита для пользователя из его тарифа
         PlanFeature planFeature = planFeatureService
                 .getFeatureByUserIdAndBotIdentifierAndFeatureOrNull(appUserId, BotIdentifier.CALORIE_BOT, feature);
 
-        if (planFeature != null || planFeature.getFeature().equals(FeatureLimitPeriod.UNLIMITED)) {
+        if (planFeature == null) {
+            return 0; // фича не описана для тарифа — доступа нет
+        }
+        if (planFeature.getLimitPeriod() == FeatureLimitPeriod.UNLIMITED
+                || planFeature.getLimitValue() == null
+                || planFeature.getLimitValue() <= -1) {
             return -1;
         }
-        if (planFeature == null || planFeature.getLimitValue() == null) {
-            return 0; // Или -1 для безлимита
-        }
 
-        // 2. Получаем текущее использование (с учетом сброса периода, например, за день)
         UserFeatureUsage usage = userFeatureUsageService
                 .getUserFeatureUsageByUserIdAndBotIdentifierAndBotFeatureOrCreate(
-                        appUserId, BotIdentifier.CALORIE_BOT, feature, planFeature.getLimitPeriod()
-                );
+                        appUserId, BotIdentifier.CALORIE_BOT, feature, planFeature.getLimitPeriod());
 
-        // 3. Считаем остаток
-        int remaining = planFeature.getLimitValue() - usage.getUsedCount();
-        return Math.max(0, remaining);
+        return Math.max(0, planFeature.getLimitValue() - usage.getUsedCount());
     }
 }

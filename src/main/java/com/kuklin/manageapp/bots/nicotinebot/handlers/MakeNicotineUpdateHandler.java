@@ -1,18 +1,15 @@
 package com.kuklin.manageapp.bots.nicotinebot.handlers;
 
-import com.kuklin.manageapp.bots.nicotinebot.NicotineTelegramBot;
 import com.kuklin.manageapp.bots.nicotinebot.components.SmokingRecord;
 import com.kuklin.manageapp.bots.nicotinebot.components.SmokingRecordService;
+import com.kuklin.manageapp.bots.nicotinebot.NicotineTelegramBot;
 import com.kuklin.manageapp.common.entities.TelegramUser;
-import com.kuklin.manageapp.common.library.tgmodels.UpdateHandler;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
 import java.time.ZoneId;
-
-import static com.kuklin.manageapp.bots.nicotinebot.handlers.StartNicotineUpdateHandler.getKeyboard;
 
 @Component
 @RequiredArgsConstructor
@@ -26,7 +23,7 @@ public class MakeNicotineUpdateHandler implements NicotineUpdateHandler {
         nicotineTelegramBot.sendReturnedMessage(
                 update.getMessage().getChatId(),
                 "Ну кури, пес.\n" + SmokingRecord.format(smokingRecord.getSmokedAt(), ZoneId.of("Asia/Ho_Chi_Minh")),
-                getKeyboard(),
+                StartNicotineUpdateHandler.getKeyboard(),
                 null
         );
     }

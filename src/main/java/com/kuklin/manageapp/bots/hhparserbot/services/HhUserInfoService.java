@@ -1,7 +1,7 @@
 package com.kuklin.manageapp.bots.hhparserbot.services;
 
-import com.kuklin.manageapp.bots.hhparserbot.entities.HhUserInfo;
 import com.kuklin.manageapp.bots.hhparserbot.repositories.HhUserInfoRepository;
+import com.kuklin.manageapp.bots.hhparserbot.entities.HhUserInfo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

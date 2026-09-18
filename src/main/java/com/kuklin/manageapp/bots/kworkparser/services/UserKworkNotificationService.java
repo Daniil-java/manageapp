@@ -1,10 +1,10 @@
 package com.kuklin.manageapp.bots.kworkparser.services;
 
 import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcessor;
-import com.kuklin.manageapp.bots.kworkparser.entities.Kwork;
-import com.kuklin.manageapp.bots.kworkparser.entities.UserKworkNotification;
 import com.kuklin.manageapp.bots.kworkparser.repositories.UserKworkNotificationRepository;
 import com.kuklin.manageapp.bots.kworkparser.telegram.KworkParserTelegramBot;
+import com.kuklin.manageapp.bots.kworkparser.entities.Kwork;
+import com.kuklin.manageapp.bots.kworkparser.entities.UserKworkNotification;
 import com.kuklin.manageapp.common.library.tgutils.ThreadUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

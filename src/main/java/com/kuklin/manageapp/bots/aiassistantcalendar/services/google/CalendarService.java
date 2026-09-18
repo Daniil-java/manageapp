@@ -17,16 +17,16 @@ import com.google.api.services.calendar.model.Events;
 import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcessor;
 import com.kuklin.manageapp.bots.aiassistantcalendar.configurations.GoogleComponents;
 import com.kuklin.manageapp.bots.aiassistantcalendar.configurations.TelegramAiAssistantCalendarBotKeyComponents;
-import com.kuklin.manageapp.bots.aiassistantcalendar.entities.AssistantGoogleOAuth;
-import com.kuklin.manageapp.bots.aiassistantcalendar.entities.GoogleCacheableCalendar;
 import com.kuklin.manageapp.bots.aiassistantcalendar.models.ActionKnot;
 import com.kuklin.manageapp.bots.aiassistantcalendar.models.CalendarEventAiResponse;
 import com.kuklin.manageapp.bots.aiassistantcalendar.models.TokenRefreshException;
+import com.kuklin.manageapp.bots.aiassistantcalendar.services.google.utils.CalendarServiceUtils;
+import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
+import com.kuklin.manageapp.bots.aiassistantcalendar.entities.AssistantGoogleOAuth;
+import com.kuklin.manageapp.bots.aiassistantcalendar.entities.GoogleCacheableCalendar;
 import com.kuklin.manageapp.bots.aiassistantcalendar.services.AiMessageLogService;
 import com.kuklin.manageapp.bots.aiassistantcalendar.services.GoogleCacheableCalendarService;
 import com.kuklin.manageapp.bots.aiassistantcalendar.services.UserGoogleCalendarService;
-import com.kuklin.manageapp.bots.aiassistantcalendar.services.google.utils.CalendarServiceUtils;
-import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -44,9 +44,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import static com.kuklin.manageapp.bots.aiassistantcalendar.services.google.utils.CalendarServiceUtils.getCalendarListEntryBySummaryOrNull;
-import static com.kuklin.manageapp.bots.aiassistantcalendar.services.google.utils.CalendarServiceUtils.resolveTimeZoneFromUtcOffsetHours;
 
 @Service
 @RequiredArgsConstructor
@@ -148,7 +145,7 @@ public class CalendarService {
         List<CalendarListEntry> items = listReq.execute().getItems();
 
         if (items != null) {
-            CalendarListEntry item = getCalendarListEntryBySummaryOrNull(items, DEFAULT_SUMMARY);
+            CalendarListEntry item = CalendarServiceUtils.getCalendarListEntryBySummaryOrNull(items, DEFAULT_SUMMARY);
             if (item != null) {
                 return item.getId();
             }
@@ -213,7 +210,7 @@ public class CalendarService {
             // String id = getOrCreateCalendarId(auth);
             return null;
         }
-        String tz = resolveTimeZoneFromUtcOffsetHours(offset);
+        String tz = CalendarServiceUtils.resolveTimeZoneFromUtcOffsetHours(offset);
         log.info("Timezone: {}", tz);
         com.google.api.services.calendar.model.Calendar existing =
                 context.getCalendar()

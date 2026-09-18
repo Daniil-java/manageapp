@@ -23,7 +23,7 @@ public class DomainUrlFilter extends OncePerRequestFilter {
 
     private final Map<String, DomainRules> rulesByDomain = Map.of(
         "zefir.fit", new DomainRules(
-            List.of("/calorie/**"),
+            List.of("/calorie/**", "/auth/**"),
             List.of()
         ),
         "kuklin.dev", new DomainRules(
@@ -74,6 +74,12 @@ public class DomainUrlFilter extends OncePerRequestFilter {
 
     private String normalizeHost(String host) {
         host = host.toLowerCase(Locale.ROOT);
+
+        int colonIdx = host.indexOf(':');
+        if (colonIdx != -1) {
+            host = host.substring(0, colonIdx);
+        }
+
 
         if (host.endsWith(".")) {
             host = host.substring(0, host.length() - 1);

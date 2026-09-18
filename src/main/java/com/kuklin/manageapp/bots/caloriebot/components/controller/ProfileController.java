@@ -51,8 +51,8 @@ public class ProfileController {
     @Operation(summary = "Оставшийся лимит попыток", description = "Возвращает количество оставшихся попыток использования функции")
     public int getRemainingLimits(
             @Parameter(hidden = true) @AuthenticationPrincipal Long appUserId,
-            @RequestBody BotFeature botFeature) {
-        return calorieAccessService.getRemainingLimits(appUserId, botFeature);
+            @RequestParam BotFeature feature) {
+        return calorieAccessService.getRemainingLimits(appUserId, feature);
     }
 
 }

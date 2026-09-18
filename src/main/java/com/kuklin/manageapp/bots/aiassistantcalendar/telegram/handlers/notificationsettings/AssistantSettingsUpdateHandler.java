@@ -2,11 +2,11 @@ package com.kuklin.manageapp.bots.aiassistantcalendar.telegram.handlers.notifica
 
 import com.kuklin.manageapp.bots.aiassistantcalendar.entities.UserNotificationSettings;
 import com.kuklin.manageapp.bots.aiassistantcalendar.models.TokenRefreshException;
+import com.kuklin.manageapp.bots.aiassistantcalendar.telegram.handlers.AssistantUpdateHandler;
 import com.kuklin.manageapp.bots.aiassistantcalendar.services.UserMessagesLogService;
 import com.kuklin.manageapp.bots.aiassistantcalendar.services.UserNotificationSettingsService;
 import com.kuklin.manageapp.bots.aiassistantcalendar.services.google.CalendarService;
 import com.kuklin.manageapp.bots.aiassistantcalendar.telegram.AssistantTelegramBot;
-import com.kuklin.manageapp.bots.aiassistantcalendar.telegram.handlers.AssistantUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;

@@ -1,6 +1,5 @@
 package com.kuklin.manageapp.bots.nicotinebot;
 
-import com.kuklin.manageapp.bots.channelposter.telegram.ChannelPosterBotKeyComponent;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import org.springframework.beans.factory.annotation.Autowired;

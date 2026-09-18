@@ -2,8 +2,8 @@ package com.kuklin.manageapp.bots.aiassistantcalendar.services.google;
 
 import com.kuklin.manageapp.bots.aiassistantcalendar.configurations.auth.CodeVerifierUtil;
 import com.kuklin.manageapp.bots.aiassistantcalendar.configurations.auth.GoogleOAuthProperties;
-import com.kuklin.manageapp.bots.aiassistantcalendar.entities.AssistantGoogleOAuth;
 import com.kuklin.manageapp.bots.aiassistantcalendar.telegram.handlers.AssistantCalendarChooseUpdateHandler;
+import com.kuklin.manageapp.bots.aiassistantcalendar.entities.AssistantGoogleOAuth;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;

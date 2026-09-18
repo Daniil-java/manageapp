@@ -1,7 +1,7 @@
 package com.kuklin.manageapp.bots.hhparserbot.services;
 
-import com.kuklin.manageapp.bots.hhparserbot.entities.WorkFilter;
 import com.kuklin.manageapp.bots.hhparserbot.integrations.HhFeignClient;
+import com.kuklin.manageapp.bots.hhparserbot.entities.WorkFilter;
 import com.kuklin.manageapp.bots.hhparserbot.models.HhEmployerDto;
 import com.kuklin.manageapp.bots.hhparserbot.models.HhResponseDto;
 import com.kuklin.manageapp.bots.hhparserbot.models.HhSimpleResponseDto;

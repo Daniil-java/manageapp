@@ -8,6 +8,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Hidden
 public class WebController {
 
+    // /auth, /login, /register, /dashboard ниже отдают тестовые Thymeleaf-шаблоны, а "/" редиректит на
+    // /dashboard. Решено оставить их в коде и защитить в SecurityConfig (hasRole("ADMIN")), а не удалять.
+
     @GetMapping("/resume")
     public String getResumePage() {
         return "resume";
@@ -31,5 +34,31 @@ public class WebController {
     @GetMapping("/hhbot/skills")
     public String getSkillPage() {
         return "skillsdata";
+    }
+
+    @GetMapping("/auth")
+    public String getAuthPage() {
+        return "authtest";
+    }
+
+    @GetMapping("/login")
+    public String loginPage() {
+        return "login";
+    }
+
+    @GetMapping("/register")
+    public String registerPage() {
+        return "register";
+    }
+
+    @GetMapping("/dashboard")
+    public String dashboardPage() {
+        return "dashboard";
+    }
+
+    // Редирект с корня на логин или дашборд
+    @GetMapping("/")
+    public String index() {
+        return "redirect:/dashboard";
     }
 }

@@ -1,12 +1,12 @@
 package com.kuklin.manageapp.bots.pomidorotimer.telegram.handlers;
 
+import com.kuklin.manageapp.bots.pomidorotimer.telegram.handlers.timer.TimerHandler;
 import com.kuklin.manageapp.bots.pomidorotimer.entities.Task;
 import com.kuklin.manageapp.bots.pomidorotimer.entities.Timer;
 import com.kuklin.manageapp.bots.pomidorotimer.models.BotState;
 import com.kuklin.manageapp.bots.pomidorotimer.services.TaskService;
 import com.kuklin.manageapp.bots.pomidorotimer.services.TimerService;
 import com.kuklin.manageapp.bots.pomidorotimer.telegram.PomidoroTelegramBot;
-import com.kuklin.manageapp.bots.pomidorotimer.telegram.handlers.timer.TimerHandler;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

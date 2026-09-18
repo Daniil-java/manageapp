@@ -1,6 +1,5 @@
 package com.kuklin.manageapp.bots.channelposter.components.schedulers;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcessor;
 import com.kuklin.manageapp.bots.channelposter.entities.parser.RedditPost;

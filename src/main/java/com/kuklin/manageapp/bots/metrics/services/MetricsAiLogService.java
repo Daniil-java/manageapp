@@ -1,8 +1,8 @@
 package com.kuklin.manageapp.bots.metrics.services;
 
 import com.kuklin.manageapp.aiconversation.models.enums.ProviderVariant;
-import com.kuklin.manageapp.bots.metrics.entities.MetricsAiLog;
 import com.kuklin.manageapp.bots.metrics.repositories.MetricsAiLogRepository;
+import com.kuklin.manageapp.bots.metrics.entities.MetricsAiLog;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

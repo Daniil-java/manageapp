@@ -1,9 +1,9 @@
 package com.kuklin.manageapp.bots.pomidorotimer.services;
 
 
+import com.kuklin.manageapp.bots.pomidorotimer.repositories.PomidoroUserRepository;
 import com.kuklin.manageapp.bots.pomidorotimer.entities.UserEntity;
 import com.kuklin.manageapp.bots.pomidorotimer.models.BotState;
-import com.kuklin.manageapp.bots.pomidorotimer.repositories.PomidoroUserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -1,7 +1,6 @@
 package com.kuklin.manageapp.bots.metrics.telegram.handlers;
 
 import com.kuklin.manageapp.bots.metrics.configurations.MetricsBotKeyComponents;
-import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
 import com.kuklin.manageapp.bots.metrics.entities.MetricsAiLog;
 import com.kuklin.manageapp.bots.metrics.services.MetricsAiInteractionRecordService;
 import com.kuklin.manageapp.bots.metrics.services.MetricsAiLogService;

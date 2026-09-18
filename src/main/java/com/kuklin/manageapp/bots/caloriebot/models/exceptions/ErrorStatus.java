@@ -15,7 +15,8 @@ public enum ErrorStatus {
     FAVORITE_DISH_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, "Favorite dish already exists!"),
     PAYMENT_FAILED(HttpStatus.BAD_REQUEST, "Payment failed!"),
     USER_NOT_FOUND(HttpStatus.BAD_REQUEST, "User not found!" ),
-    DISH_NOT_BELONG_USER(HttpStatus.BAD_REQUEST, "Dish not belong user!")
+    DISH_NOT_BELONG_USER(HttpStatus.BAD_REQUEST, "Dish not belong user!"),
+    EMAIL_ALREADY_BUSY(HttpStatus.BAD_REQUEST, "Email is already busy!")
     ;
 
     private HttpStatus httpStatus;

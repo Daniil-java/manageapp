@@ -1,7 +1,7 @@
 package com.kuklin.manageapp.bots.bookingbot.services;
 
-import com.kuklin.manageapp.bots.bookingbot.entities.BookingObject;
 import com.kuklin.manageapp.bots.bookingbot.repositories.BookingObjectRepository;
+import com.kuklin.manageapp.bots.bookingbot.entities.BookingObject;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;

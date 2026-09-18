@@ -1,8 +1,8 @@
 package com.kuklin.manageapp.bots.nicotinebot.handlers;
 
-import com.kuklin.manageapp.bots.nicotinebot.NicotineTelegramBot;
 import com.kuklin.manageapp.bots.nicotinebot.components.SmokingRecord;
 import com.kuklin.manageapp.bots.nicotinebot.components.SmokingRecordService;
+import com.kuklin.manageapp.bots.nicotinebot.NicotineTelegramBot;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import lombok.RequiredArgsConstructor;
@@ -12,8 +12,6 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.Optional;
-
-import static com.kuklin.manageapp.bots.nicotinebot.handlers.StartNicotineUpdateHandler.getKeyboard;
 
 @Component
 @RequiredArgsConstructor
@@ -29,14 +27,14 @@ public class LastNicotineUpdateHandler implements NicotineUpdateHandler{
         if (optional.isEmpty()) {
             nicotineTelegramBot.sendReturnedMessage(
                     chatId, "Ты ж не курил!",
-                    getKeyboard(),
+                    StartNicotineUpdateHandler.getKeyboard(),
                     null
             );
         } else {
             SmokingRecord record = optional.get();
             nicotineTelegramBot.sendReturnedMessage(
                     chatId, getMessageText(record),
-                    getKeyboard(),
+                    StartNicotineUpdateHandler.getKeyboard(),
                     null
             );
         }

@@ -1,7 +1,7 @@
 package com.kuklin.manageapp.bots.aiassistantcalendar.services;
 
-import com.kuklin.manageapp.bots.aiassistantcalendar.entities.NotifiedEvent;
 import com.kuklin.manageapp.bots.aiassistantcalendar.repositories.NotifiedEventRepository;
+import com.kuklin.manageapp.bots.aiassistantcalendar.entities.NotifiedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

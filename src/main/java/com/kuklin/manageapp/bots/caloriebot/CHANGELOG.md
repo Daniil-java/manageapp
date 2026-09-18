@@ -1,3 +1,14 @@
+## 0.0.46 (18.09.2026)
+[et-69] — Авторизация на сайте, роли и синхронизация с Telegram
+* Реализована регистрация и вход по email+паролю (AuthController, AuthService, JwtService) — пароли хранятся через BCrypt, выдаётся JWT-токен.
+* Добавлена ролевая модель: сущность Role, таблицы roles/app_user_roles (0.0.48.sql), сервис RoleService, дев-эндпоинты выдачи/отзыва ролей (DevAuthController).
+* Тестовые web-страницы (дашборд, логин, регистрация, auth-виджеты в static/auth и Thymeleaf-шаблонах) закрыты в SecurityConfig под ROLE_ADMIN вместо публичного доступа.
+* TelegramAuthFilter теперь подгружает реальные роли AppUser'а из БД вместо пустого списка — доступ больше не зависит от способа входа (email или Telegram), права одинаковы для одного и того же аккаунта.
+* Заложена структура под мультипровайдерную идентификацию (EMAIL/TELEGRAM/GOOGLE/APPLE) — сущность UserAuthIdentity и таблица user_auth_identities (0.0.49.sql), с преднаполнением из существующих app_users и telegram_users; сервисный слой пока не реализован.
+* Исправлен DomainUrlFilter: убрана NPE (возвращён request.getServerName() вместо клиентского заголовка Host) и убраны правила localhost/127.0.0.1, открывавшие все пути в обход домена.
+* Исправлена регрессия в UserFavoriteDishService.saveFromDish — при отсутствующем/чужом блюде и дубле названия снова возвращаются понятные ошибки (DISH_NOT_FOUND, FAVORITE_DISH_ALREADY_EXISTS) вместо 200 OK с пустым телом.
+* Добавлены зависимости spring-boot-starter-security и jjwt в pom.xml.
+
 ## 0.0.45 (26.06.2026)
 [et-70] — Миграция на app_user_id и развитие отчетности
 * Осуществлен полный переход с использования telegram_id на внутренний app_user_id для идентификации пользователей во всех сервисах.

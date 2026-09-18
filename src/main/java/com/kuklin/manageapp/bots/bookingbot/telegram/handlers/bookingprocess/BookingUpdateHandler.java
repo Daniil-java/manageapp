@@ -7,7 +7,6 @@ import com.kuklin.manageapp.bots.bookingbot.services.BookingObjectService;
 import com.kuklin.manageapp.bots.bookingbot.services.BookingService;
 import com.kuklin.manageapp.bots.bookingbot.services.ConversationStateService;
 import com.kuklin.manageapp.bots.bookingbot.telegram.BookingTelegramBot;
-import com.kuklin.manageapp.bots.bookingbot.telegram.BookingTelegramFacade;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.Command;

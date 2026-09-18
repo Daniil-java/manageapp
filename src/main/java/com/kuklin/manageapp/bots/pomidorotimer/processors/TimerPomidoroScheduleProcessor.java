@@ -7,7 +7,6 @@ import com.kuklin.manageapp.bots.pomidorotimer.services.TaskService;
 import com.kuklin.manageapp.bots.pomidorotimer.services.TimerService;
 import com.kuklin.manageapp.bots.pomidorotimer.telegram.PomidoroTelegramBot;
 import com.kuklin.manageapp.bots.pomidorotimer.telegram.handlers.timer.TimerHandler;
-import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

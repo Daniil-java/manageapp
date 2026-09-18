@@ -1,12 +1,12 @@
 package com.kuklin.manageapp.bots.pomidorotimer.services;
 
+import com.kuklin.manageapp.bots.pomidorotimer.repositories.TimerRepository;
 import com.kuklin.manageapp.bots.pomidorotimer.entities.Task;
 import com.kuklin.manageapp.bots.pomidorotimer.entities.Timer;
 import com.kuklin.manageapp.bots.pomidorotimer.entities.UserEntity;
 import com.kuklin.manageapp.bots.pomidorotimer.models.TimerDto;
 import com.kuklin.manageapp.bots.pomidorotimer.models.mappers.TimerMapper;
 import com.kuklin.manageapp.bots.pomidorotimer.models.timer.TimerStatus;
-import com.kuklin.manageapp.bots.pomidorotimer.repositories.TimerRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

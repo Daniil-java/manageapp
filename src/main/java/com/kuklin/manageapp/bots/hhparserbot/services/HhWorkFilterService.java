@@ -1,9 +1,9 @@
 package com.kuklin.manageapp.bots.hhparserbot.services;
 
+import com.kuklin.manageapp.bots.hhparserbot.repositories.WorkFilterRepository;
 import com.kuklin.manageapp.bots.hhparserbot.entities.HhUserInfo;
 import com.kuklin.manageapp.bots.hhparserbot.entities.WorkFilter;
 import com.kuklin.manageapp.bots.hhparserbot.models.HhSimpleResponseDto;
-import com.kuklin.manageapp.bots.hhparserbot.repositories.WorkFilterRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

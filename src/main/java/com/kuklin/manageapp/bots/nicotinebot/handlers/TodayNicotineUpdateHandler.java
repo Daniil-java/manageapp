@@ -1,8 +1,8 @@
 package com.kuklin.manageapp.bots.nicotinebot.handlers;
 
-import com.kuklin.manageapp.bots.nicotinebot.NicotineTelegramBot;
 import com.kuklin.manageapp.bots.nicotinebot.components.SmokingRecord;
 import com.kuklin.manageapp.bots.nicotinebot.components.SmokingRecordService;
+import com.kuklin.manageapp.bots.nicotinebot.NicotineTelegramBot;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import lombok.RequiredArgsConstructor;
@@ -12,12 +12,9 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
-import java.time.temporal.TemporalAmount;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import static com.kuklin.manageapp.bots.nicotinebot.handlers.StartNicotineUpdateHandler.getKeyboard;
 
 @Component
 @RequiredArgsConstructor
@@ -36,7 +33,7 @@ public class TodayNicotineUpdateHandler implements NicotineUpdateHandler {
         nicotineTelegramBot.sendReturnedMessage(
                 update.getMessage().getChatId(),
                 formatEvents(smokingRecords),
-                getKeyboard(),
+                StartNicotineUpdateHandler.getKeyboard(),
                 null
         );
     }

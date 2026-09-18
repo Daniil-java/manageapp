@@ -1,10 +1,9 @@
 package com.kuklin.manageapp.bots.pomidorotimer.telegram;
 
+import com.kuklin.manageapp.bots.pomidorotimer.telegram.handlers.InputMessageHandler;
 import com.kuklin.manageapp.bots.pomidorotimer.entities.UserEntity;
 import com.kuklin.manageapp.bots.pomidorotimer.models.BotState;
 import com.kuklin.manageapp.bots.pomidorotimer.services.PomidoroUserService;
-import com.kuklin.manageapp.bots.pomidorotimer.telegram.handlers.InputMessageHandler;
-import com.kuklin.manageapp.common.library.tgmodels.TelegramFacade;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import com.kuklin.manageapp.common.services.TelegramUserService;
 import lombok.RequiredArgsConstructor;

@@ -50,23 +50,24 @@ public class TelegramAuthService {
             if (params.containsKey("user")) {
                 // Это Mini App
                 secretKey = hmacSha256(
-                        botKeyComponents.getTestMiniAppKey().getBytes(StandardCharsets.UTF_8),
+                        botKeyComponents.getKey().getBytes(StandardCharsets.UTF_8),
                         "WebAppData"
                 );
             } else {
                 // Это Web-сайт (Telegram Login Widget)
                 // Для виджета ключ — это стандартный SHA-256 хэш от токена бота
                 MessageDigest digest = MessageDigest.getInstance("SHA-256");
-                secretKey = digest.digest(botKeyComponents.getTestMiniAppKey().getBytes(StandardCharsets.UTF_8));
+                secretKey = digest.digest(botKeyComponents.getKey().getBytes(StandardCharsets.UTF_8));
             }
 
             // 4. Вычисление контрольного хэша
-            String calculatedHash = bytesToHex(
-                    hmacSha256(dataCheckString.getBytes(StandardCharsets.UTF_8), secretKey)
-            );
+            byte[] calculatedHash = hmacSha256(dataCheckString.getBytes(StandardCharsets.UTF_8), secretKey);
+            byte[] expectedHash = hexToBytes(hash);
 
-            // Сравнение вычисленного хэша с переданным
-            return calculatedHash.equals(hash);
+            // Сравнение вычисленного хэша с переданным — MessageDigest.isEqual сравнивает все байты
+            // за constant time, в отличие от String.equals/Arrays.equals, которые останавливаются
+            // на первом несовпадении.
+            return MessageDigest.isEqual(calculatedHash, expectedHash);
 
         } catch (Exception e) {
             // Логирование ошибки и возврат false при исключении
@@ -122,14 +123,16 @@ public class TelegramAuthService {
         return hmacSha256(data, key.getBytes(StandardCharsets.UTF_8));
     }
 
-    private String bytesToHex(byte[] bytes) {
-        // Преобразование массива байтов в шестнадцатеричную строку
-        StringBuilder hexString = new StringBuilder(2 * bytes.length);
-        for (byte b : bytes) {
-            String hex = Integer.toHexString(0xff & b);
-            if (hex.length() == 1) hexString.append('0');
-            hexString.append(hex);
+    private byte[] hexToBytes(String hex) {
+        // Преобразование hex-строки (присланного клиентом hash) обратно в массив байтов.
+        // Нечётная длина/не-hex символы -> NumberFormatException, ловится в isValid() как невалидная подпись.
+        if (hex.length() % 2 != 0) {
+            throw new IllegalArgumentException("Odd-length hex string: " + hex);
         }
-        return hexString.toString();
+        byte[] bytes = new byte[hex.length() / 2];
+        for (int i = 0; i < bytes.length; i++) {
+            bytes[i] = (byte) Integer.parseInt(hex.substring(i * 2, i * 2 + 2), 16);
+        }
+        return bytes;
     }
 }

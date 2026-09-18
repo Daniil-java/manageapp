@@ -1,8 +1,8 @@
 package com.kuklin.manageapp.bots.aiassistantcalendar.services.scheduler;
 
 import com.kuklin.manageapp.bots.aiassistantcalendar.entities.UserAuthNotification;
-import com.kuklin.manageapp.bots.aiassistantcalendar.services.UserAuthNotificationService;
 import com.kuklin.manageapp.bots.aiassistantcalendar.telegram.AssistantTelegramBot;
+import com.kuklin.manageapp.bots.aiassistantcalendar.services.UserAuthNotificationService;
 import com.kuklin.manageapp.common.library.ScheduleProcessor;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;

@@ -1,9 +1,9 @@
 package com.kuklin.manageapp.bots.aiassistantcalendar.services;
 
-import com.kuklin.manageapp.bots.aiassistantcalendar.entities.AssistantGoogleOAuth;
 import com.kuklin.manageapp.bots.aiassistantcalendar.entities.UserMessagesLog;
 import com.kuklin.manageapp.bots.aiassistantcalendar.repositories.UserMessagesLogRepository;
 import com.kuklin.manageapp.bots.aiassistantcalendar.services.google.TokenService;
+import com.kuklin.manageapp.bots.aiassistantcalendar.entities.AssistantGoogleOAuth;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

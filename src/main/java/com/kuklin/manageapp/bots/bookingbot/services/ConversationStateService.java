@@ -1,7 +1,7 @@
 package com.kuklin.manageapp.bots.bookingbot.services;
 
-import com.kuklin.manageapp.bots.bookingbot.entities.ConversationState;
 import com.kuklin.manageapp.bots.bookingbot.repositories.ConversationStateRepository;
+import com.kuklin.manageapp.bots.bookingbot.entities.ConversationState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

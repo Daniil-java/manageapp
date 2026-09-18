@@ -1,8 +1,8 @@
 package com.kuklin.manageapp.bots.aiassistantcalendar.services.google;
 
-import com.kuklin.manageapp.bots.aiassistantcalendar.entities.AssistantGoogleOAuth;
 import com.kuklin.manageapp.bots.aiassistantcalendar.models.TokenRefreshException;
 import com.kuklin.manageapp.bots.aiassistantcalendar.repositories.AssistantGoogleOAuthRepository;
+import com.kuklin.manageapp.bots.aiassistantcalendar.entities.AssistantGoogleOAuth;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

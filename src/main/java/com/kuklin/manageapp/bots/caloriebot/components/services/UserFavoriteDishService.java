@@ -6,6 +6,7 @@ import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.DishDto;
 import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.UserFavoriteDishDto;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
+import com.kuklin.manageapp.bots.caloriebot.models.exceptions.MissingFeatureException;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.AccessResult;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.BotFeature;
 import com.kuklin.manageapp.bots.caloriebot.components.RequiresFeature;
@@ -13,6 +14,7 @@ import com.kuklin.manageapp.bots.caloriebot.components.repository.UserFavoriteDi
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,25 +28,21 @@ public class UserFavoriteDishService {
     private final UserFavoriteDishRepository userFavoriteDishRepository;
     private final DishService dishService;
     private final UserFeatureUsageService userFeatureUsageService;
+    private final ObjectProvider<UserFavoriteDishService> selfProvider;
 
     public List<UserFavoriteDishDto> getAllForUserDto(Long userId) {
         return UserFavoriteDishDto.fromEntities(getAllForUser(userId));
     }
 
     public UserFavoriteDishDto saveFromDishDto(Long userId, Long dishId) {
-        Dish dish = dishService.getDishByIdOrNull(dishId);
-
-        if (dish == null || !dish.getUserId().equals(userId)) {
-            throw new ErrorResponseException(ErrorStatus.DISH_NOT_FOUND);
+        try {
+            UserFavoriteDish favorite = selfProvider.getIfAvailable()
+                    .saveFromDish(userId, dishId)   // ← идёт через прокси, AOP сработает
+                    .getOrThrow();
+            return UserFavoriteDishDto.fromEntity(favorite);
+        } catch (MissingFeatureException e) {
+            throw new ErrorResponseException(ErrorStatus.MISSING_FEATURE);
         }
-
-        // Не даём одинаковые названия у одного пользователя
-        if (userFavoriteDishRepository.existsByUserIdAndNameIgnoreCase(userId, dish.getName())) {
-            throw new ErrorResponseException(ErrorStatus.FAVORITE_DISH_ALREADY_EXISTS);
-        }
-
-        return UserFavoriteDishDto.fromEntity(userFavoriteDishRepository.save(UserFavoriteDish.fromDish(dish)));
-
     }
 
     public DishDto addDishFromFavoriteDto(Long userId, Long favoriteId) {
@@ -64,13 +62,11 @@ public class UserFavoriteDishService {
         Dish dish = dishService.getDishByIdOrNull(dishId);
 
         if (dish == null || !dish.getUserId().equals(userId)) {
-            return AccessResult.success(null);
+            throw new ErrorResponseException(ErrorStatus.DISH_NOT_FOUND);
         }
 
-        // Не даём одинаковые названия у одного пользователя
         if (userFavoriteDishRepository.existsByUserIdAndNameIgnoreCase(userId, dish.getName())) {
-            // Можно вместо null кидать своё исключение
-            return AccessResult.success(null);
+            throw new ErrorResponseException(ErrorStatus.FAVORITE_DISH_ALREADY_EXISTS);
         }
 
         return AccessResult.success(userFavoriteDishRepository.save(UserFavoriteDish.fromDish(dish)));

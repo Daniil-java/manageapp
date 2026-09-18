@@ -1,8 +1,8 @@
 package com.kuklin.manageapp.bots.aiassistantcalendar.services;
 
 import com.google.api.services.calendar.model.CalendarListEntry;
-import com.kuklin.manageapp.bots.aiassistantcalendar.entities.GoogleCacheableCalendar;
 import com.kuklin.manageapp.bots.aiassistantcalendar.repositories.GoogleCacheableCalendarRepository;
+import com.kuklin.manageapp.bots.aiassistantcalendar.entities.GoogleCacheableCalendar;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

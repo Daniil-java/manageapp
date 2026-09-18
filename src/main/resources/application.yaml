@@ -18,6 +18,9 @@ spring:
   liquibase:
     enabled: true
     change-log: classpath:/db/changelog/db.changelog-master.yaml
+  mvc:
+    problemdetails:
+      enabled: false
 
 feign:
   client:
@@ -57,3 +60,8 @@ google:
 security:
   crypto:
     aes-key-b64: ${APP_AES_KEY_B64}
+
+jwt:
+  secret: ${APP_JWT_SECRET}
+  expiration: 86400000   # 24 часа
+

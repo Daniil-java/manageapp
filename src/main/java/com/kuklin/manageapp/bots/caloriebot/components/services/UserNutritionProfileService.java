@@ -256,12 +256,11 @@ public class UserNutritionProfileService {
     }
 
     @Transactional
-    public UserNutritionProfileDto patchProfileDto(
-            Long userId,
-            UserNutritionProfileDto dto
-    ) {
+    public UserNutritionProfileDto patchProfileDto(Long userId, UserNutritionProfileDto dto) {
         try {
-            return UserNutritionProfileDto.fromEntity(recalculateAndSave(patchProfile(dto.toEntity(userId))));
+            UserNutritionProfile existing = getOrCreateProfile(userId);   // ← грузим то, что уже есть
+            UserNutritionProfile merged = dto.mergeToEntity(existing);    // ← мёржим, а не создаём заново
+            return UserNutritionProfileDto.fromEntity(recalculateAndSave(merged));
         } catch (InsufficientProfileDataException e) {
             throw new ErrorResponseException(ErrorStatus.PROFILE_INSUFFICIENT_DATA);
         } catch (UserNutritionProfileValidationException e) {
