@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 @Component
 public class TelegramCaloriesBotKeyComponents {
     private final String key;
+    private final String miniAppKey;
     private final String aiKey;
     private final String geminiAiKey;
     private final String deepseekAiKey;
@@ -21,9 +22,11 @@ public class TelegramCaloriesBotKeyComponents {
         this.key = environment.getProperty("CALORY_BOT_TOKEN");
         log.info("Generation key initiated (CALORY_BOT_TOKEN)");
 
+        // Токен ОТДЕЛЬНОГО бота, через который открывается веб-версия мини-аппы (zef-fe, zefir.fit) —
+        this.miniAppKey = environment.getProperty("CALORY_BOT_MINI_APP_TOKEN");
         log.info("Generation key initiated (CALORY_BOT_MINI_APP_TOKEN)");
-        this.aiKey = environment.getProperty("CALORY_GENERATION_TOKEN");
 
+        this.aiKey = environment.getProperty("CALORY_GENERATION_TOKEN");
         log.info("Ai key initiated (CALORY_GENERATION_TOKEN)");
         this.geminiAiKey = environment.getProperty("GEMINI_TOKEN");
         log.info("Gemini Ai key initiated (CALORY_BOT)");

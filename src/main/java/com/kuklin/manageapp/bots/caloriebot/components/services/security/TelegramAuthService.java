@@ -48,9 +48,10 @@ public class TelegramAuthService {
             // Если есть параметр "user" (содержащий JSON), это Mini App (initData).
             // В виджете авторизации сайта данные пользователя (id, first_name) лежат прямо в корне.
             if (params.containsKey("user")) {
-                // Это Mini App
+                // Это Mini App (веб-версия zef-fe/zefir.fit) — открывается через ОТДЕЛЬНОГО бота,
+                // поэтому подпись проверяем его токеном (miniAppKey), а не CALORY_BOT_TOKEN.
                 secretKey = hmacSha256(
-                        botKeyComponents.getKey().getBytes(StandardCharsets.UTF_8),
+                        botKeyComponents.getMiniAppKey().getBytes(StandardCharsets.UTF_8),
                         "WebAppData"
                 );
             } else {
