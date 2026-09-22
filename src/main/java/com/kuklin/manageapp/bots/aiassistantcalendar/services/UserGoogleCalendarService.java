@@ -5,6 +5,7 @@ import com.kuklin.manageapp.bots.aiassistantcalendar.repositories.UserGoogleCale
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -36,5 +37,9 @@ public class UserGoogleCalendarService {
                             .setCalendarId(calendarId)
             );
         }
+    }
+
+    public List<UserGoogleCalendar> findAll() {
+        return repository.findAll();
     }
 }

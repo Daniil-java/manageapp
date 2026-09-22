@@ -4,7 +4,6 @@ import com.kuklin.manageapp.bots.kworkparser.services.UrlService;
 import com.kuklin.manageapp.bots.kworkparser.telegram.KworkParserTelegramBot;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgutils.Command;
-import com.kuklin.manageapp.common.services.TelegramService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Message;

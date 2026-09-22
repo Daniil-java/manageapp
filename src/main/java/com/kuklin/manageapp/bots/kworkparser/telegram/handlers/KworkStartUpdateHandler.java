@@ -2,7 +2,6 @@ package com.kuklin.manageapp.bots.kworkparser.telegram.handlers;
 
 import com.kuklin.manageapp.bots.kworkparser.telegram.KworkParserTelegramBot;
 import com.kuklin.manageapp.common.entities.TelegramUser;
-import com.kuklin.manageapp.common.library.tgmodels.UpdateHandler;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

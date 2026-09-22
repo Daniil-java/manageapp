@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auth Test — manageapp</title>
+    <style>
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        :root{
+            --bg:#0f1117;--surface:#181c27;--surface2:#1f2436;
+            --border:#2a2f45;--border-bright:#3b4260;
+            --text:#e4e8f0;--muted:#6b738f;
+            --accent:#5b7fff;--accent-dim:#1e2a55;
+            --green:#3ddc84;--green-dim:#0d2e1d;
+            --red:#ff5e5e;--red-dim:#2e0d0d;
+            --yellow:#f5c842;--yellow-dim:#2e2208;
+            --mono:'JetBrains Mono','Fira Code','Courier New',monospace;
+        }
+        body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;min-height:100vh;display:grid;grid-template-columns:420px 1fr;grid-template-rows:auto 1fr}
+
+        header{grid-column:1/-1;background:var(--surface);border-bottom:1px solid var(--border);padding:14px 24px;display:flex;align-items:center;gap:16px}
+        .logo{font-family:var(--mono);font-size:13px;color:var(--accent);font-weight:600;letter-spacing:.05em}
+        .logo span{color:var(--muted)}
+
+        /* ── User pill (logged-in state) ── */
+        .user-pill{display:none;margin-left:auto;align-items:center;gap:10px;background:var(--green-dim);border:1px solid #1a5c35;border-radius:20px;padding:5px 14px 5px 10px;font-size:12px;font-family:var(--mono);color:var(--green)}
+        .user-pill.visible{display:flex}
+        .user-pill .avatar{width:22px;height:22px;border-radius:50%;background:#1a5c35;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--green)}
+        .btn-logout{background:none;border:1px solid #1a5c35;color:var(--green);padding:3px 10px;border-radius:5px;font-size:11px;cursor:pointer;transition:background .15s;margin-left:6px}
+        .btn-logout:hover{background:#0d3d22}
+
+        nav{display:flex;gap:4px;margin-left:auto}
+        .user-pill.visible ~ nav{margin-left:0}
+        button.tab{background:none;border:1px solid transparent;color:var(--muted);padding:5px 14px;border-radius:6px;cursor:pointer;font-size:13px;transition:all .15s}
+        button.tab:hover{color:var(--text);background:var(--surface2)}
+        button.tab.active{color:var(--accent);border-color:var(--accent-dim);background:var(--accent-dim)}
+        button.tab.success-tab{color:var(--green);border-color:#1a5c35;background:var(--green-dim)}
+
+        /* ── Panels ── */
+        .panel-left{background:var(--surface);border-right:1px solid var(--border);padding:24px;display:flex;flex-direction:column;gap:18px;overflow-y:auto}
+        .panel-right{background:var(--bg);display:flex;flex-direction:column}
+
+        .section-label{font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+
+        /* ── Card ── */
+        .card{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:14px}
+        .card h2{font-size:14px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px}
+        .badge{font-size:10px;font-weight:600;padding:2px 7px;border-radius:4px;font-family:var(--mono)}
+        .badge-post{background:#1a2e55;color:#7eaaff}
+
+        /* ── Fields ── */
+        .field{display:flex;flex-direction:column;gap:5px;position:relative}
+        .field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+        label{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+        label .req{color:var(--red);font-size:10px}
+        label .hint{color:var(--muted);font-size:11px;margin-left:auto;font-weight:400}
+
+        input[type=text],input[type=email],input[type=password]{
+            width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;
+            color:var(--text);font-size:13px;padding:8px 32px 8px 11px;
+            font-family:var(--mono);outline:none;transition:border-color .15s
+        }
+        input:focus{border-color:var(--accent)}
+        input.valid{border-color:var(--green)}
+        input.invalid{border-color:var(--red)}
+
+        .field-icon{position:absolute;right:10px;bottom:9px;font-size:14px;pointer-events:none;opacity:0;transition:opacity .2s}
+        .field-icon.show{opacity:1}
+
+        .field-error{font-size:11px;color:var(--red);min-height:16px;line-height:1.4;display:none}
+        .field-error.show{display:block}
+
+        /* ── Password strength ── */
+        .strength-bar{height:3px;border-radius:2px;background:var(--border);overflow:hidden;display:none}
+        .strength-bar.show{display:block}
+        .strength-fill{height:100%;border-radius:2px;transition:width .3s,background .3s;width:0}
+
+        /* ── Button ── */
+        .btn-send{width:100%;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:7px;font-size:13px;font-weight:600;cursor:pointer;transition:opacity .15s,transform .1s;font-family:var(--mono);letter-spacing:.02em;display:flex;align-items:center;justify-content:center;gap:8px}
+        .btn-send:hover{opacity:.85}
+        .btn-send:active{transform:scale(.99)}
+        .btn-send:disabled{opacity:.4;cursor:not-allowed}
+        .btn-send.loading::after{content:'';width:14px;height:14px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+        @keyframes spin{to{transform:rotate(360deg)}}
+
+        .url-row{display:flex;align-items:center;gap:8px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:7px 10px;font-family:var(--mono);font-size:12px;color:var(--muted)}
+        .url-row .method{color:var(--accent);font-weight:700}
+        .url-row .url-text{color:var(--text);word-break:break-all}
+
+        /* ── Views ── */
+        .view-section{display:none;flex-direction:column;gap:16px}
+        .view-section.active{display:flex}
+
+        /* ── Logged-in view ── */
+        .profile-card{background:var(--green-dim);border:1px solid #1a5c35;border-radius:10px;padding:20px;display:flex;flex-direction:column;gap:12px}
+        .profile-card .title{font-size:13px;color:var(--green);font-weight:600}
+        .profile-row{display:flex;justify-content:space-between;font-size:12px;font-family:var(--mono)}
+        .profile-row .key{color:var(--muted)}
+        .profile-row .val{color:var(--text);word-break:break-all;text-align:right;max-width:200px}
+        .roles-list{display:flex;gap:6px;flex-wrap:wrap}
+        .role-badge{background:var(--accent-dim);color:#7eaaff;border-radius:4px;padding:2px 8px;font-size:11px;font-family:var(--mono)}
+
+        /* ── Console ── */
+        .console-header{padding:12px 20px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;background:var(--surface)}
+        .console-header .title{font-size:12px;font-weight:600;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+        .btn-clear{margin-left:auto;background:none;border:1px solid var(--border);color:var(--muted);padding:3px 10px;border-radius:5px;font-size:11px;cursor:pointer;transition:color .15s,border-color .15s}
+        .btn-clear:hover{color:var(--text);border-color:var(--border-bright)}
+        .console-body{flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:14px}
+        .log-entry{border-radius:8px;overflow:hidden;border:1px solid var(--border);animation:fadeIn .2s ease}
+        @keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+        .log-header{padding:8px 14px;display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:12px}
+        .log-header .status-code{font-weight:700;font-size:13px;min-width:36px}
+        .log-header .endpoint{color:var(--muted);flex:1}
+        .log-header .ts{color:var(--muted);font-size:10px}
+        .log-ok .log-header{background:var(--green-dim)}.log-ok .status-code{color:var(--green)}
+        .log-err .log-header{background:var(--red-dim)}.log-err .status-code{color:var(--red)}
+        .log-warn .log-header{background:var(--yellow-dim)}.log-warn .status-code{color:var(--yellow)}
+        .log-body{background:#0a0c12;padding:12px 14px;font-family:var(--mono);font-size:11.5px;line-height:1.7;white-space:pre-wrap;word-break:break-all;color:#c0cce0;max-height:260px;overflow-y:auto}
+        .j-key{color:#7aadff}.j-str{color:#98e09a}.j-num{color:#f5c842}.j-bool{color:#ff8a65}.j-null{color:var(--muted)}
+
+        .empty-state{text-align:center;color:var(--muted);margin:auto;font-size:13px;line-height:2}
+        .empty-state .big{font-size:32px;display:block;margin-bottom:8px;opacity:.3}
+
+        ::-webkit-scrollbar{width:6px;height:6px}
+        ::-webkit-scrollbar-track{background:transparent}
+        ::-webkit-scrollbar-thumb{background:var(--border-bright);border-radius:3px}
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo">manage<span>app</span> / <span>auth test</span></div>
+
+    <div class="user-pill" id="user-pill">
+        <div class="avatar" id="user-avatar">?</div>
+        <span id="user-email-display">—</span>
+        <button class="btn-logout" onclick="doLogout()">Выйти</button>
+    </div>
+
+    <nav>
+        <button class="tab active" id="tab-register" onclick="switchTab('register')">Регистрация</button>
+        <button class="tab" id="tab-login" onclick="switchTab('login')">Вход</button>
+        <button class="tab" id="tab-profile" onclick="switchTab('profile')">Профиль</button>
+    </nav>
+</header>
+
+<!-- ══════════ LEFT ══════════ -->
+<aside class="panel-left">
+
+    <!-- REGISTER -->
+    <div id="view-register" class="view-section active">
+        <p class="section-label">POST /auth/register</p>
+        <div class="card">
+            <h2>Регистрация <span class="badge badge-post">POST</span></h2>
+
+            <div class="field">
+                <label>email <span class="req">* обязательно</span></label>
+                <input type="email" id="reg-email" placeholder="user@example.com" oninput="validateEmail(this,'reg-email-err','reg-email-icon')" autocomplete="email">
+                <span class="field-icon" id="reg-email-icon"></span>
+                <span class="field-error" id="reg-email-err"></span>
+            </div>
+
+            <div class="field">
+                <label>пароль <span class="req">* мин. 6 символов</span></label>
+                <input type="password" id="reg-password" placeholder="••••••" oninput="validatePassword(this,'reg-pass-err','reg-pass-icon','strength-fill')" autocomplete="new-password">
+                <span class="field-icon" id="reg-pass-icon"></span>
+                <div class="strength-bar show"><div class="strength-fill" id="strength-fill"></div></div>
+                <span class="field-error" id="reg-pass-err"></span>
+            </div>
+
+            <div class="field-row">
+                <div class="field">
+                    <label>username <span class="hint">необязательно</span></label>
+                    <input type="text" id="reg-username" placeholder="john_doe">
+                </div>
+                <div class="field">
+                    <label>firstname <span class="hint">необязательно</span></label>
+                    <input type="text" id="reg-firstname" placeholder="John">
+                </div>
+            </div>
+
+            <div class="field">
+                <label>lastname <span class="hint">необязательно</span></label>
+                <input type="text" id="reg-lastname" placeholder="Doe">
+            </div>
+
+            <button class="btn-send" id="btn-register" onclick="doRegister()">Зарегистрироваться</button>
+        </div>
+        <div class="url-row">
+            <span class="method">POST</span>
+            <span class="url-text" id="reg-url-disp"></span>
+        </div>
+    </div>
+
+    <!-- LOGIN -->
+    <div id="view-login" class="view-section">
+        <p class="section-label">POST /auth/login</p>
+        <div class="card">
+            <h2>Вход <span class="badge badge-post">POST</span></h2>
+
+            <div class="field">
+                <label>email</label>
+                <input type="email" id="login-email" placeholder="user@example.com" oninput="validateEmail(this,'login-email-err','login-email-icon')" autocomplete="email">
+                <span class="field-icon" id="login-email-icon"></span>
+                <span class="field-error" id="login-email-err"></span>
+            </div>
+
+            <div class="field">
+                <label>пароль</label>
+                <input type="password" id="login-password" placeholder="••••••" oninput="clearFieldError('login-pass-err',this)" autocomplete="current-password">
+                <span class="field-error" id="login-pass-err"></span>
+            </div>
+
+            <button class="btn-send" id="btn-login" onclick="doLogin()">Войти</button>
+        </div>
+        <div class="url-row">
+            <span class="method">POST</span>
+            <span class="url-text" id="login-url-disp"></span>
+        </div>
+    </div>
+
+    <!-- PROFILE (logged in) -->
+    <div id="view-profile" class="view-section">
+        <p class="section-label">Текущая сессия</p>
+
+        <div class="profile-card" id="profile-card">
+            <div class="title">✓ Вы вошли в систему</div>
+            <div class="profile-row"><span class="key">appUserId</span><span class="val" id="p-id">—</span></div>
+            <div class="profile-row"><span class="key">email</span><span class="val" id="p-email">—</span></div>
+            <div class="profile-row"><span class="key">roles</span>
+                <span class="val"><div class="roles-list" id="p-roles"></div></span>
+            </div>
+            <div class="profile-row"><span class="key">token (начало)</span><span class="val" id="p-token-short">—</span></div>
+        </div>
+
+        <button class="btn-send" style="background:var(--red-dim);border:1px solid var(--red);color:var(--red);" onclick="doLogout()">Выйти из аккаунта</button>
+    </div>
+
+    <!-- BASE URL -->
+    <div style="margin-top:auto">
+        <p class="section-label" style="margin-bottom:8px">Base URL</p>
+        <input type="text" id="base-url" value="http://localhost:8080" oninput="updateURLDisplay()">
+    </div>
+</aside>
+
+<!-- ══════════ RIGHT (console) ══════════ -->
+<main class="panel-right">
+    <div class="console-header">
+        <span class="title">Response log</span>
+        <button class="btn-clear" onclick="clearLog()">Clear</button>
+    </div>
+    <div class="console-body" id="console-body">
+        <div class="empty-state"><span class="big">⚡</span>Отправь запрос — ответ появится здесь</div>
+    </div>
+</main>
+
+<script>
+    // ── State ──────────────────────────────────────────────
+    let session = JSON.parse(localStorage.getItem('auth_session') || 'null');
+
+    function getBase(){ return document.getElementById('base-url').value.replace(/\/$/,'') }
+    function updateURLDisplay(){
+        const b = getBase();
+        const r = document.getElementById('reg-url-disp');
+        const l = document.getElementById('login-url-disp');
+        if(r) r.textContent = b+'/auth/register';
+        if(l) l.textContent = b+'/auth/login';
+    }
+    updateURLDisplay();
+
+    // ── Tab switching ──────────────────────────────────────
+    function switchTab(name){
+        ['register','login','profile'].forEach(n=>{
+            document.getElementById('view-'+n).classList.toggle('active', n===name);
+            document.getElementById('tab-'+n).classList.toggle('active', n===name);
+        });
+    }
+
+    // ── Session / UI ───────────────────────────────────────
+    function applySession(data){
+        session = data;
+        if(data) localStorage.setItem('auth_session', JSON.stringify(data));
+        else localStorage.removeItem('auth_session');
+        refreshUI();
+    }
+
+    function refreshUI(){
+        const pill = document.getElementById('user-pill');
+        const tabProfile = document.getElementById('tab-profile');
+
+        if(session){
+            pill.classList.add('visible');
+            document.getElementById('user-avatar').textContent = (session.email||'?')[0].toUpperCase();
+            document.getElementById('user-email-display').textContent = session.email;
+            tabProfile.classList.add('success-tab');
+
+            document.getElementById('p-id').textContent    = session.appUserId;
+            document.getElementById('p-email').textContent = session.email;
+            document.getElementById('p-token-short').textContent = session.token.substring(0,40)+'…';
+            const rolesCont = document.getElementById('p-roles');
+            rolesCont.innerHTML = '';
+            (session.roles||[]).forEach(r=>{
+                const b = document.createElement('span');
+                b.className='role-badge'; b.textContent=r;
+                rolesCont.appendChild(b);
+            });
+        } else {
+            pill.classList.remove('visible');
+            tabProfile.classList.remove('success-tab');
+        }
+    }
+
+    function doLogout(){
+        addLog('OUT','—','/logout (local)','','Токен удалён из хранилища. Для полного выхода токен на сервере не инвалидируется (stateless JWT).');
+        applySession(null);
+        switchTab('login');
+    }
+
+    // ── Validation ─────────────────────────────────────────
+    const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    function validateEmail(input, errId, iconId){
+        const val = input.value.trim();
+        if(!val){
+            setFieldState(input, errId, iconId, null, '');
+            return true;
+        }
+        if(!EMAIL_RE.test(val)){
+            setFieldState(input, errId, iconId, false, 'Некорректный email — нужен формат name@domain.com');
+            return false;
+        }
+        setFieldState(input, errId, iconId, true, '');
+        return true;
+    }
+
+    function validatePassword(input, errId, iconId, strengthId){
+        const val = input.value;
+        if(!val){
+            setFieldState(input, errId, iconId, null, '');
+            if(strengthId) setStrength(strengthId, 0);
+            return true;
+        }
+        if(val.length < 6){
+            setFieldState(input, errId, iconId, false, `Пароль слишком короткий — ${val.length}/6 символов минимум`);
+            if(strengthId) setStrength(strengthId, 1);
+            return false;
+        }
+        const strength = calcStrength(val);
+        if(strengthId) setStrength(strengthId, strength);
+        setFieldState(input, errId, iconId, true, '');
+        return true;
+    }
+
+    function clearFieldError(errId, input){
+        if(input && input.value) { document.getElementById(errId).classList.remove('show'); }
+    }
+
+    function setFieldState(input, errId, iconId, ok, msg){
+        input.classList.toggle('valid',   ok === true);
+        input.classList.toggle('invalid', ok === false);
+        const errEl  = document.getElementById(errId);
+        const iconEl = document.getElementById(iconId);
+        if(errEl){ errEl.textContent=msg; errEl.classList.toggle('show', !!msg); }
+        if(iconEl){ iconEl.textContent = ok===true ? '✓' : ok===false ? '✗' : ''; iconEl.style.color = ok===true ? 'var(--green)' : 'var(--red)'; iconEl.classList.toggle('show', ok!==null); }
+    }
+
+    function calcStrength(p){
+        let s=0;
+        if(p.length>=8)s++; if(p.length>=12)s++;
+        if(/[A-Z]/.test(p))s++; if(/[0-9]/.test(p))s++;
+        if(/[^A-Za-z0-9]/.test(p))s++;
+        return Math.min(s,4);
+    }
+
+    function setStrength(id, level){
+        const el = document.getElementById(id);
+        if(!el)return;
+        const w  = ['0%','25%','50%','75%','100%'][level];
+        const c  = ['#555','var(--red)','var(--yellow)','#90c544','var(--green)'][level];
+        el.style.width=w; el.style.background=c;
+    }
+
+    // ── Requests ───────────────────────────────────────────
+    function ts(){ return new Date().toLocaleTimeString('ru',{hour:'2-digit',minute:'2-digit',second:'2-digit'}) }
+
+    function syntaxColor(json){
+        return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(\.\d*)?([eE][+-]?\d+)?)/g, m=>{
+            if(/^"/.test(m)) return /:$/.test(m) ? `<span class="j-key">${m}</span>` : `<span class="j-str">${m}</span>`;
+            if(/true|false/.test(m)) return `<span class="j-bool">${m}</span>`;
+            if(/null/.test(m)) return `<span class="j-null">${m}</span>`;
+            return `<span class="j-num">${m}</span>`;
+        });
+    }
+
+    function addLog(status, method, path, reqBody, resText){
+        const body = document.getElementById('console-body');
+        body.querySelector('.empty-state')?.remove();
+
+        const isOk = typeof status==='number' && status>=200 && status<300;
+        const isWarn = typeof status==='number' && status>=400 && status<500;
+        const cls = status==='OUT' ? 'log-warn' : isOk ? 'log-ok' : 'log-err';
+        const code = status==='OUT' ? 'OUT' : status===0 ? 'ERR' : status;
+
+        let formatted='';
+        try{ formatted=syntaxColor(JSON.stringify(JSON.parse(resText),null,2)); } catch{ formatted=resText; }
+
+        let reqFormatted='';
+        try{ reqFormatted=syntaxColor(JSON.stringify(JSON.parse(reqBody),null,2)); } catch{ reqFormatted=reqBody; }
+
+        const entry=document.createElement('div');
+        entry.className='log-entry '+cls;
+        entry.innerHTML=`
+    <div class="log-header">
+      <span class="status-code">${code}</span>
+      <span class="endpoint">${method} ${path}</span>
+      <span class="ts">${ts()}</span>
+    </div>
+    <div class="log-body">${reqFormatted ? `<span class="j-key">// request</span>\n${reqFormatted}\n\n<span class="j-key">// response</span>\n` : ''}${formatted}</div>`;
+        body.prepend(entry);
+    }
+
+    function clearLog(){ document.getElementById('console-body').innerHTML='<div class="empty-state"><span class="big">⚡</span>Отправь запрос — ответ появится здесь</div>'; }
+
+    async function request(method, path, bodyObj, btnId){
+        const url = getBase()+path;
+        const bodyStr = bodyObj ? JSON.stringify(bodyObj) : null;
+        const headers = {'Content-Type':'application/json'};
+        if(session) headers['Authorization']='Bearer '+session.token;
+
+        const btn = document.getElementById(btnId);
+        if(btn){ btn.disabled=true; btn.classList.add('loading'); btn.textContent=''; }
+
+        try{
+            const res = await fetch(url,{method,headers,body:bodyStr});
+            const text = await res.text();
+            addLog(res.status, method, path, bodyStr||'', text||'(пустой ответ)');
+
+            if(res.ok){
+                try{
+                    const json=JSON.parse(text);
+                    if(json.token) applySession(json);
+                } catch{}
+            }
+            return {ok:res.ok, status:res.status, text};
+        } catch(e){
+            addLog(0, method, path, bodyStr||'', '⚠ Сетевая ошибка: '+e.message+'\n\nПроверь:\n• Сервер запущен\n• Base URL верный\n• CORS настроен');
+            return {ok:false, status:0, text:e.message};
+        } finally{
+            if(btn){ btn.disabled=false; btn.classList.remove('loading'); btn.textContent=btnId==='btn-register'?'Зарегистрироваться':'Войти'; }
+        }
+    }
+
+    // ── Register ───────────────────────────────────────────
+    function doRegister(){
+        const emailEl = document.getElementById('reg-email');
+        const passEl  = document.getElementById('reg-password');
+
+        const emailOk = validateEmail(emailEl,'reg-email-err','reg-email-icon');
+        const passOk  = validatePassword(passEl,'reg-pass-err','reg-pass-icon','strength-fill');
+
+        if(!emailEl.value.trim()){
+            setFieldState(emailEl,'reg-email-err','reg-email-icon',false,'Email обязателен');
+            emailOk && (emailEl.focus()); return;
+        }
+        if(!passEl.value){
+            setFieldState(passEl,'reg-pass-err','reg-pass-icon',false,'Пароль обязателен');
+            return;
+        }
+        if(!emailOk||!passOk) return;
+
+        const body = {
+            email:    emailEl.value.trim(),
+            password: passEl.value,
+        };
+        const u = document.getElementById('reg-username').value.trim();
+        const f = document.getElementById('reg-firstname').value.trim();
+        const l = document.getElementById('reg-lastname').value.trim();
+        if(u) body.username  = u;
+        if(f) body.firstname = f;
+        if(l) body.lastname  = l;
+
+        request('POST','/auth/register',body,'btn-register').then(res=>{
+            if(res.ok){
+                switchTab('profile');
+            } else {
+                // подсветить ошибку валидации с сервера
+                try{
+                    const json = JSON.parse(res.text);
+                    if(json.errors){
+                        if(json.errors.email)    setFieldState(emailEl,'reg-email-err','reg-email-icon',false,'Сервер: '+json.errors.email);
+                        if(json.errors.password) setFieldState(passEl, 'reg-pass-err','reg-pass-icon',false,'Сервер: '+json.errors.password);
+                    }
+                } catch{}
+            }
+        });
+    }
+
+    // ── Login ──────────────────────────────────────────────
+    function doLogin(){
+        const emailEl = document.getElementById('login-email');
+        const passEl  = document.getElementById('login-password');
+
+        const emailOk = validateEmail(emailEl,'login-email-err','login-email-icon');
+
+        if(!emailEl.value.trim()){
+            setFieldState(emailEl,'login-email-err','login-email-icon',false,'Введите email');
+            return;
+        }
+        if(!passEl.value){
+            const e=document.getElementById('login-pass-err');
+            e.textContent='Введите пароль'; e.classList.add('show');
+            return;
+        }
+        if(!emailOk) return;
+
+        request('POST','/auth/login',{email:emailEl.value.trim(),password:passEl.value},'btn-login').then(res=>{
+            if(res.ok){
+                switchTab('profile');
+            } else {
+                const e=document.getElementById('login-pass-err');
+                e.textContent='Неверный email или пароль'; e.classList.add('show');
+            }
+        });
+    }
+
+    // ── Init ───────────────────────────────────────────────
+    refreshUI();
+    if(session) switchTab('profile');
+</script>
+</body>
+</html>
