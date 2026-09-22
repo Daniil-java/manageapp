@@ -60,7 +60,8 @@ public class SecurityConfig {
                                 "/swagger-ui/**", "/v3/api-docs/**", "/calorie/test",
                                 "/", "/resume", "/freelance", "/pomidorotimer", "/hhbot/skills",
                                 "/calorie/instruction", "/calorie/privacy", "/calorie/terms",
-                                "/calorie/utm-form", "/calorie/utm/ownertypes").permitAll()
+                                "/calorie/utm-form", "/calorie/utm/ownertypes",
+                                "/assets/**", "/images/**").permitAll()
                         // Тестовые html-страницы (static/auth/* и Thymeleaf-шаблоны из WebController) —
                         // временно оставлены в коде, но доступны только ROLE_ADMIN.
                         .requestMatchers(
@@ -72,11 +73,11 @@ public class SecurityConfig {
                 )
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint((request, response, authException) -> {
-                            log.error("[AUTH_ENTRY_POINT] {} {} -> {}", request.getMethod(), request.getRequestURI(), authException.toString());
+                            log.warn("[AUTH_ENTRY_POINT] {} {} -> {}", request.getMethod(), request.getRequestURI(), authException.toString());
                             response.sendError(HttpServletResponse.SC_UNAUTHORIZED, authException.getMessage());
                         })
                         .accessDeniedHandler((request, response, accessDeniedException) -> {
-                            log.error("[ACCESS_DENIED] {} {} -> {}", request.getMethod(), request.getRequestURI(), accessDeniedException.toString());
+                            log.warn("[ACCESS_DENIED] {} {} -> {}", request.getMethod(), request.getRequestURI(), accessDeniedException.toString());
                             response.sendError(HttpServletResponse.SC_FORBIDDEN, accessDeniedException.getMessage());
                         })
                 )
