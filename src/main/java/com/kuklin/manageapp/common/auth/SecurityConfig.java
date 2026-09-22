@@ -53,14 +53,18 @@ public class SecurityConfig {
                         // Публичные пути
                         // TODO "/calorie/test" открывает тестовый эндпоинт (TestController) и должен быть
                         //  убран отсюда, когда его уберём/зашелвим перед прод-коммитом.
+                        // Реальные публичные страницы сайта (kuklin.dev) и калорийного бота (zefir.fit) —
                         .requestMatchers(
                                 "/auth/register", "/auth/login",
                                 "/error", "/favicon.ico",
-                                "/swagger-ui/**", "/v3/api-docs/**", "/calorie/test").permitAll()
+                                "/swagger-ui/**", "/v3/api-docs/**", "/calorie/test",
+                                "/", "/resume", "/freelance", "/pomidorotimer", "/hhbot/skills",
+                                "/calorie/instruction", "/calorie/privacy", "/calorie/terms",
+                                "/calorie/utm-form", "/calorie/utm/ownertypes").permitAll()
                         // Тестовые html-страницы (static/auth/* и Thymeleaf-шаблоны из WebController) —
                         // временно оставлены в коде, но доступны только ROLE_ADMIN.
                         .requestMatchers(
-                                "/", "/auth", "/login", "/register", "/dashboard",
+                                "/auth", "/login", "/register", "/dashboard",
                                 "/auth/*.html", "/auth/*.css").hasRole("ADMIN")
                         .requestMatchers("/auth/dev/whoami").authenticated()
                         .requestMatchers("/auth/dev/roles/**").hasRole("ADMIN")

@@ -55,10 +55,4 @@ public class WebController {
     public String dashboardPage() {
         return "dashboard";
     }
-
-    // Редирект с корня на логин или дашборд
-    @GetMapping("/")
-    public String index() {
-        return "redirect:/dashboard";
-    }
 }
