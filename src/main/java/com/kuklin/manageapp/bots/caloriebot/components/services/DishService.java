@@ -358,13 +358,10 @@ public class DishService {
                 .atStartOfDay(zone)
                 .toInstant();
 
-        Set<LocalDate> activeDays = new HashSet<>(
-                dishRepository.findDistinctDaysByUserIdAndCreatedBetween(
-                        userId,
-                        start,
-                        end
-                )
-        );
+        Set<LocalDate> activeDays = new HashSet<>();
+        for (Instant created : dishRepository.findCreatedByUserIdAndCreatedBetween(userId, start, end)) {
+            activeDays.add(created.atZone(zone).toLocalDate());
+        }
 
         LocalDate currentDay = activeDays.contains(today)
                 ? today

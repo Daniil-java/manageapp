@@ -222,6 +222,9 @@
 				<configuration>
 					<!-- используем твоё <java.version> -->
 					<release>${java.version}</release>
+					<compilerArgs>
+						<arg>-parameters</arg>
+					</compilerArgs>
 					<annotationProcessorPaths>
 						<path>
 							<groupId>org.mapstruct</groupId>

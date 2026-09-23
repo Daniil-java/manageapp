@@ -42,7 +42,7 @@ public class WeightEntryController {
     @Operation(summary = "Удаление записи о весе", description = "Удаляет запись о весе")
     public void deleteWeight(
             @Parameter(hidden = true) @AuthenticationPrincipal Long appUserId,
-            @Parameter(description = "ID записи веса") @PathVariable Long weightId) {
+            @Parameter(description = "ID записи веса") @PathVariable(name = "weightId") Long weightId) {
         weightEntryService.deleteWeightEntryById(appUserId, weightId);
     }
 

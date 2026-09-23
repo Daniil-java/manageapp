@@ -26,7 +26,7 @@ public class WaterEntryController {
     @Operation(summary = "Добавить воду", description = "Фиксирует количество выпитой воды в миллилитрах")
     public WaterEntryDto addWater(
             @Parameter(hidden = true) @AuthenticationPrincipal Long appUserId,
-            @Parameter(description = "Количество воды (мл)", example = "250") @RequestParam @Min(1) Integer amountMl) {
+            @Parameter(description = "Количество воды (мл)", example = "250") @RequestParam(name = "amountMl") @Min(1) Integer amountMl) {
         return waterEntryService.addWaterDto(appUserId, amountMl);
     }
 

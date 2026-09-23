@@ -31,7 +31,7 @@ public class CaloriePaymentController {
     @Operation(summary = "Создать платеж", description = "Генерирует инвойс-ссылку для оплаты выбранного тарифа")
     public PaymentResponse createPayment(
             @Parameter(hidden = true) @AuthenticationPrincipal Long appUserId, // Переименовано для ясности
-            @Parameter(description = "ID тарифного плана", example = "1") @RequestParam Long planId) {
+            @Parameter(description = "ID тарифного плана", example = "1") @RequestParam(name = "planId") Long planId) {
         return paymentService.createPaymentLink(appUserId, planId);
     }
 

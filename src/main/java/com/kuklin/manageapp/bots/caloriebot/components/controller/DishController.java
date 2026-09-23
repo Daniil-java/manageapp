@@ -75,7 +75,7 @@ public class DishController {
     @Operation(summary = "Обновить порцию блюда", description = "Изменяет размер порции для существующего блюда")
     public DishDto updatePortion(
             @Parameter(hidden = true) @AuthenticationPrincipal Long appUserId,
-            @Parameter(description = "ID блюда") @PathVariable Long dishId,
+            @Parameter(description = "ID блюда") @PathVariable(name = "dishId") Long dishId,
             @Valid @RequestBody DishDto request) {
         return dishService.updateDishPortion(appUserId, dishId, request);
     }
@@ -85,7 +85,7 @@ public class DishController {
     @Operation(summary = "Удалить блюдо", description = "Удаляет блюдо из дневника питания по его ID")
     public void deleteDish(
             @Parameter(hidden = true) @AuthenticationPrincipal Long appUserId,
-            @Parameter(description = "ID блюда") @PathVariable Long dishId) {
+            @Parameter(description = "ID блюда") @PathVariable(name = "dishId") Long dishId) {
         dishService.removeByDishId(appUserId, dishId);
     }
 

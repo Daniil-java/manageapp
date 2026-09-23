@@ -30,7 +30,7 @@ public class UserFavoriteDishController {
     @Operation(summary = "Сохранить из истории", description = "Добавляет ранее съеденное блюдо в список избранных по его ID")
     public UserFavoriteDishDto saveFromDish(
             @Parameter(hidden = true) @AuthenticationPrincipal Long appUserId,
-            @Parameter(description = "ID существующего блюда") @RequestParam Long dishId
+            @Parameter(description = "ID существующего блюда") @RequestParam(name = "dishId") Long dishId
     ) {
         return userFavoriteDishService.saveFromDishDto(appUserId, dishId);
     }
@@ -39,7 +39,7 @@ public class UserFavoriteDishController {
     @Operation(summary = "Добавить из избранного в дневник", description = "Создает новую запись о приеме пищи на основе избранного блюда")
     public DishDto useFavorite(
             @Parameter(hidden = true) @AuthenticationPrincipal Long appUserId,
-            @Parameter(description = "ID избранного шаблона") @PathVariable Long favoriteId
+            @Parameter(description = "ID избранного шаблона") @PathVariable(name = "favoriteId") Long favoriteId
     ) {
         return userFavoriteDishService.addDishFromFavoriteDto(appUserId, favoriteId);
     }
@@ -48,7 +48,7 @@ public class UserFavoriteDishController {
     @Operation(summary = "Удалить из избранного", description = "Убирает блюдо из списка избранных")
     public void delete(
             @Parameter(hidden = true) @AuthenticationPrincipal Long appUserId,
-            @Parameter(description = "ID избранного шаблона") @PathVariable Long favoriteId
+            @Parameter(description = "ID избранного шаблона") @PathVariable(name = "favoriteId") Long favoriteId
     ) {
         userFavoriteDishService.deleteFavorite(favoriteId, appUserId);
     }
