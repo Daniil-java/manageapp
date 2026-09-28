@@ -17,7 +17,7 @@ public class TelegramKworkParserBotKeyComponents {
     public TelegramKworkParserBotKeyComponents(Environment environment) {
         this.key = environment.getProperty("KWORK_PARSER_BOT_TOKEN");
         log.info("Generation key initiated (KWORK_PARSER_BOT_TOKEN)");
-        this.aiKey = environment.getProperty("GENERATION_TOKEN");
-        log.info("Ai key initiated (KWORK_PARSER_TOKEN)");
+        this.aiKey = environment.getProperty("KWORK_GENERATION_TOKEN");
+        log.info("Ai key initiated (KWORK_GENERATION_TOKEN)");
     }
 }
