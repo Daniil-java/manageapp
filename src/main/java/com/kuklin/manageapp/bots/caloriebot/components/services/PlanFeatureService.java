@@ -26,19 +26,24 @@ public class PlanFeatureService {
         return planFeatureRepository.findAllByPlanCodeAndBotIdentifier(planCode, botIdentifier);
     }
 
-    //Препдолагается, что у пользователя только одна активная подписка
-    public PlanFeature getFeatureByUserIdAndBotIdentifierAndFeatureOrNull(Long appUserId,
-                                                                          BotIdentifier botIdentifier,
-                                                                          BotFeature feature) {
-
+    /**
+     * Все настройки фич текущего тарифа пользователя (активная подписка или FREE).
+     * Предполагается, что у пользователя только одна активная подписка.
+     */
+    public List<PlanFeature> getFeaturesByUserIdAndBotIdentifier(Long appUserId, BotIdentifier botIdentifier) {
         String planCode = FREE_PLAN_CODE;
         String activePlan = commonPaymentFacade.getActivePlanCodeByUserIdOrNull(appUserId, botIdentifier);
         if (activePlan != null) {
             planCode = activePlan;
         }
 
-        Optional<PlanFeature> optionalPlanFeature =  planFeatureRepository
-                .findAllByPlanCodeAndBotIdentifier(planCode, botIdentifier)
+        return planFeatureRepository.findAllByPlanCodeAndBotIdentifier(planCode, botIdentifier);
+    }
+
+    public PlanFeature getFeatureByUserIdAndBotIdentifierAndFeatureOrNull(Long appUserId,
+                                                                          BotIdentifier botIdentifier,
+                                                                          BotFeature feature) {
+        Optional<PlanFeature> optionalPlanFeature = getFeaturesByUserIdAndBotIdentifier(appUserId, botIdentifier)
                 .stream()
                 .filter(pf -> pf.getFeature().equals(feature))
                 .findFirst();

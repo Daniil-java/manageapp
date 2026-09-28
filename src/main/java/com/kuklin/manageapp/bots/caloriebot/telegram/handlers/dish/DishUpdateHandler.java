@@ -12,6 +12,7 @@ import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.DishDto;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.MissingFeatureException;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.AccessResult;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
+import com.kuklin.manageapp.bots.caloriebot.telegram.FeatureLimitNotifier;
 import com.kuklin.manageapp.bots.caloriebot.telegram.KeyboardCalorieUpdateHandler;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
@@ -46,6 +47,7 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
     private final PaymentPlanListUpdateHandler paymentPlanListUpdateHandler;
     private final CalorieAccessService calorieAccessService;
     private final AnalyticsService analyticsService;
+    private final FeatureLimitNotifier featureLimitNotifier;
     private static final String PORTION_COUNT_CMD = "PC";
     private static final String PORTION_WEIGHT_CMD = "PW";
     private static final String VOICE_ERROR_MESSAGE =
@@ -59,7 +61,6 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
     private static final String SUB_MESSAGE =
             "Для использования бота необходимо приобрести подписку! Введите команду /plan";
     private static final String ERROR_LIMIT_MSG = "Количество запросов, доступных вам, достигло предела!";
-    private static final String ACCESS_DENIED_MSG = "Доступ ограничен!";
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
@@ -92,7 +93,7 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
             try {
                 dishes = processPhotoOrNull(telegramUser, update.getMessage());
             } catch (MissingFeatureException e) {
-                calorieTelegramBot.sendReturnedMessage(update.getMessage().getChatId(), ACCESS_DENIED_MSG);
+                featureLimitNotifier.sendLimitReached(update.getMessage().getChatId(), e.getRequiredFeature());
                 return null;
             }
             // ==== ВЕТКА 2: пользователь прислал голосовое ====

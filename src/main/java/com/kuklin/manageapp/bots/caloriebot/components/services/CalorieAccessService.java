@@ -3,6 +3,7 @@ package com.kuklin.manageapp.bots.caloriebot.components.services;
 import com.kuklin.manageapp.bots.caloriebot.entities.PlanFeature;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserFeatureUsage;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.BotFeature;
+import com.kuklin.manageapp.bots.caloriebot.models.feature.FeatureLimitDto;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.FeatureLimitPeriod;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
@@ -11,6 +12,12 @@ import com.kuklin.manageapp.payment.components.paymentfacades.CommonPaymentFacad
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Сервис проверки доступа к функционалу бота (Features) на основе тарифных планов и лимитов.
@@ -84,13 +91,45 @@ public class CalorieAccessService {
     public int getRemainingLimits(Long appUserId, BotFeature feature) {
         PlanFeature planFeature = planFeatureService
                 .getFeatureByUserIdAndBotIdentifierAndFeatureOrNull(appUserId, BotIdentifier.CALORIE_BOT, feature);
+        return getRemaining(appUserId, feature, planFeature);
+    }
 
+    /**
+     * Лимиты по всем функциям бота для текущего тарифа пользователя — одним запросом для миниаппки.
+     * Тариф определяется один раз, а не для каждой фичи.
+     */
+    public List<FeatureLimitDto> getAllLimits(Long appUserId) {
+        Map<BotFeature, PlanFeature> planFeatures = planFeatureService
+                .getFeaturesByUserIdAndBotIdentifier(appUserId, BotIdentifier.CALORIE_BOT)
+                .stream()
+                .collect(Collectors.toMap(PlanFeature::getFeature, Function.identity(), (a, b) -> a));
+
+        return Arrays.stream(BotFeature.values())
+                .map(feature -> {
+                    PlanFeature planFeature = planFeatures.get(feature);
+                    return new FeatureLimitDto(
+                            feature,
+                            feature.getDisplayName(),
+                            isUnlimited(planFeature) ? -1 : (planFeature == null ? 0 : planFeature.getLimitValue()),
+                            getRemaining(appUserId, feature, planFeature),
+                            planFeature == null ? null : planFeature.getLimitPeriod()
+                    );
+                })
+                .toList();
+    }
+
+    private boolean isUnlimited(PlanFeature planFeature) {
+        return planFeature != null
+                && (planFeature.getLimitPeriod() == FeatureLimitPeriod.UNLIMITED
+                || planFeature.getLimitValue() == null
+                || planFeature.getLimitValue() <= -1);
+    }
+
+    private int getRemaining(Long appUserId, BotFeature feature, PlanFeature planFeature) {
         if (planFeature == null) {
             return 0; // фича не описана для тарифа — доступа нет
         }
-        if (planFeature.getLimitPeriod() == FeatureLimitPeriod.UNLIMITED
-                || planFeature.getLimitValue() == null
-                || planFeature.getLimitValue() <= -1) {
+        if (isUnlimited(planFeature)) {
             return -1;
         }
 

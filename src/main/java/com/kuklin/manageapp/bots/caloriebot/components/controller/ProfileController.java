@@ -6,6 +6,7 @@ import com.kuklin.manageapp.bots.caloriebot.components.services.UserNutritionPro
 import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.UserNutritionProfileDto;
 import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.UserNutritionProfileEntryDto;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.BotFeature;
+import com.kuklin.manageapp.bots.caloriebot.models.feature.FeatureLimitDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -53,6 +54,14 @@ public class ProfileController {
             @Parameter(hidden = true) @AuthenticationPrincipal Long appUserId,
             @RequestParam(name = "feature") BotFeature feature) {
         return calorieAccessService.getRemainingLimits(appUserId, feature);
+    }
+
+    @GetMapping("/limits/all")
+    @Operation(summary = "Лимиты по всем функциям",
+            description = "Возвращает лимит, остаток и период по каждой функции для текущего тарифа. -1 — без ограничений")
+    public List<FeatureLimitDto> getAllLimits(
+            @Parameter(hidden = true) @AuthenticationPrincipal Long appUserId) {
+        return calorieAccessService.getAllLimits(appUserId);
     }
 
 }

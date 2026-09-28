@@ -3,6 +3,7 @@ package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.history.report;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.MissingFeatureException;
 import com.kuklin.manageapp.bots.caloriebot.components.services.ReportService;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
+import com.kuklin.manageapp.bots.caloriebot.telegram.FeatureLimitNotifier;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.weight.CalorieWeightHistoryUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
@@ -36,12 +37,12 @@ public class CalorieReportUpdateHandler implements CalorieBotUpdateHandler {
     private final CalorieTelegramBot calorieTelegramBot;
     private final ReportService reportService;
     private final CalorieWeightHistoryUpdateHandler calorieWeightHistoryUpdateHandler;
+    private final FeatureLimitNotifier featureLimitNotifier;
 
     private static final String MSG_CHOOSE_REPORT = "Выберите тип аналитики";
     private static final String CLB_DATA_ERROR = "Ошибка данных! Попробуйте повторить операцию позже!";
     private static final String DOC_ERROR = "Не получилось сгенерировать отчет! Попробуйте еще раз";
     private static final String AWAIT_MSG = "Генерирую документ...";
-    private static final String ACCESS_DENIED_MSG = "Доступ ограничен!";
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
@@ -112,13 +113,12 @@ public class CalorieReportUpdateHandler implements CalorieBotUpdateHandler {
     }
 
     private void handleDayReport(Long chatId, Long appUserId) {
-        String aiReport = null;
         try {
-            aiReport = reportService.getDayAiReport(appUserId).getOrThrow();
+            String aiReport = reportService.getDayAiReport(appUserId).getOrThrow();
+            calorieTelegramBot.sendReturnedMessage(chatId, aiReport);
         } catch (MissingFeatureException e) {
-            aiReport = ACCESS_DENIED_MSG;
+            featureLimitNotifier.sendLimitReached(chatId, e.getRequiredFeature());
         }
-        calorieTelegramBot.sendReturnedMessage(chatId, aiReport);
     }
 
     private void handleWeeklyDeepReport(Long chatId, Long appUserId) {
@@ -131,7 +131,7 @@ public class CalorieReportUpdateHandler implements CalorieBotUpdateHandler {
             ).getOrThrow();
             sendPdfOrError(chatId, report, ReportType.WEEK);
         } catch (MissingFeatureException e) {
-            calorieTelegramBot.sendReturnedMessage(chatId, ACCESS_DENIED_MSG);
+            featureLimitNotifier.sendLimitReached(chatId, e.getRequiredFeature());
         }
 
     }
@@ -146,7 +146,7 @@ public class CalorieReportUpdateHandler implements CalorieBotUpdateHandler {
             ).getOrThrow();
             sendPdfOrError(chatId, report, type);
         } catch (MissingFeatureException e) {
-            calorieTelegramBot.sendReturnedMessage(chatId, ACCESS_DENIED_MSG);
+            featureLimitNotifier.sendLimitReached(chatId, e.getRequiredFeature());
         }
     }
 
