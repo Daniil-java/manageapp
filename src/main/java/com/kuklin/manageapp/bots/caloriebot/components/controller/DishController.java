@@ -4,6 +4,7 @@ import com.kuklin.manageapp.bots.caloriebot.components.services.DishService;
 import com.kuklin.manageapp.bots.caloriebot.models.FoodImageRequest;
 import com.kuklin.manageapp.bots.caloriebot.models.FoodTextRequest;
 import com.kuklin.manageapp.bots.caloriebot.models.FoodVoiceRequest;
+import com.kuklin.manageapp.bots.caloriebot.models.ManualDishRequest;
 import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.DishDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -44,6 +45,14 @@ public class DishController {
     public List<DishDto> getTodayDishes(
             @Parameter(hidden = true) @AuthenticationPrincipal Long appUserId) {
         return dishService.getTodayDishesDto(appUserId);
+    }
+
+    @PostMapping
+    @Operation(summary = "Добавить блюдо вручную", description = "Сохраняет блюдо с введёнными пользователем КБЖУ, без обращения к ИИ")
+    public DishDto addManually(
+            @Parameter(hidden = true) @AuthenticationPrincipal Long appUserId,
+            @Valid @RequestBody ManualDishRequest request) {
+        return dishService.addManualDishDto(appUserId, request);
     }
 
     @PostMapping("/text")

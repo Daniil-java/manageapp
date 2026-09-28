@@ -9,6 +9,7 @@ import com.kuklin.manageapp.bots.caloriebot.components.repository.DishRepository
 import com.kuklin.manageapp.bots.caloriebot.configurations.TelegramCaloriesBotKeyComponents;
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserFavoriteDish;
+import com.kuklin.manageapp.bots.caloriebot.models.ManualDishRequest;
 import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.DishDto;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
@@ -151,6 +152,30 @@ public class DishService {
     @Transactional(readOnly = true)
     public Dish getDishByIdOrNull(Long dishId) {
         return dishRepository.findById(dishId).orElse(null);
+    }
+
+    @Transactional
+    public DishDto addManualDishDto(Long userId, ManualDishRequest request) {
+        Dish dish = new Dish()
+                .setUserId(userId)
+                .setName(request.getName().trim())
+                .setCalories(request.getCalories())
+                .setProteins(nvl(request.getProteins()))
+                .setFats(nvl(request.getFats()))
+                .setCarbohydrates(nvl(request.getCarbohydrates()))
+                .setCategory(request.getCategory() != null ? request.getCategory() : Dish.FoodCategory.UNKNOWN)
+                // те же значения по умолчанию, что и у блюд от ИИ (DishDto.checkValuesNotNull)
+                .setWeight(1)
+                .setPortions(1)
+                .setPortionWeight(1)
+                .setAiConfidence(0);
+
+        userSettingsService.updateMealLastReminder(userId);
+        return DishDto.fromEntity(dishRepository.save(dish));
+    }
+
+    private static int nvl(Integer value) {
+        return value != null ? value : 0;
     }
 
     @Transactional
