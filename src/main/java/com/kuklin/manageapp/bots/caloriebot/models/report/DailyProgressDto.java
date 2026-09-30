@@ -11,9 +11,9 @@ public class DailyProgressDto {
     private int proteinsFact;
     private Integer proteinsTarget;
     private int fatsFact;
-    private int fatsTarget;
+    private Integer fatsTarget;
     private int carbsFact;
-    private int carbsTarget;
+    private Integer carbsTarget;
     private int waterFact;
     private int waterTarget;
     private int streak;

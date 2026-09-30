@@ -10,6 +10,8 @@
 * Миграция 0.0.50.sql — дозаполнение Telegram-identity для пользователей ботов, появившихся после первого наполнения таблицы.
 * Добавлены юнит-тесты TelegramAuthServiceTest и SiteAccessServiceTest.
 * Исправлено: API бота курения (/nicotine/**) после et-71 требовал авторизацию и отвечал 401 — путь не попал в список открытых. Снова доступен без авторизации (личный инструмент, логинов нет).
+* Исправлено: при первом заходе нового пользователя параллельные запросы одновременно создавали настройки, и один из них падал с 500 (duplicate key user_settings_pkey). UserSettingsService.getOrCreate создаёт настройки в отдельной транзакции и при гонке читает уже созданные.
+* Исправлено: GET /calorie/reports/dashboard падал с 500 (NullPointerException) у пользователя без рассчитанных норм БЖУ — например, зарегистрированного на сайте и не прошедшего анкету в боте. fatsTarget и carbsTarget в DailyProgressDto теперь могут быть null, как caloriesTarget и proteinsTarget.
 * Удалён тестовый TestController (/calorie/test, /test), путь /calorie/test убран из открытых в SecurityConfig.
 
 ## 0.0.47 (28.09.2026)

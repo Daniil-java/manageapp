@@ -6,8 +6,12 @@ import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.UserSettingsDto;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.*;
 import java.util.List;
@@ -21,6 +25,13 @@ import java.util.Optional;
 @Slf4j
 public class UserSettingsService {
     private final UserSettingsRepository userSettingsRepository;
+    private final PlatformTransactionManager transactionManager;
+
+    // Для альтернативного варианта getOrCreate через самовызов — см. комментарий под методом.
+    // Ссылка на собственный прокси — для вызова @Transactional-метода изнутри класса
+//    @Autowired
+//    @Lazy
+//    private UserSettingsService self;
 
     public UserSettingsDto getSettingsDto(Long userId) {
         UserSettings settings = getOrCreate(userId);
@@ -77,8 +88,37 @@ public class UserSettingsService {
             return optSettings.get();
         }
 
-        return userSettingsRepository.save(UserSettings.createDefaultSettings(userId));
+        // Первый заход нового пользователя: клиент шлёт несколько запросов параллельно, и каждый
+        // пытается создать настройки. Создаём в отдельной транзакции — проигравший гонку ловит
+        // нарушение первичного ключа, не ломая транзакцию вызывающего кода, и читает уже созданное.
+        TransactionTemplate newTransaction = new TransactionTemplate(transactionManager);
+        newTransaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        try {
+            newTransaction.executeWithoutResult(status ->
+                    userSettingsRepository.saveAndFlush(UserSettings.createDefaultSettings(userId)));
+        } catch (DataIntegrityViolationException e) {
+            log.debug("Settings for user {} were created by a concurrent request", userId);
+        }
+
+        return userSettingsRepository.findById(userId).orElseThrow();
     }
+
+    // Альтернатива TransactionTemplate — то же самое через самовызов и аннотацию.
+    // Чтобы включить: раскомментировать поле self и метод ниже, а блок с TransactionTemplate
+    // в getOrCreate заменить на:
+    //
+    //        try {
+    //            // Через self, а не this — иначе вызов идёт мимо прокси и @Transactional не срабатывает
+    //            self.createDefaultInNewTransaction(userId);
+    //        } catch (DataIntegrityViolationException e) {
+    //            log.debug("Settings for user {} were created by a concurrent request", userId);
+    //        }
+    //
+    // Метод обязан быть public — прокси не перехватывает приватные методы.
+//    @Transactional(propagation = Propagation.REQUIRES_NEW)
+//    public void createDefaultInNewTransaction(Long userId) {
+//        userSettingsRepository.saveAndFlush(UserSettings.createDefaultSettings(userId));
+//    }
 
     // ---------- DAILY SUMMARY ----------
 
