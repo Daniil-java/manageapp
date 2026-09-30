@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kuklin.manageapp.bots.caloriebot.configurations.TelegramCaloriesBotKeyComponents;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.Mac;
@@ -12,6 +13,8 @@ import javax.crypto.spec.SecretKeySpec;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -26,10 +29,58 @@ public class TelegramAuthService {
     // Объект для работы с JSON
     private final ObjectMapper objectMapper;
 
+    // Подпись Telegram не протухает — без проверки auth_date однажды перехваченные данные
+    // действуют вечно. Поэтому ограничиваем их возраст.
+
+    // Данные Telegram Login Widget меняют на JWT сразу после входа
+    @Value("${telegram.auth.widget-max-age:PT24H}")
+    private Duration widgetMaxAge;
+
+    // initData мини-аппы один и тот же всю сессию; перезапуск мини-аппы выдаёт свежий
+    @Value("${telegram.auth.init-data-max-age:PT24H}")
+    private Duration initDataMaxAge;
+
+    /**
+     * Проверка initData мини-аппы (заголовок X-TG-INIT-DATA): подпись + свежесть auth_date.
+     */
     public boolean isValid(String authData) {
+        // Парсинг строки и декодирование значений
+        Map<String, String> params = parseAuthData(authData);
+        return isValid(params) && isFresh(params, initDataMaxAge);
+    }
+
+    /**
+     * Проверка данных Telegram Login Widget (объект из data-onauth) для входа на сайте:
+     * подпись + свежесть auth_date.
+     */
+    public boolean isValidLoginWidget(Map<String, String> widgetData) {
+        // Виджет не присылает "user" — но если его подложить, isValid() проверит подпись
+        // ключом мини-аппы, а не бота. Такие данные виджетом быть не могут.
+        return !widgetData.containsKey("user")
+                && isValid(widgetData)
+                && isFresh(widgetData, widgetMaxAge);
+    }
+
+    private boolean isFresh(Map<String, String> params, Duration maxAge) {
         try {
-            // 1. Парсинг строки и декодирование значений
-            Map<String, String> params = parseAuthData(authData);
+            long authDate = Long.parseLong(params.get("auth_date"));
+            Duration age = Duration.between(Instant.ofEpochSecond(authDate), Instant.now());
+            if (age.compareTo(maxAge) > 0) {
+                log.warn("Telegram auth_date is too old: {}", age);
+                return false;
+            }
+            return true;
+        } catch (NumberFormatException e) {
+            // parseLong(null) тоже бросает NumberFormatException
+            log.warn("Telegram auth_date is missing or invalid: {}", params.get("auth_date"));
+            return false;
+        }
+    }
+
+    private boolean isValid(Map<String, String> authParams) {
+        try {
+            // Работаем с копией: hash удаляется из параметров
+            Map<String, String> params = new HashMap<>(authParams);
 
             // Извлечение хэша из параметров
             String hash = params.remove("hash");

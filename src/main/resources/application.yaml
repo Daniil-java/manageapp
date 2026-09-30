@@ -65,3 +65,11 @@ jwt:
   secret: ${APP_JWT_SECRET}
   expiration: 86400000   # 24 часа
 
+# Закрытое тестирование сайта: JWT (/auth/login, /auth/register, /auth/telegram) выдаётся
+# только перечисленным email и telegramId. Списки — через запятую. Мини-аппу не затрагивает.
+site:
+  access:
+    restricted: ${SITE_ACCESS_RESTRICTED:true}
+    allowed-emails: ${SITE_ALLOWED_EMAILS:}
+    allowed-telegram-ids: ${SITE_ALLOWED_TELEGRAM_IDS:}
+

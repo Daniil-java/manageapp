@@ -22,6 +22,7 @@ public class TelegramUserService {
     private final TelegramUserRepository telegramUserRepository;
     private final GenerationBalanceService generationBalanceService;
     private final AppUserService appUserService;
+    private final UserAuthIdentityService userAuthIdentityService;
 
     public TelegramUser getTelegramUserByTelegramIdAndBotIdentifierOrNull(Long telegramId, BotIdentifier botIdentifier) {
         return telegramUserRepository
@@ -64,22 +65,9 @@ public class TelegramUserService {
         }
 
         // СЦЕНАРИЙ 2: Пользователь новый для этого бота.
-        // Ищем, не пользовался ли он ДРУГИМИ нашими ботами.
-        // Используем findFirst, чтобы избежать ошибки NonUniqueResultException
-        TelegramUser userFromOtherBot = telegramUserRepository
-                .findFirstByTelegramId(telegramUser.getId())
-                .orElse(null);
-
-        Long appUserId;
-
-        if (userFromOtherBot != null && userFromOtherBot.getAppUserId() != null) {
-            // Он уже есть в экосистеме, берем его глобальный ID
-            appUserId = userFromOtherBot.getAppUserId();
-        } else {
-            // Совершенно новый человек. Создаем ему глобальный аккаунт.
-            AppUser newAppUser = appUserService.createUserByTelegram(telegramUser);
-            appUserId = newAppUser.getId();
-        }
+        // Ищем, нет ли у него уже аккаунта, иначе создаем глобальный.
+        Long appUserId = findExistingAppUserId(telegramUser.getId())
+                .orElseGet(() -> linkNewAppUser(appUserService.createUserByTelegram(telegramUser), telegramUser.getId()));
 
         // Создаем профиль конкретно для ЭТОГО бота
         TelegramUser newTgUser = TelegramUser.convertFromTelegram(telegramUser)
@@ -100,22 +88,28 @@ public class TelegramUserService {
 
     private void checkIfAppUserExist(TelegramUser telegramUser) {
         if (telegramUser.getAppUserId() == null) {
-            // Подстраховка: вдруг в БД есть старая запись от другого бота,
-            // у которой AppUser УЖЕ создан? Ищем её.
-            TelegramUser userWithAppId = telegramUserRepository
-                    .findFirstByTelegramIdAndAppUserIdIsNotNull(telegramUser.getTelegramId())
-                    .orElse(null);
-
-            if (userWithAppId != null) {
-                // Переиспользуем найденный AppUser
-                telegramUser.setAppUserId(userWithAppId.getAppUserId());
-            } else {
-                // Иначе создаем новый
-                AppUser appUser = appUserService.createUserByTelegram(telegramUser);
-                telegramUser.setAppUserId(appUser.getId());
-            }
+            // Подстраховка: вдруг AppUser УЖЕ создан (другой бот или сайт)? Иначе создаем новый
+            Long appUserId = findExistingAppUserId(telegramUser.getTelegramId())
+                    .orElseGet(() -> linkNewAppUser(appUserService.createUserByTelegram(telegramUser), telegramUser.getTelegramId()));
+            telegramUser.setAppUserId(appUserId);
             telegramUserRepository.save(telegramUser);
         }
+    }
+
+    /**
+     * Аккаунт человека в экосистеме: сначала через другие наши боты,
+     * затем через вход на сайте (Telegram Login Widget — там TelegramUser не создаётся).
+     */
+    private Optional<Long> findExistingAppUserId(Long telegramId) {
+        return telegramUserRepository.findFirstByTelegramIdAndAppUserIdIsNotNull(telegramId)
+                .map(TelegramUser::getAppUserId)
+                .or(() -> userAuthIdentityService.findAppUserIdByTelegramId(telegramId));
+    }
+
+    private Long linkNewAppUser(AppUser appUser, Long telegramId) {
+        // Сразу привязываем telegramId, чтобы вход на сайте через Telegram нашёл этот же аккаунт
+        userAuthIdentityService.linkTelegram(appUser, telegramId);
+        return appUser.getId();
     }
 
     public void deactivateUser(Long telegramId, BotIdentifier botIdentifier) {

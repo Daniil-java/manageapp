@@ -34,10 +34,6 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtFilter;
     private final DomainUrlFilter domainUrlFilter;
     private final TelegramAuthFilter telegramAuthFilter;
-    // TODO userDetailsService нигде фактически не используется: логин в AuthService идёт напрямую через
-    //  PasswordEncoder.matches(...), минуя UserDetailsService/AuthenticationManager. Bean authenticationManager()
-    //  ниже по той же причине мёртвый. Либо доводим до ума (DaoAuthenticationProvider с этим сервисом
-    //  + AuthService через AuthenticationManager), либо убираем оба как неиспользуемые.
     private final CustomUserDetailsService userDetailsService;
 
     @Bean
@@ -51,17 +47,17 @@ public class SecurityConfig {
 
                 .authorizeHttpRequests(auth -> auth
                         // Публичные пути
-                        // TODO "/calorie/test" открывает тестовый эндпоинт (TestController) и должен быть
-                        //  убран отсюда, когда его уберём/зашелвим перед прод-коммитом.
                         // Реальные публичные страницы сайта (kuklin.dev) и калорийного бота (zefir.fit) —
                         .requestMatchers(
-                                "/auth/register", "/auth/login",
+                                "/auth/register", "/auth/login", "/auth/telegram",
                                 "/error", "/favicon.ico",
-                                "/swagger-ui/**", "/v3/api-docs/**", "/calorie/test",
+                                "/swagger-ui/**", "/v3/api-docs/**",
                                 "/", "/resume", "/freelance", "/pomidorotimer", "/hhbot/skills",
                                 "/calorie/instruction", "/calorie/privacy", "/calorie/terms",
                                 "/calorie/utm-form", "/calorie/utm/ownertypes",
                                 "/assets/**", "/images/**").permitAll()
+                        // API бота курения — личный инструмент без логинов, авторизации нет намеренно
+                        .requestMatchers("/nicotine/**").permitAll()
                         // Тестовые html-страницы (static/auth/* и Thymeleaf-шаблоны из WebController) —
                         // временно оставлены в коде, но доступны только ROLE_ADMIN.
                         .requestMatchers(

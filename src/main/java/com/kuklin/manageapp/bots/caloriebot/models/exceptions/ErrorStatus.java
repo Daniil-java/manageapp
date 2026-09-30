@@ -16,7 +16,8 @@ public enum ErrorStatus {
     PAYMENT_FAILED(HttpStatus.BAD_REQUEST, "Payment failed!"),
     USER_NOT_FOUND(HttpStatus.BAD_REQUEST, "User not found!" ),
     DISH_NOT_BELONG_USER(HttpStatus.BAD_REQUEST, "Dish not belong user!"),
-    EMAIL_ALREADY_BUSY(HttpStatus.BAD_REQUEST, "Email is already busy!")
+    EMAIL_ALREADY_BUSY(HttpStatus.BAD_REQUEST, "Email is already busy!"),
+    SITE_ACCESS_DENIED(HttpStatus.FORBIDDEN, "The site is in closed testing. Access is by invitation only.")
     ;
 
     private HttpStatus httpStatus;

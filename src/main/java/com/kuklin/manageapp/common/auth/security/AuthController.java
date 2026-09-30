@@ -11,6 +11,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
@@ -31,5 +33,13 @@ public class AuthController {
     @Operation(summary = "Вход по email + пароль")
     public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
+    }
+
+    @PostMapping("/telegram")
+    @Operation(summary = "Вход через Telegram Login Widget",
+            description = "Тело — объект user из data-onauth виджета как есть: id, first_name, last_name, "
+                    + "username, photo_url, auth_date, hash. Возвращает тот же JWT, что и /auth/login.")
+    public ResponseEntity<AuthResponse> loginByTelegram(@RequestBody Map<String, Object> widgetData) {
+        return ResponseEntity.ok(authService.loginByTelegram(widgetData));
     }
 }
