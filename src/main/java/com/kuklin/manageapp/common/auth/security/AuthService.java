@@ -20,8 +20,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -105,16 +103,17 @@ public class AuthService {
                 });
 
         AppUser user = appUserService.getAppUserByIdOrNull(appUserId);
+        // Имя в Telegram могли сменить, а у аккаунтов из бота его могло не быть вовсе —
+        // сайт показывает именно его, поэтому освежаем при каждом входе
+        if (params.get("first_name") != null) {
+            user.setUsername(params.get("username"))
+                    .setFirstname(params.get("first_name"))
+                    .setLastname(params.get("last_name"));
+        }
         return toAuthResponse(user);
     }
 
     private AuthResponse toAuthResponse(AppUser user) {
-        String token = jwtService.generateToken(user);
-
-        Set<String> roles = user.getRoles().stream()
-                .map(r -> r.getRoleName().name())
-                .collect(Collectors.toSet());
-
-        return new AuthResponse(token, user.getId(), user.getEmail(), roles);
+        return AuthResponse.of(jwtService.generateToken(user), user);
     }
 }

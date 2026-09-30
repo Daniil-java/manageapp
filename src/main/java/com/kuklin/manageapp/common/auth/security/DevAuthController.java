@@ -67,10 +67,6 @@ public class DevAuthController {
     }
 
     private AuthResponse toResponse(AppUser user) {
-        String token = jwtService.generateToken(user);
-        Set<String> roles = user.getRoles().stream()
-                .map(r -> r.getRoleName().name())
-                .collect(Collectors.toSet());
-        return new AuthResponse(token, user.getId(), user.getEmail(), roles);
+        return AuthResponse.of(jwtService.generateToken(user), user);
     }
 }
