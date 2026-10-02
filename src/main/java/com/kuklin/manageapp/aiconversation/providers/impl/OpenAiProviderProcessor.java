@@ -116,6 +116,21 @@ public class OpenAiProviderProcessor implements ProviderProcessor, AiTextClient 
 
     }
 
+    /**
+     * Текстовый запрос в JSON-режиме: ответ — всегда один JSON-объект.
+     */
+    public String fetchJsonResponse(
+            String aiKey,
+            String content,
+            BotIdentifier botIdentifier,
+            String uniqLog,
+            MetricsAiInteractionRecord.AiMessageType messageType) {
+        log.info(botIdentifier + " uniq log: " + uniqLog);
+        OpenAiChatCompletionRequest request =
+                OpenAiChatCompletionRequest.makeJsonRequest(content);
+        return fetchResponse(aiKey, request, botIdentifier, messageType);
+    }
+
     public String fetchAudioResponse(
             String aiKey,
             byte[] content,

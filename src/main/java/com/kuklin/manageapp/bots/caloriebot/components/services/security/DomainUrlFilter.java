@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -33,6 +34,13 @@ public class DomainUrlFilter extends OncePerRequestFilter {
             List.of("/nicotine/**"),
             List.of())
     );
+
+    // Только для локальной разработки: пускать запросы на localhost/127.0.0.1 ко всем путям.
+    // Host приходит от клиента, поэтому на проде флаг должен оставаться выключенным.
+    private static final DomainRules LOCAL_RULES = new DomainRules(List.of("/**"), List.of());
+
+    @Value("${security.domain-filter.allow-localhost:false}")
+    private boolean allowLocalhost;
 
     @Override
     protected void doFilterInternal(
@@ -89,6 +97,9 @@ public class DomainUrlFilter extends OncePerRequestFilter {
     }
 
     private DomainRules findRulesForHost(String host) {
+        if (allowLocalhost && (host.equals("localhost") || host.equals("127.0.0.1"))) {
+            return LOCAL_RULES;
+        }
         return rulesByDomain.entrySet().stream()
                             .filter(entry -> matchesDomainOrSubdomain(host, entry.getKey()))
                             .map(Map.Entry::getValue)

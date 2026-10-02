@@ -5,13 +5,17 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
-import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
 import java.time.LocalDate;
 
+/**
+ * Последний сгенерированный ИИ-инсайт пользователя для страницы Insights
+ * (саммари или шаблоны поведения за неделю / месяц).
+ * На пару (пользователь, тип) — одна запись (уникальный индекс), при обновлении она перезаписывается.
+ */
 @Entity
 @Table(name = "calorie_ai_insight")
 @Data
@@ -37,11 +41,12 @@ public class CalorieAiInsight {
     @Column(name = "period_to", nullable = false)
     private LocalDate periodTo;
 
+    // Ответ ИИ как есть (JSON-объект, структура зависит от type). Строка уходит в jsonb без перекодирования
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "payload", nullable = false, columnDefinition = "jsonb")
     private String payload;
 
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
+    // Время последней генерации — запись одна на тип и перезаписывается при обновлении
+    @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 }

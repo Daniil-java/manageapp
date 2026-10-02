@@ -13,6 +13,8 @@ import com.kuklin.manageapp.bots.caloriebot.components.RequiresFeature;
 import com.kuklin.manageapp.bots.caloriebot.models.AiInsightType;
 import com.kuklin.manageapp.bots.caloriebot.models.airesponse.AiPatternAnalysisResponse;
 import com.kuklin.manageapp.bots.caloriebot.models.airesponse.InsightPayloadRecord;
+import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
+import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
 import com.kuklin.manageapp.bots.caloriebot.models.airesponse.NutritionAnalysisPayloadRecord;
 import com.kuklin.manageapp.bots.caloriebot.models.report.ReportContext;
 import com.kuklin.manageapp.bots.caloriebot.models.report.ReportResponseRecord;
@@ -66,6 +68,8 @@ public class ReportService {
 
     // Язык ответов ИИ для инсайтов (интерфейс сайта/миниаппки на английском)
     private static final String INSIGHT_LANGUAGE = "English";
+    // Минимум разных дней с записями еды, чтобы инсайт имел смысл
+    private static final int INSIGHT_MIN_DAYS_WITH_DISHES = 3;
 
     private final DishService dishService;
     private final UserNutritionProfileService userNutritionProfileService;
@@ -134,12 +138,26 @@ public class ReportService {
 
     /**
      * Генерирует ИИ-инсайт для страницы Insights (саммари или шаблоны поведения за период).
-     * Возвращает JSON-ответ ИИ как есть (структура зависит от типа) или null, если ИИ вернул не JSON.
+     * Возвращает JSON-ответ ИИ как есть (структура зависит от типа) или null, если ИИ ответил с ошибкой.
+     *
+     * @throws ErrorResponseException AI_INSIGHT_NOT_ENOUGH_DATA — если еду записывали меньше чем в
+     *                                {@value #INSIGHT_MIN_DAYS_WITH_DISHES} разных днях. ИИ в этом случае не вызывается.
      */
     public AccessResult<String> getAiInsightReport(AiInsightType type, Instant from, Instant to, Long userId) {
+        ReportData data = loadReportData(userId, from, to);
+
+        long daysWithDishes = data.dishes().stream()
+                .filter(d -> d.getCreated() != null)
+                .map(d -> d.getCreated().atZone(data.zoneId()).toLocalDate())
+                .distinct()
+                .count();
+        if (daysWithDishes < INSIGHT_MIN_DAYS_WITH_DISHES) {
+            throw new ErrorResponseException(ErrorStatus.AI_INSIGHT_NOT_ENOUGH_DATA);
+        }
+
         try {
-            ReportData data = loadReportData(userId, from, to);
-            String jsonContext = mapper.writeValueAsString(buildInsightPayload(data));
+            var payload = InsightPayloadRecord.of(data.profile(), data.dishes(), data.weights(), data.zoneId());
+            String jsonContext = mapper.writeValueAsString(payload);
 
             String request = switch (type) {
                 case WEEKLY_SUMMARY, MONTHLY_SUMMARY -> AI_REQUEST_INSIGHT_SUMMARY;
@@ -148,36 +166,21 @@ public class ReportService {
             String periodLabel = "последние " + type.getPeriodDays() + " дней";
 
             String prompt = AI_PERSONA + String.format(request, periodLabel, INSIGHT_LANGUAGE, jsonContext);
-            String response = stripCodeFence(fetchAiResponse(prompt, "AI INSIGHT " + type));
+            String response = openAiProviderProcessor.fetchJsonResponse(
+                    components.getAiKey(),
+                    prompt,
+                    BotIdentifier.CALORIE_BOT,
+                    "AI INSIGHT " + type,
+                    MetricsAiInteractionRecord.AiMessageType.TEXT
+            );
 
-            // Проверяем, что ИИ вернул валидный JSON — иначе в jsonb он всё равно не ляжет
+            // JSON-режим гарантирует JSON, но проверяем — в jsonb всё равно ляжет только валидный
             mapper.readTree(response);
             return AccessResult.success(response);
         } catch (Exception e) {
             log.error("Failed to build AI insight {} for user {}", type, userId, e);
             return AccessResult.success(null);
         }
-    }
-
-    /**
-     * Собирает пейлоад для инсайтов: блюда, профиль, таймзона и взвешивания за период.
-     */
-    private InsightPayloadRecord buildInsightPayload(ReportData data) {
-        LocalDate fromDate = data.from().atZone(data.zoneId()).toLocalDate();
-        LocalDate toDate = data.to().atZone(data.zoneId()).toLocalDate();
-
-        List<InsightPayloadRecord.WeightPoint> weights = data.weights().stream()
-                .filter(w -> w.getEntryDate() != null && w.getWeight() != null)
-                .filter(w -> !w.getEntryDate().isBefore(fromDate) && !w.getEntryDate().isAfter(toDate))
-                .map(w -> new InsightPayloadRecord.WeightPoint(w.getEntryDate(), w.getWeight()))
-                .toList();
-
-        return new InsightPayloadRecord(
-                data.dishes(),
-                data.profile(),
-                data.settings().getTimezoneId(),
-                weights
-        );
     }
 
     /**
@@ -359,20 +362,6 @@ public class ReportService {
                 loggingContext,
                 MetricsAiInteractionRecord.AiMessageType.TEXT
         );
-    }
-
-    /**
-     * Срезает обёртку ```json ... ```, если ИИ всё-таки завернул ответ в markdown.
-     */
-    private String stripCodeFence(String response) {
-        if (response == null) return null;
-        String trimmed = response.strip();
-        if (!trimmed.startsWith("```")) return trimmed;
-
-        int firstLineEnd = trimmed.indexOf('\n');
-        int lastFence = trimmed.lastIndexOf("```");
-        if (firstLineEnd < 0 || lastFence <= firstLineEnd) return trimmed;
-        return trimmed.substring(firstLineEnd + 1, lastFence).strip();
     }
 
     /**

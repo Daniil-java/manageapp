@@ -1,3 +1,19 @@
+## 0.0.49 (в работе)
+[et-74] — ИИ-инсайты для страницы Insights: саммари и шаблоны поведения
+* Добавлены эндпоинты: GET /calorie/reports/insights — последние инсайты всех типов одним запросом; GET /calorie/reports/insights/{type} — один инсайт (204, если ещё не генерировался); POST /calorie/reports/insights/{type}/refresh — сгенерировать заново через ИИ (10–30 с). GET ИИ не вызывает.
+* Типы (AiInsightType): WEEKLY_SUMMARY, MONTHLY_SUMMARY, PATTERNS_WEEK, PATTERNS_MONTH — саммари и шаблоны поведения за последние 7 / 30 дней в таймзоне пользователя. Ответ (AiInsightDto) содержит период, время генерации, флаг stale (недельный устаревает со следующего дня, месячный — через 7 дней) и payload — JSON-ответ ИИ объектом.
+* Миграция 0.0.51.sql — таблица calorie_ai_insight (payload в jsonb), одна запись на пользователя и тип (уникальный индекс): при обновлении запись перезаписывается.
+* Новые промпты AI_REQUEST_INSIGHT_SUMMARY и AI_REQUEST_INSIGHT_PATTERNS: строгий JSON с эмодзи у каждого пункта, у шаблонов — sentiment (positive / neutral / negative). Язык ответа — English (интерфейс сайта и миниаппки).
+* В ИИ уходит компактный InsightPayloadRecord: профиль и цели КБЖУ, блюда только с нужными полями и временем приёма пищи уже в таймзоне пользователя, последние 20 взвешиваний (для прогноза веса). Служебные поля сущностей (id, userId, aiConfidence) не отправляются.
+* JSON-режим OpenAI: OpenAiChatCompletionRequest.makeJsonRequest (response_format: json_object) и OpenAiProviderProcessor.fetchJsonResponse. Используется только инсайтами, остальные запросы к ИИ не изменились.
+* Ограничения обновления: не чаще раза в минуту на тип (учитываются и неудачные вызовы ИИ), параллельная генерация того же типа отклоняется. Если еду записывали меньше чем в 3 разных днях — ИИ не вызывается. Новые ErrorStatus: AI_INSIGHT_TOO_FREQUENT (429), AI_INSIGHT_NOT_ENOUGH_DATA (422), AI_INSIGHT_FAILED (503).
+* Функция пока бесплатная — без @RequiresFeature.
+* ReportService: данные отчёта (блюда, цели, вес, профиль, настройки) загружаются из БД один раз на отчёт — раньше месячный PDF грузил блюда и вес по 3 раза, настройки 4 раза. Удалён неиспользуемый buildWeeklyTable, ObjectMapper настраивается один раз.
+* Исправлено в промпте AI_REQUEST_PATTERN_ANALYSIS: поле блюда называлось weightGrams, а в данных оно weight.
+* Таймаут чтения Feign снижен с ~16 минут до 120 секунд — зависший запрос к ИИ больше не держит поток. Касается всех Feign-клиентов.
+* DomainUrlFilter: флаг security.domain-filter.allow-localhost (DOMAIN_FILTER_ALLOW_LOCALHOST) пускает запросы на localhost / 127.0.0.1 — для локальной разработки. По умолчанию выключен; на проде не включать: Host задаёт клиент (см. et-71).
+* Добавлены юнит-тесты CalorieAiInsightServiceTest, ReportServiceAiInsightTest, InsightPayloadRecordTest, OpenAiChatCompletionRequestTest.
+
 ## 0.0.48 (30.09.2026)
 [et-73] — Вход на сайте через Telegram, закрытое тестирование сайта
 * Добавлен эндпоинт POST /auth/telegram — меняет данные Telegram Login Widget на тот же JWT, что выдаёт /auth/login. Тело запроса — объект user из виджета как есть; подпись проверяется токеном CALORY_BOT_TOKEN.

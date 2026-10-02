@@ -8,6 +8,7 @@ import com.kuklin.manageapp.bots.caloriebot.models.AiInsightType;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.MissingFeatureException;
+import com.kuklin.manageapp.bots.caloriebot.models.feature.AccessResult;
 import com.kuklin.manageapp.bots.caloriebot.models.report.AiInsightDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * ИИ-инсайты для страницы Insights: саммари и шаблоны поведения за неделю и месяц.
- * Последний сгенерированный инсайт хранится в БД и отдаётся сразу,
+ * На пользователя и тип хранится одна запись — последний сгенерированный инсайт. Он отдаётся сразу,
  * ИИ вызывается только по явному запросу на обновление.
  */
 @Component
@@ -33,7 +34,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class CalorieAiInsightService {
 
-    // Не чаще одного обновления инсайта одного типа в минуту
+    // Не чаще одного обращения к ИИ на (пользователь, тип) в минуту — считаются и неудачные
     private static final Duration REFRESH_COOLDOWN = Duration.ofMinutes(1);
 
     private final CalorieAiInsightRepository calorieAiInsightRepository;
@@ -41,34 +42,38 @@ public class CalorieAiInsightService {
     private final UserSettingsService userSettingsService;
     private final ObjectMapper objectMapper;
 
-    // Генерации, которые идут прямо сейчас: "userId:type" — защита от двойного нажатия
+    // Генерации, которые идут прямо сейчас — защита от двойного нажатия. Ключ "userId:type"
     private final Set<String> inProgress = ConcurrentHashMap.newKeySet();
+    // Когда последний раз обращались к ИИ (успешно или нет). Ключ "userId:type"
+    private final Map<String, Instant> lastAiCalls = new ConcurrentHashMap<>();
 
     /**
      * Последний инсайт нужного типа. Без вызова ИИ.
      */
     public Optional<AiInsightDto> getLatest(Long userId, AiInsightType type) {
         ZoneId zoneId = userSettingsService.getOrCreate(userId).getZoneId();
-        return calorieAiInsightRepository.findFirstByAppUserIdAndTypeOrderByCreatedAtDesc(userId, type)
+        return calorieAiInsightRepository.findByAppUserIdAndType(userId, type)
                 .map(insight -> toDto(insight, zoneId));
     }
 
     /**
-     * Последние инсайты всех типов разом — для страницы Insights.
+     * Последние инсайты всех типов одним запросом — для страницы Insights.
      * Типы, которые ещё ни разу не генерировались, в ответ не попадают.
      */
     public Map<AiInsightType, AiInsightDto> getLatestAll(Long userId) {
         ZoneId zoneId = userSettingsService.getOrCreate(userId).getZoneId();
         Map<AiInsightType, AiInsightDto> result = new EnumMap<>(AiInsightType.class);
-        for (AiInsightType type : AiInsightType.values()) {
-            calorieAiInsightRepository.findFirstByAppUserIdAndTypeOrderByCreatedAtDesc(userId, type)
-                    .ifPresent(insight -> result.put(type, toDto(insight, zoneId)));
-        }
+        calorieAiInsightRepository.findAllByAppUserId(userId)
+                .forEach(insight -> result.put(insight.getType(), toDto(insight, zoneId)));
         return result;
     }
 
     /**
-     * Генерирует инсайт заново через ИИ, сохраняет и возвращает.
+     * Генерирует инсайт заново через ИИ, перезаписывает сохранённый и возвращает.
+     *
+     * @throws ErrorResponseException AI_INSIGHT_TOO_FREQUENT — генерация уже идёт или к ИИ обращались меньше минуты назад;
+     *                                AI_INSIGHT_NOT_ENOUGH_DATA — мало записей еды (ИИ не вызывается);
+     *                                AI_INSIGHT_FAILED — ИИ ответил с ошибкой.
      */
     public AiInsightDto refresh(Long userId, AiInsightType type) {
         String key = userId + ":" + type;
@@ -77,7 +82,7 @@ public class CalorieAiInsightService {
         }
 
         try {
-            checkCooldown(userId, type);
+            checkCooldown(key);
 
             ZoneId zoneId = userSettingsService.getOrCreate(userId).getZoneId();
             LocalDate periodTo = LocalDate.now(zoneId);
@@ -86,19 +91,23 @@ public class CalorieAiInsightService {
             Instant from = periodFrom.atStartOfDay(zoneId).toInstant();
             Instant to = periodTo.plusDays(1).atStartOfDay(zoneId).toInstant().minusMillis(1);
 
-            String payload = reportService.getAiInsightReport(type, from, to, userId).getOrThrow();
+            // Если данных мало — бросит AI_INSIGHT_NOT_ENOUGH_DATA до вызова ИИ, cooldown не тратится
+            AccessResult<String> result = reportService.getAiInsightReport(type, from, to, userId);
+            lastAiCalls.put(key, Instant.now());
+
+            String payload = result.getOrThrow();
             if (payload == null) {
                 throw new ErrorResponseException(ErrorStatus.AI_INSIGHT_FAILED);
             }
 
-            CalorieAiInsight saved = calorieAiInsightRepository.save(new CalorieAiInsight()
-                    .setAppUserId(userId)
-                    .setType(type)
-                    .setPeriodFrom(periodFrom)
+            CalorieAiInsight insight = calorieAiInsightRepository.findByAppUserIdAndType(userId, type)
+                    .orElseGet(() -> new CalorieAiInsight().setAppUserId(userId).setType(type));
+            insight.setPeriodFrom(periodFrom)
                     .setPeriodTo(periodTo)
-                    .setPayload(payload));
+                    .setPayload(payload)
+                    .setCreatedAt(Instant.now());
 
-            return toDto(saved, zoneId);
+            return toDto(calorieAiInsightRepository.save(insight), zoneId);
         } catch (MissingFeatureException e) {
             throw new ErrorResponseException(ErrorStatus.MISSING_FEATURE, e);
         } finally {
@@ -108,12 +117,11 @@ public class CalorieAiInsightService {
 
     // --- Private Methods ---
 
-    private void checkCooldown(Long userId, AiInsightType type) {
-        calorieAiInsightRepository.findFirstByAppUserIdAndTypeOrderByCreatedAtDesc(userId, type)
-                .filter(last -> last.getCreatedAt().isAfter(Instant.now().minus(REFRESH_COOLDOWN)))
-                .ifPresent(last -> {
-                    throw new ErrorResponseException(ErrorStatus.AI_INSIGHT_TOO_FREQUENT);
-                });
+    private void checkCooldown(String key) {
+        Instant lastCall = lastAiCalls.get(key);
+        if (lastCall != null && lastCall.isAfter(Instant.now().minus(REFRESH_COOLDOWN))) {
+            throw new ErrorResponseException(ErrorStatus.AI_INSIGHT_TOO_FREQUENT);
+        }
     }
 
     /**

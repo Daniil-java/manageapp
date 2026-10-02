@@ -27,12 +27,12 @@ feign:
     config:
       default:
         connectTimeout: 15000
-        readTimeout: 1000000
+        readTimeout: 120000
         loggerLevel: basic
 
 integrations:
   connect-timeout: 20000
-  read-timeout: 1000000
+  read-timeout: 120000
   write-timeout: 5000
   openai-api:
     url: https://api.openai.com/v1/
@@ -60,6 +60,10 @@ google:
 security:
   crypto:
     aes-key-b64: ${APP_AES_KEY_B64}
+  # Локальная разработка: DOMAIN_FILTER_ALLOW_LOCALHOST=true пускает запросы на localhost.
+  # На проде НЕ включать — заголовок Host задаёт клиент.
+  domain-filter:
+    allow-localhost: ${DOMAIN_FILTER_ALLOW_LOCALHOST:false}
 
 jwt:
   secret: ${APP_JWT_SECRET}
@@ -72,4 +76,3 @@ site:
     restricted: ${SITE_ACCESS_RESTRICTED:true}
     allowed-emails: ${SITE_ALLOWED_EMAILS:}
     allowed-telegram-ids: ${SITE_ALLOWED_TELEGRAM_IDS:}
-

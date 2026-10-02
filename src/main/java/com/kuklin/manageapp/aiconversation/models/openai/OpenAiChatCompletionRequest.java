@@ -1,6 +1,7 @@
 package com.kuklin.manageapp.aiconversation.models.openai;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.kuklin.manageapp.aiconversation.models.PhotoMessageWithPrompt;
 import com.kuklin.manageapp.aiconversation.models.enums.ChatModel;
 import lombok.Data;
@@ -15,9 +16,25 @@ public class OpenAiChatCompletionRequest {
     private List<PhotoMessageWithPrompt> messages;
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private Float temperature;
+    // JSON-режим: модель гарантированно отвечает одним JSON-объектом. null — обычный текстовый ответ
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonProperty("response_format")
+    private ResponseFormat responseFormat;
 
     public static final float TEMPERATURE_DEFAULT = 0.1f;
     private static final String MODEL_DEFAULT = ChatModel.GPT51.getName();
+
+    public record ResponseFormat(String type) {
+        public static final ResponseFormat JSON_OBJECT = new ResponseFormat("json_object");
+    }
+
+    /**
+     * Текстовый запрос в JSON-режиме. В промпте обязательно должно быть слово "JSON" — требование OpenAI.
+     */
+    public static OpenAiChatCompletionRequest makeJsonRequest(String content) {
+        return makeDefaultRequest(content)
+                .setResponseFormat(ResponseFormat.JSON_OBJECT);
+    }
 
     public static OpenAiChatCompletionRequest makeDefaultRequest(
             String content) {

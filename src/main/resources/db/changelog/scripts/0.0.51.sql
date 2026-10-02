@@ -13,7 +13,8 @@
 --    PATTERNS_MONTH  — шаблоны поведения за 30 дней
 --
 --  payload — ответ ИИ в JSON как есть (структура зависит от type).
---  Старые записи не удаляем — история генераций, берём последнюю.
+--  Одна запись на (user_id, type): при обновлении перезаписывается,
+--  created_at = время последней генерации.
 -- ════════════════════════════════════════════════════════
 
 CREATE TABLE IF NOT EXISTS calorie_ai_insight (
@@ -26,10 +27,10 @@ CREATE TABLE IF NOT EXISTS calorie_ai_insight (
     created_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW()
     );
 
--- Основной запрос: последний инсайт пользователя нужного типа
-CREATE INDEX IF NOT EXISTS idx_calorie_ai_insight_user_type_created
-    ON calorie_ai_insight (user_id, type, created_at DESC);
+-- Одна запись на пользователя и тип; заодно индекс для выборки инсайтов пользователя
+CREATE UNIQUE INDEX IF NOT EXISTS ux_calorie_ai_insight_user_type
+    ON calorie_ai_insight (user_id, type);
 
 -- ROLLBACK
--- rollback DROP INDEX IF EXISTS idx_calorie_ai_insight_user_type_created;
+-- rollback DROP INDEX IF EXISTS ux_calorie_ai_insight_user_type;
 -- rollback DROP TABLE IF EXISTS calorie_ai_insight;
