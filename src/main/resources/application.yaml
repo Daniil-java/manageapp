@@ -15,18 +15,24 @@ spring:
       hibernate:
         format_sql: true
     database-platform: org.hibernate.dialect.PostgreSQLDialect
+  liquibase:
+    enabled: true
+    change-log: classpath:/db/changelog/db.changelog-master.yaml
+  mvc:
+    problemdetails:
+      enabled: false
 
 feign:
   client:
     config:
       default:
-        connectTimeout: 5000
-        readTimeout: 1000000
+        connectTimeout: 15000
+        readTimeout: 120000
         loggerLevel: basic
 
 integrations:
-  connect-timeout: 5000
-  read-timeout: 1000000
+  connect-timeout: 20000
+  read-timeout: 120000
   write-timeout: 5000
   openai-api:
     url: https://api.openai.com/v1/
@@ -35,3 +41,38 @@ integrations:
 
 locale:
   tag: ru-RU
+
+google:
+  oauth:
+    client-id: ${GOOGLE_OAUTH_CLIENT_ID}
+    client-secret: ${GOOGLE_CALENDAR_KEY}   # опционально (для PKCE можно пустым)
+    redirect-uri: https://kuklin.dev/auth/google/callback
+    start-uri: https://kuklin.dev/auth/google/start?linkId=
+    auth-uri: https://accounts.google.com/o/oauth2/v2/auth
+    token-uri: https://oauth2.googleapis.com/token
+    revoke-uri: https://oauth2.googleapis.com/revoke
+    userinfo-uri: https://openidconnect.googleapis.com/v1/userinfo
+    scopes:
+      - openid
+      - email
+      - profile
+      - https://www.googleapis.com/auth/calendar
+security:
+  crypto:
+    aes-key-b64: ${APP_AES_KEY_B64}
+  # Локальная разработка: DOMAIN_FILTER_ALLOW_LOCALHOST=true пускает запросы на localhost.
+  # На проде НЕ включать — заголовок Host задаёт клиент.
+  domain-filter:
+    allow-localhost: ${DOMAIN_FILTER_ALLOW_LOCALHOST:false}
+
+jwt:
+  secret: ${APP_JWT_SECRET}
+  expiration: 86400000   # 24 часа
+
+# Закрытое тестирование сайта: JWT (/auth/login, /auth/register, /auth/telegram) выдаётся
+# только перечисленным email и telegramId. Списки — через запятую. Мини-аппу не затрагивает.
+site:
+  access:
+    restricted: ${SITE_ACCESS_RESTRICTED:true}
+    allowed-emails: ${SITE_ALLOWED_EMAILS:}
+    allowed-telegram-ids: ${SITE_ALLOWED_TELEGRAM_IDS:}
