@@ -10,7 +10,9 @@ import com.kuklin.manageapp.bots.caloriebot.entities.*;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.AccessResult;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.BotFeature;
 import com.kuklin.manageapp.bots.caloriebot.components.RequiresFeature;
+import com.kuklin.manageapp.bots.caloriebot.models.AiInsightType;
 import com.kuklin.manageapp.bots.caloriebot.models.airesponse.AiPatternAnalysisResponse;
+import com.kuklin.manageapp.bots.caloriebot.models.airesponse.InsightPayloadRecord;
 import com.kuklin.manageapp.bots.caloriebot.models.airesponse.NutritionAnalysisPayloadRecord;
 import com.kuklin.manageapp.bots.caloriebot.models.report.ReportContext;
 import com.kuklin.manageapp.bots.caloriebot.models.report.ReportResponseRecord;
@@ -27,6 +29,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -61,6 +64,9 @@ public class ReportService {
     private static final String VAR_CATEGORY_CHART = "{{CATEGORY_CHART}}";
     private static final String VAR_TIMING_CHART = "{{TIMING_CHART}}";
 
+    // Язык ответов ИИ для инсайтов (интерфейс сайта/миниаппки на английском)
+    private static final String INSIGHT_LANGUAGE = "English";
+
     private final DishService dishService;
     private final UserNutritionProfileService userNutritionProfileService;
     private final UserNutritionProfileEntryService userNutritionProfileEntryService;
@@ -68,7 +74,29 @@ public class ReportService {
     private final WeightEntryService weightEntryService;
     private final OpenAiProviderProcessor openAiProviderProcessor;
     private final TelegramCaloriesBotKeyComponents components;
-    private final ObjectMapper mapper = new ObjectMapper();
+    // Маппер с поддержкой Java 8 Time API (даты блюд в JSON для ИИ)
+    private final ObjectMapper mapper = new ObjectMapper()
+            .registerModule(new JavaTimeModule())
+            .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
+    /**
+     * Все данные пользователя за период, загруженные одним заходом.
+     * Передаётся во все шаги построения отчёта, чтобы не ходить в БД повторно.
+     */
+    private record ReportData(
+            Long userId,
+            Instant from,
+            Instant to,
+            List<Dish> dishes,
+            List<UserNutritionProfileEntry> targets,
+            List<WeightEntry> weights,
+            UserNutritionProfile profile,
+            UserSettings settings
+    ) {
+        ZoneId zoneId() {
+            return settings.getZoneId();
+        }
+    }
 
     // --- ПУБЛИЧНОЕ API ---
 
@@ -78,27 +106,24 @@ public class ReportService {
     @RequiresFeature(value = BotFeature.REPORT_PDF_WEEK, botIdentifier = BotIdentifier.CALORIE_BOT)
     public AccessResult<byte[]> buildWeeklyDeepPdfReportOrNull(Instant from, Instant to, Long userId) {
         try {
-            List<Dish> dishes = dishService.getAllDishedByUserIdAndPeriod(userId, from, to);
-            List<UserNutritionProfileEntry> userNutritionEntries = userNutritionProfileEntryService.getAllByUserId(userId);
-            UserSettings userSettings = userSettingsService.getOrCreate(userId);
-            ZoneId zoneId = userSettings.getZoneId();
-
-            String aiAnalysis = getWeeklyDeepReport(from, to, userId);
             String template = loadTemplateOrNull(WEEKLY_REPORT_TEMPLATE_PATH);
             if (template == null) return AccessResult.success(null);
 
-            Table dishesTable = ReportUtils.buildDetailedDishTable(dishes, userNutritionEntries, zoneId);
+            ReportData data = loadReportData(userId, from, to);
+            String aiAnalysis = getWeeklyDeepReport(data);
+
+            Table dishesTable = ReportUtils.buildDetailedDishTable(data.dishes(), data.targets(), data.zoneId());
             String dishesTableHtml = ReportUtils.tableToHtml(dishesTable);
 
             // Генерируем оба графика для глубокого отчета
-            String categoryChartHtml = ReportUtils.buildCategoryBarChartHtml(dishes);
-            String timingChartHtml = ReportUtils.buildHourlyCaloriesChartHtml(dishes, zoneId); // <--- Добавили
+            String categoryChartHtml = ReportUtils.buildCategoryBarChartHtml(data.dishes());
+            String timingChartHtml = ReportUtils.buildHourlyCaloriesChartHtml(data.dishes(), data.zoneId());
 
             String html = template
                     .replace("{{AI_ANALYSIS}}", escapeHtml(aiAnalysis))
                     .replace("{{DISHES_TABLE}}", dishesTableHtml)
                     .replace("{{CATEGORY_CHART}}", categoryChartHtml)
-                    .replace("{{TIMING_CHART}}", timingChartHtml); // <--- Заменили плейсхолдер
+                    .replace("{{TIMING_CHART}}", timingChartHtml);
 
             return AccessResult.success(renderPdfOrNull(html));
         } catch (Exception e) {
@@ -108,13 +133,58 @@ public class ReportService {
     }
 
     /**
+     * Генерирует ИИ-инсайт для страницы Insights (саммари или шаблоны поведения за период).
+     * Возвращает JSON-ответ ИИ как есть (структура зависит от типа) или null, если ИИ вернул не JSON.
+     */
+    public AccessResult<String> getAiInsightReport(AiInsightType type, Instant from, Instant to, Long userId) {
+        try {
+            ReportData data = loadReportData(userId, from, to);
+            String jsonContext = mapper.writeValueAsString(buildInsightPayload(data));
+
+            String request = switch (type) {
+                case WEEKLY_SUMMARY, MONTHLY_SUMMARY -> AI_REQUEST_INSIGHT_SUMMARY;
+                case PATTERNS_WEEK, PATTERNS_MONTH -> AI_REQUEST_INSIGHT_PATTERNS;
+            };
+            String periodLabel = "последние " + type.getPeriodDays() + " дней";
+
+            String prompt = AI_PERSONA + String.format(request, periodLabel, INSIGHT_LANGUAGE, jsonContext);
+            String response = stripCodeFence(fetchAiResponse(prompt, "AI INSIGHT " + type));
+
+            // Проверяем, что ИИ вернул валидный JSON — иначе в jsonb он всё равно не ляжет
+            mapper.readTree(response);
+            return AccessResult.success(response);
+        } catch (Exception e) {
+            log.error("Failed to build AI insight {} for user {}", type, userId, e);
+            return AccessResult.success(null);
+        }
+    }
+
+    /**
+     * Собирает пейлоад для инсайтов: блюда, профиль, таймзона и взвешивания за период.
+     */
+    private InsightPayloadRecord buildInsightPayload(ReportData data) {
+        LocalDate fromDate = data.from().atZone(data.zoneId()).toLocalDate();
+        LocalDate toDate = data.to().atZone(data.zoneId()).toLocalDate();
+
+        List<InsightPayloadRecord.WeightPoint> weights = data.weights().stream()
+                .filter(w -> w.getEntryDate() != null && w.getWeight() != null)
+                .filter(w -> !w.getEntryDate().isBefore(fromDate) && !w.getEntryDate().isAfter(toDate))
+                .map(w -> new InsightPayloadRecord.WeightPoint(w.getEntryDate(), w.getWeight()))
+                .toList();
+
+        return new InsightPayloadRecord(
+                data.dishes(),
+                data.profile(),
+                data.settings().getTimezoneId(),
+                weights
+        );
+    }
+
+    /**
      * Получает текстовый анализ за неделю от ИИ.
      */
-    private String getWeeklyDeepReport(Instant from, Instant to, Long userId) {
-        List<Dish> dishes = dishService.getAllDishedByUserIdAndPeriod(userId, from, to);
-        UserNutritionProfile profile = userNutritionProfileService.getOrCreateProfile(userId);
-
-        String prompt = AI_PERSONA + String.format(WEEK_AI_REQUEST, dishes.toString(), profile.toString());
+    private String getWeeklyDeepReport(ReportData data) {
+        String prompt = AI_PERSONA + String.format(WEEK_AI_REQUEST, data.dishes().toString(), data.profile().toString());
         return fetchAiResponse(prompt, "WEEKLY DEEP REPORT");
     }
 
@@ -145,7 +215,7 @@ public class ReportService {
     public AccessResult<byte[]> buildPdfReportOrNull(Instant from, Instant to, Long userId) {
         try {
             // 1. Сбор контекста (все данные и ответы ИИ в одном объекте)
-            ReportContext context = gatherReportContext(from, to, userId);
+            ReportContext context = gatherReportContext(loadReportData(userId, from, to));
             // 2. Заполнение HTML-шаблона данными
             String filledHtml = fillTemplateOrNull(context);
             if (filledHtml == null) return AccessResult.success(null);
@@ -160,32 +230,37 @@ public class ReportService {
     // --- ЛОГИКА СБОРА ДАННЫХ (GATHERING) ---
 
     /**
-     * Агрегирует данные из разных источников для подготовки отчета.
+     * Загружает из БД все данные пользователя за период — один раз на весь отчёт.
      */
-    private ReportContext gatherReportContext(Instant from, Instant to, Long userId) throws JsonProcessingException {
-        // Получаем блюда один раз для всех нужд
-        List<Dish> dishes = dishService.getAllDishedByUserIdAndPeriod(userId, from, to);
-
-        ReportResponseRecord periodAnalysis = getPeriodReport(from, to, userId);
-        AiPatternAnalysisResponse patternAnalysis = getNutritionReportByPeriod(from, to, userId);
-
-        // Передаем dishes в методы построения таблиц (если нужно) или используем здесь
-        Table weeklyTable = ReportUtils.buildPeriodReportPerWeek(
-                dishes,
+    private ReportData loadReportData(Long userId, Instant from, Instant to) {
+        return new ReportData(
+                userId, from, to,
+                dishService.getAllDishedByUserIdAndPeriod(userId, from, to),
+                userNutritionProfileEntryService.getAllByUserId(userId),
                 weightEntryService.getAllWeightHistory(userId),
-                userSettingsService.getOrCreate(userId),
-                from, to
+                userNutritionProfileService.getOrCreateProfile(userId),
+                userSettingsService.getOrCreate(userId)
+        );
+    }
+
+    /**
+     * Агрегирует данные и ответы ИИ для подготовки отчета.
+     */
+    private ReportContext gatherReportContext(ReportData data) throws JsonProcessingException {
+        ReportResponseRecord periodAnalysis = getPeriodReport(data);
+        AiPatternAnalysisResponse patternAnalysis = getNutritionReportByPeriod(data);
+
+        Table weeklyTable = ReportUtils.buildPeriodReportPerWeek(
+                data.dishes(), data.weights(), data.settings(), data.from(), data.to()
+        );
+        Table weightTable = ReportUtils.buildWeightHistoryTable(
+                data.weights(), data.from(), data.to(), data.zoneId()
         );
 
-        List<WeightEntry> weightHistory = weightEntryService.getAllWeightHistory(userId);
-        ZoneId zoneId = userSettingsService.getOrCreate(userId).getZoneId();
-        Table weightTable = ReportUtils.buildWeightHistoryTable(weightHistory, from, to, zoneId);
-
         // Генерируем HTML диаграммы
-        String categoryChartHtml = ReportUtils.buildCategoryBarChartHtml(dishes);
-        String timingChartHtml = ReportUtils.buildHourlyCaloriesChartHtml(dishes, zoneId);
+        String categoryChartHtml = ReportUtils.buildCategoryBarChartHtml(data.dishes());
+        String timingChartHtml = ReportUtils.buildHourlyCaloriesChartHtml(data.dishes(), data.zoneId());
 
-        // Предполагаем, что вы добавили поле categoryChart в ваш record ReportContext
         return new ReportContext(
                 periodAnalysis.text(),
                 periodAnalysis.table(),
@@ -201,15 +276,15 @@ public class ReportService {
      * Запрашивает у ИИ детальный разбор пищевых привычек.
      * Отправляет данные в формате JSON для точного анализа.
      */
-    private AiPatternAnalysisResponse getNutritionReportByPeriod(Instant from, Instant to, Long userId) throws JsonProcessingException {
+    private AiPatternAnalysisResponse getNutritionReportByPeriod(ReportData data) throws JsonProcessingException {
         // Подготовка объекта-пейлоада для сериализации в JSON
         var payload = new NutritionAnalysisPayloadRecord(
-                dishService.getAllDishedByUserIdAndPeriod(userId, from, to),
-                userNutritionProfileService.getOrCreateProfile(userId),
-                userSettingsService.getOrCreate(userId).getTimezoneId()
+                data.dishes(),
+                data.profile(),
+                data.settings().getTimezoneId()
         );
 
-        String jsonContext = getConfiguredMapper().writeValueAsString(payload);
+        String jsonContext = mapper.writeValueAsString(payload);
         String response = fetchAiResponse(String.format(AI_REQUEST_PATTERN_ANALYSIS, jsonContext), "Nutrition Report");
 
         // Маппинг JSON-ответа от ИИ обратно в Java-объект
@@ -220,31 +295,16 @@ public class ReportService {
      * Формирует отчет за период на основе ежедневных записей.
      * Отправляет таблицу данных в ИИ для получения текстовых выводов.
      */
-    private ReportResponseRecord getPeriodReport(Instant from, Instant to, Long userId) {
-        List<Dish> dishes = dishService.getAllDishedByUserIdAndPeriod(userId, from, to);
-        List<UserNutritionProfileEntry> targets = userNutritionProfileEntryService.getAllByUserId(userId);
-        List<WeightEntry> weightEntries = weightEntryService.getAllWeightHistory(userId);
-        UserSettings userSettings = userSettingsService.getOrCreate(userId);
-
+    private ReportResponseRecord getPeriodReport(ReportData data) {
         // Построение таблицы "День | Вес | Калории | Дефицит"
-        Table dailyTable = ReportUtils.buildPeriodReportPerDay(dishes, targets, weightEntries, userSettings, from, to);
+        Table dailyTable = ReportUtils.buildPeriodReportPerDay(
+                data.dishes(), data.targets(), data.weights(), data.settings(), data.from(), data.to()
+        );
 
         // Анализ текстового представления таблицы через ИИ
         String aiResponse = fetchAiResponse(String.format(AI_REQUEST_PREDICTION, dailyTable.print()), "PERIOD REPORT");
 
         return new ReportResponseRecord(dailyTable, aiResponse, "");
-    }
-
-    /**
-     * Создает таблицу с агрегированными данными по неделям (средние значения).
-     */
-    private Table buildWeeklyTable(Instant from, Instant to, Long userId) {
-        return ReportUtils.buildPeriodReportPerWeek(
-                dishService.getAllDishedByUserIdAndPeriod(userId, from, to),
-                weightEntryService.getAllWeightHistory(userId),
-                userSettingsService.getOrCreate(userId),
-                from, to
-        );
     }
 
     // --- РЕНДЕРИНГ И ШАБЛОНЫ ---
@@ -302,6 +362,20 @@ public class ReportService {
     }
 
     /**
+     * Срезает обёртку ```json ... ```, если ИИ всё-таки завернул ответ в markdown.
+     */
+    private String stripCodeFence(String response) {
+        if (response == null) return null;
+        String trimmed = response.strip();
+        if (!trimmed.startsWith("```")) return trimmed;
+
+        int firstLineEnd = trimmed.indexOf('\n');
+        int lastFence = trimmed.lastIndexOf("```");
+        if (firstLineEnd < 0 || lastFence <= firstLineEnd) return trimmed;
+        return trimmed.substring(firstLineEnd + 1, lastFence).strip();
+    }
+
+    /**
      * Загружает файл шаблона из папки ресурсов.
      */
     private String loadTemplateOrNull(String path) {
@@ -311,13 +385,5 @@ public class ReportService {
             log.error("Template loading failed: {}", path, e);
             return null;
         }
-    }
-
-    /**
-     * Настраивает маппер для корректной обработки дат (Java 8 Time API).
-     */
-    private ObjectMapper getConfiguredMapper() {
-        return mapper.registerModule(new JavaTimeModule())
-                .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
     }
 }

@@ -17,7 +17,9 @@ public enum ErrorStatus {
     USER_NOT_FOUND(HttpStatus.BAD_REQUEST, "User not found!" ),
     DISH_NOT_BELONG_USER(HttpStatus.BAD_REQUEST, "Dish not belong user!"),
     EMAIL_ALREADY_BUSY(HttpStatus.BAD_REQUEST, "Email is already busy!"),
-    SITE_ACCESS_DENIED(HttpStatus.FORBIDDEN, "The site is in closed testing. Access is by invitation only.")
+    SITE_ACCESS_DENIED(HttpStatus.FORBIDDEN, "The site is in closed testing. Access is by invitation only."),
+    AI_INSIGHT_TOO_FREQUENT(HttpStatus.TOO_MANY_REQUESTS, "The report was updated just now. Try again in a minute."),
+    AI_INSIGHT_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "AI could not build the report. Try again later.")
     ;
 
     private HttpStatus httpStatus;
