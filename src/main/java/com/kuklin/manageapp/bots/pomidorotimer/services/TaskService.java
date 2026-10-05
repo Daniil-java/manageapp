@@ -13,7 +13,6 @@ import com.kuklin.manageapp.bots.pomidorotimer.models.TaskDto;
 import com.kuklin.manageapp.bots.pomidorotimer.models.mappers.TaskMapper;
 import com.kuklin.manageapp.bots.pomidorotimer.models.mappers.UserMapper;
 import com.kuklin.manageapp.bots.pomidorotimer.models.task.Status;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
@@ -95,7 +94,6 @@ public class TaskService {
         taskRepository.deleteAllById(ids);
     }
 
-    @Transactional
     public List<TaskDto> generateSubtasksOrNull(TaskDto taskDto) {
         try {
             List<Task> taskList = getTaskList(taskDto.getName(), taskDto.getComment());
@@ -117,7 +115,6 @@ public class TaskService {
         }
     }
 
-    @Transactional
     public List<Task> generateSubtasksByIdOrNull(Long taskId) {
         try {
             Task task = getTaskByIdOrNull(taskId);

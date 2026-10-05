@@ -54,8 +54,10 @@ public class DishService {
 
     // --- Public Methods ---
 
+    // Методы с вызовом ИИ — без @Transactional: транзакция держала бы соединение с БД, пока ждём ответ (10–30 с).
+    // В транзакции только сохранение результата — saveDishes.
+
     //TODO Исправить на запрос премиума
-    @Transactional
     public List<DishDto> processPhotoAndGetListDto(Long userId, String photoBase64, String message) {
         String photoDataUrl = aiInputValidator.toPhotoDataUrl(photoBase64, message);
         aiRateLimiter.acquireOrThrow(userId);
@@ -80,7 +82,6 @@ public class DishService {
     }
 
 
-    @Transactional
     @RequiresFeature(value = BotFeature.DISH_AI_VISION, botIdentifier = BotIdentifier.CALORIE_BOT,
             forgiveEmptyOncePerDay = true)
     public AccessResult<List<Dish>> getDishDtoByPhoto(Long userId, String photoBase64, String message) {
@@ -94,13 +95,12 @@ public class DishService {
         return AccessResult.success(getDishListByAiResponseOrNull(userId, aiResponse));
     }
 
-    @Transactional
     public List<DishDto> getDishDtoByDescriptionOrNull(Long userId, String text) {
         aiInputValidator.validateText(text);
         aiRateLimiter.acquireOrThrow(userId);
         return DishDto.fromEntities(getDishByDescriptionOrNull(userId, text));
     }
-    @Transactional
+
     public List<Dish> getDishByDescriptionOrNull(Long userId, String text) {
         String aiResponse = openAiIntegrationService.fetchResponse(
                 telegramCaloriesBotKeyComponents.getAiKey(),
@@ -278,6 +278,16 @@ public class DishService {
         return dishRepository.findAllByUserIdAndCreatedBetween(userId, from, to);
     }
 
+    /**
+     * Сохраняет блюда, распознанные ИИ. Вызывается уже после ответа ИИ — транзакция короткая.
+     */
+    @Transactional
+    public List<Dish> saveDishes(Long userId, List<Dish> dishes) {
+        List<Dish> saved = dishRepository.saveAll(dishes);
+        userSettingsService.updateMealLastReminder(userId);
+        return saved;
+    }
+
     // --- Private Methods ---
 
     private List<Dish> getDishListByAiResponseOrNull(Long userId, String response) {
@@ -301,8 +311,8 @@ public class DishService {
                 }
             }
 
-            dishes = dishRepository.saveAll(dishes);
-            userSettingsService.updateMealLastReminder(userId);
+            // Через прокси, иначе @Transactional у saveDishes не сработает
+            dishes = selfProvider.getObject().saveDishes(userId, dishes);
 
             return dishes.isEmpty() ? null : dishes;
 

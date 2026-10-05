@@ -1,4 +1,10 @@
 ## 0.0.49 (в работе)
+[et-75] — Вызовы ИИ вне транзакций
+* Транзакция больше не открыта, пока ждём ответ ИИ (10–30 с, таймаут Feign — до 120 с): она держала соединение с БД, а квоты (REQUIRES_NEW) брали второе — 10 параллельных фото / отчётов могли выбрать пул Hikari и подвесить все запросы к БД.
+* DishService: с processPhotoAndGetListDto, getDishDtoByPhoto, getDishDtoByDescriptionOrNull, getDishByDescriptionOrNull снят @Transactional; блюда после ответа ИИ сохраняет короткий @Transactional saveDishes. CalorieReportUpdateHandler: снят @Transactional с класса (транзакция шла на ИИ, рендер PDF и отправку в Telegram). Pomidoro TaskService.generateSubtasks* — то же.
+* MetricsAiLogService.incrementForProvider: атомарный upsert (INSERT ... ON CONFLICT (date) DO UPDATE ... + 1) в REQUIRES_NEW. Раньше — чтение-изменение-запись в транзакции вызывающего: инкременты терялись, а в месячном отчёте блокировка общей строки за день держалась до конца отчёта и тормозила ИИ во всех ботах. getTodayLog больше не создаёт строку.
+* spring.jpa.open-in-view: false — HTTP-запрос не держит соединение с БД, пока ждёт ИИ.
+
 [et-75] — Инсайты и блюда без ИИ: потолки
 * В промпт инсайтов уходят не больше 1000 последних блюд за период (calorie.ai-input.insight-max-dishes, ~50 токенов на блюдо): ручными блюдами промпт больше не раздуть. Блюда без времени отбрасываются первыми, порядок для ИИ — по времени, как раньше.
 * Суточный лимит на блюда без ИИ — 1000 за последние 24 часа (calorie.dish-limits.per-day, DishLimitsProperties); считаются все блюда пользователя. API: POST /calorie/dishes и добавление из избранного — 429 DISH_DAILY_LIMIT; бот (избранное) — «Не удалось добавить блюдо». DishRepository.countByUserIdAndCreatedAfter.

@@ -11,6 +11,9 @@ spring:
     url: jdbc:postgresql://localhost:5453/manageapp
   jpa:
     database: postgresql
+    # Open Session in View выключен: иначе HTTP-запрос держит соединение с БД с первого обращения
+    # до конца ответа — в том числе пока ждёт ИИ (10–30 с). Ленивые связи читать только внутри @Transactional.
+    open-in-view: false
     properties:
       hibernate:
         format_sql: true

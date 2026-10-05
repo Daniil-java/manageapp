@@ -16,7 +16,6 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
@@ -32,7 +31,6 @@ import java.time.temporal.ChronoUnit;
 @Component
 @RequiredArgsConstructor
 @Slf4j
-@Transactional
 public class CalorieReportUpdateHandler implements CalorieBotUpdateHandler {
 
     private final CalorieTelegramBot calorieTelegramBot;

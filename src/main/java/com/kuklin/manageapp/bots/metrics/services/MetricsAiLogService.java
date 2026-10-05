@@ -6,6 +6,7 @@ import com.kuklin.manageapp.bots.metrics.entities.MetricsAiLog;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
@@ -18,64 +19,44 @@ public class MetricsAiLogService {
     private final MetricsAiLogRepository metricsAiLogRepository;
     private static final ZoneId HO_CHI_MINH_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
+    /**
+     * Счётчики за сегодня — только для чтения. Если запросов ещё не было, строку не создаём,
+     * возвращаем нулевые счётчики (строку создаёт {@link #incrementForProvider}).
+     */
     public MetricsAiLog getTodayLog() {
         LocalDate today = LocalDate.now(HO_CHI_MINH_ZONE);
 
-        MetricsAiLog logForToday = metricsAiLogRepository
+        return metricsAiLogRepository
                 .findByDate(today)
-                .orElseGet(() -> {
-                    MetricsAiLog created = new MetricsAiLog()
-                            .setDate(today)
-                            .setTotalAiRequestCount(0L)
-                            .setOpenAiRequestCount(0L)
-                            .setGeminiAiRequestCount(0L)
-                            .setClaudeAiRequestCount(0L)
-                            .setDeepSeekAiRequestCount(0L)
-                            .setYandexAiRequestCount(0L);
-
-                    return metricsAiLogRepository.save(created);
-                });
-        return logForToday;
+                .orElseGet(() -> new MetricsAiLog()
+                        .setDate(today)
+                        .setTotalAiRequestCount(0L)
+                        .setOpenAiRequestCount(0L)
+                        .setGeminiAiRequestCount(0L)
+                        .setClaudeAiRequestCount(0L)
+                        .setDeepSeekAiRequestCount(0L)
+                        .setYandexAiRequestCount(0L));
     }
 
     /**
      * Увеличивает счётчик по провайдеру и общий счётчик за сегодняшний день.
-     * Потокобезопасно за счёт пессимистической блокировки строки.
+     * <p>
+     * Вызывается перед каждым запросом к ИИ из всех ботов, а строка за день одна на всех.
+     * Поэтому:
+     * <ul>
+     * <li>инкремент — один атомарный upsert в БД: параллельные запросы не теряют обновления;</li>
+     * <li>REQUIRES_NEW — коммит сразу. Если вызывающий код в транзакции, блокировка строки
+     * не висит до её конца (пока ждём ИИ, рендерим PDF и т.д.) и не тормозит запросы к ИИ остальных.</li>
+     * </ul>
      */
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void incrementForProvider(ProviderVariant provider) {
-        // Берём строку за сегодня с блокировкой PESSIMISTIC_WRITE
-        MetricsAiLog logForToday = getTodayLog();
-
-        // общий счётчик
-        logForToday.setTotalAiRequestCount(increment(logForToday.getTotalAiRequestCount()));
-
-        // счётчик по конкретному провайдеру
-        if (provider != null) {
-            switch (provider) {
-                case OPENAI -> logForToday.setOpenAiRequestCount(
-                        increment(logForToday.getOpenAiRequestCount())
-                );
-                case GEMINI -> logForToday.setGeminiAiRequestCount(
-                        increment(logForToday.getGeminiAiRequestCount())
-                );
-                case CLAUDE -> logForToday.setClaudeAiRequestCount(
-                        increment(logForToday.getClaudeAiRequestCount())
-                );
-                case DEEPSEEK -> logForToday.setDeepSeekAiRequestCount(
-                        increment(logForToday.getDeepSeekAiRequestCount())
-                );
-                default -> {
-                    // на случай, если появится новый провайдер, о котором мы ещё не знаем
-                    log.debug("Provider {} not explicitly handled in MetricsAiLogService", provider);
-                }
-            }
-        }
-         metricsAiLogRepository.save(logForToday);
+        metricsAiLogRepository.increment(
+                LocalDate.now(HO_CHI_MINH_ZONE),
+                provider == ProviderVariant.OPENAI ? 1 : 0,
+                provider == ProviderVariant.GEMINI ? 1 : 0,
+                provider == ProviderVariant.CLAUDE ? 1 : 0,
+                provider == ProviderVariant.DEEPSEEK ? 1 : 0
+        );
     }
-
-    private long increment(Long current) {
-        return current == null ? 1L : current + 1L;
-    }
-
 }
