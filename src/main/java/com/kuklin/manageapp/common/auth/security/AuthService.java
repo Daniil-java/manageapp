@@ -6,6 +6,7 @@ import com.kuklin.manageapp.common.auth.dto.AuthResponse;
 import com.kuklin.manageapp.common.auth.dto.LoginRequest;
 import com.kuklin.manageapp.common.auth.dto.RegisterRequest;
 import com.kuklin.manageapp.common.auth.security.JwtService;
+import com.kuklin.manageapp.common.configurations.AuthProperties;
 import com.kuklin.manageapp.common.entities.AppUser;
 import com.kuklin.manageapp.common.entities.Role;
 import com.kuklin.manageapp.common.services.AppUserService;
@@ -32,9 +33,13 @@ public class AuthService {
     private final TelegramAuthService telegramAuthService;
     private final UserAuthIdentityService userAuthIdentityService;
     private final SiteAccessService siteAccessService;
+    private final AuthRateLimiter authRateLimiter;
+    private final AuthProperties authProperties;
 
     @Transactional
-    public AuthResponse register(RegisterRequest request) {
+    public AuthResponse register(RegisterRequest request, String clientIp) {
+        checkEmailPasswordEnabled();
+        authRateLimiter.acquireIpOrThrow(AuthRateLimiter.Action.REGISTER, clientIp);
         siteAccessService.checkEmail(request.email());
 
         if (appUserService.existsByEmail(request.email())) {
@@ -58,17 +63,21 @@ public class AuthService {
         return toAuthResponse(user);
     }
 
-    public AuthResponse login(LoginRequest request) {
+    public AuthResponse login(LoginRequest request, String clientIp) {
+        checkEmailPasswordEnabled();
+        authRateLimiter.acquireIpOrThrow(AuthRateLimiter.Action.LOGIN, clientIp);
         siteAccessService.checkEmail(request.email());
+        authRateLimiter.checkEmailNotLockedOrThrow(request.email());
 
-        // Одинаковое сообщение намеренно — не раскрываем, существует ли email
-        AppUser user = appUserService.findByEmail(request.email())
-                .orElseThrow(() -> new BadCredentialsException("Неверный email или пароль"));
-
-        if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
+        // Одинаковое сообщение намеренно — не раскрываем, существует ли email.
+        // Несуществующий email тоже считается неверным паролем — по той же причине
+        AppUser user = appUserService.findByEmail(request.email()).orElse(null);
+        if (user == null || !passwordEncoder.matches(request.password(), user.getPasswordHash())) {
+            authRateLimiter.recordFailedPassword(request.email());
             throw new BadCredentialsException("Неверный email или пароль");
         }
 
+        authRateLimiter.resetFailedPasswords(request.email());
         return toAuthResponse(user);
     }
 
@@ -78,7 +87,9 @@ public class AuthService {
      * без TelegramUser: человек мог ни разу не открывать бота.
      */
     @Transactional
-    public AuthResponse loginByTelegram(Map<String, Object> widgetData) {
+    public AuthResponse loginByTelegram(Map<String, Object> widgetData, String clientIp) {
+        authRateLimiter.acquireIpOrThrow(AuthRateLimiter.Action.TELEGRAM, clientIp);
+
         // Подпись считается по всем присланным полям, поэтому берём их как есть, без DTO
         Map<String, String> params = new HashMap<>();
         widgetData.forEach((key, value) -> {
@@ -111,6 +122,16 @@ public class AuthService {
                     .setLastname(params.get("last_name"));
         }
         return toAuthResponse(user);
+    }
+
+    /**
+     * Регистрация и вход по email + паролю выключены флагом auth.email-password.enabled,
+     * пока нет подтверждения email (код оставлен — включить обратно одной переменной окружения).
+     */
+    private void checkEmailPasswordEnabled() {
+        if (!authProperties.getEmailPassword().isEnabled()) {
+            throw new ErrorResponseException(ErrorStatus.EMAIL_AUTH_DISABLED);
+        }
     }
 
     private AuthResponse toAuthResponse(AppUser user) {

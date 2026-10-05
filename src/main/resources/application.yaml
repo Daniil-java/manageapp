@@ -83,6 +83,28 @@ calorie:
     per-day: 100                     # за последние 24 часа, без подписки
     per-day-premium: 300             # за последние 24 часа, с подпиской
 
+# Вход на сайт (/auth/*). Мини-аппу не затрагивает — там авторизация через initData.
+auth:
+  # Регистрация и вход по email + паролю. Выключено, пока нет подтверждения email:
+  # без него аккаунты можно плодить скриптом. Вход через Telegram работает всегда.
+  # Локально (демо-юзер) — AUTH_EMAIL_PASSWORD_ENABLED=true.
+  email-password:
+    enabled: ${AUTH_EMAIL_PASSWORD_ENABLED:false}
+  # Не больше max за последние window. IP клиента — из X-Real-IP / X-Forwarded-For от прокси Railway (ClientIpResolver).
+  rate-limit:
+    register:
+      max: 5
+      window: 1h
+    login:                           # попытки входа по паролю с одного IP
+      max: 20
+      window: 10m
+    telegram:
+      max: 20
+      window: 10m
+    failed-password-per-email:       # неверные пароли для одного email — с любых IP
+      max: 10
+      window: 15m
+
 jwt:
   secret: ${APP_JWT_SECRET}
   expiration: 86400000   # 24 часа

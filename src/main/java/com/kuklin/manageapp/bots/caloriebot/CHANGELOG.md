@@ -1,4 +1,10 @@
 ## 0.0.49 (в работе)
+[et-75] — Вход на сайт: только Telegram, лимиты на /auth/*
+* Регистрация и вход по email + паролю выключены флагом auth.email-password.enabled (AUTH_EMAIL_PASSWORD_ENABLED, по умолчанию false): без подтверждения email аккаунты можно плодить скриптом, а лимиты на ИИ — пользовательские. /auth/register и /auth/login отвечают 403 EMAIL_AUTH_DISABLED. Код не удалён — включается одной переменной окружения. Подтверждение email — в бэклоге.
+* AuthRateLimiter — лимиты по IP (application.yaml, auth.rate-limit): регистрация 5 в час, вход по паролю 20 за 10 минут, вход через Telegram 20 за 10 минут. Неверные пароли на один email — 10 за 15 минут с любых IP (несуществующий email считается так же, чтобы не раскрывать, есть ли он); удачный вход обнуляет счётчик. При превышении — 429 AUTH_RATE_LIMIT, в message — через сколько повторить. Окна скользящие, счётчики в памяти.
+* ClientIpResolver: IP клиента из X-Real-IP (Railway перезаписывает его настоящим IP), если там адрес инфраструктуры — первый внешний из X-Forwarded-For. Заголовкам верим, только если запрос пришёл от прокси (100.x — edge Railway, а также локальные / внутренние адреса). Глобальный server.forward-headers-strategy не включали — он меняет и схему / хост запроса (DomainUrlFilter, редиректы).
+* Добавлены юнит-тесты AuthRateLimiterTest, ClientIpResolverTest, AuthServiceTest.
+
 [et-75] — Квоты фич: атомарное списание и «бесплатная промашка» для фото
 * FeatureAccessAspect списывает попытку до вызова метода, а не после: CalorieAccessService.tryConsume → UPDATE ... SET used_count = used_count + 1 WHERE used_count < limit (UserFeatureUsageRepository.tryIncrementUsage). Раньше проверка (hasAccess) и списание шли раздельно, и пачка параллельных запросов проходила сверх лимита. Списание — в отдельной транзакции (REQUIRES_NEW): фиксируется сразу и не держит блокировку строки на время вызова ИИ. hasAccess удалён.
 * Попытка возвращается (refundUsage), если метод бросил исключение или вернул пустой результат — для отчётов (REPORT_DAY, REPORT_PDF_WEEK, REPORT_PDF_MONTH) и избранного всё как раньше: не получил результат — не списали.

@@ -37,7 +37,10 @@ public enum ErrorStatus {
     PHOTO_NOT_RECOGNIZED_NOT_COUNTED(HttpStatus.UNPROCESSABLE_ENTITY,
             "No food found in the photo. This scan wasn't counted, but the next unrecognized photo today will be. Take a clear, close-up photo of the dish."),
     PHOTO_NOT_RECOGNIZED_COUNTED(HttpStatus.UNPROCESSABLE_ENTITY,
-            "No food found in the photo. This scan was counted. Take a clear, close-up photo of the dish.")
+            "No food found in the photo. This scan was counted. Take a clear, close-up photo of the dish."),
+    // Вход на сайт (auth.*): лимиты по IP и неверным паролям; email + пароль выключен до подтверждения email
+    AUTH_RATE_LIMIT(HttpStatus.TOO_MANY_REQUESTS, "Too many attempts. Try again later."),
+    EMAIL_AUTH_DISABLED(HttpStatus.FORBIDDEN, "Sign-up and sign-in with email are temporarily unavailable. Sign in with Telegram.")
     ;
 
     private HttpStatus httpStatus;
