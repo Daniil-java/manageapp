@@ -47,13 +47,17 @@ public class DishService {
     private final CalorieAccessService calorieAccessService;
     private final TelegramUserService telegramUserService;
     private final ObjectProvider<DishService> selfProvider;
+    private final AiInputValidator aiInputValidator;
+    private final AiRateLimiter aiRateLimiter;
 
     // --- Public Methods ---
 
     //TODO Исправить на запрос премиума
     @Transactional
     public List<DishDto> processPhotoAndGetListDto(Long userId, String photoBase64, String message) {
-        AccessResult<List<Dish>> result = selfProvider.getIfAvailable().getDishDtoByPhoto(userId, "data:image/jpeg;base64," + photoBase64, message);
+        String photoDataUrl = aiInputValidator.toPhotoDataUrl(photoBase64, message);
+        aiRateLimiter.acquireOrThrow(userId);
+        AccessResult<List<Dish>> result = selfProvider.getIfAvailable().getDishDtoByPhoto(userId, photoDataUrl, message);
         try {
             List<Dish> dishes = result.getOrThrow();
             Optional<TelegramUser> optUser = telegramUserService.findByAppUserIdAndBotIdentifier(userId, BotIdentifier.CALORIE_BOT);
@@ -83,6 +87,8 @@ public class DishService {
 
     @Transactional
     public List<DishDto> getDishDtoByDescriptionOrNull(Long userId, String text) {
+        aiInputValidator.validateText(text);
+        aiRateLimiter.acquireOrThrow(userId);
         return DishDto.fromEntities(getDishByDescriptionOrNull(userId, text));
     }
     @Transactional
@@ -358,14 +364,20 @@ public class DishService {
         );
     }
     public List<DishDto> processVoiceAndGetListDto(Long tgUserId, String base64Audio, String format) {
+        AiInputValidator.VoiceInput voice = aiInputValidator.toVoiceInput(base64Audio, format);
+        // Одно обращение на голосовое, хотя ИИ вызывается дважды (расшифровка + анализ)
+        aiRateLimiter.acquireOrThrow(tgUserId);
         String request = openAiIntegrationService.fetchAudioResponse(
                 telegramCaloriesBotKeyComponents.getAiKey(),
-                Base64.getDecoder().decode(base64Audio),
+                voice.bytes(),
+                voice.fileName(),
+                voice.mimeType(),
                 BotIdentifier.CALORIE_BOT,
                 getClass().getSimpleName() + ": processVoice!"
         );
 
-        return getDishDtoByDescriptionOrNull(tgUserId, request);
+        // Расшифровку не проверяем лимитом текста: длину голоса уже ограничили
+        return DishDto.fromEntities(getDishByDescriptionOrNull(tgUserId, request));
     }
 
     @Transactional(readOnly = true)

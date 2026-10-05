@@ -52,7 +52,8 @@ class CalorieAiInsightServiceTest {
         when(userSettingsService.getOrCreate(USER_ID)).thenReturn(new UserSettings().setTimezoneId(ZONE.getId()));
         when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        service = new CalorieAiInsightService(repository, reportService, userSettingsService, new ObjectMapper());
+        service = new CalorieAiInsightService(repository, reportService, userSettingsService, new ObjectMapper(),
+                mock(AiRateLimiter.class));
     }
 
     // ── Чтение ─────────────────────────────────────────────

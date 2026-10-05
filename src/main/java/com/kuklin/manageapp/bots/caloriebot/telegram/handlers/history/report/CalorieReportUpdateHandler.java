@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.history.report;
 
+import com.kuklin.manageapp.bots.caloriebot.components.services.AiRateLimiter;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.MissingFeatureException;
 import com.kuklin.manageapp.bots.caloriebot.components.services.ReportService;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
@@ -38,6 +39,7 @@ public class CalorieReportUpdateHandler implements CalorieBotUpdateHandler {
     private final ReportService reportService;
     private final CalorieWeightHistoryUpdateHandler calorieWeightHistoryUpdateHandler;
     private final FeatureLimitNotifier featureLimitNotifier;
+    private final AiRateLimiter aiRateLimiter;
 
     private static final String MSG_CHOOSE_REPORT = "Выберите тип аналитики";
     private static final String CLB_DATA_ERROR = "Ошибка данных! Попробуйте повторить операцию позже!";
@@ -72,6 +74,15 @@ public class CalorieReportUpdateHandler implements CalorieBotUpdateHandler {
             if (parts.length < 2) return;
 
             ReportType reportType = ReportType.valueOf(parts[1]);
+
+            // Отчёты по дню / неделе / месяцу обращаются к ИИ, отчёт по весу — нет
+            if (reportType != ReportType.WEIGHT) {
+                AiRateLimiter.Decision decision = aiRateLimiter.tryAcquire(telegramUser.getAppUserId());
+                if (!decision.allowed()) {
+                    featureLimitNotifier.sendAiRateLimited(chatId, decision);
+                    return;
+                }
+            }
 
             calorieTelegramBot.sendChatActionTyping(chatId);
             // Обертка с индикацией загрузки

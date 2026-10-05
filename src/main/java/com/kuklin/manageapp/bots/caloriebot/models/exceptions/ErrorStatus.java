@@ -20,7 +20,19 @@ public enum ErrorStatus {
     SITE_ACCESS_DENIED(HttpStatus.FORBIDDEN, "The site is in closed testing. Access is by invitation only."),
     AI_INSIGHT_TOO_FREQUENT(HttpStatus.TOO_MANY_REQUESTS, "The report was updated just now. Try again in a minute."),
     AI_INSIGHT_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "AI could not build the report. Try again later."),
-    AI_INSIGHT_NOT_ENOUGH_DATA(HttpStatus.UNPROCESSABLE_ENTITY, "Not enough data yet. Log your meals for at least 3 days.")
+    AI_INSIGHT_NOT_ENOUGH_DATA(HttpStatus.UNPROCESSABLE_ENTITY, "Not enough data yet. Log your meals for at least 3 days."),
+    // Ограничения ввода для ИИ (calorie.ai-input) — в message подставляется конкретный лимит
+    TEXT_TOO_LONG(HttpStatus.BAD_REQUEST, "Text is too long."),
+    PHOTO_COMMENT_TOO_LONG(HttpStatus.BAD_REQUEST, "Photo comment is too long."),
+    IMAGE_TOO_LARGE(HttpStatus.PAYLOAD_TOO_LARGE, "Photo is too large."),
+    UNSUPPORTED_IMAGE_FORMAT(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "Unsupported photo format."),
+    AUDIO_TOO_LARGE(HttpStatus.PAYLOAD_TOO_LARGE, "Voice message is too long."),
+    UNSUPPORTED_AUDIO_FORMAT(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "Unsupported audio format."),
+    INVALID_FILE(HttpStatus.BAD_REQUEST, "The file is damaged or is not valid Base64."),
+    REQUEST_TOO_LARGE(HttpStatus.PAYLOAD_TOO_LARGE, "Request is too large."),
+    // Ограничение частоты обращений к ИИ (calorie.ai-rate-limit) — в message подставляется, через сколько повторить
+    AI_RATE_LIMIT(HttpStatus.TOO_MANY_REQUESTS, "Too many AI requests. Try again in a minute."),
+    AI_DAILY_LIMIT(HttpStatus.TOO_MANY_REQUESTS, "Daily AI limit reached. Try again later.")
     ;
 
     private HttpStatus httpStatus;

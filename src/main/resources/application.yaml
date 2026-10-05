@@ -65,6 +65,24 @@ security:
   domain-filter:
     allow-localhost: ${DOMAIN_FILTER_ALLOW_LOCALHOST:false}
 
+# Ограничения на ввод для ИИ (бот, мини-апп, сайт) — меняются только здесь.
+calorie:
+  ai-input:
+    text-max-length: 4096            # как одно сообщение Telegram — влезает рецепт
+    photo-comment-max-length: 1024   # как подпись к фото в Telegram
+    photo-max-size: 5MB
+    photo-formats: [jpeg, png, webp, gif]          # что принимает OpenAI Vision
+    voice-max-size: 3MB              # ~2 минуты даже при высоком битрейте
+    voice-max-duration: 2m           # бот: длительность голосового сообщает Telegram
+    voice-formats: [ogg, webm, mp4, m4a, mp3, wav] # бот — ogg, Android/Chrome — webm, iPhone — mp4
+    request-max-size: 8MB            # тело любого запроса: фото 5 МБ в Base64 ≈ 6,7 МБ
+  # Сколько обращений к ИИ может сделать пользователь: текст, фото, голос, отчёты, инсайты.
+  # Одно действие = одно обращение (голос = расшифровка + анализ, но считается за одно).
+  ai-rate-limit:
+    per-minute: 10                   # за последние 60 секунд — защита от скриптов
+    per-day: 100                     # за последние 24 часа, без подписки
+    per-day-premium: 300             # за последние 24 часа, с подпиской
+
 jwt:
   secret: ${APP_JWT_SECRET}
   expiration: 86400000   # 24 часа

@@ -1,6 +1,7 @@
 package com.kuklin.manageapp.common.auth;
 
 import com.kuklin.manageapp.bots.caloriebot.components.services.security.DomainUrlFilter;
+import com.kuklin.manageapp.bots.caloriebot.components.services.security.RequestSizeLimitFilter;
 import com.kuklin.manageapp.bots.caloriebot.components.services.security.TelegramAuthFilter;
 import com.kuklin.manageapp.common.auth.security.CustomUserDetailsService;
 import com.kuklin.manageapp.common.auth.security.JwtAuthenticationFilter;
@@ -34,6 +35,7 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtFilter;
     private final DomainUrlFilter domainUrlFilter;
     private final TelegramAuthFilter telegramAuthFilter;
+    private final RequestSizeLimitFilter requestSizeLimitFilter;
     private final CustomUserDetailsService userDetailsService;
 
     @Bean
@@ -80,6 +82,8 @@ public class SecurityConfig {
 
                 // Порядок фильтров очень важен!
                 .addFilterBefore(domainUrlFilter, UsernamePasswordAuthenticationFilter.class)
+                // После CorsFilter: ответ 413 должен уйти с CORS-заголовками, иначе фронт увидит «сетевую ошибку»
+                .addFilterBefore(requestSizeLimitFilter, DomainUrlFilter.class)
                 .addFilterAfter(telegramAuthFilter, DomainUrlFilter.class)
                 .addFilterAfter(jwtFilter, TelegramAuthFilter.class);
 
@@ -119,6 +123,13 @@ public class SecurityConfig {
     @Bean
     public FilterRegistrationBean<TelegramAuthFilter> telegramAuthFilterRegistration(TelegramAuthFilter filter) {
         FilterRegistrationBean<TelegramAuthFilter> reg = new FilterRegistrationBean<>(filter);
+        reg.setEnabled(false);
+        return reg;
+    }
+
+    @Bean
+    public FilterRegistrationBean<RequestSizeLimitFilter> requestSizeLimitFilterRegistration(RequestSizeLimitFilter filter) {
+        FilterRegistrationBean<RequestSizeLimitFilter> reg = new FilterRegistrationBean<>(filter);
         reg.setEnabled(false);
         return reg;
     }

@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram;
 
+import com.kuklin.manageapp.bots.caloriebot.components.services.AiRateLimiter;
 import com.kuklin.manageapp.bots.caloriebot.components.services.PlanFeatureService;
 import com.kuklin.manageapp.bots.caloriebot.entities.PlanFeature;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.BotFeature;
@@ -14,7 +15,8 @@ import static com.kuklin.manageapp.bots.caloriebot.components.services.CalorieAc
 
 /**
  * Единая точка уведомления пользователя о том, что лимит функции исчерпан.
- * Используется всеми обработчиками бота, которые получают отказ от {@link com.kuklin.manageapp.bots.caloriebot.components.RequiresFeature}.
+ * Используется всеми обработчиками бота, которые получают отказ от {@link com.kuklin.manageapp.bots.caloriebot.components.RequiresFeature}
+ * или от {@link AiRateLimiter} (слишком частые обращения к ИИ).
  */
 @Component
 @RequiredArgsConstructor
@@ -24,6 +26,36 @@ public class FeatureLimitNotifier {
 
     public void sendLimitReached(Long chatId, BotFeature feature) {
         calorieTelegramBot.sendReturnedMessage(chatId, buildMessage(feature), getSubscriptionKeyboard(), null);
+    }
+
+    /**
+     * Лимит обращений к ИИ (AiRateLimiter): за минуту — просим подождать,
+     * за сутки без подписки — предлагаем подписку (у неё лимит выше).
+     */
+    public void sendAiRateLimited(Long chatId, AiRateLimiter.Decision decision) {
+        if (decision.reason() == AiRateLimiter.Reason.MINUTE) {
+            calorieTelegramBot.sendReturnedMessage(chatId, String.format(
+                    "⏳ Слишком много запросов подряд. Подождите %d сек. и попробуйте снова.",
+                    decision.retryAfterSeconds()));
+            return;
+        }
+
+        String message = String.format(
+                "🔒 Достигнут лимит запросов к ИИ: %d за сутки. Следующий запрос будет доступен через %s.",
+                decision.dailyLimit(), formatWait(decision.retryAfterSeconds()));
+        if (decision.premium()) {
+            calorieTelegramBot.sendReturnedMessage(chatId, message);
+        } else {
+            calorieTelegramBot.sendReturnedMessage(chatId, message + "\n\nС подпиской лимит выше.",
+                    getSubscriptionKeyboard(), null);
+        }
+    }
+
+    /** 125 сек → "3 мин", 7300 сек → "2 ч 2 мин". */
+    private static String formatWait(long seconds) {
+        long minutes = (seconds + 59) / 60;
+        if (minutes < 60) return minutes + " мин";
+        return minutes / 60 + " ч " + minutes % 60 + " мин";
     }
 
     private String buildMessage(BotFeature feature) {

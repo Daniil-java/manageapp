@@ -32,7 +32,7 @@ public class ErrorResponse {
     public ErrorResponse(ErrorResponseException e, WebRequest request) {
         this.status = e.getErrorStatus().getHttpStatus().value();
         this.reasonPhrase = e.getErrorStatus().getHttpStatus().getReasonPhrase();
-        this.message = e.getErrorStatus().getMessage();
+        this.message = e.getClientMessage() != null ? e.getClientMessage() : e.getErrorStatus().getMessage();
         this.errorCode = e.getErrorStatus();
         this.path = ((ServletWebRequest) request).getRequest().getRequestURL().toString();
         this.timestamp = new Date();

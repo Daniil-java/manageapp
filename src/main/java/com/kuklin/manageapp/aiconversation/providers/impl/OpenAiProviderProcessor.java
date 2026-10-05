@@ -137,11 +137,23 @@ public class OpenAiProviderProcessor implements ProviderProcessor, AiTextClient 
             BotIdentifier botIdentifier,
             String uniqLog
     ) {
+        return fetchAudioResponse(aiKey, content, "audio.ogg", "audio/ogg", botIdentifier, uniqLog);
+    }
+
+    // fileName важен: Whisper определяет формат аудио по расширению (audio.webm, audio.mp4, ...)
+    public String fetchAudioResponse(
+            String aiKey,
+            byte[] content,
+            String fileName,
+            String contentType,
+            BotIdentifier botIdentifier,
+            String uniqLog
+    ) {
         log.info(botIdentifier + "AUDIO! Uniq log: " + uniqLog);
         MultipartFile multipartFile = new ByteArrayMultipartFile(
                 "file-rus-or-eng-language",
-                "audio.ogg",
-                "audio/ogg",
+                fileName,
+                contentType,
                 content
         );
 

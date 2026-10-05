@@ -1,4 +1,15 @@
 ## 0.0.49 (в работе)
+[et-75] — Защита ИИ-токенов: лимиты размера и формата ввода
+* Все лимиты — в одном месте: application.yaml, блок calorie.ai-input (AiInputLimitsProperties). Текст 4096 символов (как сообщение Telegram), подпись к фото 1024, фото 5 МБ, голос 3 МБ (≈2 мин), голос в боте ≤ 2 мин, тело любого запроса 8 МБ.
+* AiInputValidator проверяет ввод до вызова ИИ: POST /calorie/dishes/text, /photo, /voice. Формат фото определяется по содержимому (jpeg, png, webp, gif), а не захардкожен как image/jpeg; HEIC отклоняется. Формат голоса — белый список (ogg, webm, mp4, m4a, mp3, wav), принимается и расширение, и MIME (audio/webm;codecs=opus).
+* Голос из API теперь уходит в Whisper с реальным форматом (раньше всегда audio.ogg — webm/mp4 могли не распознаться). Новая перегрузка OpenAiProviderProcessor.fetchAudioResponse с fileName и contentType.
+* Бот: голосовое длиннее лимита отклоняется до скачивания и вызова ИИ — с сообщением пользователю.
+* RequestSizeLimitFilter: 413 по Content-Length сразу; тело без Content-Length (chunked) обрывается при чтении. Стоит после CorsFilter — ответ приходит с CORS-заголовками.
+* AiRateLimiter — сколько раз пользователь может обращаться к ИИ: не больше 10 за 60 секунд и 100 за 24 часа (300 с подпиской). Настройки — application.yaml, calorie.ai-rate-limit. Окна скользящие, считаются попытки (неудачный вызов ИИ тоже). Одно действие — одно обращение: голос (расшифровка + анализ) считается за одно. Подписка проверяется в БД только после 100-го обращения. Счётчики в памяти (один экземпляр бэка), раз в час неактивные пользователи удаляются.
+* Где считается: API — /calorie/dishes/text, /photo, /voice (после проверки ввода), POST /calorie/reports/insights/{type}/refresh; бот — текст, фото, голос (DishUpdateHandler), отчёты день / неделя / месяц (CalorieReportUpdateHandler). Ежедневная сводка от планировщика не считается.
+* API при превышении — 429 AI_RATE_LIMIT (минутный) или AI_DAILY_LIMIT (суточный), в message — через сколько повторить. Бот — сообщение через FeatureLimitNotifier.sendAiRateLimited; при суточном лимите без подписки — кнопка подписки.
+* Новые ErrorStatus: TEXT_TOO_LONG, PHOTO_COMMENT_TOO_LONG (400), IMAGE_TOO_LARGE, AUDIO_TOO_LARGE, REQUEST_TOO_LARGE (413), UNSUPPORTED_IMAGE_FORMAT, UNSUPPORTED_AUDIO_FORMAT (415), INVALID_FILE (400). В message — конкретный лимит (ErrorResponseException.clientMessage).
+
 [et-74] — ИИ-инсайты для страницы Insights: саммари и шаблоны поведения
 * Добавлены эндпоинты: GET /calorie/reports/insights — последние инсайты всех типов одним запросом; GET /calorie/reports/insights/{type} — один инсайт (204, если ещё не генерировался); POST /calorie/reports/insights/{type}/refresh — сгенерировать заново через ИИ (10–30 с). GET ИИ не вызывает.
 * Типы (AiInsightType): WEEKLY_SUMMARY, MONTHLY_SUMMARY, PATTERNS_WEEK, PATTERNS_MONTH — саммари и шаблоны поведения за последние 7 / 30 дней в таймзоне пользователя. Ответ (AiInsightDto) содержит период, время генерации, флаг stale (недельный устаревает со следующего дня, месячный — через 7 дней) и payload — JSON-ответ ИИ объектом.

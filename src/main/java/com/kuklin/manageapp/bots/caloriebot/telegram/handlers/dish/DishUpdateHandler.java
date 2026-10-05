@@ -1,6 +1,8 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.dish;
 
 import com.kuklin.manageapp.aiconversation.models.enums.ChatModel;
+import com.kuklin.manageapp.bots.caloriebot.components.services.AiInputValidator;
+import com.kuklin.manageapp.bots.caloriebot.components.services.AiRateLimiter;
 import com.kuklin.manageapp.bots.caloriebot.components.services.AnalyticsService;
 import com.kuklin.manageapp.bots.caloriebot.components.services.CalorieAccessService;
 import com.kuklin.manageapp.bots.caloriebot.components.services.DishChoiceChatModelService;
@@ -48,6 +50,8 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
     private final CalorieAccessService calorieAccessService;
     private final AnalyticsService analyticsService;
     private final FeatureLimitNotifier featureLimitNotifier;
+    private final AiInputValidator aiInputValidator;
+    private final AiRateLimiter aiRateLimiter;
     private static final String PORTION_COUNT_CMD = "PC";
     private static final String PORTION_WEIGHT_CMD = "PW";
     private static final String VOICE_ERROR_MESSAGE =
@@ -60,6 +64,8 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
             "Это не съедобно!";
     private static final String SUB_MESSAGE =
             "Для использования бота необходимо приобрести подписку! Введите команду /plan";
+    private static final String VOICE_TOO_LONG_MESSAGE =
+            "Голосовое слишком длинное — максимум %s. Запиши, пожалуйста, покороче или опиши блюдо текстом.";
     private static final String ERROR_LIMIT_MSG = "Количество запросов, доступных вам, достигло предела!";
 
     @Override
@@ -90,6 +96,7 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
 
         // ==== ВЕТКА 1: пользователь прислал фото ====
         if (update.hasMessage() && update.getMessage().hasPhoto()) {
+            if (!tryAcquireAi(userId, update.getMessage().getChatId())) return null;
             try {
                 dishes = processPhotoOrNull(telegramUser, update.getMessage());
             } catch (MissingFeatureException e) {
@@ -98,7 +105,7 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
             }
             // ==== ВЕТКА 2: пользователь прислал голосовое ====
         } else if (update.hasMessage() && update.getMessage().hasVoice()) {
-            String request = processVoiceMessageOrNull(update.getMessage());
+            String request = processVoiceMessageOrNull(userId, update.getMessage());
             // Если не смогли распознать голос — дальше не идём
             if (request == null) {
                 return null;
@@ -106,7 +113,9 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
             dishes = processTextOrNull(userId, request, update.getMessage().getChatId());
             // ==== ВЕТКА 3: всё остальное считаем текстовым сообщением ====
         } else {
-            dishes = processTextOrNull(userId, update.getMessage().getText(), update.getMessage().getChatId());
+            String text = update.getMessage().getText();
+            if (text != null && !tryAcquireAi(userId, update.getMessage().getChatId())) return null;
+            dishes = processTextOrNull(userId, text, update.getMessage().getChatId());
         }
 
         if (dishes == null || dishes.isEmpty()) {
@@ -146,8 +155,27 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
         return dishService.getDishByDescriptionOrNull(userId, message);
     }
 
-    private String processVoiceMessageOrNull(Message message) {
+    /**
+     * Засчитывает обращение к ИИ. Если лимит исчерпан — отправляет пользователю сообщение и возвращает false.
+     */
+    private boolean tryAcquireAi(Long userId, Long chatId) {
+        AiRateLimiter.Decision decision = aiRateLimiter.tryAcquire(userId);
+        if (!decision.allowed()) {
+            featureLimitNotifier.sendAiRateLimited(chatId, decision);
+        }
+        return decision.allowed();
+    }
+
+    private String processVoiceMessageOrNull(Long userId, Message message) {
         Long chatId = message.getChatId();
+        // Длительность сообщает Telegram — проверяем до скачивания и до вызова ИИ
+        if (!aiInputValidator.isVoiceDurationAllowed(message.getVoice().getDuration())) {
+            calorieTelegramBot.sendReturnedMessage(chatId,
+                    String.format(VOICE_TOO_LONG_MESSAGE, aiInputValidator.voiceMaxDurationText()));
+            return null;
+        }
+        // Одно обращение на голосовое, хотя ИИ вызывается дважды (расшифровка + анализ)
+        if (!tryAcquireAi(userId, chatId)) return null;
         String request = telegramService.convertVoiceToTextOrNull(
                 calorieTelegramBot,
                 caloriesBotKeyComponents.getAiKey(),

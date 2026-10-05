@@ -41,6 +41,7 @@ public class CalorieAiInsightService {
     private final ReportService reportService;
     private final UserSettingsService userSettingsService;
     private final ObjectMapper objectMapper;
+    private final AiRateLimiter aiRateLimiter;
 
     // Генерации, которые идут прямо сейчас — защита от двойного нажатия. Ключ "userId:type"
     private final Set<String> inProgress = ConcurrentHashMap.newKeySet();
@@ -83,6 +84,7 @@ public class CalorieAiInsightService {
 
         try {
             checkCooldown(key);
+            aiRateLimiter.acquireOrThrow(userId);
 
             ZoneId zoneId = userSettingsService.getOrCreate(userId).getZoneId();
             LocalDate periodTo = LocalDate.now(zoneId);
