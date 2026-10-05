@@ -1,6 +1,7 @@
 package com.kuklin.manageapp.bots.caloriebot.components.services;
 
 import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcessor;
+import com.kuklin.manageapp.bots.caloriebot.configurations.AiInputLimitsProperties;
 import com.kuklin.manageapp.bots.caloriebot.configurations.TelegramCaloriesBotKeyComponents;
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
@@ -67,8 +68,11 @@ class ReportServiceAiInsightTest {
         TelegramCaloriesBotKeyComponents components = mock(TelegramCaloriesBotKeyComponents.class);
         when(components.getAiKey()).thenReturn(AI_KEY);
 
+        AiInputLimitsProperties aiInputLimits = new AiInputLimitsProperties();
+        aiInputLimits.setInsightMaxDishes(1000);
+
         service = new ReportService(dishService, profileService, entryService, settingsService,
-                weightService, ai, components);
+                weightService, ai, components, aiInputLimits);
     }
 
     @Test

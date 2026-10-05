@@ -10,6 +10,7 @@ import com.kuklin.manageapp.bots.caloriebot.entities.*;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.AccessResult;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.BotFeature;
 import com.kuklin.manageapp.bots.caloriebot.components.RequiresFeature;
+import com.kuklin.manageapp.bots.caloriebot.configurations.AiInputLimitsProperties;
 import com.kuklin.manageapp.bots.caloriebot.models.AiInsightType;
 import com.kuklin.manageapp.bots.caloriebot.models.airesponse.AiPatternAnalysisResponse;
 import com.kuklin.manageapp.bots.caloriebot.models.airesponse.InsightPayloadRecord;
@@ -78,6 +79,7 @@ public class ReportService {
     private final WeightEntryService weightEntryService;
     private final OpenAiProviderProcessor openAiProviderProcessor;
     private final TelegramCaloriesBotKeyComponents components;
+    private final AiInputLimitsProperties aiInputLimits;
     // Маппер с поддержкой Java 8 Time API (даты блюд в JSON для ИИ)
     private final ObjectMapper mapper = new ObjectMapper()
             .registerModule(new JavaTimeModule())
@@ -156,7 +158,8 @@ public class ReportService {
         }
 
         try {
-            var payload = InsightPayloadRecord.of(data.profile(), data.dishes(), data.weights(), data.zoneId());
+            var payload = InsightPayloadRecord.of(data.profile(), data.dishes(), data.weights(), data.zoneId(),
+                    aiInputLimits.getInsightMaxDishes());
             String jsonContext = mapper.writeValueAsString(payload);
 
             String request = switch (type) {

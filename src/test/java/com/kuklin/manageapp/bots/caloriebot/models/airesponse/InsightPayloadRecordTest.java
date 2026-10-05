@@ -20,12 +20,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 class InsightPayloadRecordTest {
 
     private static final ZoneId ZONE = ZoneId.of("Europe/Moscow"); // UTC+3
+    private static final int MAX_DISHES = 1000;
 
     @Test
     void mealTimeIsConvertedToUserZoneAndTruncatedToMinutes() {
         Dish dish = new Dish().setName("Soup").setCreated(Instant.parse("2026-10-01T21:15:42.123Z"));
 
-        InsightPayloadRecord payload = InsightPayloadRecord.of(profile(), List.of(dish), List.of(), ZONE);
+        InsightPayloadRecord payload = InsightPayloadRecord.of(profile(), List.of(dish), List.of(), ZONE, MAX_DISHES);
 
         assertThat(payload.dishes()).singleElement()
                 .extracting(InsightPayloadRecord.InsightDish::eatenAt)
@@ -33,11 +34,25 @@ class InsightPayloadRecordTest {
     }
 
     @Test
+    void onlyLatestDishesAreKeptWhenOverLimit() {
+        Dish oldest = new Dish().setName("Old").setCreated(Instant.parse("2026-10-01T05:00:00Z"));
+        Dish middle = new Dish().setName("Middle").setCreated(Instant.parse("2026-10-02T05:00:00Z"));
+        Dish newest = new Dish().setName("New").setCreated(Instant.parse("2026-10-03T05:00:00Z"));
+        Dish noTime = new Dish().setName("NoTime");
+
+        InsightPayloadRecord payload = InsightPayloadRecord.of(profile(), List.of(newest, noTime, oldest, middle), List.of(), ZONE, 2);
+
+        // Самые свежие два, по времени; блюдо без времени и самое старое отброшены
+        assertThat(payload.dishes()).extracting(InsightPayloadRecord.InsightDish::name)
+                .containsExactly("Middle", "New");
+    }
+
+    @Test
     void dishesAreSortedByTime() {
         Dish late = new Dish().setName("Dinner").setCreated(Instant.parse("2026-10-01T17:00:00Z"));
         Dish early = new Dish().setName("Breakfast").setCreated(Instant.parse("2026-10-01T05:00:00Z"));
 
-        InsightPayloadRecord payload = InsightPayloadRecord.of(profile(), List.of(late, early), List.of(), ZONE);
+        InsightPayloadRecord payload = InsightPayloadRecord.of(profile(), List.of(late, early), List.of(), ZONE, MAX_DISHES);
 
         assertThat(payload.dishes()).extracting(InsightPayloadRecord.InsightDish::name)
                 .containsExactly("Breakfast", "Dinner");
@@ -47,7 +62,7 @@ class InsightPayloadRecordTest {
     void dishWithoutTimeIsKeptWithNullTime() {
         Dish noTime = new Dish().setName("Snack");
 
-        InsightPayloadRecord payload = InsightPayloadRecord.of(profile(), List.of(noTime), List.of(), ZONE);
+        InsightPayloadRecord payload = InsightPayloadRecord.of(profile(), List.of(noTime), List.of(), ZONE, MAX_DISHES);
 
         assertThat(payload.dishes()).singleElement()
                 .satisfies(d -> {
@@ -66,7 +81,7 @@ class InsightPayloadRecordTest {
                 .toList());
         Collections.shuffle(weights);
 
-        InsightPayloadRecord payload = InsightPayloadRecord.of(profile(), List.of(), weights, ZONE);
+        InsightPayloadRecord payload = InsightPayloadRecord.of(profile(), List.of(), weights, ZONE, MAX_DISHES);
 
         assertThat(payload.weights()).hasSize(20);
         assertThat(payload.weights().get(0).date()).isEqualTo(start.plusDays(5));
@@ -83,7 +98,7 @@ class InsightPayloadRecordTest {
                 new WeightEntry().setEntryDate(LocalDate.of(2026, 10, 2)).setWeight(null)
         );
 
-        InsightPayloadRecord payload = InsightPayloadRecord.of(profile(), List.of(), weights, ZONE);
+        InsightPayloadRecord payload = InsightPayloadRecord.of(profile(), List.of(), weights, ZONE, MAX_DISHES);
 
         assertThat(payload.weights()).singleElement()
                 .extracting(InsightPayloadRecord.InsightWeight::weightKg)
@@ -97,7 +112,7 @@ class InsightPayloadRecordTest {
                 .setCurrentWeightKg(BigDecimal.valueOf(82.5))
                 .setProteinsNormGramsPerDay(120);
 
-        InsightPayloadRecord.InsightProfile p = InsightPayloadRecord.of(profile, List.of(), List.of(), ZONE).profile();
+        InsightPayloadRecord.InsightProfile p = InsightPayloadRecord.of(profile, List.of(), List.of(), ZONE, MAX_DISHES).profile();
 
         assertThat(p.goal()).isEqualTo(UserNutritionProfile.Goal.GAIN_WEIGHT);
         assertThat(p.heightCm()).isEqualTo(180);

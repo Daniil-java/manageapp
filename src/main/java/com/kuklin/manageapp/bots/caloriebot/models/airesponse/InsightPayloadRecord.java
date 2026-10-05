@@ -23,13 +23,22 @@ public record InsightPayloadRecord(InsightProfile profile,
     /** Сколько последних взвешиваний отдаём ИИ (могут быть и раньше периода — для динамики) */
     private static final int WEIGHTS_LIMIT = 20;
 
+    /**
+     * @param maxDishes сколько последних блюд отдать ИИ (calorie.ai-input.insight-max-dishes):
+     *                  блюда без ИИ ничем не ограничены, и без потолка ими можно раздуть промпт
+     */
     public static InsightPayloadRecord of(UserNutritionProfile profile,
                                           List<Dish> dishes,
                                           List<WeightEntry> weights,
-                                          ZoneId zoneId) {
+                                          ZoneId zoneId,
+                                          int maxDishes) {
         return new InsightPayloadRecord(
                 InsightProfile.of(profile),
                 dishes.stream()
+                        // Самые свежие maxDishes (блюда без времени — в последнюю очередь),
+                        // затем снова по времени — ИИ читает день за днём
+                        .sorted(Comparator.comparing(Dish::getCreated, Comparator.nullsLast(Comparator.reverseOrder())))
+                        .limit(maxDishes)
                         .sorted(Comparator.comparing(Dish::getCreated, Comparator.nullsLast(Comparator.naturalOrder())))
                         .map(dish -> InsightDish.of(dish, zoneId))
                         .toList(),

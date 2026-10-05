@@ -46,6 +46,8 @@ public class UserFavoriteDishService {
     }
 
     public DishDto addDishFromFavoriteDto(Long userId, Long favoriteId) {
+        // API: при суточном лимите — 429 с понятным текстом, а не пустой ответ
+        dishService.checkDailyDishLimitOrThrow(userId);
         return DishDto.fromEntity(addDishFromFavorite(userId, favoriteId));
     }
 

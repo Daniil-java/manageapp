@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcessor;
 import com.kuklin.manageapp.bots.caloriebot.components.RequiresFeature;
 import com.kuklin.manageapp.bots.caloriebot.components.repository.DishRepository;
+import com.kuklin.manageapp.bots.caloriebot.configurations.DishLimitsProperties;
 import com.kuklin.manageapp.bots.caloriebot.configurations.TelegramCaloriesBotKeyComponents;
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserFavoriteDish;
@@ -49,6 +50,7 @@ public class DishService {
     private final ObjectProvider<DishService> selfProvider;
     private final AiInputValidator aiInputValidator;
     private final AiRateLimiter aiRateLimiter;
+    private final DishLimitsProperties dishLimits;
 
     // --- Public Methods ---
 
@@ -169,6 +171,7 @@ public class DishService {
 
     @Transactional
     public DishDto addManualDishDto(Long userId, ManualDishRequest request) {
+        checkDailyDishLimitOrThrow(userId);
         Dish dish = new Dish()
                 .setUserId(userId)
                 .setName(request.getName().trim())
@@ -187,6 +190,26 @@ public class DishService {
         return DishDto.fromEntity(dishRepository.save(dish));
     }
 
+    /**
+     * Суточный лимит на блюда без ИИ (вручную, из избранного): 429 DISH_DAILY_LIMIT.
+     * Считаются все блюда за последние 24 часа — живой человек до лимита не дойдёт, а скрипт упрётся.
+     */
+    public void checkDailyDishLimitOrThrow(Long userId) {
+        if (isDailyDishLimitReached(userId)) {
+            throw new ErrorResponseException(ErrorStatus.DISH_DAILY_LIMIT, String.format(
+                    "Too many dishes added in the last 24 hours (max %d). Try again later.", dishLimits.getPerDay()));
+        }
+    }
+
+    private boolean isDailyDishLimitReached(Long userId) {
+        long added = dishRepository.countByUserIdAndCreatedAfter(userId, Instant.now().minus(Duration.ofDays(1)));
+        if (added >= dishLimits.getPerDay()) {
+            log.warn("Daily dish limit reached for user {}: {} in 24 hours", userId, added);
+            return true;
+        }
+        return false;
+    }
+
     private static int nvl(Integer value) {
         return value != null ? value : 0;
     }
@@ -194,6 +217,8 @@ public class DishService {
     @Transactional
     public Dish addDishOrNull(UserFavoriteDish userFavoriteDish) {
         if (userFavoriteDish.getUserId() == null) return null;
+        // Бот покажет «Не удалось добавить блюдо»; API проверяет лимит раньше и отвечает 429
+        if (isDailyDishLimitReached(userFavoriteDish.getUserId())) return null;
         Dish dish = UserFavoriteDish.toDish(userFavoriteDish);
         userSettingsService.updateMealLastReminder(dish.getUserId());
         return dishRepository.save(dish);

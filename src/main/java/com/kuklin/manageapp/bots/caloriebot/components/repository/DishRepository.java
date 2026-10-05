@@ -14,6 +14,9 @@ public interface DishRepository extends JpaRepository<Dish, Long> {
     List<Dish> findAllByUserId(Long userId);
     List<Dish> findAllByUserIdAndCreatedBetween(Long userId, Instant start, Instant end);
 
+    /** Сколько блюд пользователь добавил после момента after — для суточного лимита (calorie.dish-limits). */
+    long countByUserIdAndCreatedAfter(Long userId, Instant after);
+
     @Query("""
         select d.created
         from Dish d

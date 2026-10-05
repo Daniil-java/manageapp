@@ -33,4 +33,6 @@ public class AiInputLimitsProperties {
     private List<String> voiceFormats;
     /** Максимальный размер тела любого HTTP-запроса. */
     private DataSize requestMaxSize;
+    /** Сколько последних блюд за период отдаём ИИ в инсайтах — ручными блюдами промпт не раздуть. */
+    private int insightMaxDishes;
 }

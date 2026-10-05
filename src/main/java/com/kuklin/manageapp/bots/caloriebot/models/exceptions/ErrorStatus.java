@@ -38,6 +38,8 @@ public enum ErrorStatus {
             "No food found in the photo. This scan wasn't counted, but the next unrecognized photo today will be. Take a clear, close-up photo of the dish."),
     PHOTO_NOT_RECOGNIZED_COUNTED(HttpStatus.UNPROCESSABLE_ENTITY,
             "No food found in the photo. This scan was counted. Take a clear, close-up photo of the dish."),
+    // Блюда без ИИ (вручную, из избранного) — calorie.dish-limits.per-day
+    DISH_DAILY_LIMIT(HttpStatus.TOO_MANY_REQUESTS, "Too many dishes added in the last 24 hours. Try again later."),
     // Вход на сайт (auth.*): лимиты по IP и неверным паролям; email + пароль выключен до подтверждения email
     AUTH_RATE_LIMIT(HttpStatus.TOO_MANY_REQUESTS, "Too many attempts. Try again later."),
     EMAIL_AUTH_DISABLED(HttpStatus.FORBIDDEN, "Sign-up and sign-in with email are temporarily unavailable. Sign in with Telegram.")
