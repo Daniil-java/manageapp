@@ -20,11 +20,11 @@ public class SchedulerService {
         kworkScheduleProcessor.process();
     }
 
-    @Scheduled(cron = "0 */1 * * * *")
-    public void notificationScheduleProcessor() {
-        log.info(notificationScheduleProcessor.getSchedulerName() + " started working!");
-        notificationScheduleProcessor.process();
-    }
+//    @Scheduled(cron = "0 */1 * * * *")
+//    public void notificationScheduleProcessor() {
+//        log.info(notificationScheduleProcessor.getSchedulerName() + " started working!");
+//        notificationScheduleProcessor.process();
+//    }
 
 
 }
