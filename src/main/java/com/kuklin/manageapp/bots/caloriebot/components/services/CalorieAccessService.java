@@ -5,6 +5,7 @@ import com.kuklin.manageapp.bots.caloriebot.entities.UserFeatureUsage;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.BotFeature;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.FeatureLimitDto;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.FeatureLimitPeriod;
+import com.kuklin.manageapp.bots.caloriebot.models.feature.QuotaCharge;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import com.kuklin.manageapp.common.services.TelegramUserService;
@@ -44,13 +45,23 @@ public class CalorieAccessService {
     }
 
     /**
-     * Основной метод проверки доступа пользователя к конкретной функции.
-     * * @param userId ID пользователя в Telegram
+     * Проверяет доступ пользователя к функции и сразу списывает попытку, если у функции есть лимит.
+     * Заменил hasAccess: тот только читал счётчик и сравнивал с лимитом, а списывал аспект отдельно,
+     * после вызова ИИ, — параллельные запросы проходили сверх лимита. Теперь проверка лимита и списание —
+     * одна атомарная команда в БД ({@link UserFeatureUsageService#tryConsume}).
+     * <p>
+     * Кто вызывает: {@link com.kuklin.manageapp.bots.caloriebot.components.FeatureAccessAspect} — до вызова
+     * метода с @RequiresFeature. Если услуга потом не будет оказана, аспект возвращает попытку
+     * через {@link UserFeatureUsageService#refundUsage}.
+     *
+     * @param appUserId ID пользователя
      * @param botIdentifier Идентификатор бота (для мультибота)
      * @param feature Тип функции, к которой запрашивается доступ
-     * @return true, если доступ разрешен (лимит не исчерпан или безлимит)
+     * @return DENIED — фичи нет в тарифе или лимит исчерпан (метод не вызывать);
+     *         UNLIMITED — безлимит, ничего не списано (и возвращать нечего);
+     *         CHARGED — попытка списана (вернуть, если услуга не оказана)
      */
-    public boolean hasAccess(Long appUserId, BotIdentifier botIdentifier, BotFeature feature) {
+    public QuotaCharge tryConsume(Long appUserId, BotIdentifier botIdentifier, BotFeature feature) {
         // 1. Ищем настройки запрашиваемой фичи в текущем плане
         PlanFeature config = planFeatureService
                 .getFeatureByUserIdAndBotIdentifierAndFeatureOrNull(
@@ -59,33 +70,26 @@ public class CalorieAccessService {
         // Если фича не описана для плана, значит доступ к ней по умолчанию закрыт
         if (config == null) {
             log.warn("Feature {} not found! userId {}", feature, appUserId);
-            return false;
+            return QuotaCharge.DENIED;
         }
 
-        // 2. Проверка на "Безлимитный доступ"
-        // Доступ разрешен без проверки счетчиков, если период UNLIMITED или значение лимита отрицательное
-        if (config.getLimitPeriod().equals(FeatureLimitPeriod.UNLIMITED) || config.getLimitValue() == null || config.getLimitValue() <= -1 ) {
-            return true;
+        // 2. Безлимит (UNLIMITED или limitValue <= -1) — счётчик не ведём, в БД не ходим
+        if (isUnlimited(config)) {
+            return QuotaCharge.UNLIMITED;
         }
 
-        // 3. Проверка количественных лимитов (DAILY/LIFETIME и т.д.)
-        // Получаем текущую статистику использования.
-        // ВАЖНО: Внутри метода getUserFeatureUsage... заложена логика сброса счетчика
-        // при наступлении нового периода (например, нового дня для DAILY лимитов).
-        UserFeatureUsage usage = userFeatureUsageService
-                .getUserFeatureUsageByUserIdAndBotIdentifierAndBotFeatureOrCreate(
-                        appUserId, botIdentifier, feature, config.getLimitPeriod()
-                );
+        // 3. Количественный лимит (DAILY/MONTHLY/LIFETIME): списываем попытку, лимит проверяется
+        // условием в UPDATE. Сброс счётчика в новом периоде — там же, перед списанием
+        // (по таймзоне пользователя, с защитой от её смены).
+        boolean charged = userFeatureUsageService.tryConsume(
+                appUserId, botIdentifier, feature, config.getLimitPeriod(), config.getLimitValue());
 
-        // Разрешаем, если количество использований строго меньше установленного лимита
-        boolean canProceed = usage.getUsedCount() < config.getLimitValue();
-
-        if (!canProceed) {
-            log.info("User {} exhausted limit for feature {}: {}/{}",
-                    appUserId, feature, usage.getUsedCount(), config.getLimitValue());
+        // UPDATE не обновил строку — used_count уже равен лимиту
+        if (!charged) {
+            log.info("User {} exhausted limit for feature {}: {}", appUserId, feature, config.getLimitValue());
+            return QuotaCharge.DENIED;
         }
-
-        return canProceed;
+        return QuotaCharge.CHARGED;
     }
 
     public int getRemainingLimits(Long appUserId, BotFeature feature) {

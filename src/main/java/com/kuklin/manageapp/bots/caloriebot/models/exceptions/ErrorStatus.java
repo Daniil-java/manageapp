@@ -32,7 +32,12 @@ public enum ErrorStatus {
     REQUEST_TOO_LARGE(HttpStatus.PAYLOAD_TOO_LARGE, "Request is too large."),
     // Ограничение частоты обращений к ИИ (calorie.ai-rate-limit) — в message подставляется, через сколько повторить
     AI_RATE_LIMIT(HttpStatus.TOO_MANY_REQUESTS, "Too many AI requests. Try again in a minute."),
-    AI_DAILY_LIMIT(HttpStatus.TOO_MANY_REQUESTS, "Daily AI limit reached. Try again later.")
+    AI_DAILY_LIMIT(HttpStatus.TOO_MANY_REQUESTS, "Daily AI limit reached. Try again later."),
+    // ИИ не нашёл еду на фото (тариф с лимитом): первый раз за день попытку не списываем, дальше — списываем
+    PHOTO_NOT_RECOGNIZED_NOT_COUNTED(HttpStatus.UNPROCESSABLE_ENTITY,
+            "No food found in the photo. This scan wasn't counted, but the next unrecognized photo today will be. Take a clear, close-up photo of the dish."),
+    PHOTO_NOT_RECOGNIZED_COUNTED(HttpStatus.UNPROCESSABLE_ENTITY,
+            "No food found in the photo. This scan was counted. Take a clear, close-up photo of the dish.")
     ;
 
     private HttpStatus httpStatus;

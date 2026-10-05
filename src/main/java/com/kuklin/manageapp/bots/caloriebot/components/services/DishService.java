@@ -60,6 +60,12 @@ public class DishService {
         AccessResult<List<Dish>> result = selfProvider.getIfAvailable().getDishDtoByPhoto(userId, photoDataUrl, message);
         try {
             List<Dish> dishes = result.getOrThrow();
+            // ИИ не нашёл еду — сообщаем, засчитана ли попытка (тариф с лимитом). Безлимит — как раньше, пустой список.
+            switch (result.emptyResultCharge()) {
+                case FORGIVEN -> throw new ErrorResponseException(ErrorStatus.PHOTO_NOT_RECOGNIZED_NOT_COUNTED);
+                case CHARGED -> throw new ErrorResponseException(ErrorStatus.PHOTO_NOT_RECOGNIZED_COUNTED);
+                case NONE -> { }
+            }
             Optional<TelegramUser> optUser = telegramUserService.findByAppUserIdAndBotIdentifier(userId, BotIdentifier.CALORIE_BOT);
             if (optUser.isEmpty()) {
                 throw new ErrorResponseException(ErrorStatus.USER_NOT_FOUND);
@@ -73,7 +79,8 @@ public class DishService {
 
 
     @Transactional
-    @RequiresFeature(value = BotFeature.DISH_AI_VISION, botIdentifier = BotIdentifier.CALORIE_BOT)
+    @RequiresFeature(value = BotFeature.DISH_AI_VISION, botIdentifier = BotIdentifier.CALORIE_BOT,
+            forgiveEmptyOncePerDay = true)
     public AccessResult<List<Dish>> getDishDtoByPhoto(Long userId, String photoBase64, String message) {
         String aiPhotoPrompt = String.format(AI_PHOTO_REQUEST, message);
         String aiResponse = openAiIntegrationService.fetchPhotoResponse(

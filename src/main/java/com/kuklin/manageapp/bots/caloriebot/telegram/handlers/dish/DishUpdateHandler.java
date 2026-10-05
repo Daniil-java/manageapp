@@ -13,6 +13,7 @@ import com.kuklin.manageapp.bots.caloriebot.entities.DishChoiceChatModel;
 import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.DishDto;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.MissingFeatureException;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.AccessResult;
+import com.kuklin.manageapp.bots.caloriebot.models.feature.EmptyResultCharge;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.FeatureLimitNotifier;
 import com.kuklin.manageapp.bots.caloriebot.telegram.KeyboardCalorieUpdateHandler;
@@ -66,6 +67,13 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
             "Для использования бота необходимо приобрести подписку! Введите команду /plan";
     private static final String VOICE_TOO_LONG_MESSAGE =
             "Голосовое слишком длинное — максимум %s. Запиши, пожалуйста, покороче или опиши блюдо текстом.";
+    private static final String PHOTO_NOT_RECOGNIZED_NOT_COUNTED_MESSAGE =
+            "🤔 Не удалось найти еду на фото.\n\n"
+                    + "В этот раз попытку не засчитали, но следующее нераспознанное фото сегодня уже будет засчитано. "
+                    + "Фотографируйте блюдо крупно и при хорошем свете или опишите его текстом.";
+    private static final String PHOTO_NOT_RECOGNIZED_COUNTED_MESSAGE =
+            "🤔 Не удалось найти еду на фото. Попытка засчитана.\n\n"
+                    + "Фотографируйте блюдо крупно и при хорошем свете или опишите его текстом.";
     private static final String ERROR_LIMIT_MSG = "Количество запросов, доступных вам, достигло предела!";
 
     @Override
@@ -97,10 +105,25 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
         // ==== ВЕТКА 1: пользователь прислал фото ====
         if (update.hasMessage() && update.getMessage().hasPhoto()) {
             if (!tryAcquireAi(userId, update.getMessage().getChatId())) return null;
+            AccessResult<List<Dish>> photoResult;
             try {
-                dishes = processPhotoOrNull(telegramUser, update.getMessage());
+                photoResult = processPhotoOrNull(telegramUser, update.getMessage());
+                if (photoResult == null) return null; // фото не скачалось — сообщение уже отправлено
+                dishes = photoResult.getOrThrow();
             } catch (MissingFeatureException e) {
                 featureLimitNotifier.sendLimitReached(update.getMessage().getChatId(), e.getRequiredFeature());
+                return null;
+            }
+            // ИИ не нашёл еду на тарифе с лимитом — объясняем, засчитана ли попытка
+            if (photoResult.emptyResultCharge() != EmptyResultCharge.NONE) {
+                calorieTelegramBot.sendReturnedMessage(
+                        update.getMessage().getChatId(),
+                        photoResult.emptyResultCharge() == EmptyResultCharge.FORGIVEN
+                                ? PHOTO_NOT_RECOGNIZED_NOT_COUNTED_MESSAGE
+                                : PHOTO_NOT_RECOGNIZED_COUNTED_MESSAGE,
+                        KeyboardCalorieUpdateHandler.getCommandKeyboard(),
+                        null
+                );
                 return null;
             }
             // ==== ВЕТКА 2: пользователь прислал голосовое ====
@@ -190,17 +213,20 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
         return request;
     }
 
-    private List<Dish> processPhotoOrNull(TelegramUser telegramUser, Message message) throws MissingFeatureException {
+    /**
+     * Распознаёт блюда на фото. Возвращает null, если фото не удалось скачать (сообщение уже отправлено).
+     */
+    private AccessResult<List<Dish>> processPhotoOrNull(TelegramUser telegramUser, Message message) {
         try {
             String photoBase64 = telegramService.downloadPhotoFileBase64OrNull(calorieTelegramBot, message);
             AccessResult<List<Dish>> dishResult = dishService.getDishDtoByPhoto(
                     telegramUser.getAppUserId(), photoBase64, message.getCaption());
-            List<Dish> dishes = dishResult.getOrThrow();
-            calorieAccessService.incrementResponses(telegramUser);
-            if (dishes == null || dishes.isEmpty()) return null;
+            if (dishResult.isAllowed()) {
+                calorieAccessService.incrementResponses(telegramUser);
+            }
 //        processManyAiModels(dish.getId(), photoBase64, message);
 
-            return dishes;
+            return dishResult;
         } catch (IOException e) {
             log.error("Provider error!");
             calorieTelegramBot.sendReturnedMessage(message.getChatId(), "Один из провайдеров не смог обработать фото");

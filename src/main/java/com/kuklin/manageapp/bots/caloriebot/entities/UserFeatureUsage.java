@@ -43,4 +43,10 @@ public class UserFeatureUsage {
 
     // "Физическое" время последнего сброса (например, 2023-10-24 21:00:00 UTC)
     private LocalDateTime lastResetUtc;
+
+    /**
+     * День (в таймзоне пользователя), когда пустой ответ ИИ уже простили и попытку не списали.
+     * Прощается не больше одного раза в день — см. {@link com.kuklin.manageapp.bots.caloriebot.components.RequiresFeature#forgiveEmptyOncePerDay()}.
+     */
+    private LocalDate lastGraceLocalDate;
 }
