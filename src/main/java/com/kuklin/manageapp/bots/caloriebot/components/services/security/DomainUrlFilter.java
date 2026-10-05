@@ -24,7 +24,7 @@ public class DomainUrlFilter extends OncePerRequestFilter {
 
     private final Map<String, DomainRules> rulesByDomain = Map.of(
         "zefir.fit", new DomainRules(
-            List.of("/calorie/**", "/auth/**"),
+            List.of("/", "/calorie/**", "/auth/**"),
             List.of()
         ),
         "kuklin.dev", new DomainRules(

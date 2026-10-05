@@ -55,7 +55,7 @@ public class SecurityConfig {
                                 "/error", "/favicon.ico",
                                 "/swagger-ui/**", "/v3/api-docs/**",
                                 "/", "/resume", "/freelance", "/pomidorotimer", "/hhbot/skills",
-                                "/calorie/instruction", "/calorie/privacy", "/calorie/terms",
+                                "/calorie", "/calorie/landing/**", "/calorie/instruction", "/calorie/privacy", "/calorie/terms",
                                 "/calorie/utm-form", "/calorie/utm/ownertypes",
                                 "/assets/**", "/images/**").permitAll()
                         // API бота курения — личный инструмент без логинов, авторизации нет намеренно

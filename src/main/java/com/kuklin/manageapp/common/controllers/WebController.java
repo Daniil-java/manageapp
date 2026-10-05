@@ -1,12 +1,14 @@
 package com.kuklin.manageapp.common.controllers;
 
 import io.swagger.v3.oas.annotations.Hidden;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 
 @Controller
 @Hidden
 public class WebController {
+    private static final String CALORIE_DOMAIN = "zefir.fit";
 
     // /auth, /login, /register, /dashboard ниже отдают тестовые Thymeleaf-шаблоны, а "/" редиректит на
     // /dashboard. Решено оставить их в коде и защитить в SecurityConfig (hasRole("ADMIN")), а не удалять.
@@ -21,9 +23,12 @@ public class WebController {
         return "freelance";
     }
 
+    // zefir.fit — домен калорийного бота: в корне лендинг (/calorie), на kuklin.dev — личная страница
     @GetMapping
-    public String getPersonalPage() {
-        return "personal";
+    public String getRootPage(HttpServletRequest request) {
+        String host = request.getServerName().toLowerCase();
+        boolean calorieDomain = host.equals(CALORIE_DOMAIN) || host.endsWith("." + CALORIE_DOMAIN);
+        return calorieDomain ? "forward:/calorie" : "personal";
     }
 
     @GetMapping("/pomidorotimer")

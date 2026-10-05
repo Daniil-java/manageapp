@@ -1,4 +1,12 @@
 ## 0.0.49 (в работе)
+[et-76] — Лендинг zefir.fit
+* GET /calorie — лендинг (шаблон calorielanding.html) в стиле мини-аппа (токены и компоненты zef-fe, маскот-зефирка): живой «телефон» с кольцом калорий по приёмам пищи, демо распознавания на примерах, калькулятор нормы (та же формула, что UserNutritionProfileService.recalcTargets), бенто с компонентами мини-аппа, копия чата бота с рабочими кнопками порций, тарифы, FAQ. Без скриншотов и внешних скриптов, светлая и тёмная тема.
+* Статика лендинга — static/calorie/landing/ (на zefir.fit DomainUrlFilter не пускает /images/**), путь в permitAll. На zefir.fit он же открывается по корню: WebController отдаёт forward:/calorie по Host, на kuklin.dev в корне по-прежнему личная страница. DomainUrlFilter пускает «/» на zefir.fit, /calorie — в permitAll.
+* Тарифы и лимиты — из БД при рендере (CalorieLandingService): подписки в статусе AVAILABLE из pricing_plans, лимиты FREE и первого платного плана из plan_features, лимиты ИИ в сутки — из calorie.ai-rate-limit. Цены в Stars и рублях, выгода — к самому короткому плану той же валюты.
+* Кнопки ведут на t.me/calorydairy_bot; если задан calorie.landing.start-code (CALORIE_LANDING_START_CODE) — с ?start=<код> для UTM-статистики (ссылку создать в /calorie/utm-form).
+* Закрытый доступ: если задан calorie.landing.access-key (CALORIE_LANDING_ACCESS_KEY), лендинг открывается только по ссылке ?key=<значение> (https://zefir.fit/?key=...), дальше 30 дней по httpOnly-cookie zefir_landing; без ключа — 404, пока закрыт — X-Robots-Tag: noindex. Пусто — лендинг открыт всем.
+* Добавлен юнит-тест CalorieLandingServiceTest.
+
 [et-75] — Вызовы ИИ вне транзакций
 * Транзакция больше не открыта, пока ждём ответ ИИ (10–30 с, таймаут Feign — до 120 с): она держала соединение с БД, а квоты (REQUIRES_NEW) брали второе — 10 параллельных фото / отчётов могли выбрать пул Hikari и подвесить все запросы к БД.
 * DishService: с processPhotoAndGetListDto, getDishDtoByPhoto, getDishDtoByDescriptionOrNull, getDishByDescriptionOrNull снят @Transactional; блюда после ответа ИИ сохраняет короткий @Transactional saveDishes. CalorieReportUpdateHandler: снят @Transactional с класса (транзакция шла на ИИ, рендер PDF и отправку в Telegram). Pomidoro TaskService.generateSubtasks* — то же.
