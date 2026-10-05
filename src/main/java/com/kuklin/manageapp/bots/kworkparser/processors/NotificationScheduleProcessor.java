@@ -7,7 +7,6 @@ import com.kuklin.manageapp.bots.kworkparser.services.UrlService;
 import com.kuklin.manageapp.bots.kworkparser.services.UserKworkNotificationService;
 import com.kuklin.manageapp.bots.kworkparser.services.UserUrlService;
 import com.kuklin.manageapp.common.library.ScheduleProcessor;
-import com.kuklin.manageapp.common.services.TelegramService;
 import com.kuklin.manageapp.common.services.TelegramUserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
