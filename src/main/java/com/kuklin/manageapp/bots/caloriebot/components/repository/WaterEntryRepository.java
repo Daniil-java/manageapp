@@ -13,6 +13,11 @@ import java.util.Optional;
 public interface WaterEntryRepository extends JpaRepository<WaterEntry, Long> {
     Optional<WaterEntry> findTopByUserIdOrderByCreatedAtDesc(Long userId);
 
+    // Последняя отметка за день (для «Отменить»): по времени создания, при равенстве — по id
+    Optional<WaterEntry> findTopByUserIdAndEntryDateOrderByCreatedAtDescIdDesc(Long userId, LocalDate entryDate);
+
+    void deleteByIdAndUserId(Long id, Long userId);
+
     List<WaterEntry> findAllByUserIdAndEntryDate(Long userId, LocalDate date);
 
     List<WaterEntry> findAllByUserIdAndCreatedAtBetween(Long tgUserId, Instant toInstant, Instant toInstant1);

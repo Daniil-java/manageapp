@@ -36,6 +36,23 @@ public class WaterEntryController {
         return waterEntryService.getTodayTotal(appUserId);
     }
 
+    @DeleteMapping("/last")
+    @Operation(summary = "Отменить последнюю отметку",
+            description = "Удаляет последнюю запись о воде за сегодня (по таймзоне пользователя) и возвращает итог за сегодня. "
+                    + "Если сегодня записей нет — ничего не удаляет")
+    public Integer removeLastToday(@Parameter(hidden = true) @AuthenticationPrincipal Long appUserId) {
+        waterEntryService.removeLastTodayEntryOrNull(appUserId);
+        return waterEntryService.getTodayTotal(appUserId);
+    }
+
+    @DeleteMapping("/{waterId}")
+    @Operation(summary = "Удалить запись о воде", description = "Удаляет запись из истории воды")
+    public void deleteWater(
+            @Parameter(hidden = true) @AuthenticationPrincipal Long appUserId,
+            @Parameter(description = "ID записи воды") @PathVariable(name = "waterId") Long waterId) {
+        waterEntryService.deleteEntry(appUserId, waterId);
+    }
+
     @GetMapping("/period")
     @Operation(summary = "Вода за период", description = "Получение записей о воде за определенный период")
     public List<WaterEntryDto> getAllWeightByPeriod(

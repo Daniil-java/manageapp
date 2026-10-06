@@ -32,6 +32,8 @@ public class CalorieWaterUpdateHandler implements CalorieBotUpdateHandler {
     private final UserNutritionProfileService userNutritionProfileService;
 
     private static final Command CMD = Command.CALORIE_WATER;
+    // Отменить последнюю отметку за сегодня
+    private static final String UNDO_CMD = "UNDO";
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
@@ -55,6 +57,16 @@ public class CalorieWaterUpdateHandler implements CalorieBotUpdateHandler {
             return;
         }
         String cmd = extractCommandOrNull(data);
+
+        if (UNDO_CMD.equals(cmd)) {
+            waterEntryService.removeLastTodayEntryOrNull(telegramUser.getAppUserId());
+            refreshWaterInterface(
+                    telegramUser,
+                    query.getMessage().getChatId(),
+                    query.getMessage().getMessageId()
+            );
+            return;
+        }
 
         if (ADJ_CMD.equals(cmd)) {
             // Логика изменения данных остается только здесь
@@ -80,9 +92,11 @@ public class CalorieWaterUpdateHandler implements CalorieBotUpdateHandler {
                 .getOrCreateProfile(telegramUser.getAppUserId());
         Integer currentWater = analyticsService.getTodayWaterMl(telegramUser.getAppUserId());
 
+        WaterEntry last = waterEntryService.getLastTodayEntryOrNull(telegramUser.getAppUserId());
         InlineKeyboardMarkup markup = buildNumericKeyboard(
                 currentWater, 0,
-                -500, -100, 100, 500
+                -500, -100, 100, 500,
+                last == null ? null : last.getAmount()
         );
 
         String statusText = WaterEntry.getWaterStatusText(
@@ -110,7 +124,7 @@ public class CalorieWaterUpdateHandler implements CalorieBotUpdateHandler {
         //<hndlcmd><adj|set><value>
         try {
             String[] parts = data.split(TelegramBot.DEFAULT_DELIMETER);
-            if (parts[1].equals(ADJ_CMD)) {
+            if (parts[1].equals(ADJ_CMD) || parts[1].equals(UNDO_CMD)) {
                 return parts[1];
             } else {
                 return null;
@@ -123,7 +137,8 @@ public class CalorieWaterUpdateHandler implements CalorieBotUpdateHandler {
     public static InlineKeyboardMarkup buildNumericKeyboard(
             Integer currentWater, //Изменяемое число внутри счетчика
             Integer min,
-            Integer bigNeg, Integer neg, Integer pos, Integer bigPos
+            Integer bigNeg, Integer neg, Integer pos, Integer bigPos,
+            Integer lastAmount // последняя отметка за сегодня — для кнопки «Отменить», null — кнопки нет
     ) {
 
         String callbackBase = CMD.getCommandText()
@@ -134,23 +149,31 @@ public class CalorieWaterUpdateHandler implements CalorieBotUpdateHandler {
         List<InlineKeyboardButton> row1 = new ArrayList<>();
         List<InlineKeyboardButton> row2 = new ArrayList<>();
 
-        if (currentWater - bigNeg >= min) {
+        // Шаги отрицательные: показываем, только если итог не уйдёт ниже min
+        if (currentWater + bigNeg >= min) {
             row1.add(TelegramKeyboard.button(bigNeg.toString(), callbackBase + ADJ_CMD + TelegramBot.DEFAULT_DELIMETER + (bigNeg)));
         }
-        if (currentWater - neg >= min) {
+        if (currentWater + neg >= min) {
             row1.add(TelegramKeyboard.button(neg.toString(), callbackBase + ADJ_CMD + TelegramBot.DEFAULT_DELIMETER + (neg)));
         }
 
         row1.add(TelegramKeyboard.button("+" + pos.toString(), callbackBase + ADJ_CMD + TelegramBot.DEFAULT_DELIMETER + (pos)));
         row1.add(TelegramKeyboard.button("+" + bigPos.toString(), callbackBase + ADJ_CMD + TelegramBot.DEFAULT_DELIMETER + (bigPos)));
 
+        if (lastAmount != null) {
+            String sign = lastAmount > 0 ? "+" : "";
+            row0.add(TelegramKeyboard.button(
+                    "↩️ Отменить " + sign + lastAmount + " мл",
+                    callbackBase + UNDO_CMD));
+        }
+
         row2.add(TelegramKeyboard.button("Закрыть", Command.CALORIE_CLOSE.getCommandText()));
 
 //        <handlecmd><action><set|adj><value>
 
         return TelegramKeyboard.builder()
-                .row(row0)
                 .row(row1.toArray(new InlineKeyboardButton[0]))
+                .row(row0)
                 .row(row2)
                 .build();
     }

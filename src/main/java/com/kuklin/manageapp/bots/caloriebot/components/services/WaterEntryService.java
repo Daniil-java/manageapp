@@ -53,11 +53,30 @@ public class WaterEntryService {
                 .sum();
     }
 
-    // Удалить последнюю запись (кнопка "Отмена")
+    // Последняя отметка за сегодня (по таймзоне пользователя) или null
+    public WaterEntry getLastTodayEntryOrNull(Long userId) {
+        ZoneId userZone = userSettingsService.getOrCreate(userId).getZoneId();
+        return waterEntryRepository
+                .findTopByUserIdAndEntryDateOrderByCreatedAtDescIdDesc(userId, LocalDate.now(userZone))
+                .orElse(null);
+    }
+
+    /**
+     * Отменить последнюю отметку за сегодня (кнопка «Отменить» в боте и мини-аппе).
+     * Только сегодняшнюю: вчерашняя вода уже в итогах дня, её удаляют из истории.
+     * @return удалённая запись или null, если сегодня отметок нет
+     */
     @Transactional
-    public void removeLastEntry(Long userId) {
-        waterEntryRepository.findTopByUserIdOrderByCreatedAtDesc(userId)
-                .ifPresent(waterEntryRepository::delete);
+    public WaterEntry removeLastTodayEntryOrNull(Long userId) {
+        WaterEntry last = getLastTodayEntryOrNull(userId);
+        if (last != null) waterEntryRepository.delete(last);
+        return last;
+    }
+
+    // Удалить отметку из истории; чужую не удалит
+    @Transactional
+    public void deleteEntry(Long userId, Long entryId) {
+        waterEntryRepository.deleteByIdAndUserId(entryId, userId);
     }
 
     public List<WaterEntryDto> getAllWaterEntryByPeriod(Long tgUserId, LocalDate from, LocalDate to) {
