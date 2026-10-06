@@ -36,6 +36,8 @@ public class UserNutritionProfileDto {
     private Integer fatsNormGramsPerDay;
     private Integer carbsNormGramsPerDay;
     private Integer waterTargetMlPerDay;
+    // AUTO — вода по формуле (присланная игнорируется), MANUAL — waterTargetMlPerDay задаёт пользователь
+    private UserNutritionProfile.NormMode waterMode;
 
     public static UserNutritionProfile updateNutritionData(UserNutritionProfile profile, UserNutritionProfileDto dto) {
         return profile
@@ -62,7 +64,8 @@ public class UserNutritionProfileDto {
                 .setProteinsNormGramsPerDay(proteinsNormGramsPerDay)
                 .setFatsNormGramsPerDay(fatsNormGramsPerDay)
                 .setCarbsNormGramsPerDay(carbsNormGramsPerDay)
-                .setWaterTargetMlPerDay(waterTargetMlPerDay);
+                .setWaterTargetMlPerDay(waterTargetMlPerDay)
+                .setWaterMode(waterMode == null ? UserNutritionProfile.NormMode.AUTO : waterMode);
     }
 
     public static UserNutritionProfileDto fromEntity(UserNutritionProfile p) {
@@ -81,7 +84,8 @@ public class UserNutritionProfileDto {
                 .setProteinsNormGramsPerDay(p.getProteinsNormGramsPerDay())
                 .setFatsNormGramsPerDay(p.getFatsNormGramsPerDay())
                 .setCarbsNormGramsPerDay(p.getCarbsNormGramsPerDay())
-                .setWaterTargetMlPerDay(p.getWaterTargetMlPerDay());
+                .setWaterTargetMlPerDay(p.getWaterTargetMlPerDay())
+                .setWaterMode(p.getWaterMode());
     }
 
     public UserNutritionProfile mergeToEntity(UserNutritionProfile profile) {
@@ -104,6 +108,7 @@ public class UserNutritionProfileDto {
         if (fatsNormGramsPerDay != null) profile.setFatsNormGramsPerDay(fatsNormGramsPerDay);
         if (carbsNormGramsPerDay != null) profile.setCarbsNormGramsPerDay(carbsNormGramsPerDay);
         if (waterTargetMlPerDay != null) profile.setWaterTargetMlPerDay(waterTargetMlPerDay);
+        if (waterMode != null) profile.setWaterMode(waterMode);
 
         return profile;
     }

@@ -31,6 +31,9 @@ public class UserNutritionProfile {
     public static final Integer WEIGHT_MAX = 500;
     //Вода
     public static final Integer DEF_WATER_ML = 2000;
+    //Своя норма воды: как и калории — любое неотрицательное int
+    public static final Integer WATER_NORM_MIN = 0;
+    public static final Integer WATER_NORM_MAX = Integer.MAX_VALUE;
     //Ручная норма калорий: решает пользователь, ограничиваем только неотрицательностью и int
     public static final Integer CALORIES_NORM_MIN = 0;
     public static final Integer CALORIES_NORM_MAX = Integer.MAX_VALUE;
@@ -62,6 +65,11 @@ public class UserNutritionProfile {
     private Integer fatsNormGramsPerDay;
     private Integer carbsNormGramsPerDay;
     private Integer waterTargetMlPerDay;
+    // AUTO — норма воды по формуле (вес × мл/кг для активности), MANUAL — задана пользователем.
+    // Независима от normMode: можно свои калории и воду по весу, и наоборот
+    @Enumerated(EnumType.STRING)
+    @Column(name = "water_mode", nullable = false)
+    private NormMode waterMode = NormMode.AUTO;
     @CreationTimestamp
     private Instant createdAt;
     @UpdateTimestamp
@@ -88,6 +96,10 @@ public class UserNutritionProfile {
 
     public boolean isManualNorm() {
         return normMode == NormMode.MANUAL;
+    }
+
+    public boolean isManualWater() {
+        return waterMode == NormMode.MANUAL;
     }
 
     @Getter
@@ -153,6 +165,7 @@ public class UserNutritionProfile {
                 .setFatsNormGramsPerDay(this.fatsNormGramsPerDay)
                 .setCarbsNormGramsPerDay(this.carbsNormGramsPerDay)
                 .setWaterTargetMlPerDay(this.waterTargetMlPerDay)
+                .setWaterMode(this.waterMode)
                 .setCreatedAt(this.createdAt)
                 .setUpdatedAt(this.updatedAt);
     }
@@ -235,7 +248,9 @@ public class UserNutritionProfile {
                     .append(waterTargetMlPerDay)
                     .append(" мл (≈ ")
                     .append(String.format("%.1f", liters))
-                    .append(" л)\n");
+                    .append(" л)")
+                    .append(isManualWater() ? " ✍️ вручную" : "")
+                    .append("\n");
         }
 
         return sb.toString();
@@ -394,6 +409,7 @@ public class UserNutritionProfile {
         sb.append("fatsTarget: ").append(fatsNormGramsPerDay).append("\n");
         sb.append("carbsTarget: ").append(carbsNormGramsPerDay).append("\n");
         sb.append("waterTargetMl: ").append(waterTargetMlPerDay).append("\n");
+        sb.append("waterMode: ").append(waterMode).append("\n");
         sb.append("fillingState: ").append(userProfileFillingState);
         return sb.toString();
     }

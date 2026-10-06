@@ -15,6 +15,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
+
+import java.util.List;
 
 import static com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.CalorieNutritionProfileEditCallbackUpdateHandler.checkNewData;
 import static com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.CalorieNutritionProfileEditCallbackUpdateHandler.extractActionOrNull;
@@ -100,10 +104,8 @@ public abstract class AbstractNumericProfileEditFieldHandler
                 try {
                     //Обновляем данные
                     profile = patchProfile(profile);
-                    //Пересчитываем нормы КБЖУ (ручная норма калорий при этом сохраняется — NormMode.MANUAL)
-                    if (recalculatesNorm()) {
-                        profileService.recalculateAndSave(profile);
-                    }
+                    //Пересчитываем нормы КБЖУ (своя норма калорий и воды при этом сохраняется — NormMode.MANUAL)
+                    profileService.recalculateAndSave(profile);
                 } catch (UserNutritionProfileValidationException e) {
                     //Недопустимые данные
                     telegramBot.sendReturnedMessage(chatId, VALIDATION_ERROR);
@@ -115,24 +117,25 @@ public abstract class AbstractNumericProfileEditFieldHandler
             currentValue = value;
         }
 
-        telegramBot.sendEditMessage(
-                chatId,
-                buildText(profile),
-                messageId,
-                KeyboardTemplates.buildNumericKeyboard(
-                        command,
-                        action,
-                        currentValue,
-                        defaultValue,
-                        min,
-                        max,
-                        bigNeg,
-                        neg,
-                        pos,
-                        bigPos,
-                        action.getLabelFormat()
-                )
+        InlineKeyboardMarkup keyboard = KeyboardTemplates.buildNumericKeyboard(
+                command,
+                action,
+                currentValue,
+                defaultValue,
+                min,
+                max,
+                bigNeg,
+                neg,
+                pos,
+                bigPos,
+                action.getLabelFormat()
         );
+        List<InlineKeyboardButton> extra = extraRow(profile);
+        if (!extra.isEmpty()) {
+            keyboard.getKeyboard().add(extra);
+        }
+
+        telegramBot.sendEditMessage(chatId, buildText(profile), messageId, keyboard);
     }
 
     protected Integer extractValueOrNull(String data) {
@@ -155,8 +158,8 @@ public abstract class AbstractNumericProfileEditFieldHandler
 
     protected abstract String buildText(UserNutritionProfile profile);
 
-    /** Пересчитывать ли нормы после сохранения поля (false — поле само является нормой, например вода). */
-    protected boolean recalculatesNorm() {
-        return true;
+    /** Дополнительная строка кнопок под счётчиком (например, «↺ По формуле» у нормы воды). */
+    protected List<InlineKeyboardButton> extraRow(UserNutritionProfile profile) {
+        return List.of();
     }
 }

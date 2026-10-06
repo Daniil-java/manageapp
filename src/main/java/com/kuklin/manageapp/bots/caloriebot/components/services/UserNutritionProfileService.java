@@ -5,6 +5,7 @@ import com.kuklin.manageapp.bots.caloriebot.components.services.exceptions.Insuf
 import com.kuklin.manageapp.bots.caloriebot.components.services.exceptions.validation.InvalidAgeException;
 import com.kuklin.manageapp.bots.caloriebot.components.services.exceptions.validation.InvalidCaloriesNormException;
 import com.kuklin.manageapp.bots.caloriebot.components.services.exceptions.validation.InvalidHeightException;
+import com.kuklin.manageapp.bots.caloriebot.components.services.exceptions.validation.InvalidWaterNormException;
 import com.kuklin.manageapp.bots.caloriebot.components.services.exceptions.validation.InvalidWeightException;
 import com.kuklin.manageapp.bots.caloriebot.components.services.exceptions.validation.UserNutritionProfileValidationException;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
@@ -39,7 +40,8 @@ public class UserNutritionProfileService {
         UserNutritionProfile profile = getOrCreateProfile(userId);
 
         if (calories != null) {
-            profile.setCaloriesNormPerDay(calories);
+            // Своё число — иначе следующий пересчёт затрёт его формулой
+            profile.setNormMode(NormMode.MANUAL).setCaloriesNormPerDay(calories);
         } else {
             return null;
         }
@@ -56,7 +58,7 @@ public class UserNutritionProfileService {
         UserNutritionProfile profile = getOrCreateProfile(userId);
 
         if (water != null) {
-            profile.setWaterTargetMlPerDay(water);
+            profile.setWaterMode(NormMode.MANUAL).setWaterTargetMlPerDay(water);
         } else {
             return null;
         }
@@ -157,6 +159,7 @@ public class UserNutritionProfileService {
     @Transactional
     public UserNutritionProfile updateWaterTarget(Long userId, Integer waterTargetMlPerDay) {
         UserNutritionProfile profile = getOrCreateProfile(userId)
+                .setWaterMode(NormMode.MANUAL)
                 .setWaterTargetMlPerDay(waterTargetMlPerDay);
 
         // Ничего пересчитывать не надо, только обновляем поле
@@ -191,6 +194,11 @@ public class UserNutritionProfileService {
         if (profile.isManualNorm() && calories != null
                 && calories < CALORIES_NORM_MIN) {
             throw new InvalidCaloriesNormException(calories);
+        }
+
+        Integer water = profile.getWaterTargetMlPerDay();
+        if (profile.isManualWater() && water != null && water < WATER_NORM_MIN) {
+            throw new InvalidWaterNormException(water);
         }
     }
 
@@ -252,10 +260,11 @@ public class UserNutritionProfileService {
         // --- Carbs (остаток; при маленькой ручной норме белок может съесть всё — не уходим в минус) ---
         int carbs = Math.max(0, (caloriesTarget - proteins * 4 - fats * 9) / 4);
 
-        // --- Water --- (без веса/активности — оставляем как было)
-        Integer waterTarget = weightKg != null && profile.getActivityLevel() != null
-                ? (int) Math.round(weightKg.doubleValue() * profile.getActivityLevel().getWaterMlPerKg())
-                : profile.getWaterTargetMlPerDay();
+        // --- Water --- (своя норма или без веса/активности — оставляем как было)
+        Integer formulaWater = calcFormulaWaterOrNull(profile);
+        Integer waterTarget = profile.isManualWater() || formulaWater == null
+                ? profile.getWaterTargetMlPerDay()
+                : formulaWater;
 
         return new UserNutritionProfileDto()
                 .setCaloriesNormPerDay(caloriesTarget)
@@ -289,6 +298,15 @@ public class UserNutritionProfileService {
         bmrCalories *= profile.getGoal().getCoef();
 
         return (int) Math.round(bmrCalories);
+    }
+
+    /** Норма воды по формуле (вес × мл/кг для активности) или null, если нет веса или активности. */
+    public static Integer calcFormulaWaterOrNull(UserNutritionProfile profile) {
+        if (profile == null || profile.getCurrentWeightKg() == null || profile.getActivityLevel() == null) {
+            return null;
+        }
+        return (int) Math.round(
+                profile.getCurrentWeightKg().doubleValue() * profile.getActivityLevel().getWaterMlPerKg());
     }
 
     /** Норма калорий по формуле или null, если профиль не заполнен. */
@@ -335,6 +353,28 @@ public class UserNutritionProfileService {
             throws UserNutritionProfileValidationException, InsufficientProfileDataException {
         profile.setNormMode(UserNutritionProfile.NormMode.AUTO);
         return recalculateAndSave(profile);
+    }
+
+    /*
+     * Своя норма воды включается так: бот — кнопка «Норма воды» (WaterTargetProfileEditFieldHandler),
+     * API — PUT /profile с waterMode=MANUAL и waterTargetMlPerDay. Режим воды не зависит от режима калорий.
+     */
+
+    /**
+     * Вернуть воду по формуле (бот: «↺ По формуле» на экране нормы воды после подтверждения).
+     * Не зависит от калорий: считается, даже если для нормы калорий профиль ещё не заполнен.
+     */
+    @Transactional
+    public UserNutritionProfile switchToAutoWater(UserNutritionProfile profile)
+            throws UserNutritionProfileValidationException, InsufficientProfileDataException {
+        Integer formulaWater = calcFormulaWaterOrNull(profile);
+        if (formulaWater == null) throw new InsufficientProfileDataException("Вес и активность");
+
+        profile.setWaterMode(UserNutritionProfile.NormMode.AUTO)
+                .setWaterTargetMlPerDay(formulaWater);
+        profile = validateAndSave(profile);
+        userNutritionProfileEntryService.syncWithProfile(profile);
+        return profile;
     }
 
     //Проверка достаточности существующих данных или выброс ошибки

@@ -1,6 +1,7 @@
 package com.kuklin.manageapp.bots.caloriebot.components.services;
 
 import com.kuklin.manageapp.bots.caloriebot.components.repository.UserNutritionProfileRepository;
+import com.kuklin.manageapp.bots.caloriebot.components.services.exceptions.InsufficientProfileDataException;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile.NormMode;
 import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.UserNutritionProfileDto;
@@ -151,6 +152,70 @@ class UserNutritionProfileServiceNormModeTest {
         assertThat(saved.getCarbsNormGramsPerDay()).isEqualTo((2000 - 150 * 4 - 55 * 9) / 4);
         assertThat(saved.getWaterTargetMlPerDay()).isEqualTo(2000);
         assertThat(service.checkTargetCalculateParams(profile)).isTrue();
+    }
+
+    // ===== Вода: свой режим, независимый от калорий =====
+
+    @Test
+    void autoWaterIgnoresSentValueAndUsesFormula() {
+        UserNutritionProfileDto saved = put(new UserNutritionProfileDto().setWaterTargetMlPerDay(1500));
+
+        assertThat(saved.getWaterMode()).isEqualTo(NormMode.AUTO);
+        assertThat(saved.getWaterTargetMlPerDay()).isEqualTo(2294); // 69.5 × 33
+    }
+
+    @Test
+    void manualWaterSurvivesProfileChanges() {
+        put(new UserNutritionProfileDto().setWaterMode(NormMode.MANUAL).setWaterTargetMlPerDay(1500));
+
+        UserNutritionProfileDto saved = put(new UserNutritionProfileDto()
+                .setCurrentWeightKg(new BigDecimal("80"))
+                .setActivityLevel(UserNutritionProfile.ActivityLevel.HIGH));
+
+        assertThat(saved.getWaterMode()).isEqualTo(NormMode.MANUAL);
+        assertThat(saved.getWaterTargetMlPerDay()).isEqualTo(1500);
+        // калории при этом в AUTO — пересчитались
+        assertThat(saved.getNormMode()).isEqualTo(NormMode.AUTO);
+        assertThat(saved.getCaloriesNormPerDay()).isNotEqualTo(1756);
+    }
+
+    @Test
+    void waterModeIsIndependentFromCaloriesMode() {
+        put(new UserNutritionProfileDto().setNormMode(NormMode.MANUAL).setCaloriesNormPerDay(2000));
+
+        UserNutritionProfileDto saved = put(new UserNutritionProfileDto().setCurrentWeightKg(new BigDecimal("80")));
+
+        assertThat(saved.getCaloriesNormPerDay()).isEqualTo(2000);
+        assertThat(saved.getWaterMode()).isEqualTo(NormMode.AUTO);
+        assertThat(saved.getWaterTargetMlPerDay()).isEqualTo(2640); // 80 × 33
+    }
+
+    @Test
+    void switchToAutoWaterUsesFormulaEvenWithoutCaloriesData() throws Exception {
+        profile.setSex(null).setAgeYears(null).setHeightCm(null).setGoal(null)
+                .setWaterMode(NormMode.MANUAL).setWaterTargetMlPerDay(1500);
+
+        UserNutritionProfile saved = service.switchToAutoWater(profile);
+
+        assertThat(saved.getWaterMode()).isEqualTo(NormMode.AUTO);
+        assertThat(saved.getWaterTargetMlPerDay()).isEqualTo(2294);
+    }
+
+    @Test
+    void switchToAutoWaterNeedsWeightAndActivity() {
+        profile.setCurrentWeightKg(null).setWaterMode(NormMode.MANUAL).setWaterTargetMlPerDay(1500);
+
+        assertThatThrownBy(() -> service.switchToAutoWater(profile))
+                .isInstanceOf(InsufficientProfileDataException.class);
+        assertThat(profile.getWaterTargetMlPerDay()).isEqualTo(1500);
+    }
+
+    @Test
+    void negativeManualWaterIsRejected() {
+        assertThatThrownBy(() -> put(new UserNutritionProfileDto()
+                .setWaterMode(NormMode.MANUAL)
+                .setWaterTargetMlPerDay(-1)))
+                .isInstanceOf(ErrorResponseException.class);
     }
 
     @Test
