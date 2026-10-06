@@ -13,6 +13,8 @@ public enum ErrorStatus {
     DISH_NOT_FOUND(HttpStatus.BAD_REQUEST, "Dish not found!"),
     DISH_EMPTY_FOOD_DESCRIPTION(HttpStatus.BAD_REQUEST, "Empty food description!"),
     FAVORITE_DISH_ALREADY_EXISTS(HttpStatus.BAD_REQUEST, "Favorite dish already exists!"),
+    FAVORITE_DISH_NOT_FOUND(HttpStatus.NOT_FOUND, "Favorite dish not found!"),
+    QUICK_ADD_FULL(HttpStatus.CONFLICT, "Quick add is full. Unpin a dish first."),
     PAYMENT_FAILED(HttpStatus.BAD_REQUEST, "Payment failed!"),
     USER_NOT_FOUND(HttpStatus.BAD_REQUEST, "User not found!" ),
     DISH_NOT_BELONG_USER(HttpStatus.BAD_REQUEST, "Dish not belong user!"),

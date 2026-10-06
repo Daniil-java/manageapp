@@ -19,7 +19,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -51,8 +54,49 @@ public class UserFavoriteDishService {
         return DishDto.fromEntity(addDishFromFavorite(userId, favoriteId));
     }
 
+    /**
+     * Все избранные: сначала закреплённые в быстром наборе (по месту), потом остальные — недавно использованные выше.
+     */
     public List<UserFavoriteDish> getAllForUser(Long userId) {
-        return userFavoriteDishRepository.findAllByUserIdOrderByLastUsedAtDescCreatedAtDesc(userId);
+        return userFavoriteDishRepository.findAllByUserIdOrderByLastUsedAtDescCreatedAtDesc(userId).stream()
+                // sort стабильный — порядок по использованию внутри незакреплённых сохраняется
+                .sorted(Comparator.comparing(UserFavoriteDish::getQuickAddPosition,
+                        Comparator.nullsLast(Comparator.naturalOrder())))
+                .toList();
+    }
+
+    /**
+     * Закрепить блюдо в быстром наборе (встаёт последним) или открепить (остальные сдвигаются без дыр).
+     * Больше MAX_QUICK_ADD закрепить нельзя — 409 QUICK_ADD_FULL.
+     * Возвращает весь список в новом порядке.
+     */
+    @Transactional
+    public List<UserFavoriteDishDto> setQuickAdd(Long userId, Long favoriteId, boolean pinned) {
+        UserFavoriteDish favorite = userFavoriteDishRepository.findByIdAndUserId(favoriteId, userId)
+                .orElseThrow(() -> new ErrorResponseException(ErrorStatus.FAVORITE_DISH_NOT_FOUND));
+
+        List<UserFavoriteDish> pinnedList = getAllForUser(userId).stream()
+                .filter(f -> f.getQuickAddPosition() != null)
+                .collect(Collectors.toCollection(ArrayList::new));
+
+        boolean isPinned = favorite.getQuickAddPosition() != null;
+        if (pinned && !isPinned) {
+            if (pinnedList.size() >= UserFavoriteDish.MAX_QUICK_ADD) {
+                throw new ErrorResponseException(ErrorStatus.QUICK_ADD_FULL);
+            }
+            pinnedList.add(favorite);
+        } else if (!pinned && isPinned) {
+            pinnedList.removeIf(f -> f.getId().equals(favorite.getId()));
+            favorite.setQuickAddPosition(null);
+            userFavoriteDishRepository.save(favorite);
+        }
+
+        for (int i = 0; i < pinnedList.size(); i++) {
+            pinnedList.get(i).setQuickAddPosition(i + 1);
+        }
+        userFavoriteDishRepository.saveAll(pinnedList);
+
+        return getAllForUserDto(userId);
     }
 
     /**

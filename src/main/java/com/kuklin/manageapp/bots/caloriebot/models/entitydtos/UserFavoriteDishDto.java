@@ -34,6 +34,7 @@ public class UserFavoriteDishDto {
     private Instant createdAt;
     private Instant updatedAt;
     private Instant lastUsedAt;
+    private Integer quickAddPosition;
 
     // ================= ENTITY -> DTO =================
 
@@ -56,7 +57,8 @@ public class UserFavoriteDishDto {
                 .setUserId(e.getUserId())
                 .setCreatedAt(e.getCreatedAt())
                 .setUpdatedAt(e.getUpdatedAt())
-                .setLastUsedAt(e.getLastUsedAt());
+                .setLastUsedAt(e.getLastUsedAt())
+                .setQuickAddPosition(e.getQuickAddPosition());
     }
 
     public static List<UserFavoriteDishDto> fromEntities(List<UserFavoriteDish> list) {

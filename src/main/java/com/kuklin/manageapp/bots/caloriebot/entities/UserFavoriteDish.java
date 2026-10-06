@@ -47,6 +47,10 @@ public class UserFavoriteDish {
     @UpdateTimestamp
     private Instant updatedAt;
     private Instant lastUsedAt;
+    // Место в быстром наборе миниаппки (1..MAX_QUICK_ADD); null — не закреплено
+    private Integer quickAddPosition;
+
+    public static final int MAX_QUICK_ADD = 4;
 
     public static Dish toDish(UserFavoriteDish fav) {
         if (fav == null) {

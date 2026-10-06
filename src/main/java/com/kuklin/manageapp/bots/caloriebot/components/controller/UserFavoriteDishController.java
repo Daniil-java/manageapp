@@ -44,6 +44,18 @@ public class UserFavoriteDishController {
         return userFavoriteDishService.addDishFromFavoriteDto(appUserId, favoriteId);
     }
 
+    @PutMapping("/{favoriteId}/quick-add")
+    @Operation(summary = "Закрепить в быстром наборе",
+            description = "pinned=true — блюдо встаёт в быстрый набор последним (максимум 4, иначе 409), "
+                    + "false — открепить. Возвращает весь список избранного в новом порядке")
+    public List<UserFavoriteDishDto> setQuickAdd(
+            @Parameter(hidden = true) @AuthenticationPrincipal Long appUserId,
+            @Parameter(description = "ID избранного шаблона") @PathVariable(name = "favoriteId") Long favoriteId,
+            @RequestParam(name = "pinned") boolean pinned
+    ) {
+        return userFavoriteDishService.setQuickAdd(appUserId, favoriteId, pinned);
+    }
+
     @DeleteMapping("/{favoriteId}")
     @Operation(summary = "Удалить из избранного", description = "Убирает блюдо из списка избранных")
     public void delete(
