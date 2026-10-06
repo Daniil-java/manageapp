@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.bots.caloriebot.models.entitydtos;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -30,6 +31,8 @@ public class DishDto {
     private Integer carbohydrates;
 
     // --- Количество ---
+    // Промпт ИИ называет поле weightGrams — без алиаса вес от ИИ терялся и подставлялась 1
+    @JsonAlias("weightGrams")
     private Integer weight;
     @Min(value = 1, message = "Количество порций должно быть не менее 1")
     private Integer portions;
@@ -111,8 +114,12 @@ public class DishDto {
         if (carbohydrates == null) carbohydrates = 0;
 
         //значения, которые не могут быть меньше единицы
+        if (portions == null || portions < 1) portions = 1;
+        // ИИ мог прислать только вес порции — общий вес считаем из него
+        if ((weight == null || weight <= 1) && portionWeight != null && portionWeight > 1) {
+            weight = portionWeight * portions;
+        }
         if (weight == null) weight = 1;
-        if (portions == null) portions = 1;
         if (portionWeight == null) portionWeight = 1;
 
         if (aiConfidence == null) aiConfidence = 0;

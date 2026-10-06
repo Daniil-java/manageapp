@@ -172,6 +172,9 @@ public class DishService {
     @Transactional
     public DishDto addManualDishDto(Long userId, ManualDishRequest request) {
         checkDailyDishLimitOrThrow(userId);
+        // Вес и порции необязательны; без них — те же значения по умолчанию, что и у блюд от ИИ (DishDto.checkValuesNotNull)
+        int weight = request.getWeight() != null ? request.getWeight() : 1;
+        int portions = request.getPortions() != null ? request.getPortions() : 1;
         Dish dish = new Dish()
                 .setUserId(userId)
                 .setName(request.getName().trim())
@@ -180,10 +183,9 @@ public class DishService {
                 .setFats(nvl(request.getFats()))
                 .setCarbohydrates(nvl(request.getCarbohydrates()))
                 .setCategory(request.getCategory() != null ? request.getCategory() : Dish.FoodCategory.UNKNOWN)
-                // те же значения по умолчанию, что и у блюд от ИИ (DishDto.checkValuesNotNull)
-                .setWeight(1)
-                .setPortions(1)
-                .setPortionWeight(1)
+                .setWeight(weight)
+                .setPortions(portions)
+                .setPortionWeight(Math.max(1, Math.round((float) weight / portions)))
                 .setAiConfidence(0);
 
         userSettingsService.updateMealLastReminder(userId);
