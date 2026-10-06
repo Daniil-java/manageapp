@@ -42,6 +42,12 @@ public class WaterTargetProfileEditFieldHandler
                 : "Вода: " + profile.getWaterTargetMlPerDay() + " мл";
     }
 
+    // Пересчёт затёр бы только что заданную норму воды формулой
+    @Override
+    protected boolean recalculatesNorm() {
+        return false;
+    }
+
     @Override
     public ProfileEditAction getProfileAction() {
         return ProfileEditAction.WATER_TARGET;

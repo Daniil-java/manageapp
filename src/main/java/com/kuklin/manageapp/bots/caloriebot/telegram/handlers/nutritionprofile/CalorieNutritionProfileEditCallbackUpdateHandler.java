@@ -4,6 +4,7 @@ import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserNutritionProfileService;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
+import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.editbuttons.CalorieNutritionProfileRecalculate;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.editbuttons.ProfileEditAction;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.editbuttons.ProfileEditFieldHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
@@ -68,7 +69,7 @@ public class CalorieNutritionProfileEditCallbackUpdateHandler implements Calorie
                 message.getChatId(),
                 buildMessageText(profile),
                 message.getMessageId(),
-                buildKeyboard()
+                buildKeyboard(profile)
         );
     }
 
@@ -114,7 +115,9 @@ public class CalorieNutritionProfileEditCallbackUpdateHandler implements Calorie
         }
     }
 
-    public InlineKeyboardMarkup buildKeyboard() {
+    public InlineKeyboardMarkup buildKeyboard(UserNutritionProfile profile) {
+        // Режим нормы — пара кнопок, текущий отмечен ✅ (CalorieNutritionProfileRecalculate)
+        boolean manual = profile.isManualNorm();
         return TelegramKeyboard.builder().row(
                         buildActivityButton(ProfileEditAction.SEX),
                         buildActivityButton(ProfileEditAction.AGE)
@@ -130,7 +133,12 @@ public class CalorieNutritionProfileEditCallbackUpdateHandler implements Calorie
                         buildActivityButton(ProfileEditAction.CALORIE_NORM),
                         buildActivityButton(ProfileEditAction.WATER_TARGET)
                 ).row(
-                        TelegramKeyboard.button("Пересчитать нормы", Command.CALORIE_PROFILE_RECALCULATE.getCommandText())
+                        TelegramKeyboard.button(
+                                (manual ? "" : "✅ ") + "Автопересчёт",
+                                CalorieNutritionProfileRecalculate.callback(CalorieNutritionProfileRecalculate.AUTO)),
+                        TelegramKeyboard.button(
+                                (manual ? "✅ " : "") + "Без пересчёта",
+                                CalorieNutritionProfileRecalculate.callback(CalorieNutritionProfileRecalculate.MANUAL))
                 ).row(
                         TelegramKeyboard.button("Вернуться", Command.CALORIE_PROFILE.getCommandText())
                 )

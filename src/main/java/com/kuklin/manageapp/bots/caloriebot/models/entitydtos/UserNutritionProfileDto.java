@@ -29,6 +29,8 @@ public class UserNutritionProfileDto {
     private UserNutritionProfile.ActivityLevel activityLevel;
     private UserNutritionProfile.Goal goal;
     private UserNutritionProfile.DietType dietType;
+    // AUTO — калории по формуле (присланные игнорируются), MANUAL — caloriesNormPerDay задаёт пользователь
+    private UserNutritionProfile.NormMode normMode;
     private Integer caloriesNormPerDay;
     private Integer proteinsNormGramsPerDay;
     private Integer fatsNormGramsPerDay;
@@ -55,6 +57,7 @@ public class UserNutritionProfileDto {
                 .setActivityLevel(activityLevel)
                 .setGoal(goal)
                 .setDietType(dietType)
+                .setNormMode(normMode == null ? UserNutritionProfile.NormMode.AUTO : normMode)
                 .setCaloriesNormPerDay(caloriesNormPerDay)
                 .setProteinsNormGramsPerDay(proteinsNormGramsPerDay)
                 .setFatsNormGramsPerDay(fatsNormGramsPerDay)
@@ -73,6 +76,7 @@ public class UserNutritionProfileDto {
                 .setActivityLevel(p.getActivityLevel())
                 .setGoal(p.getGoal())
                 .setDietType(p.getDietType())
+                .setNormMode(p.getNormMode())
                 .setCaloriesNormPerDay(p.getCaloriesNormPerDay())
                 .setProteinsNormGramsPerDay(p.getProteinsNormGramsPerDay())
                 .setFatsNormGramsPerDay(p.getFatsNormGramsPerDay())
@@ -93,6 +97,7 @@ public class UserNutritionProfileDto {
         if (activityLevel != null) profile.setActivityLevel(activityLevel);
         if (goal != null) profile.setGoal(goal);
         if (dietType != null) profile.setDietType(dietType);
+        if (normMode != null) profile.setNormMode(normMode);
 
         if (caloriesNormPerDay != null) profile.setCaloriesNormPerDay(caloriesNormPerDay);
         if (proteinsNormGramsPerDay != null) profile.setProteinsNormGramsPerDay(proteinsNormGramsPerDay);

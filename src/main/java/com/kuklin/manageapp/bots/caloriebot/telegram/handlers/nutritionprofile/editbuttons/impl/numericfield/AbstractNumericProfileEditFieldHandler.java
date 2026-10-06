@@ -99,12 +99,16 @@ public abstract class AbstractNumericProfileEditFieldHandler
                 profile = applyValue(profile, value);
                 try {
                     //Обновляем данные
-                    patchProfile(profile);
-                    //Пересчитываем нормы КБЖУ
-//                    profileService.recalculateAndSave(profile);
+                    profile = patchProfile(profile);
+                    //Пересчитываем нормы КБЖУ (ручная норма калорий при этом сохраняется — NormMode.MANUAL)
+                    if (recalculatesNorm()) {
+                        profileService.recalculateAndSave(profile);
+                    }
                 } catch (UserNutritionProfileValidationException e) {
                     //Недопустимые данные
                     telegramBot.sendReturnedMessage(chatId, VALIDATION_ERROR);
+                } catch (InsufficientProfileDataException e) {
+                    //Профиль ещё заполняется (диалог) — норму посчитаем, когда хватит данных
                 }
                 return;
             }
@@ -150,4 +154,9 @@ public abstract class AbstractNumericProfileEditFieldHandler
     }
 
     protected abstract String buildText(UserNutritionProfile profile);
+
+    /** Пересчитывать ли нормы после сохранения поля (false — поле само является нормой, например вода). */
+    protected boolean recalculatesNorm() {
+        return true;
+    }
 }

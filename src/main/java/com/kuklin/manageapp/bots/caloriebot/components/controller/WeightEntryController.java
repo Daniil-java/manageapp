@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.bots.caloriebot.components.controller;
 
+import com.kuklin.manageapp.bots.caloriebot.components.services.UserNutritionProfileService;
 import com.kuklin.manageapp.bots.caloriebot.components.services.WeightEntryService;
 import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.WeightEntryDto;
 import io.swagger.v3.oas.annotations.Operation;
@@ -22,6 +23,7 @@ import java.util.List;
 @Tag(name = "Журнал веса", description = "Учет изменений веса пользователя")
 public class WeightEntryController {
     private final WeightEntryService weightEntryService;
+    private final UserNutritionProfileService profileService;
 
     @GetMapping
     @Operation(summary = "История взвешиваний", description = "Возвращает полную историю изменения веса пользователя")
@@ -30,20 +32,22 @@ public class WeightEntryController {
     }
 
     @PutMapping
-    @Operation(summary = "Обновить текущий вес", description = "Добавляет новую запись о весе или обновляет существующую за сегодня")
+    @Operation(summary = "Записать вес",
+            description = "Добавляет запись о весе, делает его текущим весом профиля и пересчитывает норму КБЖУ и воды")
     public WeightEntryDto updateWeight(
             @Parameter(hidden = true) @AuthenticationPrincipal Long appUserId,
             @Parameter(description = "Вес в кг", example = "75.5")
             @NotNull @DecimalMin(value = "0.0", inclusive = false) @RequestBody BigDecimal weightKg) {
-        return weightEntryService.updateWeightDto(appUserId, weightKg);
+        return WeightEntryDto.fromEntity(profileService.logWeight(appUserId, weightKg));
     }
 
     @DeleteMapping("/{weightId}")
-    @Operation(summary = "Удаление записи о весе", description = "Удаляет запись о весе")
+    @Operation(summary = "Удаление записи о весе",
+            description = "Удаляет запись о весе. Если удалена последняя — вес профиля и норма откатываются к предыдущей записи")
     public void deleteWeight(
             @Parameter(hidden = true) @AuthenticationPrincipal Long appUserId,
             @Parameter(description = "ID записи веса") @PathVariable(name = "weightId") Long weightId) {
-        weightEntryService.deleteWeightEntryById(appUserId, weightId);
+        profileService.deleteWeightEntry(appUserId, weightId);
     }
 
     @GetMapping("/period")

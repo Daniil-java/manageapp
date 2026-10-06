@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface WeightEntryRepository extends JpaRepository<WeightEntry, Long> {
@@ -16,6 +17,9 @@ public interface WeightEntryRepository extends JpaRepository<WeightEntry, Long> 
     );
 
     void deleteByIdAndUserId(Long id, Long userId);
+
+    // Последнее взвешивание: по дате записи, внутри дня — по времени создания
+    Optional<WeightEntry> findFirstByUserIdOrderByEntryDateDescCreatedAtDescIdDesc(Long userId);
 
     List<WeightEntry> findAllByUserIdAndCreatedAtBetween(Long userId, Instant start, Instant end);
 }

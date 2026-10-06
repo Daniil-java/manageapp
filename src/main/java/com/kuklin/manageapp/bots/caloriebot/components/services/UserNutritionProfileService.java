@@ -3,10 +3,12 @@ package com.kuklin.manageapp.bots.caloriebot.components.services;
 import com.kuklin.manageapp.bots.caloriebot.components.repository.UserNutritionProfileRepository;
 import com.kuklin.manageapp.bots.caloriebot.components.services.exceptions.InsufficientProfileDataException;
 import com.kuklin.manageapp.bots.caloriebot.components.services.exceptions.validation.InvalidAgeException;
+import com.kuklin.manageapp.bots.caloriebot.components.services.exceptions.validation.InvalidCaloriesNormException;
 import com.kuklin.manageapp.bots.caloriebot.components.services.exceptions.validation.InvalidHeightException;
 import com.kuklin.manageapp.bots.caloriebot.components.services.exceptions.validation.InvalidWeightException;
 import com.kuklin.manageapp.bots.caloriebot.components.services.exceptions.validation.UserNutritionProfileValidationException;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
+import com.kuklin.manageapp.bots.caloriebot.entities.WeightEntry;
 import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.UserNutritionProfileDto;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
@@ -97,6 +99,58 @@ public class UserNutritionProfileService {
         weightEntryService.updateWeight(userId, currentWeightKg);
     }
 
+    /*
+     * Журнал веса — источник правды, вес в профиле = последнее взвешивание.
+     * Бот пишет вес через профиль (CurrentWeightProfileEditFieldHandler → updateCurrentWeight),
+     * API — через журнал (PUT /weight) или профиль (PUT /profile); все пути держат их в синхроне.
+     */
+
+    /**
+     * Записать взвешивание: запись в журнал + текущий вес профиля + пересчёт нормы (если профиль заполнен).
+     */
+    @Transactional
+    public WeightEntry logWeight(Long userId, BigDecimal weightKg) {
+        UserNutritionProfile profile = getOrCreateProfile(userId);
+        profile.setCurrentWeightKg(weightKg);
+        // Сначала профиль: недопустимый вес отклоняется до записи в журнал
+        saveRecalculatedIfPossible(profile);
+        return weightEntryService.updateWeight(userId, weightKg);
+    }
+
+    /**
+     * Удалить взвешивание. Если удалили последнее — вес профиля откатывается к предыдущему,
+     * норма пересчитывается. Пустой журнал профиль не трогает.
+     */
+    @Transactional
+    public void deleteWeightEntry(Long userId, Long weightId) {
+        weightEntryService.deleteWeightEntryById(userId, weightId);
+
+        WeightEntry latest = weightEntryService.getLatestOrNull(userId);
+        if (latest == null) return;
+
+        UserNutritionProfile profile = getOrCreateProfile(userId);
+        if (sameWeight(profile.getCurrentWeightKg(), latest.getWeight())) return;
+
+        profile.setCurrentWeightKg(latest.getWeight());
+        saveRecalculatedIfPossible(profile);
+    }
+
+    // Пересчитать норму, если хватает данных, иначе просто сохранить (профиль ещё заполняется)
+    private UserNutritionProfile saveRecalculatedIfPossible(UserNutritionProfile profile) {
+        try {
+            return checkTargetCalculateParams(profile)
+                    ? recalculateAndSave(profile)
+                    : validateAndSave(profile);
+        } catch (InsufficientProfileDataException | UserNutritionProfileValidationException e) {
+            throw new ErrorResponseException(ErrorStatus.USER_NUTRITION_PROFILE_VALIDATION_EXCEPTION);
+        }
+    }
+
+    private static boolean sameWeight(BigDecimal a, BigDecimal b) {
+        if (a == null || b == null) return a == b;
+        return a.compareTo(b) == 0;
+    }
+
     /**
      * Обновить только цель по воде (когда пользователь меняет её явно).
      */
@@ -132,6 +186,12 @@ public class UserNutritionProfileService {
                         || weight.compareTo(BigDecimal.valueOf(WEIGHT_MAX)) > 0)) {
             throw new InvalidWeightException(weight);
         }
+
+        Integer calories = profile.getCaloriesNormPerDay();
+        if (profile.isManualNorm() && calories != null
+                && calories < CALORIES_NORM_MIN) {
+            throw new InvalidCaloriesNormException(calories);
+        }
     }
 
     /**
@@ -157,13 +217,59 @@ public class UserNutritionProfileService {
     }
 
     /**
-     * Пересчёт нормы калорий и БЖУ.
+     * Пересчёт нормы калорий, БЖУ и воды.
+     * AUTO — калории по формуле; MANUAL — калории пользователя, БЖУ считаются от них.
      */
     private UserNutritionProfileDto recalcTargets(UserNutritionProfile profile)
             throws InsufficientProfileDataException {
 
-        checkTargetCalculateParamsOrThrow(profile);
+        int caloriesTarget;
+        if (profile.isManualNorm()) {
+            if (profile.getCaloriesNormPerDay() == null)
+                throw new InsufficientProfileDataException("Норма калорий");
+            caloriesTarget = profile.getCaloriesNormPerDay();
+        } else {
+            checkTargetCalculateParamsOrThrow(profile);
+            caloriesTarget = calcFormulaCalories(profile);
+        }
 
+        BigDecimal weightKg = profile.getCurrentWeightKg();
+
+        int proteins;
+        if (weightKg != null && profile.getGoal() != null) {
+            // --- Proteins (от текущего веса — нормально даже при похудении) ---
+            proteins = (int) Math.round(weightKg.doubleValue() * profile.getGoal().getProteinsPerKg());
+        } else {
+            // Ручная норма без веса/цели: белки — 30% калорий
+            proteins = (int) Math.round(caloriesTarget * 0.30 / 4);
+        }
+
+        // --- Fats (процент от калорий, а не от веса) ---
+        // 20–30% — норма, берём 25%
+        int fatsCalories = (int) Math.round(caloriesTarget * 0.25);
+        int fats = fatsCalories / 9;
+
+        // --- Carbs (остаток; при маленькой ручной норме белок может съесть всё — не уходим в минус) ---
+        int carbs = Math.max(0, (caloriesTarget - proteins * 4 - fats * 9) / 4);
+
+        // --- Water --- (без веса/активности — оставляем как было)
+        Integer waterTarget = weightKg != null && profile.getActivityLevel() != null
+                ? (int) Math.round(weightKg.doubleValue() * profile.getActivityLevel().getWaterMlPerKg())
+                : profile.getWaterTargetMlPerDay();
+
+        return new UserNutritionProfileDto()
+                .setCaloriesNormPerDay(caloriesTarget)
+                .setProteinsNormGramsPerDay(proteins)
+                .setFatsNormGramsPerDay(fats)
+                .setCarbsNormGramsPerDay(Math.max(carbs, 0))
+                .setWaterTargetMlPerDay(waterTarget);
+    }
+
+    /**
+     * Норма калорий по формуле (Mifflin–St Jeor × активность × цель) — и для AUTO,
+     * и как подсказка «по формуле» в ручном режиме.
+     */
+    private static int calcFormulaCalories(UserNutritionProfile profile) {
         double weight = profile.getCurrentWeightKg().doubleValue();
 
         // --- BMR (Mifflin–St Jeor) ---
@@ -182,42 +288,53 @@ public class UserNutritionProfileService {
         bmrCalories *= profile.getActivityLevel().getCoef();
         bmrCalories *= profile.getGoal().getCoef();
 
-        int caloriesTarget = (int) Math.round(bmrCalories);
-
-        // --- Proteins (от текущего веса — нормально даже при похудении) ---
-        int proteins = (int) Math.round(
-                weight * profile.getGoal().getProteinsPerKg()
-        );
-
-        // --- Fats (процент от калорий, а не от веса) ---
-        // 20–30% — норма, берём 25%
-        int fatsCalories = (int) Math.round(caloriesTarget * 0.25);
-        int fats = fatsCalories / 9;
-
-        // --- Carbs (остаток) ---
-        int carbs = (caloriesTarget - proteins * 4 - fats * 9) / 4;
-
-        // --- Water ---
-        int waterTarget = (int) Math.round(
-                weight * profile.getActivityLevel().getWaterMlPerKg()
-        );
-
-        return new UserNutritionProfileDto()
-                .setCaloriesNormPerDay(caloriesTarget)
-                .setProteinsNormGramsPerDay(proteins)
-                .setFatsNormGramsPerDay(fats)
-                .setCarbsNormGramsPerDay(Math.max(carbs, 0))
-                .setWaterTargetMlPerDay(waterTarget);
+        return (int) Math.round(bmrCalories);
     }
 
-    //Проверка достаточности существующих данных
+    /** Норма калорий по формуле или null, если профиль не заполнен. */
+    public Integer calcFormulaCaloriesOrNull(UserNutritionProfile profile) {
+        return profile != null && profile.checkTargetCalculateParams() ? calcFormulaCalories(profile) : null;
+    }
+
+    //Хватает ли данных для нормы: AUTO — заполнен профиль, MANUAL — задана норма калорий
     public boolean checkTargetCalculateParams(UserNutritionProfile profile) {
+        if (profile != null && profile.isManualNorm()) {
+            return profile.getCaloriesNormPerDay() != null;
+        }
         try {
             checkTargetCalculateParamsOrThrow(profile);
             return true;
         } catch (InsufficientProfileDataException e) {
             return false;
         }
+    }
+
+    /*
+     * Ручная норма включается так: бот — кнопка «Норма калорий» (CaloriesNormProfileEditFieldHandler),
+     * API — PUT /profile с normMode=MANUAL и caloriesNormPerDay. Дальше recalculateAndSave держит калории,
+     * БЖУ считает от них, вода — как в AUTO.
+     */
+
+    /** Норма по формуле без сохранения — показать в боте, что изменится при включении автопересчёта. */
+    public UserNutritionProfileDto previewAutoNorm(UserNutritionProfile profile)
+            throws InsufficientProfileDataException {
+        return recalcTargets(profile.copy().setNormMode(UserNutritionProfile.NormMode.AUTO));
+    }
+
+    /** Выключить автопересчёт: текущие калории становятся ручными (бот: «Без пересчёта»). */
+    @Transactional
+    public UserNutritionProfile switchToManualNorm(UserNutritionProfile profile)
+            throws UserNutritionProfileValidationException {
+        profile.setNormMode(UserNutritionProfile.NormMode.MANUAL);
+        return validateAndSave(profile);
+    }
+
+    /** Вернуть норму по формуле (бот: «Автопересчёт» после подтверждения). */
+    @Transactional
+    public UserNutritionProfile switchToAutoNorm(UserNutritionProfile profile)
+            throws UserNutritionProfileValidationException, InsufficientProfileDataException {
+        profile.setNormMode(UserNutritionProfile.NormMode.AUTO);
+        return recalculateAndSave(profile);
     }
 
     //Проверка достаточности существующих данных или выброс ошибки
@@ -259,8 +376,14 @@ public class UserNutritionProfileService {
     public UserNutritionProfileDto patchProfileDto(Long userId, UserNutritionProfileDto dto) {
         try {
             UserNutritionProfile existing = getOrCreateProfile(userId);   // ← грузим то, что уже есть
+            BigDecimal oldWeight = existing.getCurrentWeightKg();         // mergeToEntity меняет existing
             UserNutritionProfile merged = dto.mergeToEntity(existing);    // ← мёржим, а не создаём заново
-            return UserNutritionProfileDto.fromEntity(recalculateAndSave(merged));
+            UserNutritionProfile saved = recalculateAndSave(merged);
+            // Новый вес из профиля — тоже взвешивание, как в боте
+            if (dto.getCurrentWeightKg() != null && !sameWeight(oldWeight, dto.getCurrentWeightKg())) {
+                weightEntryService.updateWeight(userId, dto.getCurrentWeightKg());
+            }
+            return UserNutritionProfileDto.fromEntity(saved);
         } catch (InsufficientProfileDataException e) {
             throw new ErrorResponseException(ErrorStatus.PROFILE_INSUFFICIENT_DATA);
         } catch (UserNutritionProfileValidationException e) {

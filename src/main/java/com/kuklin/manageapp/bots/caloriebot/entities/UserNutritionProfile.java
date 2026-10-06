@@ -31,6 +31,9 @@ public class UserNutritionProfile {
     public static final Integer WEIGHT_MAX = 500;
     //Вода
     public static final Integer DEF_WATER_ML = 2000;
+    //Ручная норма калорий: решает пользователь, ограничиваем только неотрицательностью и int
+    public static final Integer CALORIES_NORM_MIN = 0;
+    public static final Integer CALORIES_NORM_MAX = Integer.MAX_VALUE;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -50,6 +53,10 @@ public class UserNutritionProfile {
     private DietType dietType;
     @Enumerated(EnumType.STRING)
     private UserProfileFillingState userProfileFillingState;
+    // AUTO — норма калорий по формуле, MANUAL — задана пользователем
+    @Enumerated(EnumType.STRING)
+    @Column(name = "norm_mode", nullable = false)
+    private NormMode normMode = NormMode.AUTO;
     private Integer caloriesNormPerDay;
     private Integer proteinsNormGramsPerDay;
     private Integer fatsNormGramsPerDay;
@@ -68,6 +75,19 @@ public class UserNutritionProfile {
 
     public interface Labeled {
         String getLabel();
+    }
+
+    @Getter
+    @RequiredArgsConstructor
+    public enum NormMode implements Labeled {
+        AUTO("По формуле"),
+        MANUAL("Вручную");
+
+        private final String label;
+    }
+
+    public boolean isManualNorm() {
+        return normMode == NormMode.MANUAL;
     }
 
     @Getter
@@ -127,6 +147,7 @@ public class UserNutritionProfile {
                 .setGoal(this.goal)
                 .setDietType(this.dietType)
                 .setUserProfileFillingState(this.userProfileFillingState)
+                .setNormMode(this.normMode)
                 .setCaloriesNormPerDay(this.caloriesNormPerDay)
                 .setProteinsNormGramsPerDay(this.proteinsNormGramsPerDay)
                 .setFatsNormGramsPerDay(this.fatsNormGramsPerDay)
@@ -185,6 +206,7 @@ public class UserNutritionProfile {
         } else {
             sb.append("• Калории: ")
                     .append(formatInt(caloriesNormPerDay, v -> v + " ккал"))
+                    .append(isManualNorm() ? " ✍️ вручную" : "")
                     .append("\n");
             sb.append("• Белки: ")
                     .append(formatInt(proteinsNormGramsPerDay, v -> v + " г"))
@@ -195,6 +217,12 @@ public class UserNutritionProfile {
             sb.append("• Углеводы: ")
                     .append(formatInt(carbsNormGramsPerDay, v -> v + " г"))
                     .append("\n");
+        }
+
+        if (hasTargets) {
+            sb.append(isManualNorm()
+                    ? "Без пересчёта: калории не меняются от веса и цели, БЖУ считаются от них.\n"
+                    : "Автопересчёт: норма меняется вместе с весом, активностью и целью.\n");
         }
 
         // Вода
@@ -359,6 +387,7 @@ public class UserNutritionProfile {
         sb.append("currentWeightKg: ").append(currentWeightKg != null ? currentWeightKg.stripTrailingZeros().toPlainString() : "null").append("\n");
         sb.append("activityLevel: ").append(activityLevel).append("\n");
         sb.append("goal: ").append(goal).append("\n");
+        sb.append("normMode: ").append(normMode).append("\n");
         sb.append("dietType: ").append(dietType).append("\n");
         sb.append("caloriesTarget: ").append(caloriesNormPerDay).append("\n");
         sb.append("proteinsTarget: ").append(proteinsNormGramsPerDay).append("\n");

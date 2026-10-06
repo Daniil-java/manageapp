@@ -99,28 +99,29 @@ public class KeyboardTemplates {
                 )
         );
 
-        if (currentValue - bigNeg >= min) {
+        // Шаги отрицательные (bigNeg, neg): сравниваем значение после шага; long — без переполнения у границ int
+        if ((long) currentValue + bigNeg >= min) {
             row.add(TelegramKeyboard.button(
                     bigNeg.toString(),
                     callbackBase + ADJ_CMD + TelegramBot.DEFAULT_DELIMETER + (currentValue + bigNeg)
             ));
         }
 
-        if (currentValue - neg >= min) {
+        if ((long) currentValue + neg >= min) {
             row.add(TelegramKeyboard.button(
                     neg.toString(),
                     callbackBase + ADJ_CMD + TelegramBot.DEFAULT_DELIMETER + (currentValue + neg)
             ));
         }
 
-        if (currentValue + pos <= max) {
+        if ((long) currentValue + pos <= max) {
             row.add(TelegramKeyboard.button(
                     "+" + pos,
                     callbackBase + ADJ_CMD + TelegramBot.DEFAULT_DELIMETER + (currentValue + pos)
             ));
         }
 
-        if (currentValue + bigPos <= max) {
+        if ((long) currentValue + bigPos <= max) {
             row.add(TelegramKeyboard.button(
                     "+" + bigPos,
                     callbackBase + ADJ_CMD + TelegramBot.DEFAULT_DELIMETER + (currentValue + bigPos)

@@ -16,8 +16,8 @@ public class CaloriesNormProfileEditFieldHandler
     ) {
         super(profileService, callbackHandler,
                 2000,
-                800,
-                6000,
+                UserNutritionProfile.CALORIES_NORM_MIN,
+                UserNutritionProfile.CALORIES_NORM_MAX,
                 -500,
                 -100,
                 100,
@@ -32,14 +32,26 @@ public class CaloriesNormProfileEditFieldHandler
 
     @Override
     protected UserNutritionProfile applyValue(UserNutritionProfile profile, Integer value) {
-        return profile.setCaloriesNormPerDay(value);
+        // Своя норма → ручной режим: вес и цель её больше не меняют, БЖУ пересчитаются от неё
+        return profile
+                .setNormMode(UserNutritionProfile.NormMode.MANUAL)
+                .setCaloriesNormPerDay(value);
     }
 
     @Override
     protected String buildText(UserNutritionProfile profile) {
-        return profile.getCaloriesNormPerDay() == null
+        StringBuilder sb = new StringBuilder(profile.getCaloriesNormPerDay() == null
                 ? "Калории: не указаны"
-                : "Калории: " + profile.getCaloriesNormPerDay() + " ккал";
+                : "Калории: " + profile.getCaloriesNormPerDay() + " ккал"
+                + (profile.isManualNorm() ? " (вручную)" : " (по формуле)"));
+
+        Integer formula = profileService.calcFormulaCaloriesOrNull(profile);
+        if (formula != null && profile.isManualNorm()) {
+            sb.append("\nПо формуле: ").append(formula).append(" ккал");
+        }
+        sb.append("\n\nСохранённая норма выключает автопересчёт: она не меняется от веса и цели, БЖУ считаются от неё. ")
+                .append("Вернуть расчёт по формуле — кнопка «Автопересчёт» в редактировании профиля.");
+        return sb.toString();
     }
 
     @Override

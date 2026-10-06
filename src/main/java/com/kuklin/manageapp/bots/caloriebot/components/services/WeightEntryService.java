@@ -71,6 +71,11 @@ public class WeightEntryService {
         weightEntryRepository.deleteByIdAndUserId(weightId, tgUserId);
     }
 
+    public WeightEntry getLatestOrNull(Long userId) {
+        return weightEntryRepository.findFirstByUserIdOrderByEntryDateDescCreatedAtDescIdDesc(userId)
+                .orElse(null);
+    }
+
     public List<WeightEntry> getAllWeightByPeriod(Long appUserId, LocalDate from, LocalDate to) {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss");
 
