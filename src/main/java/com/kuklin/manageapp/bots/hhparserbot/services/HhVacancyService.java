@@ -245,9 +245,11 @@ public class HhVacancyService {
 
     //Обработка незаполненых вакансий, посредством обращения к api
     public void fetchAndSaveEntity(Vacancy vacancy) {
-        //Получение ДТО-вакансии обращением к api
+        //Получение ДТО-вакансии со страницы hh.ru
         HhResponseDto responseDto = hhApiService.getHhVacancyDtoByHhId(vacancy.getHhId());
-        HhEmployerDto hhEmployerDto = hhApiService.getHhEmployerDtoByHhId(responseDto.getEmployer().getId());
+        //Работодатель может быть скрыт
+        String employerDescription = responseDto.getEmployer() == null ? null
+                : hhApiService.getHhEmployerDtoByHhId(responseDto.getEmployer().getId()).getDescription();
         //Конвертация keySkills в String
         StringBuilder builder = new StringBuilder();
         if (responseDto.getKeySkills() != null) {
@@ -263,7 +265,7 @@ public class HhVacancyService {
                 .setKeySkills(builder.toString())
                 .setEmployment(responseDto.getEmployment().getName())
                 .setDescription(responseDto.getDescription())
-                .setEmployerDescription(hhEmployerDto.getDescription())
+                .setEmployerDescription(employerDescription)
                 .setStatus(VacancyStatus.PARSED)
         );
 

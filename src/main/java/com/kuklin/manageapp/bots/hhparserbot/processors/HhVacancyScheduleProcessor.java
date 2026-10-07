@@ -2,10 +2,10 @@ package com.kuklin.manageapp.bots.hhparserbot.processors;
 
 import com.kuklin.manageapp.bots.hhparserbot.entities.Vacancy;
 import com.kuklin.manageapp.bots.hhparserbot.models.VacancyStatus;
+import com.kuklin.manageapp.bots.hhparserbot.services.HhApiService;
 import com.kuklin.manageapp.bots.hhparserbot.services.HhVacancyService;
 import com.kuklin.manageapp.common.library.ScheduleProcessor;
 import com.kuklin.manageapp.common.library.tgutils.ThreadUtil;
-import feign.FeignException;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -36,9 +36,9 @@ public class HhVacancyScheduleProcessor implements ScheduleProcessor {
                 //Обработка вакансий
                 hhVacancyService.fetchAndSaveEntity(vacancy);
                 ThreadUtil.sleep(500);
-            } catch (FeignException.NotFound e) {
-                // Вакансия удалена / недоступна в HH — не крит
-                log.error("VacancyScheduleProcessor: vacancy {} not found in HH (404). Marking as DELETED", vacancy.getHhId());
+            } catch (HhApiService.HhVacancyNotFoundException e) {
+                // Вакансия удалена / в архиве — не крит
+                log.error("VacancyScheduleProcessor: vacancy {} not found or archived in HH. Marking as NOT_FOUND_ERROR", vacancy.getHhId());
                 hhVacancyService.save(vacancy.setStatus(VacancyStatus.NOT_FOUND_ERROR));
 
 

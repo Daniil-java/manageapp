@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.Getter;
-import lombok.Setter;
 
 import java.util.Collections;
 import java.util.List;
@@ -44,7 +43,6 @@ public class HhResponseDto {
     }
 
     @Getter(AccessLevel.NONE)
-    @Setter(AccessLevel.NONE)
     @JsonProperty("key_skills")
     private List<KeySkillItem> keySkillsItems;
 
