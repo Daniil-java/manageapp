@@ -93,6 +93,10 @@ public class CommonPaymentFacade implements PaymentFacade {
         }
 
         // 4. Флоу: Telegram-подписка
+        // ⚠️ Подписка Telegram с автосписанием выключена — оплаты только разовые (et-81).
+        // Включать только для 30-дневного тарифа и после проверки продления на тестовом боте:
+        // Telegram сам списывает звёзды каждые 30 дней, продление обрабатывает PaymentService.processTelegramSubs.
+        // См. CreateInvoiceLinkWithTelegramSubscription.
 //        boolean isTelegramSubscription =
 //                plan.getPayloadType().equals(PricingPlan.PricingPlanType.SUBSCRIPTION)
 //                        && plan.getCurrency().equals(Currency.XTR)

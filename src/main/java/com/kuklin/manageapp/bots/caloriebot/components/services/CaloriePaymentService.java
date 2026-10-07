@@ -6,10 +6,10 @@ import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseExcep
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.common.entities.TelegramUser;
-import com.kuklin.manageapp.common.library.tgmodels.CreateInvoiceLinkWithTelegramSubscription;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import com.kuklin.manageapp.common.services.TelegramUserService;
+import com.kuklin.manageapp.common.services.UserAuthIdentityService;
 import com.kuklin.manageapp.payment.components.paymentfacades.CommonPaymentFacade;
 import com.kuklin.manageapp.payment.entities.Payment;
 import com.kuklin.manageapp.payment.entities.PricingPlan;
@@ -17,10 +17,12 @@ import com.kuklin.manageapp.payment.models.common.Currency;
 import com.kuklin.manageapp.payment.services.PaymentService;
 import com.kuklin.manageapp.payment.services.PricingPlanService;
 import com.kuklin.manageapp.payment.services.UserSubscriptionService;
+import com.kuklin.manageapp.payment.services.exceptions.PricingPlanNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.telegram.telegrambots.meta.api.methods.invoices.CreateInvoiceLink;
 
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -37,6 +39,9 @@ public class CaloriePaymentService {
     private final CalorieTelegramBot calorieTelegramBot;
     private final UserSubscriptionService userSubscriptionService;
     private final TelegramUserService telegramUserService;
+    private final UserAuthIdentityService userAuthIdentityService;
+    // Для звёзд (XTR) Telegram не проверяет providerToken, но пустым его передать нельзя
+    private static final String TOKEN_DUMMY = "xtr_dummy";
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd")
             .withZone(ZoneId.systemDefault());
 
@@ -45,11 +50,16 @@ public class CaloriePaymentService {
     }
 
     public PaymentResponse createPaymentLink(Long appUserId, Long planId) {
-        try {
-            // 1. Получаем выбранный тариф
-            PricingPlan plan = pricingPlanService.getPricingPlanById(planId);
+        // Платёж подтверждает бот по Telegram-аккаунту плательщика (pre_checkout_query) —
+        // аккаунту без Telegram (вход по email) оплатить нечем, счёт не выставляем
+        if (!hasTelegram(appUserId)) {
+            throw new ErrorResponseException(ErrorStatus.PAYMENT_TELEGRAM_REQUIRED);
+        }
 
-            // 2. Создаем системную запись о платеже
+        PricingPlan plan = getPurchasablePlan(planId);
+
+        try {
+            // 1. Создаем системную запись о платеже
             Payment payment = paymentService.createNewPayment(
                     BotIdentifier.CALORIE_BOT,
                     appUserId,
@@ -57,22 +67,22 @@ public class CaloriePaymentService {
                     Payment.Provider.STARS
             );
 
-            int starsAmount = plan.getCurrency().equals(Currency.XTR) ? plan.getPriceMinor() : 0;
+            // 2. Разовый счёт, как в боте (SendInvoiceBuilder). Не Telegram-подписка:
+            // у неё период всегда 30 дней, а тарифы бывают и на 90.
+            CreateInvoiceLink invoice = TelegramBot.buildOneTimeInvoiceLink(
+                    plan.getTitle(),
+                    plan.getDescription(),
+                    payment.getTelegramInvoicePayload(),
+                    TOKEN_DUMMY,
+                    payment.getStarsAmount(),
+                    plan.getCurrency(),
+                    "Оплата"
+            );
 
-            // 3. Формируем запрос к Telegram API
-            CreateInvoiceLinkWithTelegramSubscription subscriptionLink =
-                    TelegramBot.buildCreateInvoiceLink(
-                            plan.getTitle(),
-                            plan.getDescription(),
-                            payment.getTelegramInvoicePayload(),
-                            plan.getPriceMinor(),
-                            plan.getCurrency()
-                    );
+            // 3. Запрашиваем уникальную ссылку у Telegram
+            String invoiceLink = calorieTelegramBot.execute(invoice);
 
-            // 4. Запрашиваем уникальную ссылку у Telegram
-            String invoiceLink = calorieTelegramBot.execute(subscriptionLink);
-
-            // 5. Возвращаем URL на фронтенд
+            // 4. Возвращаем URL на фронтенд (WebApp.openInvoice)
             return PaymentResponse.builder()
                     .paymentId(payment.getId().toString())
                     .paymentUrl(invoiceLink)
@@ -83,6 +93,28 @@ public class CaloriePaymentService {
             log.error("Ошибка при генерации ссылки на оплату звездами для пользователя {}", appUserId, e);
             throw new ErrorResponseException(ErrorStatus.PAYMENT_FAILED);
         }
+    }
+
+    private boolean hasTelegram(Long appUserId) {
+        // Старые пользователи бота могут быть без Telegram-identity — их узнаём по профилю в боте
+        return userAuthIdentityService.hasTelegram(appUserId)
+                || telegramUserService.findByAppUserIdAndBotIdentifier(appUserId, BotIdentifier.CALORIE_BOT).isPresent();
+    }
+
+    // Только то, что показываем в /plans: тариф этого бота, доступный для покупки, в звёздах
+    private PricingPlan getPurchasablePlan(Long planId) {
+        PricingPlan plan;
+        try {
+            plan = pricingPlanService.getPricingPlanById(planId);
+        } catch (PricingPlanNotFoundException e) {
+            throw new ErrorResponseException(ErrorStatus.PRICING_PLAN_NOT_AVAILABLE);
+        }
+        if (plan.getBotIdentifier() != BotIdentifier.CALORIE_BOT
+                || plan.getPlanStatus() != PricingPlan.PlanStatus.AVAILABLE
+                || plan.getCurrency() != Currency.XTR) {
+            throw new ErrorResponseException(ErrorStatus.PRICING_PLAN_NOT_AVAILABLE);
+        }
+        return plan;
     }
 
     @Transactional

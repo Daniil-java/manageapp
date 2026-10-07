@@ -11,6 +11,7 @@ import org.telegram.telegrambots.meta.api.methods.ActionType;
 import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.methods.BotApiMethod;
 import org.telegram.telegrambots.meta.api.methods.ParseMode;
+import org.telegram.telegrambots.meta.api.methods.invoices.CreateInvoiceLink;
 import org.telegram.telegrambots.meta.api.methods.invoices.SendInvoice;
 import org.telegram.telegrambots.meta.api.methods.send.*;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
@@ -354,6 +355,25 @@ public abstract class TelegramBot extends TelegramLongPollingBot implements Tele
                 .build();
     }
 
+    // Разовый счёт ссылкой (миниаппка: WebApp.openInvoice) — то же, что buildInvoiceOrNull, только без чата
+    public static CreateInvoiceLink buildOneTimeInvoiceLink(String title,
+                                                            String description, String payload,
+                                                            String providerToken, int amount,
+                                                            Currency currency, String labelPrice
+    ) {
+        return CreateInvoiceLink.builder()
+                .title(title)
+                .description(description)
+                .payload(payload)
+                .providerToken(providerToken)
+                .currency(currency.name())
+                .prices(List.of(new LabeledPrice(labelPrice, amount)))
+                .build();
+    }
+
+    // ⚠️ Счёт-ПОДПИСКА с автосписанием каждые 30 дней (не разовый!) — подпись всегда «Подписка 30 дней».
+    // Сейчас не используется: только для 30-дневного тарифа, подробности — CreateInvoiceLinkWithTelegramSubscription.
+    // Для разовой оплаты — buildOneTimeInvoiceLink.
     public static CreateInvoiceLinkWithTelegramSubscription buildCreateInvoiceLink(
             String title,
             String description, String payload,

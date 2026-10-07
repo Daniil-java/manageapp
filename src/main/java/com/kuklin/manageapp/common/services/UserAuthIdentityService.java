@@ -28,6 +28,11 @@ public class UserAuthIdentityService {
                 .map(identity -> identity.getAppUser().getId());
     }
 
+    /** Привязан ли к аккаунту Telegram — без него оплатить звёздами нельзя. */
+    public boolean hasTelegram(Long appUserId) {
+        return identityRepository.existsByAppUser_IdAndProvider(appUserId, AuthProvider.TELEGRAM);
+    }
+
     public void linkTelegram(AppUser appUser, Long telegramId) {
         UserAuthIdentity identity = new UserAuthIdentity();
         identity.setAppUser(appUser);

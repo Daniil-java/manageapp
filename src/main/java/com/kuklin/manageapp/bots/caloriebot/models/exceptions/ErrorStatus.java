@@ -16,6 +16,9 @@ public enum ErrorStatus {
     FAVORITE_DISH_NOT_FOUND(HttpStatus.NOT_FOUND, "Favorite dish not found!"),
     QUICK_ADD_FULL(HttpStatus.CONFLICT, "Quick add is full. Unpin a dish first."),
     PAYMENT_FAILED(HttpStatus.BAD_REQUEST, "Payment failed!"),
+    // Оплата только звёздами: счёт оплачивается в Telegram тем же аккаунтом, что привязан к пользователю
+    PAYMENT_TELEGRAM_REQUIRED(HttpStatus.FORBIDDEN, "Payment is available only via Telegram. Open the app in Telegram."),
+    PRICING_PLAN_NOT_AVAILABLE(HttpStatus.BAD_REQUEST, "This plan is not available."),
     USER_NOT_FOUND(HttpStatus.BAD_REQUEST, "User not found!" ),
     DISH_NOT_BELONG_USER(HttpStatus.BAD_REQUEST, "Dish not belong user!"),
     EMAIL_ALREADY_BUSY(HttpStatus.BAD_REQUEST, "Email is already busy!"),

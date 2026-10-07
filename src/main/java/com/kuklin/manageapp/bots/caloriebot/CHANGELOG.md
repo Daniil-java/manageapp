@@ -1,4 +1,12 @@
 ## 0.0.49 (в работе)
+[et-81] — Оплата звёздами из миниаппки
+* Fix: POST /calorie/payment/create выставлял счёт через CreateInvoiceLinkWithTelegramSubscription — для любого тарифа подпись «Подписка 30 дней» и задуманный период автосписания 30 дней (тариф на 90 дней списывал бы цену каждые 30). Теперь разовый счёт, как в боте (SendInvoiceBuilder): TelegramBot.buildOneTimeInvoiceLink, подпись «Оплата», сумма — Payment.starsAmount.
+* /payment/create только для аккаунтов с Telegram (identity TELEGRAM или профиль в боте) — иначе 403 PAYMENT_TELEGRAM_REQUIRED. Счёт подтверждает бот по Telegram-аккаунту плательщика; аккаунт с одним email оплатить не смог бы, а звёзды списались бы не тому.
+* /payment/create принимает только тарифы калорийного бота, AVAILABLE, в звёздах — иначе 400 PRICING_PLAN_NOT_AVAILABLE (раньше можно было выставить счёт по любому planId, в том числе чужого бота или отключённому).
+* UserAuthIdentityService.hasTelegram.
+* Решено: оплаты только разовые. Код подписки Telegram с автосписанием (CreateInvoiceLinkWithTelegramSubscription, buildCreateInvoiceLink, CommonPaymentFacade, PaymentService.processTelegramSubs, TELEGRAM_SUBSCRIPTION_URL) помечен ⚠️-комментариями: период только 30 дней, поле subscriptionPeriod не доходит до Telegram в telegrambots 6.9, продление вживую не проверено.
+* Юнит-тест CaloriePaymentServiceTest.
+
 [et-79] — Лендинг: «Вести дневник с этой нормой» заполняет профиль в боте
 * Кнопка калькулятора на лендинге ведёт в бота с данными формы: ?start=p_<пол>_<возраст>_<рост>_<вес>_<активность>_<цель>[_<utm>] (например p_F_28_168_65_M_L_partner_ab12cd34). Telegram пропускает в start до 64 символов [A-Za-z0-9_-] — коды однобуквенные, UTM-код лендинга (calorie.landing.start-code) дописывается в хвост, если влезает. Без JS кнопка ведёт просто в бота.
 * CalculatorStartParam — разбор параметра /start: без префикса p_ — весь параметр UTM-код, как раньше; всё после седьмой части — UTM-код (может содержать «_»). Значения проверяются на границы UserNutritionProfile; битые данные отбрасываются, UTM из хвоста всё равно засчитывается.

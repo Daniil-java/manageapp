@@ -147,6 +147,13 @@ public class PaymentService {
     }
 
     //Обработка телеграммовской подписки. Работает вместе с методом processTelegramSuccessfulPaymentAndGetOrNull
+    // ⚠️ Продление подписки Telegram с автосписанием. Сейчас подписки выключены (только разовые оплаты, et-81),
+    // и этот путь вживую не проверялся. Срабатывает, когда successful_payment пришёл по уже оплаченному
+    // payload (Telegram сам списал звёзды через 30 дней) — создаётся новый Payment.
+    // При разовых оплатах повтор по тому же payload — это дубль, а не продление: если когда-нибудь
+    // успешный разовый платёж 30-дневного тарифа придёт повторно, он здесь продлит подписку.
+    // Перед включением подписок различать продление по полю is_recurring из successful_payment
+    // (в telegrambots 6.9 его нет — понадобится обновить библиотеку).
     private Payment processTelegramSubs(
             Payment payment, PricingPlan plan, BotIdentifier botIdentifier) {
         if (!payment.getStatus().equals(Payment.PaymentStatus.CREATED)) {

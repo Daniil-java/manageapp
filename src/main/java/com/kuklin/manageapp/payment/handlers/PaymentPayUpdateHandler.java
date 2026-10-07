@@ -85,6 +85,7 @@ public class PaymentPayUpdateHandler implements PaymentUpdateHandler {
 
             switch (result.type()) {
                 case REDIRECT_URL -> telegramBot.sendReturnedMessage(chatId, result.url());
+                // ⚠️ Подписка Telegram с автосписанием — сейчас не выдаётся (CommonPaymentFacade, isTelegramSubscription = false)
                 case TELEGRAM_SUBSCRIPTION_URL -> {
                     String url = telegramBot.execute(result.createInvoiceLink());
                     telegramBot.sendReturnedMessage(
