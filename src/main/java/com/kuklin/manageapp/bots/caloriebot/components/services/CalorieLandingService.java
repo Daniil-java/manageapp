@@ -21,6 +21,8 @@ import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static com.kuklin.manageapp.bots.caloriebot.components.services.CalorieAccessService.FREE_PLAN_CODE;
 
@@ -34,6 +36,10 @@ public class CalorieLandingService {
     private static final BotIdentifier BOT = BotIdentifier.CALORIE_BOT;
     private static final String NOT_AVAILABLE = "—";
     private static final String UNLIMITED = "Без лимита";
+    /** Эмодзи в начале пункта: символы, модификаторы цвета кожи, вариационный селектор, ZWJ, keycap. */
+    private static final Pattern LEADING_ICON =
+            Pattern.compile("^([\\p{So}\\p{Sk}\\x{FE0F}\\x{200D}\\x{20E3}]+)\\s*(.*)$");
+    private static final Pattern BULLET = Pattern.compile("^[-•*]\\s+");
 
     private final PricingPlanService pricingPlanService;
     private final PlanFeatureService planFeatureService;
@@ -127,10 +133,31 @@ public class CalorieLandingService {
         return plans.stream()
                 .map(plan -> new PlanCard(
                         plan.getTitle(),
-                        plan.getDescription(),
+                        toPoints(plan.getDescription()),
                         formatPrice(plan.getPriceMinor(), plan.getCurrency()),
                         describeDuration(plan.getDurationDays()),
                         savingPercent(plan, shortestByCurrency.get(plan.getCurrency()))))
+                .toList();
+    }
+
+    /**
+     * Описание тарифа из БД — пункты по строкам, обычно «эмодзи + текст». HTML схлопывает переносы,
+     * поэтому пункты отдаются списком, а эмодзи отделяется от текста, чтобы встать слева от него.
+     */
+    static List<PlanPoint> toPoints(String description) {
+        if (description == null) {
+            return List.of();
+        }
+        return description.lines()
+                .map(String::strip)
+                .map(line -> BULLET.matcher(line).replaceFirst(""))
+                .filter(line -> !line.isEmpty())
+                .map(line -> {
+                    Matcher m = LEADING_ICON.matcher(line);
+                    return m.matches() && !m.group(2).isBlank()
+                            ? new PlanPoint(m.group(1), m.group(2))
+                            : new PlanPoint(null, line);
+                })
                 .toList();
     }
 
@@ -177,7 +204,10 @@ public class CalorieLandingService {
     public record LandingPage(List<PlanCard> plans, List<FeatureRow> features, String botUrl) { }
 
     /** saving — выгода в процентах к самому короткому плану, null — без выгоды. */
-    public record PlanCard(String title, String description, String price, String duration, Integer saving) { }
+    public record PlanCard(String title, List<PlanPoint> points, String price, String duration, Integer saving) { }
+
+    /** Пункт описания тарифа; icon — эмодзи в начале строки или null. */
+    public record PlanPoint(String icon, String text) { }
 
     public record FeatureRow(String name, String free, String premium) { }
 }

@@ -66,6 +66,24 @@ class CalorieLandingServiceTest {
     }
 
     @Test
+    void descriptionSplitsIntoPointsWithLeadingEmoji() {
+        var points = CalorieLandingService.toPoints("""
+                ✅ Без лимитов на фото
+                - 📄 PDF-отчёты за неделю
+
+                👩🏽‍💻 ИИ-разбор дня
+                Доступ ко всем функциям
+                """);
+
+        assertThat(points).containsExactly(
+                new CalorieLandingService.PlanPoint("✅", "Без лимитов на фото"),
+                new CalorieLandingService.PlanPoint("📄", "PDF-отчёты за неделю"),
+                new CalorieLandingService.PlanPoint("👩🏽‍💻", "ИИ-разбор дня"),
+                new CalorieLandingService.PlanPoint(null, "Доступ ко всем функциям"));
+        assertThat(CalorieLandingService.toPoints(null)).isEmpty();
+    }
+
+    @Test
     void packagesAndPlansWithoutDurationAreHidden() {
         PricingPlan pack = plan("PACK", 30, 100, Currency.XTR)
                 .setPayloadType(PricingPlan.PricingPlanType.GENERATION_REQUEST);

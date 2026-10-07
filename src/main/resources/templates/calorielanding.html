@@ -556,7 +556,10 @@
         .plan h3 { margin: 0 0 14px; font-size: 19px; font-weight: 900; min-height: 2.5em; display: flex; align-items: flex-start; }
         .plan .price { display: flex; align-items: baseline; gap: 6px; font-size: 42px; font-weight: 900; line-height: 1; }
         .plan .period { color: var(--text-muted); font-weight: 700; margin: 8px 0 14px; }
-        .plan .desc { color: var(--text-muted); font-size: 15px; flex: 1; margin-bottom: 20px; }
+        .plan .points { list-style: none; margin: 0 0 20px; padding: 0; flex: 1; display: grid; gap: 10px; align-content: start;
+                        color: var(--text-muted); font-size: 15px; line-height: 1.4; text-align: left; }
+        .plan .points li { display: flex; align-items: flex-start; gap: 10px; }
+        .plan .points .pt-icon { flex: none; width: 1.4em; text-align: center; }
         .plan .btn { margin-top: auto; }
         .badge { position: absolute; top: -13px; left: 50%; transform: translateX(-50%); background: var(--accent); color: #fff;
                  font-weight: 900; font-size: 13px; padding: 5px 12px; border-radius: 999px; white-space: nowrap; box-shadow: var(--shadow-fab); }
@@ -984,7 +987,10 @@
                     <h3>Бесплатно</h3>
                     <div class="price">0 ⭐</div>
                     <div class="period">навсегда</div>
-                    <div class="desc">Фото-разборы и ИИ-разбор дня с дневным лимитом, дневник, вода и вес.</div>
+                    <ul class="points">
+                        <li><span class="pt-icon">📸</span><span>Фото-разборы и ИИ-разбор дня с дневным лимитом</span></li>
+                        <li><span class="pt-icon">📒</span><span>Дневник, вода и вес</span></li>
+                    </ul>
                     <a class="btn btn-ghost btn-block" th:href="${page.botUrl}" target="_blank" rel="noopener">Начать</a>
                 </div>
                 <div class="card plan" th:each="plan : ${page.plans}" th:classappend="${plan.saving != null} ? 'featured'">
@@ -992,7 +998,12 @@
                     <h3 th:text="${plan.title}">Premium</h3>
                     <div class="price" th:text="${plan.price}">150 ⭐</div>
                     <div class="period" th:text="${plan.duration}">1 месяц</div>
-                    <div class="desc" th:text="${plan.description}">Доступ ко всем функциям</div>
+                    <ul class="points" th:unless="${plan.points.isEmpty()}">
+                        <li th:each="point : ${plan.points}">
+                            <span class="pt-icon" th:if="${point.icon != null}" th:text="${point.icon}">✨</span>
+                            <span th:text="${point.text}">Доступ ко всем функциям</span>
+                        </li>
+                    </ul>
                     <a class="btn btn-primary btn-block" th:href="${page.botUrl}" target="_blank" rel="noopener">Оформить</a>
                 </div>
             </div>
