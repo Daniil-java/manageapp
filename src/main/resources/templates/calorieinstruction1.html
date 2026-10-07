@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Calory Bot Guide</title>
+  <style>
+    :root {
+      --tg-bg: #efeff4;
+      --tg-card: #ffffff;
+      --tg-text: #000000;
+      --tg-hint: #8e8e93;
+      --tg-link: #3390ec;
+      --tg-accent: #34c759;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--tg-bg);
+      color: var(--tg-text);
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+    }
+
+    .app-container {
+      width: 100%;
+      max-width: 500px;
+      padding: 20px 16px;
+      box-sizing: border-box;
+    }
+
+    /* Иконка бота */
+    .logo-container {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 10px;
+    }
+
+    .bot-logo {
+      width: 80px;
+      height: 80px;
+      border-radius: 20px;
+      object-fit: cover;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    h1 {
+      font-size: 22px;
+      text-align: center;
+      margin-bottom: 25px;
+      margin-top: 5px;
+    }
+
+    h2 {
+      font-size: 16px;
+      color: var(--tg-link);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin: 20px 0 10px 5px;
+    }
+
+    .card {
+      background: var(--tg-card);
+      border-radius: 15px;
+      padding: 16px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .img-box {
+      width: 100%;
+      background: #f8f8f8;
+      border-radius: 10px;
+      margin: 10px 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      border: 1px solid rgba(0,0,0,0.03);
+    }
+
+    .img-box img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .img-caption {
+      font-size: 12px;
+      color: var(--tg-hint);
+      padding: 8px;
+      text-align: center;
+    }
+
+    p {
+      font-size: 15px;
+      line-height: 1.4;
+      margin: 0 0 10px 0;
+    }
+
+    ul {
+      padding-left: 20px;
+      font-size: 15px;
+      margin-bottom: 10px;
+    }
+
+    li {
+      margin-bottom: 8px;
+    }
+
+    .badge {
+      background: var(--tg-bg);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: bold;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-container">
+
+  <div class="logo-container">
+    <img src="/images/caloriescreens/logo.png" alt="Logo" class="bot-logo">
+  </div>
+
+  <h1>Calory Bot: Инструкция</h1>
+
+  <section>
+    <h2>1. Профиль пользователя</h2>
+    <div class="card">
+      <p>При первом вызове команды, бот попросит заполнить профиль: пол, рост, вес и т.д. Когда вы внесете эти данные бот рассчитает вашу норму калорий, белков, жиров, углеводов (КБЖУ) исходя из ваших целей.
+        Благодаря этому, вы каждый раз при добавлении нового блюда будете видеть свой остаток </p>
+
+      <div class="img-box">
+        <img src="/images/caloriescreens/1_1_kbju_summary.jpg" alt="Сводка КБЖУ">
+      </div>
+
+      <div class="img-box">
+        <img src="/images/caloriescreens/1_2_progress_bars.jpg" alt="Прогресс бары">
+        <div class="img-caption">Дневной прогресс согласно нормам</div>
+      </div>
+
+      <p>Чтобы изменить данные или цели, используйте кнопку <span class="badge">Изменить профиль</span>.</p>
+
+      <div class="img-box">
+        <img src="/images/caloriescreens/1_3_profile_settings.jpg" alt="Настройки профиля">
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>2. Добавление еды</h2>
+    <div class="card">
+      <p>Добавляйте блюда через <b>фото, текст или аудио</b>. Бот покажет КБЖУ и % от дневной нормы.</p>
+
+      <div class="img-box">
+        <img src="/images/caloriescreens/2_1_food_card.jpg" alt="Карточка блюда">
+        <div class="img-caption">Пример распознанного блюда</div>
+      </div>
+
+      <p>Кнопками под сообщением можно менять вес порции (±10%) или количество порций.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>3. Избранное</h2>
+    <div class="card">
+      <p>Нажмите <span class="badge">Сохранить блюдо</span>, чтобы оно попало в список избранного для быстрого добавления.</p>
+
+      <div class="img-box">
+        <img src="/images/caloriescreens/3_1_favorites_list.jpg" alt="Список избранного">
+      </div>
+
+      <p>Для удаления блюд используйте <b>Режим удаления</b> и подтвердите действие.</p>
+
+      <div class="img-box">
+        <img src="/images/caloriescreens/3_2_delete_confirmation.jpg" alt="Подтверждение удаления">
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>4. Дневник за сегодня</h2>
+    <div class="card">
+      <p>Кнопка <span class="badge">Сегодня</span> выводит список всех приемов пищи за день и итоговый прогресс.</p>
+
+      <div class="img-box">
+        <img src="/images/caloriescreens/4_1_today_diary.jpg" alt="Дневник за сегодня">
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>5. Отчеты и Вес</h2>
+    <div class="card">
+      <p>В разделе <b>Отчеты</b> можно выбрать детальный разбор рациона:</p>
+
+      <div class="img-box">
+        <img src="/images/caloriescreens/5_1_report_menu.jpg" alt="Меню отчетов">
+      </div>
+
+      <ul>
+        <li><b>Дневной:</b> анализ и советы от ИИ прямо в чате.</li>
+        <li><b>Недельный/Месячный:</b> PDF-отчет с глубокой аналитикой.</li>
+      </ul>
+
+      <div class="img-box">
+        <img src="/images/caloriescreens/5_2_pdf_report.jpg" alt="PDF отчет">
+      </div>
+
+      <p>Кнопка <span class="badge">ВЕС</span> пришлет историю изменений вашего веса.</p>
+    </div>
+  </section>
+
+  <p style="text-align: center; color: var(--tg-hint); font-size: 12px; margin-top: 30px; margin-bottom: 20px;">
+    Calory Bot v1.0
+  </p>
+</div>
+
+</body>
+</html>
