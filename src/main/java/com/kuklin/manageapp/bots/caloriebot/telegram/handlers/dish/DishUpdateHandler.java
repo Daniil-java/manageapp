@@ -11,6 +11,8 @@ import com.kuklin.manageapp.bots.caloriebot.configurations.TelegramCaloriesBotKe
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.entities.DishChoiceChatModel;
 import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.DishDto;
+import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
+import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.MissingFeatureException;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.AccessResult;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.EmptyResultCharge;
@@ -75,10 +77,26 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
             "🤔 Не удалось найти еду на фото. Попытка засчитана.\n\n"
                     + "Фотографируйте блюдо крупно и при хорошем свете или опишите его текстом.";
     private static final String ERROR_LIMIT_MSG = "Количество запросов, доступных вам, достигло предела!";
+    private static final String DISH_SAVE_FAILED_MESSAGE =
+            "⚠️ Не получилось сохранить блюдо — сбой на нашей стороне, попытка не засчитана. "
+                    + "Попробуйте ещё раз чуть позже.";
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
-        List<Dish> dishes = getDishOrNull(update, telegramUser);
+        List<Dish> dishes;
+        try {
+            dishes = getDishOrNull(update, telegramUser);
+        } catch (ErrorResponseException e) {
+            // ИИ распознал блюда, но в БД они не записались — это не «не съедобно», говорим как есть
+            if (e.getErrorStatus() != ErrorStatus.DISH_SAVE_FAILED) throw e;
+            calorieTelegramBot.sendReturnedMessage(
+                    update.getMessage().getChatId(),
+                    DISH_SAVE_FAILED_MESSAGE,
+                    KeyboardCalorieUpdateHandler.getCommandKeyboard(),
+                    null
+            );
+            return;
+        }
         if (dishes == null || dishes.isEmpty()) return;
 
         for (Dish dish: dishes) {

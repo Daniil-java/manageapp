@@ -292,35 +292,50 @@ public class DishService {
 
     // --- Private Methods ---
 
+    /**
+     * Разбирает ответ ИИ и сохраняет блюда.
+     * null — ИИ не нашёл еду или ответил так, что не разобрать (для фото это «на фото нет еды»).
+     * Сбой сохранения — не «нет еды»: бросаем DISH_SAVE_FAILED, FeatureAccessAspect вернёт попытку.
+     */
     private List<Dish> getDishListByAiResponseOrNull(Long userId, String response) {
-        try {
-            List<com.kuklin.manageapp.bots.caloriebot.models.entitydtos.DishDto> dtos = parseJsonOrNull(response, new TypeReference<List<com.kuklin.manageapp.bots.caloriebot.models.entitydtos.DishDto>>() {});
-
-            if (dtos == null || dtos.isEmpty()) {
-                return null;
-            }
-
-            for (com.kuklin.manageapp.bots.caloriebot.models.entitydtos.DishDto dto: dtos) {
-                dto.checkValuesNotNull();
-            }
-
-            List<Dish> dishes = new ArrayList<>();
-            for (com.kuklin.manageapp.bots.caloriebot.models.entitydtos.DishDto dto : dtos) {
-                if (dto.getIsDish() != null && dto.getIsDish()) {
-                    dto.setUserId(userId);
-                    Dish dish = Dish.toEntity(dto);
-                    dishes.add(dish);
-                }
-            }
-
-            // Через прокси, иначе @Transactional у saveDishes не сработает
-            dishes = selfProvider.getObject().saveDishes(userId, dishes);
-
-            return dishes.isEmpty() ? null : dishes;
-
-        } catch (Exception e) {
+        List<Dish> dishes = toDishesOrNull(userId, response);
+        if (dishes == null) {
             return null;
         }
+
+        try {
+            // Через прокси, иначе @Transactional у saveDishes не сработает
+            dishes = selfProvider.getObject().saveDishes(userId, dishes);
+        } catch (RuntimeException e) {
+            log.error("Failed to save dishes recognized by AI for user {}", userId, e);
+            throw new ErrorResponseException(ErrorStatus.DISH_SAVE_FAILED, e);
+        }
+        return dishes.isEmpty() ? null : dishes;
+    }
+
+    /**
+     * Ответ ИИ → несохранённые блюда. null — JSON не разобрался, в нём нет блюд или данные кривые.
+     */
+    private List<Dish> toDishesOrNull(Long userId, String response) {
+        List<DishDto> dtos = parseJsonOrNull(response, new TypeReference<List<DishDto>>() {});
+        if (dtos == null || dtos.isEmpty()) {
+            return null;
+        }
+
+        List<Dish> dishes = new ArrayList<>();
+        try {
+            for (DishDto dto : dtos) {
+                dto.checkValuesNotNull();
+                if (dto.getIsDish() != null && dto.getIsDish()) {
+                    dto.setUserId(userId);
+                    dishes.add(Dish.toEntity(dto));
+                }
+            }
+        } catch (RuntimeException e) {
+            log.warn("Invalid dish data in AI response for user {}: {}", userId, e.getMessage());
+            return null;
+        }
+        return dishes.isEmpty() ? null : dishes;
     }
 
     private <T> T parseJsonOrNull(String json, TypeReference<T> typeReference) {
