@@ -29,11 +29,10 @@ public class MenuCalorieUpdateHandler implements CalorieBotUpdateHandler {
                     null
             );
         } else if (update.hasCallbackQuery()) {
-            calorieTelegramBot.sendEditMessage(
+            // Сообщение с кнопкой остаётся как было (с форматированием и ссылками), убираем только кнопки
+            calorieTelegramBot.sendEditMessageReplyMarkupNull(
                     update.getCallbackQuery().getMessage().getChatId(),
-                    update.getCallbackQuery().getMessage().getText(),
-                    update.getCallbackQuery().getMessage().getMessageId(),
-                    null
+                    update.getCallbackQuery().getMessage().getMessageId()
             );
 
             calorieTelegramBot.sendReturnedMessage(

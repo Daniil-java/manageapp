@@ -24,9 +24,6 @@ public class StartFlowCalorieUpdateHandler implements CalorieBotUpdateHandler {
             """
             Привет! 👋 Я — твой умный помощник для учета калорий и дневник питания.
                         
-            Шаг 1. Заполни профиль
-            Пожалуйста, нажми на кнопку «Заполнить профиль» под этим сообщением. Это нужно, чтобы я рассчитал твою личную суточную норму. Как только ты это сделаешь, у тебя появятся красивые и удобные шкалы прогресса по калориям и БЖУ вместо скучных цифр! 📊
-                        
             Как записывать еду? Это очень просто:
             Текстом 📝: Просто напиши в чат (например: «два вареных яйца, тост и кофе с молоком»).
             Голосом 🎙: Лень печатать? Наговори съеденное в голосовом сообщении — я сам всё расшифрую и посчитаю.
@@ -37,6 +34,12 @@ public class StartFlowCalorieUpdateHandler implements CalorieBotUpdateHandler {
             /keyboard — вернуть меню-клавиатуру в самый низ экрана, если она пропала.
             /support — написать в нашу поддержку (если есть вопросы или что-то пошло не так).
                     """;
+    // Отдельным сообщением: анкета профиля редактирует сообщение с кнопкой — инструкция выше остаётся в чате
+    private static final String FILL_PROFILE_MSG =
+            """
+            Шаг 1. Заполни профиль
+            Пожалуйста, нажми на кнопку «Заполнить профиль» под этим сообщением. Это нужно, чтобы я рассчитал твою личную суточную норму. Как только ты это сделаешь, у тебя появятся красивые и удобные шкалы прогресса по калориям и БЖУ вместо скучных цифр! 📊
+            """;
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
@@ -45,35 +48,35 @@ public class StartFlowCalorieUpdateHandler implements CalorieBotUpdateHandler {
                 .getOrCreateProfile(telegramUser.getAppUserId())
                 .checkTargetCalculateParams();
 
-        Integer lastMsgId = update.getCallbackQuery().getMessage().getMessageId();
-        calorieTelegramBot.sendEditMessage(
-                update.getCallbackQuery().getMessage().getChatId(),
-                MSG,
-                lastMsgId,
-                null
+        Long chatId = update.getCallbackQuery().getMessage().getChatId();
+        // Приветствие (со ссылками на политику и соглашение) остаётся, убираем только «Далее» / «Закрыть»
+        calorieTelegramBot.sendEditMessageReplyMarkupNull(
+                chatId,
+                update.getCallbackQuery().getMessage().getMessageId()
         );
 
-        calorieTelegramBot.sendReturnedMessage(
-                update.getCallbackQuery().getMessage().getChatId(),
-                MSG,
-                getStartFlowKeyboard(isFilledProfile),
-                null
-        );
+        calorieTelegramBot.sendReturnedMessage(chatId, MSG, getStartFlowKeyboard(), null);
+
+        // Пришёл с лендинга с данными калькулятора — профиль уже заполнен, шаг не нужен
+        if (!isFilledProfile) {
+            calorieTelegramBot.sendReturnedMessage(chatId, FILL_PROFILE_MSG, getFillProfileKeyboard(), null);
+        }
     }
 
-    private InlineKeyboardMarkup getStartFlowKeyboard(boolean isFilledProfile) {
-        TelegramKeyboard.TelegramKeyboardBuilder keyboard = new TelegramKeyboard.TelegramKeyboardBuilder();
+    private InlineKeyboardMarkup getFillProfileKeyboard() {
+        return TelegramKeyboard.builder()
+                .row(TelegramKeyboard.button("Заполнить профиль", Command.CALORIE_PROFILE_DIALOGUE.getCommandText()))
+                .build();
+    }
 
-        InlineKeyboardButton profileButton = TelegramKeyboard.button("Заполнить профиль", Command.CALORIE_PROFILE.getCommandText());
+    private InlineKeyboardMarkup getStartFlowKeyboard() {
+        TelegramKeyboard.TelegramKeyboardBuilder keyboard = new TelegramKeyboard.TelegramKeyboardBuilder();
 
         InlineKeyboardButton button = new InlineKeyboardButton();
         button.setText("📖 Инструкция в miniApp");
         button.setWebApp(new WebAppInfo(INSTR_URL));
 
         keyboard.row(TelegramKeyboard.button("Далее", Command.CALORIE_MENU.getCommandText()));
-        if (!isFilledProfile) {
-            keyboard.row(profileButton);
-        }
 
         return keyboard.row(button)
                 .row(TelegramKeyboard.button("Закрыть", Command.CALORIE_CLOSE.getCommandText()))

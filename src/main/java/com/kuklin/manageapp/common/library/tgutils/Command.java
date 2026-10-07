@@ -24,6 +24,7 @@ public enum Command {
     CALORIE_PROFILE_RECALCULATE("/recalculate", BotIdentifier.CALORIE_BOT),
     CALORIE_PROFILE_EDIT("/profileedit", BotIdentifier.CALORIE_BOT),
     CALORIE_PROFILE_DIALOGUE("/profiledialogue", BotIdentifier.CALORIE_BOT),
+    CALORIE_PROFILE_FROM_CALCULATOR("/calcapply", BotIdentifier.CALORIE_BOT),
     CALORIE_WATER("💧", BotIdentifier.CALORIE_BOT),
     CALORIE_WEIGHT("Вес", BotIdentifier.CALORIE_BOT),
     CALORIE_WEIGHT_HISTORY("⚖ВЕС", BotIdentifier.CALORIE_BOT),

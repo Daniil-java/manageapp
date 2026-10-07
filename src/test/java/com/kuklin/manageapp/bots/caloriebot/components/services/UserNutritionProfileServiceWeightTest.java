@@ -5,6 +5,7 @@ import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
 import com.kuklin.manageapp.bots.caloriebot.entities.WeightEntry;
 import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.UserNutritionProfileDto;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
+import com.kuklin.manageapp.bots.caloriebot.models.landing.CalculatorStartParam;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -68,6 +69,31 @@ class UserNutritionProfileServiceWeightTest {
         assertThat(profile.getWaterTargetMlPerDay()).isEqualTo(2294);
         verify(weightEntryService).updateWeight(USER_ID, new BigDecimal("69.5"));
         verify(entryService).syncWithProfile(profile);
+    }
+
+    @Test
+    void applyCalculatorFillsProfileSwitchesToAutoAndLogsNewWeight() {
+        profile.setNormMode(UserNutritionProfile.NormMode.MANUAL).setCaloriesNormPerDay(1500);
+
+        service.applyCalculator(USER_ID, new CalculatorStartParam.Calculator(
+                UserNutritionProfile.Sex.FEMALE, 28, 168, 65,
+                UserNutritionProfile.ActivityLevel.MEDIUM, UserNutritionProfile.Goal.LOSE_WEIGHT));
+
+        assertThat(profile.getNormMode()).isEqualTo(UserNutritionProfile.NormMode.AUTO);
+        assertThat(profile.getUserProfileFillingState()).isEqualTo(UserNutritionProfile.UserProfileFillingState.COMPLETED);
+        // (10·65 + 6.25·168 − 5·28 − 161) · 1.55 · 0.8 = 1734.76 — как в калькуляторе лендинга
+        assertThat(profile.getCaloriesNormPerDay()).isEqualTo(1735);
+        verify(weightEntryService).updateWeight(USER_ID, BigDecimal.valueOf(65));
+    }
+
+    @Test
+    void applyCalculatorWithSameWeightDoesNotTouchJournal() {
+        service.applyCalculator(USER_ID, new CalculatorStartParam.Calculator(
+                UserNutritionProfile.Sex.FEMALE, 31, 166, 70,
+                UserNutritionProfile.ActivityLevel.HIGH, UserNutritionProfile.Goal.MAINTAIN));
+
+        assertThat(profile.getActivityLevel()).isEqualTo(UserNutritionProfile.ActivityLevel.HIGH);
+        verify(weightEntryService, never()).updateWeight(any(), any());
     }
 
     @Test

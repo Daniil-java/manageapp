@@ -3,9 +3,11 @@ package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.startflow;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserNutritionProfileService;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UtmService;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
+import com.kuklin.manageapp.bots.caloriebot.models.landing.CalculatorStartParam;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.KeyboardCalorieUpdateHandler;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
+import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.CalculatorProfileUpdateHandler;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.CalorieNutritionProfileUpdateHandler;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.paymentpart.SubscriptionStatusCalorieUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
@@ -43,6 +45,7 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
     private final CalorieNutritionProfileUpdateHandler calorieNutritionProfileUpdateHandler;
     private final UtmService utmService;
     private final KeyboardCalorieUpdateHandler keyboardCalorieUpdateHandler;
+    private final CalculatorProfileUpdateHandler calculatorProfileUpdateHandler;
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
@@ -53,10 +56,7 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
                 getStartFlowKeyboard(),
                 null
         );
-        if (update.hasMessage() &&
-                update.getMessage().getText().split(TelegramBot.DEFAULT_DELIMETER).length > 1) {
-            processUtm(update, telegramUser);
-        }
+        processStartParam(update, telegramUser);
 
         //Сообщение с просьбой заполнить профиль
 //        sendUserNutritionFillRequest(update, telegramUser);
@@ -90,9 +90,22 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
                 ).build();
     }
 
-    private void processUtm(Update update, TelegramUser telegramUser) {
-        String code = update.getMessage().getText().split(TelegramBot.DEFAULT_DELIMETER)[1];
-        utmService.processClick(code, telegramUser.getAppUserId());
+    /**
+     * Параметр /start: UTM-код или данные калькулятора лендинга с UTM-кодом в хвосте
+     * (см. CalculatorStartParam).
+     */
+    private void processStartParam(Update update, TelegramUser telegramUser) {
+        String[] parts = update.getMessage().getText().split(TelegramBot.DEFAULT_DELIMETER);
+        if (parts.length < 2) return;
+
+        CalculatorStartParam param = CalculatorStartParam.parse(parts[1]);
+        if (param.utmCode() != null) {
+            utmService.processClick(param.utmCode(), telegramUser.getAppUserId());
+        }
+        if (param.calculator() != null) {
+            calculatorProfileUpdateHandler.offer(
+                    update.getMessage().getChatId(), telegramUser.getAppUserId(), param.calculator());
+        }
     }
 
     //Сообщение с просьбой заполнить профиль

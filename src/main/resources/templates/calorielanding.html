@@ -826,7 +826,7 @@
                     </div>
                     <div class="macros" id="calcMacros"></div>
                     <div class="calc-water"><svg><use href="#i-drop"/></svg><span>Вода: <span id="calcWater">0</span> мл в день</span></div>
-                    <a class="btn btn-primary btn-block" th:href="${page.botUrl}" target="_blank" rel="noopener">
+                    <a class="btn btn-primary btn-block" id="calcStart" th:href="${page.botUrl}" target="_blank" rel="noopener">
                         <svg><use href="#tg"/></svg>Вести дневник с этой нормой
                     </a>
                     <p class="calc-note">Ориентир, а не медицинская рекомендация. В боте норму можно поправить вручную.</p>
@@ -1367,6 +1367,19 @@
             '<div class="macro"><div class="label">Жиры</div><div class="nums"><b>' + f + ' г</b></div><div class="bar"><div class="fill f" style="width:' + (f * 9 / total * 100) + '%"></div></div></div>' +
             '<div class="macro"><div class="label">Углеводы</div><div class="nums"><b>' + c + ' г</b></div><div class="bar"><div class="fill c" style="width:' + (c * 4 / total * 100) + '%"></div></div></div>';
         document.getElementById("calcWater").textContent = fmt(water);
+        updateCalcStart(age, height, weight);
+    }
+
+    // Кнопка «Вести дневник с этой нормой»: данные калькулятора в /start → бот заполнит профиль
+    // (CalculatorStartParam: p_<пол>_<возраст>_<рост>_<вес>_<активность>_<цель>[_<utm>], до 64 символов).
+    var calcStart = document.getElementById("calcStart");
+    var calcStartUrl = new URL(calcStart.href);
+    var calcStartUtm = calcStartUrl.searchParams.get("start");
+    calcStartUrl.search = "";
+    function updateCalcStart(age, height, weight) {
+        var param = ["p", calc.sex, age, height, weight, calc.activity.charAt(0), calc.goal.charAt(0)].join("_");
+        if (calcStartUtm && param.length + 1 + calcStartUtm.length <= 64) param += "_" + calcStartUtm;
+        calcStart.href = calcStartUrl + "?start=" + param;
     }
 
     // ---------- Бенто: печатающийся текст ----------

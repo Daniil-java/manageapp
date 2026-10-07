@@ -13,6 +13,7 @@ import com.kuklin.manageapp.bots.caloriebot.entities.WeightEntry;
 import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.UserNutritionProfileDto;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
+import com.kuklin.manageapp.bots.caloriebot.models.landing.CalculatorStartParam;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -117,6 +118,32 @@ public class UserNutritionProfileService {
         // Сначала профиль: недопустимый вес отклоняется до записи в журнал
         saveRecalculatedIfPossible(profile);
         return weightEntryService.updateWeight(userId, weightKg);
+    }
+
+    /**
+     * Профиль из калькулятора лендинга: параметры, норма калорий по формуле (как на сайте), пересчёт.
+     * Режим воды не трогаем — своя норма воды остаётся своей. Новый вес попадает в журнал.
+     */
+    @Transactional
+    public UserNutritionProfile applyCalculator(Long userId, CalculatorStartParam.Calculator calculator) {
+        UserNutritionProfile profile = getOrCreateProfile(userId);
+        BigDecimal weightKg = BigDecimal.valueOf(calculator.weightKg());
+        boolean weightChanged = !sameWeight(profile.getCurrentWeightKg(), weightKg);
+
+        profile.setSex(calculator.sex())
+                .setAgeYears(calculator.ageYears())
+                .setHeightCm(calculator.heightCm())
+                .setCurrentWeightKg(weightKg)
+                .setActivityLevel(calculator.activityLevel())
+                .setGoal(calculator.goal())
+                .setNormMode(NormMode.AUTO)
+                .setUserProfileFillingState(UserProfileFillingState.COMPLETED);
+        profile = saveRecalculatedIfPossible(profile);
+
+        if (weightChanged) {
+            weightEntryService.updateWeight(userId, weightKg);
+        }
+        return profile;
     }
 
     /**
