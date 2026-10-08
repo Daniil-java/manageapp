@@ -1,4 +1,10 @@
 ## 0.0.49 (в работе)
+[et-82] — Голос: расшифровка gpt-4o-mini-transcribe с подсказкой про еду; вечерний отчёт выключается флагом
+* Fix: короткие голосовые («кофе», «кофе, банан») whisper-1 расшифровывал не на том языке — «Question. Question.», «Curte a sua banana.», японский, украинский; ИИ не находил еду. Язык Whisper угадывал сам, подсказки не было.
+* Расшифровка для всех ботов — gpt-4o-mini-transcribe вместо whisper-1 (OpenAiProviderProcessor.TRANSCRIPTION_MODEL): точнее на коротких фразах и с акцентом, дешевле.
+* Подсказка про еду (DishCalorieBotPrompts.AI_VOICE_TRANSCRIPTION_PROMPT, примеры на русском и английском, язык не задаёт) — только калорийный бот: голос из миниаппки (/dishes/voice) и голосовые в боте. Новые перегрузки fetchAudioResponse(…, prompt, …) и TelegramService.convertVoiceToTextOrNull(…, prompt); без prompt — как раньше, другие боты (календарь) не затронуты.
+* Вечерний отчёт за день (DailySummarySchedulerProcessor) выключается флагом calorie.daily-summary.enabled / CALORIE_DAILY_SUMMARY_ENABLED (по умолчанию true — на проде без изменений). Локально — false, иначе каждый вечер ИИ-отчёт уходит всем пользователям локальной базы.
+
 [et-82] — Сбой сохранения блюд больше не выдаётся за «на фото нет еды»
 * Fix: DishService.getDishListByAiResponseOrNull ловил любые исключения, включая ошибку saveDishes (БД), и возвращал null. Для фото FeatureAccessAspect считал это пустым ответом ИИ: первый раз за день прощал, дальше списывал попытку, пользователь видел «не удалось найти еду», в логах — ничего.
 * Теперь null — только «ИИ не нашёл еду / ответ не разобрать» (toDishesOrNull: битый JSON, кривые данные, isDish=false). Сбой сохранения логируется и бросает 503 DISH_SAVE_FAILED — аспект возвращает попытку, API отвечает «не удалось сохранить, попытка не засчитана».

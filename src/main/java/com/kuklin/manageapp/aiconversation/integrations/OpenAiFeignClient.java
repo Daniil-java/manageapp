@@ -34,6 +34,17 @@ public interface OpenAiFeignClient {
             @RequestPart("model") String model
     );
 
+    // То же с подсказкой: prompt подсказывает модели тему и слова (например, еду), язык не задаёт
+    @PostMapping(value = "audio/transcriptions",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    TranscriptionResponse transcribeAudioWithPrompt(
+            @RequestHeader("Authorization") String key,
+            @RequestPart("file") MultipartFile file,
+            @RequestPart("model") String model,
+            @RequestPart("prompt") String prompt
+    );
+
     @PostMapping("images/generations")
     OpenAiImageResponse generateImage(
             @RequestHeader("Authorization") String key,

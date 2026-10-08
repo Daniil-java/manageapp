@@ -38,7 +38,7 @@ public class HhVacancyScheduleProcessor implements ScheduleProcessor {
                 ThreadUtil.sleep(500);
             } catch (HhApiService.HhVacancyNotFoundException e) {
                 // Вакансия удалена / в архиве — не крит
-                log.error("VacancyScheduleProcessor: vacancy {} not found or archived in HH. Marking as NOT_FOUND_ERROR", vacancy.getHhId());
+                log.warn("VacancyScheduleProcessor: vacancy {} not found or archived in HH. Marking as NOT_FOUND_ERROR", vacancy.getHhId());
                 hhVacancyService.save(vacancy.setStatus(VacancyStatus.NOT_FOUND_ERROR));
 
 

@@ -35,6 +35,7 @@ import java.util.*;
 import static com.kuklin.manageapp.bots.caloriebot.entities.Dish.scale;
 import static com.kuklin.manageapp.bots.caloriebot.utils.DishCalorieBotPrompts.AI_PHOTO_REQUEST;
 import static com.kuklin.manageapp.bots.caloriebot.utils.DishCalorieBotPrompts.AI_REQUEST;
+import static com.kuklin.manageapp.bots.caloriebot.utils.DishCalorieBotPrompts.AI_VOICE_TRANSCRIPTION_PROMPT;
 
 @Service
 @RequiredArgsConstructor
@@ -431,6 +432,7 @@ public class DishService {
                 voice.bytes(),
                 voice.fileName(),
                 voice.mimeType(),
+                AI_VOICE_TRANSCRIPTION_PROMPT,
                 BotIdentifier.CALORIE_BOT,
                 getClass().getSimpleName() + ": processVoice!"
         );

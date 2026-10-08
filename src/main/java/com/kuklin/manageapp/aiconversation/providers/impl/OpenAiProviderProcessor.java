@@ -30,6 +30,10 @@ import java.util.Base64;
 @RequiredArgsConstructor
 public class OpenAiProviderProcessor implements ProviderProcessor, AiTextClient {
 
+    // Расшифровка голоса для всех ботов. whisper-1 путал язык на коротких фразах
+    // («кофе» → португальский, японский), mini-transcribe точнее и дешевле
+    private static final String TRANSCRIPTION_MODEL = "gpt-4o-mini-transcribe";
+
     private final OpenAiFeignClient openAiFeignClient;
     private final MetricsAiLogService metricsAiLogService;
     private final MetricsAiInteractionRecordService metricsAiInteractionRecordService;
@@ -140,12 +144,29 @@ public class OpenAiProviderProcessor implements ProviderProcessor, AiTextClient 
         return fetchAudioResponse(aiKey, content, "audio.ogg", "audio/ogg", botIdentifier, uniqLog);
     }
 
-    // fileName важен: Whisper определяет формат аудио по расширению (audio.webm, audio.mp4, ...)
+    // fileName важен: модель определяет формат аудио по расширению (audio.webm, audio.mp4, ...)
     public String fetchAudioResponse(
             String aiKey,
             byte[] content,
             String fileName,
             String contentType,
+            BotIdentifier botIdentifier,
+            String uniqLog
+    ) {
+        return fetchAudioResponse(aiKey, content, fileName, contentType, null, botIdentifier, uniqLog);
+    }
+
+    /**
+     * Расшифровка голоса с подсказкой.
+     * prompt — тема и примеры слов (например, еда для калорийного бота): короткие фразы
+     * без подсказки модель часто расшифровывает не на том языке. null — без подсказки.
+     */
+    public String fetchAudioResponse(
+            String aiKey,
+            byte[] content,
+            String fileName,
+            String contentType,
+            String prompt,
             BotIdentifier botIdentifier,
             String uniqLog
     ) {
@@ -158,11 +179,9 @@ public class OpenAiProviderProcessor implements ProviderProcessor, AiTextClient 
         );
 
         increaseMetricsLog();
-        TranscriptionResponse response = openAiFeignClient.transcribeAudio(
-                "Bearer " + aiKey,
-                multipartFile,
-                "whisper-1"
-        );
+        TranscriptionResponse response = prompt == null || prompt.isBlank()
+                ? openAiFeignClient.transcribeAudio("Bearer " + aiKey, multipartFile, TRANSCRIPTION_MODEL)
+                : openAiFeignClient.transcribeAudioWithPrompt("Bearer " + aiKey, multipartFile, TRANSCRIPTION_MODEL, prompt);
 
         metricsAiInteractionRecordService.saveInteractionRecord(
                 getProviderName(),

@@ -53,6 +53,11 @@ public class TelegramService {
     }
 
     public String convertVoiceToTextOrNull(TelegramBotClient telegramBot, String aiKey, Message message) {
+        return convertVoiceToTextOrNull(telegramBot, aiKey, message, null);
+    }
+
+    /** prompt — подсказка модели расшифровки (тема, примеры слов); null — без подсказки. */
+    public String convertVoiceToTextOrNull(TelegramBotClient telegramBot, String aiKey, Message message, String prompt) {
         log.info("Скачивание аудиофайла с телеграмма...");
         String fileId = message.getVoice().getFileId();
         byte[] inputAudioFile = downloadFileOrNull(telegramBot, fileId);
@@ -63,6 +68,9 @@ public class TelegramService {
         return openAiProviderProcessor.fetchAudioResponse(
                 aiKey,
                 inputAudioFile,
+                "audio.ogg",
+                "audio/ogg",
+                prompt,
                 CalorieTelegramBot.BOT_IDENTIFIER,
                 this.getClass().getSimpleName()
         );

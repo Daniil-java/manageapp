@@ -2,6 +2,17 @@ package com.kuklin.manageapp.bots.caloriebot.utils;
 
 public class DishCalorieBotPrompts {
 
+    /**
+     * Подсказка для расшифровки голоса (не инструкция для анализа): говорят про еду.
+     * Без неё короткое «кофе» модель расшифровывала как «Question» или по-японски.
+     * Язык не задаёт — примеры и на русском, и на английском.
+     */
+    public static final String AI_VOICE_TRANSCRIPTION_PROMPT =
+            "Человек диктует, что он съел или выпил: блюда, продукты, напитки и порции. "
+                    + "Например: кофе с молоком, капучино, чай, банан, яблоко, овсянка, гречка, "
+                    + "картошка, огурец, куриная грудка, 200 грамм, две ложки сахара. "
+                    + "The speaker lists food and drinks: coffee, tea, banana, oatmeal, chicken, rice.";
+
     public static final String AI_PHOTO_REQUEST =
             """
                             Ты — экспертная система анализа изображений еды и напитков на фото.

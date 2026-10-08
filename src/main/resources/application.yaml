@@ -90,6 +90,10 @@ calorie:
     per-minute: 10                   # за последние 60 секунд — защита от скриптов
     per-day: 100                     # за последние 24 часа, без подписки
     per-day-premium: 300             # за последние 24 часа, с подпиской
+  # Вечерний отчёт за день (ИИ + сообщение в Telegram). На проде включён;
+  # локально CALORIE_DAILY_SUMMARY_ENABLED=false — иначе тратит ИИ на всех пользователей локальной базы.
+  daily-summary:
+    enabled: ${CALORIE_DAILY_SUMMARY_ENABLED:true}
   # Лендинг zefir.fit: код UTM-ссылки (создаётся в /calorie/utm-form) для кнопок «Открыть в Telegram».
   # Пусто — ссылка на бота без метки.
   landing:

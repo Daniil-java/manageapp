@@ -40,6 +40,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.StringJoiner;
 
+import static com.kuklin.manageapp.bots.caloriebot.utils.DishCalorieBotPrompts.AI_VOICE_TRANSCRIPTION_PROMPT;
+
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -220,7 +222,8 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
         String request = telegramService.convertVoiceToTextOrNull(
                 calorieTelegramBot,
                 caloriesBotKeyComponents.getAiKey(),
-                message);
+                message,
+                AI_VOICE_TRANSCRIPTION_PROMPT);
 
         if (request == null) {
             calorieTelegramBot.sendReturnedMessage(chatId, VOICE_ERROR_MESSAGE);

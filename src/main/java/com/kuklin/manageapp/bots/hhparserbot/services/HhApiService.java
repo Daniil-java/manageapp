@@ -135,6 +135,11 @@ public class HhApiService {
             if (e.getStatusCode() == 404) {
                 throw new HhVacancyNotFoundException(hhId);
             }
+            //Скрытые/заблокированные вакансии hh отдаёт с 403 стабильно, хотя остальные страницы открываются.
+            //Если же 403 на всё (заблокировали наш IP) — не помечаем вакансию недоступной, а падаем как раньше
+            if (e.getStatusCode() == 403 && isSiteAccessible()) {
+                throw new HhVacancyNotFoundException(hhId);
+            }
             throw new UncheckedIOException(e);
         } catch (IOException e) {
             throw new UncheckedIOException(e);
@@ -147,6 +152,16 @@ public class HhApiService {
                 .header("Accept-Language", "ru-RU,ru;q=0.9")
                 .timeout(15000)
                 .get();
+    }
+
+    private boolean isSiteAccessible() {
+        try {
+            loadPage(HH_URL);
+            return true;
+        } catch (IOException e) {
+            log.warn("HH main page is not accessible: {}", e.getMessage());
+            return false;
+        }
     }
 
     private String textOrNull(Document document, String cssQuery) {
