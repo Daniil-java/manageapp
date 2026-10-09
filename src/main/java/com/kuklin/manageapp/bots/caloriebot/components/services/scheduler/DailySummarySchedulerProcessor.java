@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.bots.caloriebot.components.services.scheduler;
 
+import com.kuklin.manageapp.bots.caloriebot.components.services.DishService;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserSettingsService;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserSettings;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.MissingFeatureException;
@@ -20,7 +21,10 @@ import java.time.ZonedDateTime;
 import java.util.List;
 
 /**
- * Шедулер для ежедневных отчетов
+ * Шедулер для ежедневных отчетов.
+ * Отчёт (экран «Сегодня» + ИИ-разбор дня) — только если за день отчёта есть хотя бы одно блюдо:
+ * неактивным пользователям отчёты не уходят и ИИ на них не тратится (08.10 — 98 отчётов в 21:00 МСК,
+ * при этом остальных обращений к ИИ за сутки — около десятка).
  */
 @Component
 @AllArgsConstructor
@@ -31,6 +35,7 @@ public class DailySummarySchedulerProcessor implements ScheduleProcessor {
     private final ReportService reportService;
     private final CalorieTelegramBot calorieTelegramBot;
     private final TelegramUserService telegramUserService;
+    private final DishService dishService;
 
     //TODO сделать отправку не только в телеграм
     @Override
@@ -89,11 +94,21 @@ public class DailySummarySchedulerProcessor implements ScheduleProcessor {
             }
         }
 
-        // --- ОТПРАВКА ---
-        sendDailySummary(settings);
+        // --- ОТПРАВКА --- только если за день отчёта что-то записано.
+        // Пустой день тоже отмечаем обработанным: иначе проверка шла бы каждые 30 мин до полуночи,
+        // и блюдо, записанное в 23:40, дало бы «вечерний» отчёт в полночь
+        if (hasDishesOnReportDay(settings.getUserId(), effectiveTarget)) {
+            sendDailySummary(settings);
+        }
 
         // фиксируем факт отправки (UTC)
         userSettingsService.updateDailyLastReminder(settings.getUserId());
+    }
+
+    private boolean hasDishesOnReportDay(Long userId, ZonedDateTime effectiveTarget) {
+        Instant lastDish = dishService.getLastDishTimeOrNull(userId);
+        Instant startOfReportDay = effectiveTarget.toLocalDate().atStartOfDay(effectiveTarget.getZone()).toInstant();
+        return lastDish != null && !lastDish.isBefore(startOfReportDay);
     }
 
     //TODO Универсальное средство отправки

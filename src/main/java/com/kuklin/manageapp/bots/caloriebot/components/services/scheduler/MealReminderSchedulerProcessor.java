@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.bots.caloriebot.components.services.scheduler;
 
+import com.kuklin.manageapp.bots.caloriebot.components.services.DishService;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserSettingsService;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserSettings;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
@@ -11,13 +12,16 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
 
 /**
- * Шедулер для напоминаний о приеме пищи
+ * Шедулер для напоминаний о приеме пищи.
+ * Не напоминает, если блюдо записано за последний интервал (человек недавно ел),
+ * и тем, кто не записывал еду {@value #INACTIVE_DAYS} дней — перестал пользоваться ботом.
  */
 @Component
 @AllArgsConstructor
@@ -26,6 +30,8 @@ public class MealReminderSchedulerProcessor implements ScheduleProcessor {
     private final UserSettingsService userSettingsService;
     private final CalorieTelegramBot calorieTelegramBot;
     private final TelegramUserService telegramUserService;
+    private final DishService dishService;
+    static final int INACTIVE_DAYS = 7;
     private final Integer QUIET_HOUR_START = 23;
     private final Integer QUIET_HOUR_END = 7;
     @Override
@@ -70,7 +76,7 @@ public class MealReminderSchedulerProcessor implements ScheduleProcessor {
         if (lastReminderUtc != null) {
 
             long minutesSinceLast =
-                    java.time.Duration.between(lastReminderUtc, nowUtc).toMinutes();
+                    Duration.between(lastReminderUtc, nowUtc).toMinutes();
 
             int intervalMinutes = settings.getMealReminderIntervalMinutes();
 
@@ -78,6 +84,15 @@ public class MealReminderSchedulerProcessor implements ScheduleProcessor {
             if (minutesSinceLast < intervalMinutes) {
                 return;
             }
+        }
+
+        // Последнее блюдо: давно — пользователь ушёл, недавно — «давно не ел» было бы неправдой
+        Instant lastDish = dishService.getLastDishTimeOrNull(settings.getUserId());
+        if (lastDish == null || lastDish.isBefore(nowUtc.minus(Duration.ofDays(INACTIVE_DAYS)))) {
+            return;
+        }
+        if (lastDish.isAfter(nowUtc.minus(Duration.ofMinutes(settings.getMealReminderIntervalMinutes())))) {
+            return;
         }
 
         // --- ОТПРАВКА ---

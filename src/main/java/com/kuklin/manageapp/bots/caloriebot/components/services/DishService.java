@@ -150,6 +150,12 @@ public class DishService {
         );
     }
 
+    /** Когда пользователь последний раз добавил блюдо; null — ни разу. */
+    @Transactional(readOnly = true)
+    public Instant getLastDishTimeOrNull(Long userId) {
+        return dishRepository.findLastCreatedByUserId(userId);
+    }
+
     @Transactional(readOnly = true)
     public List<Dish> getWeekDishes(Long userId) {
         ZoneId userZone = userSettingsService.getOrCreate(userId).getZoneId();

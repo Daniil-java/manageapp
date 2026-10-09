@@ -17,6 +17,10 @@ public interface DishRepository extends JpaRepository<Dish, Long> {
     /** Сколько блюд пользователь добавил после момента after — для суточного лимита (calorie.dish-limits). */
     long countByUserIdAndCreatedAfter(Long userId, Instant after);
 
+    /** Время последнего добавленного блюда; null — блюд нет. Для вечернего отчёта и напоминаний о еде. */
+    @Query("select max(d.created) from Dish d where d.userId = :userId")
+    Instant findLastCreatedByUserId(@Param("userId") Long userId);
+
     @Query("""
         select d.created
         from Dish d
