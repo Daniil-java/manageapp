@@ -12,6 +12,7 @@ import com.kuklin.manageapp.bots.caloriebot.models.feature.BotFeature;
 import com.kuklin.manageapp.bots.caloriebot.components.RequiresFeature;
 import com.kuklin.manageapp.bots.caloriebot.configurations.AiInputLimitsProperties;
 import com.kuklin.manageapp.bots.caloriebot.models.AiInsightType;
+import com.kuklin.manageapp.bots.caloriebot.models.InsightLanguage;
 import com.kuklin.manageapp.bots.caloriebot.models.airesponse.AiPatternAnalysisResponse;
 import com.kuklin.manageapp.bots.caloriebot.models.airesponse.InsightPayloadRecord;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
@@ -67,8 +68,6 @@ public class ReportService {
     private static final String VAR_CATEGORY_CHART = "{{CATEGORY_CHART}}";
     private static final String VAR_TIMING_CHART = "{{TIMING_CHART}}";
 
-    // Язык ответов ИИ для инсайтов (интерфейс сайта/миниаппки на английском)
-    private static final String INSIGHT_LANGUAGE = "English";
     // Минимум разных дней с записями еды, чтобы инсайт имел смысл
     private static final int INSIGHT_MIN_DAYS_WITH_DISHES = 3;
 
@@ -146,6 +145,14 @@ public class ReportService {
      *                                {@value #INSIGHT_MIN_DAYS_WITH_DISHES} разных днях. ИИ в этом случае не вызывается.
      */
     public AccessResult<String> getAiInsightReport(AiInsightType type, Instant from, Instant to, Long userId) {
+        return getAiInsightReport(type, from, to, userId, InsightLanguage.EN);
+    }
+
+    /**
+     * То же на языке интерфейса пользователя: ИИ пишет текст инсайта на language.
+     */
+    public AccessResult<String> getAiInsightReport(AiInsightType type, Instant from, Instant to, Long userId,
+                                                   InsightLanguage language) {
         ReportData data = loadReportData(userId, from, to);
 
         long daysWithDishes = data.dishes().stream()
@@ -168,7 +175,7 @@ public class ReportService {
             };
             String periodLabel = "последние " + type.getPeriodDays() + " дней";
 
-            String prompt = AI_PERSONA + String.format(request, periodLabel, INSIGHT_LANGUAGE, jsonContext);
+            String prompt = AI_PERSONA + String.format(request, periodLabel, language.getPromptName(), jsonContext);
             String response = openAiProviderProcessor.fetchJsonResponse(
                     components.getAiKey(),
                     prompt,

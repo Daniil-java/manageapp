@@ -49,4 +49,8 @@ public class CalorieAiInsight {
     // Время последней генерации — запись одна на тип и перезаписывается при обновлении
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
+
+    /** Язык текста инсайта ("en", "ru" — InsightLanguage.code); null — до миграции 0.0.55, английский. */
+    @Column(name = "language", length = 8)
+    private String language;
 }

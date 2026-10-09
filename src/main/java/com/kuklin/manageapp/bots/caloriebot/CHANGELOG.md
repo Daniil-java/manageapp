@@ -1,4 +1,10 @@
 ## 0.0.49 (в работе)
+[et-83] — ИИ-инсайты на языке интерфейса миниаппки (под фронт et-12)
+* POST /calorie/reports/insights/{type}/refresh?lang=ru|en — ИИ пишет инсайт на этом языке (раньше всегда English, константа INSIGHT_LANGUAGE убрана). Нет параметра или неизвестный язык — en.
+* InsightLanguage (EN, RU): код для фронта/БД и название языка для промпта. Новый язык интерфейса — строка в enum.
+* Миграция 0.0.55, changeset 58: calorie_ai_insight.language (VARCHAR(8)), NULL — старые инсайты на английском. AiInsightDto.language — фронт помечает инсайт на другом языке устаревшим.
+* Старые сигнатуры ReportService.getAiInsightReport(…) и CalorieAiInsightService.refresh(…) без языка — английский. Тесты: язык доходит до ИИ и сохраняется, разбор кода языка.
+
 [et-82] — Голос: расшифровка gpt-4o-mini-transcribe с подсказкой про еду; вечерний отчёт выключается флагом
 * Fix: короткие голосовые («кофе», «кофе, банан») whisper-1 расшифровывал не на том языке — «Question. Question.», «Curte a sua banana.», японский, украинский; ИИ не находил еду. Язык Whisper угадывал сам, подсказки не было.
 * Расшифровка для всех ботов — gpt-4o-mini-transcribe вместо whisper-1 (OpenAiProviderProcessor.TRANSCRIPTION_MODEL): точнее на коротких фразах и с акцентом, дешевле.

@@ -5,6 +5,7 @@ import com.kuklin.manageapp.bots.caloriebot.components.repository.CalorieAiInsig
 import com.kuklin.manageapp.bots.caloriebot.entities.CalorieAiInsight;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserSettings;
 import com.kuklin.manageapp.bots.caloriebot.models.AiInsightType;
+import com.kuklin.manageapp.bots.caloriebot.models.InsightLanguage;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.AccessResult;
@@ -112,7 +113,7 @@ class CalorieAiInsightServiceTest {
     @Test
     void refreshAsksAiForLastSevenDaysInUserZoneAndSaves() {
         when(repository.findByAppUserIdAndType(USER_ID, AiInsightType.WEEKLY_SUMMARY)).thenReturn(Optional.empty());
-        when(reportService.getAiInsightReport(eq(AiInsightType.WEEKLY_SUMMARY), any(), any(), eq(USER_ID)))
+        when(reportService.getAiInsightReport(eq(AiInsightType.WEEKLY_SUMMARY), any(), any(), eq(USER_ID), eq(InsightLanguage.EN)))
                 .thenReturn(AccessResult.success(SUMMARY_JSON));
 
         AiInsightDto dto = service.refresh(USER_ID, AiInsightType.WEEKLY_SUMMARY);
@@ -120,7 +121,7 @@ class CalorieAiInsightServiceTest {
         LocalDate today = LocalDate.now(ZONE);
         ArgumentCaptor<Instant> from = ArgumentCaptor.forClass(Instant.class);
         ArgumentCaptor<Instant> to = ArgumentCaptor.forClass(Instant.class);
-        verify(reportService).getAiInsightReport(eq(AiInsightType.WEEKLY_SUMMARY), from.capture(), to.capture(), eq(USER_ID));
+        verify(reportService).getAiInsightReport(eq(AiInsightType.WEEKLY_SUMMARY), from.capture(), to.capture(), eq(USER_ID), eq(InsightLanguage.EN));
         assertThat(from.getValue()).isEqualTo(today.minusDays(6).atStartOfDay(ZONE).toInstant());
         assertThat(to.getValue()).isBefore(today.plusDays(1).atStartOfDay(ZONE).toInstant());
         assertThat(to.getValue().atZone(ZONE).toLocalDate()).isEqualTo(today);
@@ -135,12 +136,33 @@ class CalorieAiInsightServiceTest {
         assertThat(saved.getValue().getAppUserId()).isEqualTo(USER_ID);
         assertThat(saved.getValue().getPayload()).isEqualTo(SUMMARY_JSON);
         assertThat(saved.getValue().getCreatedAt()).isNotNull();
+        assertThat(saved.getValue().getLanguage()).isEqualTo("en");
+    }
+
+    @Test
+    void refreshAsksAiInInterfaceLanguageAndStoresIt() {
+        when(repository.findByAppUserIdAndType(USER_ID, AiInsightType.WEEKLY_SUMMARY)).thenReturn(Optional.empty());
+        when(reportService.getAiInsightReport(any(), any(), any(), any(), any())).thenReturn(AccessResult.success(SUMMARY_JSON));
+
+        AiInsightDto dto = service.refresh(USER_ID, AiInsightType.WEEKLY_SUMMARY, InsightLanguage.RU);
+
+        verify(reportService).getAiInsightReport(eq(AiInsightType.WEEKLY_SUMMARY), any(), any(), eq(USER_ID), eq(InsightLanguage.RU));
+        assertThat(dto.language()).isEqualTo("ru");
+    }
+
+    @Test
+    void insightLanguageFromCode() {
+        assertThat(InsightLanguage.fromCode("ru")).isEqualTo(InsightLanguage.RU);
+        assertThat(InsightLanguage.fromCode("ru-RU")).isEqualTo(InsightLanguage.RU);
+        assertThat(InsightLanguage.fromCode("EN")).isEqualTo(InsightLanguage.EN);
+        assertThat(InsightLanguage.fromCode(null)).isEqualTo(InsightLanguage.EN);
+        assertThat(InsightLanguage.fromCode("de")).isEqualTo(InsightLanguage.EN);
     }
 
     @Test
     void refreshMonthUsesThirtyDays() {
         when(repository.findByAppUserIdAndType(USER_ID, AiInsightType.MONTHLY_SUMMARY)).thenReturn(Optional.empty());
-        when(reportService.getAiInsightReport(any(), any(), any(), any())).thenReturn(AccessResult.success(SUMMARY_JSON));
+        when(reportService.getAiInsightReport(any(), any(), any(), any(), any())).thenReturn(AccessResult.success(SUMMARY_JSON));
 
         AiInsightDto dto = service.refresh(USER_ID, AiInsightType.MONTHLY_SUMMARY);
 
@@ -152,7 +174,7 @@ class CalorieAiInsightServiceTest {
         CalorieAiInsight existing = insight(AiInsightType.WEEKLY_SUMMARY, Instant.now().minus(Duration.ofDays(3)));
         existing.setId(7L).setPayload("{\"headline\":\"Old\"}");
         when(repository.findByAppUserIdAndType(USER_ID, AiInsightType.WEEKLY_SUMMARY)).thenReturn(Optional.of(existing));
-        when(reportService.getAiInsightReport(any(), any(), any(), any())).thenReturn(AccessResult.success(SUMMARY_JSON));
+        when(reportService.getAiInsightReport(any(), any(), any(), any(), any())).thenReturn(AccessResult.success(SUMMARY_JSON));
 
         service.refresh(USER_ID, AiInsightType.WEEKLY_SUMMARY);
 
@@ -167,45 +189,45 @@ class CalorieAiInsightServiceTest {
     @Test
     void secondRefreshWithinMinuteIsRejected() {
         when(repository.findByAppUserIdAndType(any(), any())).thenReturn(Optional.empty());
-        when(reportService.getAiInsightReport(any(), any(), any(), any())).thenReturn(AccessResult.success(SUMMARY_JSON));
+        when(reportService.getAiInsightReport(any(), any(), any(), any(), any())).thenReturn(AccessResult.success(SUMMARY_JSON));
 
         service.refresh(USER_ID, AiInsightType.WEEKLY_SUMMARY);
 
         assertError(() -> service.refresh(USER_ID, AiInsightType.WEEKLY_SUMMARY), ErrorStatus.AI_INSIGHT_TOO_FREQUENT);
-        verify(reportService, times(1)).getAiInsightReport(any(), any(), any(), any());
+        verify(reportService, times(1)).getAiInsightReport(any(), any(), any(), any(), any());
     }
 
     @Test
     void cooldownIsPerType() {
         when(repository.findByAppUserIdAndType(any(), any())).thenReturn(Optional.empty());
-        when(reportService.getAiInsightReport(any(), any(), any(), any())).thenReturn(AccessResult.success(SUMMARY_JSON));
+        when(reportService.getAiInsightReport(any(), any(), any(), any(), any())).thenReturn(AccessResult.success(SUMMARY_JSON));
 
         service.refresh(USER_ID, AiInsightType.WEEKLY_SUMMARY);
         service.refresh(USER_ID, AiInsightType.PATTERNS_WEEK);
 
-        verify(reportService, times(2)).getAiInsightReport(any(), any(), any(), any());
+        verify(reportService, times(2)).getAiInsightReport(any(), any(), any(), any(), any());
     }
 
     @Test
     void failedAiCallCountsTowardsCooldown() {
-        when(reportService.getAiInsightReport(any(), any(), any(), any())).thenReturn(AccessResult.success(null));
+        when(reportService.getAiInsightReport(any(), any(), any(), any(), any())).thenReturn(AccessResult.success(null));
 
         assertError(() -> service.refresh(USER_ID, AiInsightType.WEEKLY_SUMMARY), ErrorStatus.AI_INSIGHT_FAILED);
         assertError(() -> service.refresh(USER_ID, AiInsightType.WEEKLY_SUMMARY), ErrorStatus.AI_INSIGHT_TOO_FREQUENT);
 
-        verify(reportService, times(1)).getAiInsightReport(any(), any(), any(), any());
+        verify(reportService, times(1)).getAiInsightReport(any(), any(), any(), any(), any());
         verify(repository, never()).save(any());
     }
 
     @Test
     void notEnoughDataDoesNotStartCooldown() {
-        when(reportService.getAiInsightReport(any(), any(), any(), any()))
+        when(reportService.getAiInsightReport(any(), any(), any(), any(), any()))
                 .thenThrow(new ErrorResponseException(ErrorStatus.AI_INSIGHT_NOT_ENOUGH_DATA));
 
         assertError(() -> service.refresh(USER_ID, AiInsightType.WEEKLY_SUMMARY), ErrorStatus.AI_INSIGHT_NOT_ENOUGH_DATA);
         assertError(() -> service.refresh(USER_ID, AiInsightType.WEEKLY_SUMMARY), ErrorStatus.AI_INSIGHT_NOT_ENOUGH_DATA);
 
-        verify(reportService, times(2)).getAiInsightReport(any(), any(), any(), any());
+        verify(reportService, times(2)).getAiInsightReport(any(), any(), any(), any(), any());
         verify(repository, never()).save(any());
     }
 
@@ -214,7 +236,7 @@ class CalorieAiInsightServiceTest {
         CountDownLatch aiStarted = new CountDownLatch(1);
         CountDownLatch releaseAi = new CountDownLatch(1);
         when(repository.findByAppUserIdAndType(any(), any())).thenReturn(Optional.empty());
-        when(reportService.getAiInsightReport(any(), any(), any(), any())).thenAnswer(inv -> {
+        when(reportService.getAiInsightReport(any(), any(), any(), any(), any())).thenAnswer(inv -> {
             aiStarted.countDown();
             releaseAi.await(5, TimeUnit.SECONDS);
             return AccessResult.success(SUMMARY_JSON);
@@ -228,7 +250,7 @@ class CalorieAiInsightServiceTest {
 
         releaseAi.countDown();
         assertThat(first.get(5, TimeUnit.SECONDS).payload().get("headline").asText()).isEqualTo("Solid week");
-        verify(reportService, times(1)).getAiInsightReport(any(), any(), any(), any());
+        verify(reportService, times(1)).getAiInsightReport(any(), any(), any(), any(), any());
     }
 
     // ── Helpers ────────────────────────────────────────────

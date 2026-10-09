@@ -3,6 +3,7 @@ package com.kuklin.manageapp.bots.caloriebot.components.controller;
 import com.kuklin.manageapp.bots.caloriebot.components.services.CalorieAiInsightService;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UiAnalyticsService;
 import com.kuklin.manageapp.bots.caloriebot.models.AiInsightType;
+import com.kuklin.manageapp.bots.caloriebot.models.InsightLanguage;
 import com.kuklin.manageapp.bots.caloriebot.models.report.AiInsightDto;
 import com.kuklin.manageapp.bots.caloriebot.models.report.DashboardResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
@@ -58,11 +59,13 @@ public class ReportController {
     }
 
     @PostMapping("/insights/{type}/refresh")
-    @Operation(summary = "Обновить ИИ-инсайт", description = "Генерирует инсайт заново через ИИ (10–30 секунд). Не чаще раза в минуту на тип — иначе 429")
+    @Operation(summary = "Обновить ИИ-инсайт", description = "Генерирует инсайт заново через ИИ (10–30 секунд) на языке lang. Не чаще раза в минуту на тип — иначе 429")
     public AiInsightDto refreshInsight(
             @Parameter(hidden = true) @AuthenticationPrincipal Long appUserId,
-            @Parameter(description = "Тип инсайта", example = "WEEKLY_SUMMARY") @PathVariable(name = "type") AiInsightType type) {
+            @Parameter(description = "Тип инсайта", example = "WEEKLY_SUMMARY") @PathVariable(name = "type") AiInsightType type,
+            @Parameter(description = "Язык интерфейса: en, ru. Нет или неизвестный — en", example = "ru")
+            @RequestParam(name = "lang", required = false) String lang) {
 
-        return calorieAiInsightService.refresh(appUserId, type);
+        return calorieAiInsightService.refresh(appUserId, type, InsightLanguage.fromCode(lang));
     }
 }

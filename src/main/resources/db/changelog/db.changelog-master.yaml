@@ -161,3 +161,6 @@ databaseChangeLog:
   - include:
       file: scripts/0.0.54.sql
       relativeToChangelogFile: true
+  - include:
+      file: scripts/0.0.55.sql
+      relativeToChangelogFile: true

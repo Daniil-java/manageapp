@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kuklin.manageapp.bots.caloriebot.components.repository.CalorieAiInsightRepository;
 import com.kuklin.manageapp.bots.caloriebot.entities.CalorieAiInsight;
 import com.kuklin.manageapp.bots.caloriebot.models.AiInsightType;
+import com.kuklin.manageapp.bots.caloriebot.models.InsightLanguage;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.MissingFeatureException;
@@ -77,6 +78,13 @@ public class CalorieAiInsightService {
      *                                AI_INSIGHT_FAILED — ИИ ответил с ошибкой.
      */
     public AiInsightDto refresh(Long userId, AiInsightType type) {
+        return refresh(userId, type, InsightLanguage.EN);
+    }
+
+    /**
+     * То же на языке интерфейса: ИИ пишет инсайт на language, язык сохраняется вместе с инсайтом.
+     */
+    public AiInsightDto refresh(Long userId, AiInsightType type, InsightLanguage language) {
         String key = userId + ":" + type;
         if (!inProgress.add(key)) {
             throw new ErrorResponseException(ErrorStatus.AI_INSIGHT_TOO_FREQUENT);
@@ -94,7 +102,7 @@ public class CalorieAiInsightService {
             Instant to = periodTo.plusDays(1).atStartOfDay(zoneId).toInstant().minusMillis(1);
 
             // Если данных мало — бросит AI_INSIGHT_NOT_ENOUGH_DATA до вызова ИИ, cooldown не тратится
-            AccessResult<String> result = reportService.getAiInsightReport(type, from, to, userId);
+            AccessResult<String> result = reportService.getAiInsightReport(type, from, to, userId, language);
             lastAiCalls.put(key, Instant.now());
 
             String payload = result.getOrThrow();
@@ -107,6 +115,7 @@ public class CalorieAiInsightService {
             insight.setPeriodFrom(periodFrom)
                     .setPeriodTo(periodTo)
                     .setPayload(payload)
+                    .setLanguage(language.getCode())
                     .setCreatedAt(Instant.now());
 
             return toDto(calorieAiInsightRepository.save(insight), zoneId);
@@ -142,7 +151,8 @@ public class CalorieAiInsightService {
                     insight.getPeriodTo(),
                     insight.getCreatedAt(),
                     isStale(insight, zoneId),
-                    objectMapper.readTree(insight.getPayload())
+                    objectMapper.readTree(insight.getPayload()),
+                    insight.getLanguage()
             );
         } catch (JsonProcessingException e) {
             // В БД лежит только проверенный JSON, сюда попадать не должны
