@@ -20,16 +20,14 @@ public class MetricsAiLogService {
     private static final ZoneId HO_CHI_MINH_ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
 
     /**
-     * Счётчики за сегодня — только для чтения. Если запросов ещё не было, строку не создаём,
+     * Счётчики за день date (по Хошимину) — только для чтения. Если запросов не было, строку не создаём,
      * возвращаем нулевые счётчики (строку создаёт {@link #incrementForProvider}).
      */
-    public MetricsAiLog getTodayLog() {
-        LocalDate today = LocalDate.now(HO_CHI_MINH_ZONE);
-
+    public MetricsAiLog getLog(LocalDate date) {
         return metricsAiLogRepository
-                .findByDate(today)
+                .findByDate(date)
                 .orElseGet(() -> new MetricsAiLog()
-                        .setDate(today)
+                        .setDate(date)
                         .setTotalAiRequestCount(0L)
                         .setOpenAiRequestCount(0L)
                         .setGeminiAiRequestCount(0L)

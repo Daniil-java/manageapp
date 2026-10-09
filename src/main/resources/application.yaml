@@ -37,6 +37,13 @@ spring:
 bots:
   disabled: ${BOTS_DISABLED:}
 
+# Ошибки приложения в метрикс-бот (ErrorReportFormatter): ссылка на строку кода в GitHub.
+# commit — хеш задеплоенного коммита, Railway отдаёт его сам при деплое из GitHub; пусто — без ссылки
+metrics:
+  errors:
+    repo-url: https://github.com/Daniil-java/manageapp
+    commit: ${RAILWAY_GIT_COMMIT_SHA:}
+
 feign:
   client:
     config:

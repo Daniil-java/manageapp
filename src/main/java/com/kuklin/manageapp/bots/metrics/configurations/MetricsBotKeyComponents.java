@@ -23,7 +23,12 @@ public class MetricsBotKeyComponents {
         this.key = environment.getProperty("METRICS_BOT_TOKEN");
         log.info("Generation key initiated (METRICS_BOT_TOKEN)");
         this.adminIds = getAdminIdsList(environment.getProperty("METRICS_ADMIN_IDS"));
-        log.info("Admins ids initiated!");
+        // Сюда же уходят ошибки приложения (MetricsErrorParseUpdateHandler) — пустой список = их никто не получит
+        if (adminIds.isEmpty()) {
+            log.warn("METRICS_ADMIN_IDS is empty: daily metrics and application errors will not be sent");
+        } else {
+            log.info("Admins ids initiated: {}", adminIds.size());
+        }
     }
 
     private List<Long> getAdminIdsList(String admIds) {

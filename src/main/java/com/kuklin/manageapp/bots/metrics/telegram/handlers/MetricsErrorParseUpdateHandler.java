@@ -2,13 +2,18 @@ package com.kuklin.manageapp.bots.metrics.telegram.handlers;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.classic.spi.IThrowableProxy;
-import ch.qos.logback.classic.spi.StackTraceElementProxy;
+import com.kuklin.manageapp.bots.metrics.configurations.MetricsBotKeyComponents;
+import com.kuklin.manageapp.bots.metrics.services.ErrorReportFormatter;
+import com.kuklin.manageapp.bots.metrics.services.ErrorStormGuard;
 import com.kuklin.manageapp.bots.metrics.telegram.MetricsTelegramBot;
+import com.kuklin.manageapp.common.configurations.EnabledBots;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
+import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.ParseMode;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
@@ -16,19 +21,25 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.time.Instant;
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * Ошибки приложения (log.error из любого места, через LoggingConfig) — админам метрикс-бота (METRICS_ADMIN_IDS).
+ * Сообщение — короткая выжимка (ErrorReportFormatter), одинаковые ошибки не чаще раза в 2 минуты
+ * со сводкой повторов (ErrorStormGuard). Выключен METRICS (bots.disabled) — ошибки не отправляются.
+ */
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class MetricsErrorParseUpdateHandler implements MetricsUpdateHandler {
 
     private final MetricsTelegramBot metricsTelegramBot;
+    private final MetricsBotKeyComponents metricsBotKeyComponents;
+    private final ErrorReportFormatter errorReportFormatter;
+    private final ErrorStormGuard errorStormGuard;
+    private final EnabledBots enabledBots;
 
-    // Список администраторов для рассылки
-    private static final List<Long> ADMIN_IDS = List.of(425120436L, 420478432L);
     private static final int MAX_MESSAGE_LENGTH = 4000;
 
     @Override
@@ -51,103 +62,86 @@ public class MetricsErrorParseUpdateHandler implements MetricsUpdateHandler {
         }
     }
 
+    /**
+     * Вызывается приёмником логов на каждый ERROR. Текст собирается сразу, в потоке ошибки:
+     * место вызова log.error (callerData) logback вычисляет по текущему стеку. Отправка — асинхронно.
+     */
     public void sendErrorMessageToAdmin(ILoggingEvent event) {
-        // Используем CompletableFuture (стандарт Spring/Java) вместо ручного создания Thread
-        CompletableFuture.runAsync(() -> {
-            try {
-                sendErrorMessage(event);
-            } catch (Exception e) {
-                log.error("Критическая ошибка при отправке лога в Telegram", e);
+        if (!enabledBots.isEnabled(BotIdentifier.METRICS)) return;
+        // Свои ошибки отправки не пересылаем — иначе петля
+        if (getClass().getName().equals(event.getLoggerName())) return;
+
+        String signature;
+        String title;
+        String text;
+        try {
+            String known = knownErrorMessage(event);
+            if (known != null) {
+                signature = known;
+                title = known;
+                text = known;
+            } else {
+                signature = errorReportFormatter.signature(event);
+                title = errorReportFormatter.title(event);
+                text = errorReportFormatter.format(event);
             }
-        });
+        } catch (Exception e) {
+            log.warn("Failed to format error for admins", e);
+            return;
+        }
+
+        if (!errorStormGuard.tryAcquire(signature, title, Instant.now())) return;
+        CompletableFuture.runAsync(() -> broadcastToAdmins(text));
     }
 
-    public void sendErrorMessage(ILoggingEvent event) {
-        String message = event.getFormattedMessage();
-
-        // 1. Фильтр: Конфликт сессий (409)
-        if (message != null && message.contains("terminated by other getUpdates request")) {
-            broadcastToAdmins("⚠️ <b>Telegram 409 Conflict</b>: Похоже, запущено два инстанса бота.", ParseMode.HTML);
-            return;
+    /** Сводки по ошибкам, которые повторялись в последние 2 минуты. */
+    @Scheduled(fixedDelay = 20_000)
+    public void sendRepeatSummaries() {
+        if (!enabledBots.isEnabled(BotIdentifier.METRICS)) return;
+        for (ErrorStormGuard.Summary summary : errorStormGuard.flush(Instant.now())) {
+            broadcastToAdmins("🔁 <b>Повторилась ещё ×" + summary.repeats() + " за 2 мин</b>\n"
+                    + escape(summary.title()));
         }
-
-        // 2. Фильтр: Сетевые проблемы (Unreachable / No Response)
-        if (handleNetworkErrors(event)) {
-            return;
-        }
-
-        // 3. Общий случай: Формируем полный лог со стектрейсом
-        StringBuilder sb = new StringBuilder();
-        IThrowableProxy throwableProxy = event.getThrowableProxy();
-        if (throwableProxy != null) {
-            sb.append("<b>Trace</b>: ").append(throwableProxyToString(throwableProxy)).append("\n");
-        }
-        sb.append("<b>Message</b>: ").append(message).append("\n");
-
-        // Разбиваем длинный текст и отправляем
-        splitIntoChunks(sb.toString()).forEach(chunk -> broadcastToAdmins(chunk, ParseMode.HTML));
     }
 
     /**
-     * Распознает сетевые ошибки и отправляет короткие алерты
+     * Известные шумные ошибки — короткий текст вместо разбора стектрейса.
+     * Текст же служит ключом для защиты от шквала. null — обычная ошибка.
      */
-    private boolean handleNetworkErrors(ILoggingEvent event) {
+    private String knownErrorMessage(ILoggingEvent event) {
         String message = event.getFormattedMessage();
         IThrowableProxy tp = event.getThrowableProxy();
         String exceptionData = (tp != null) ? (tp.getClassName() + " " + tp.getMessage()) : "";
-
-        // Создаем строку для поиска в нижнем регистре
         String searchTarget = ((message != null ? message : "") + " " + exceptionData).toLowerCase();
 
-        // 1. Кейс: Сеть недоступна
+        if (searchTarget.contains("terminated by other getupdates request")) {
+            return "⚠️ <b>Telegram 409 Conflict</b>: Похоже, запущено два инстанса бота.";
+        }
         if (searchTarget.contains("network is unreachable") || searchTarget.contains("socketexception")) {
-            broadcastToAdmins("🌐 <b>CRITICAL Network</b>: Сеть недоступна (Network unreachable). Проверьте хост/DNS.", ParseMode.HTML);
-            return true;
+            return "🌐 <b>CRITICAL Network</b>: Сеть недоступна (Network unreachable). Проверьте хост/DNS.";
         }
-
-        // 2. Кейс: Telegram молчит
         if (searchTarget.contains("nohttpresponseexception") || searchTarget.contains("failed to respond")) {
-            broadcastToAdmins("🔌 <b>WARNING Network</b>: api.telegram.org не ответил. Возможен конфликт сессий.", ParseMode.HTML);
-            return true;
+            return "🔌 <b>WARNING Network</b>: api.telegram.org не ответил. Возможен конфликт сессий.";
         }
-
-        // 3. НОВЫЙ IF: Кейс: EditMessageText [400] Not Modified
         if (searchTarget.contains("message is not modified")) {
-            StringBuilder sb = new StringBuilder();
-            sb.append("🖱️ <b>INFO 400 UI</b>: Сообщение не изменено.\n\n");
-
-            // Добавляем инфу из лога, чтобы видеть, где именно упало
-            sb.append("<b>Log Message:</b> ").append(message).append("\n");
-            if (tp != null) {
-                sb.append("<b>Exception:</b> ").append(tp.getClassName()).append(": ").append(tp.getMessage()).append("\n");
-            }
-
-            sb.append("\n<b>Анализ:</b>\n");
-            sb.append("• Если пришло сразу несколько таких логов — юзер <b>дважды кликнул</b> по кнопке.\n");
-            sb.append("• Если лог один — проверь код хендлера, он отправляет <b>старый текст/разметку</b> без изменений.");
-
-            broadcastToAdmins(sb.toString(), ParseMode.HTML);
-            return true;
+            return "🖱️ <b>INFO 400 UI</b>: Сообщение не изменено — " + escape(errorReportFormatter.title(event)) + "\n"
+                    + "• Несколько таких подряд — юзер <b>дважды кликнул</b> по кнопке.\n"
+                    + "• Одно — хендлер отправляет <b>старый текст/разметку</b> без изменений.";
         }
-
-        return false;
+        return null;
     }
 
-    /**
-     * Отправка сообщения всем админам из списка
-     */
-    private void broadcastToAdmins(String text, String parseMode) {
-        for (Long chatId : ADMIN_IDS) {
+    private void broadcastToAdmins(String text) {
+        String limited = text.length() <= MAX_MESSAGE_LENGTH ? text : text.substring(0, MAX_MESSAGE_LENGTH) + "…";
+        for (Long chatId : metricsBotKeyComponents.getAdminIds()) {
             try {
-                executeSendMessage(chatId, text, parseMode);
+                executeSendMessage(chatId, limited, ParseMode.HTML);
             } catch (Exception ex) {
                 // Если ошибка в HTML-тегах, пробуем отправить голый текст
-                if (parseMode != null) {
-                    try {
-                        executeSendMessage(chatId, text, null);
-                    } catch (Exception ignore) {
-                        log.info("Failed to send message to admin {}", chatId);
-                    }
+                try {
+                    executeSendMessage(chatId, limited, null);
+                } catch (Exception ignore) {
+                    log.info("Failed to send message to admin {}", chatId);
                 }
             }
         }
@@ -159,33 +153,13 @@ public class MetricsErrorParseUpdateHandler implements MetricsUpdateHandler {
                         .chatId(chatId)
                         .text(text)
                         .parseMode(parseMode)
+                        .disableWebPagePreview(true)
                         .build()
         );
     }
 
-    private List<String> splitIntoChunks(String text) {
-        List<String> chunks = new ArrayList<>();
-        for (int i = 0; i < text.length(); i += MAX_MESSAGE_LENGTH) {
-            chunks.add(text.substring(i, Math.min(text.length(), i + MAX_MESSAGE_LENGTH)));
-        }
-        return chunks;
-    }
-
-    private String throwableProxyToString(IThrowableProxy throwableProxy) {
-        StringBuilder sb = new StringBuilder();
-        while (throwableProxy != null) {
-            sb.append(throwableProxy.getClassName()).append(": ")
-                    .append(throwableProxy.getMessage()).append("\n");
-
-            for (StackTraceElementProxy element : throwableProxy.getStackTraceElementProxyArray()) {
-                sb.append(element.toString()).append("\n");
-            }
-            throwableProxy = throwableProxy.getCause();
-            if (throwableProxy != null) {
-                sb.append("Caused by: ");
-            }
-        }
-        return sb.toString();
+    private static String escape(String text) {
+        return text == null ? "" : text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
     }
 
     @Override

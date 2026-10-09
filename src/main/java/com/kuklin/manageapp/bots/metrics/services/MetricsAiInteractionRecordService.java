@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
@@ -57,9 +58,9 @@ public class MetricsAiInteractionRecordService {
         );
     }
 
-    public String buildStatisticsForToday() {
-        ZonedDateTime now = ZonedDateTime.now(HO_CHI_MINH_ZONE);
-        ZonedDateTime startOfDay = now.toLocalDate().atStartOfDay(HO_CHI_MINH_ZONE);
+    /** Статистика вызовов ИИ за день day (по Хошимину). */
+    public String buildStatistics(LocalDate day) {
+        ZonedDateTime startOfDay = day.atStartOfDay(HO_CHI_MINH_ZONE);
         ZonedDateTime startOfNextDay = startOfDay.plusDays(1);
 
         Instant from = startOfDay.toInstant();
@@ -69,7 +70,7 @@ public class MetricsAiInteractionRecordService {
                 metricsAiInteractionRecordRepository.findByCreatedBetween(from, to);
 
         if (records.isEmpty()) {
-            return "No AI interaction metrics for today.";
+            return "No AI interaction metrics for " + day + ".";
         }
 
         StringBuilder sb = new StringBuilder();
