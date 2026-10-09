@@ -1,0 +1,1600 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Zefir — счётчик калорий по фото в Telegram</title>
+    <meta name="description"
+          content="Сфотографируй еду — Zefir посчитает калории и БЖУ, покажет остаток на день и разберёт рацион. Бот и мини-приложение в Telegram, без установки.">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Zefir — счётчик калорий по фото в Telegram">
+    <meta property="og:description"
+          content="Фото, текст или голос — и ты знаешь КБЖУ. Остаток на день, отчёты и ИИ-разбор рациона.">
+    <meta property="og:url" content="https://zefir.fit/">
+    <meta name="theme-color" content="#FDFBF7">
+    <link rel="icon" type="image/svg+xml" href="/calorie/landing/zefirka.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        /* ---------- Токены — те же, что в мини-аппе (zef-fe, globals.css) ---------- */
+        :root {
+            --bg: #FDFBF7;
+            --bg-soft: #F5EFE6;
+            --surface: #FFFFFF;
+            --surface-2: #FBF6EE;
+            --text: #3E2723;
+            --text-muted: #8A7A70;
+            --text-subtle: #C9BCB2;
+            --border: #EFE6D9;
+            --accent: #D97A4A;
+            --accent-hover: #C96A3A;
+            --accent-soft: #FBE7D9;
+            --accent-soft-2: #F6D9C2;
+            --accent-tint: #FDEEDB;
+            --fab-ring-outer: #F1BBA4;
+            --fab-ring-inner: #F4E4D3;
+            --danger: #E57373;
+            --danger-soft: #FCE4E4;
+            --success: #7FB77E;
+            --success-soft: #E6F3E2;
+            --water: #6FA8DC;
+            --tg-bg: #C9D9B4;
+            --tg-bubble: #FFFFFF;
+            --tg-button: rgba(84, 110, 64, .55);
+            --radius-sm: 12px;
+            --radius: 18px;
+            --radius-lg: 24px;
+            --radius-xl: 32px;
+            --shadow-soft: 3px 3px 0 -2px var(--accent-soft), 4px 5px 10px -3px rgba(62, 39, 35, .06);
+            --shadow-crisp: 4px 4px 0 -2px var(--accent-soft), 8px 8px 16px -4px rgba(62, 39, 35, .09);
+            --shadow-raised: 6px 6px 0 -2px var(--accent-soft), 12px 12px 24px -4px rgba(62, 39, 35, .10);
+            --shadow-fab: 0 8px 24px rgba(217, 122, 74, .35);
+            --font: "Nunito", "Quicksand", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #1F1612;
+                --bg-soft: #2A1F1A;
+                --surface: #2A1F1A;
+                --surface-2: #33251E;
+                --text: #F4E9DD;
+                --text-muted: #A89890;
+                --text-subtle: #6E5D54;
+                --border: #3A2A22;
+                --accent: #E88B5E;
+                --accent-hover: #F29B6E;
+                --accent-soft: #3A2820;
+                --accent-soft-2: #4A2E22;
+                --accent-tint: #3A2820;
+                --fab-ring-outer: #6B3F2A;
+                --fab-ring-inner: #4A2E22;
+                --danger-soft: #3F2322;
+                --success: #8FBF8F;
+                --success-soft: #1F2F20;
+                --tg-bg: #1E2A1C;
+                --tg-bubble: #2B3528;
+                --tg-button: rgba(120, 150, 100, .35);
+                --shadow-soft: 0 1px 3px rgba(0, 0, 0, .28), 0 1px 1px rgba(0, 0, 0, .22);
+                --shadow-crisp: 0 2px 6px rgba(0, 0, 0, .32), 0 1px 2px rgba(0, 0, 0, .22);
+                --shadow-raised: 0 10px 30px -8px rgba(0, 0, 0, .55), 0 4px 10px -4px rgba(0, 0, 0, .32);
+                --shadow-fab: 0 8px 24px rgba(232, 139, 94, .4);
+            }
+        }
+
+        /* ---------- База ---------- */
+        *, *::before, *::after { box-sizing: border-box; }
+        html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+        body {
+            margin: 0;
+            font-family: var(--font);
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.55;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+        button { font: inherit; color: inherit; cursor: pointer; }
+        a { color: var(--accent); }
+        svg { display: block; }
+        .wrap { max-width: 1160px; margin: 0 auto; padding: 0 16px; }
+        .muted { color: var(--text-muted); }
+
+        /* Декоративный фон: мягкие пятна и точечная сетка, как на пустом экране мини-аппа */
+        .bg-deco { position: fixed; inset: 0; z-index: -1; pointer-events: none; overflow: hidden; }
+        .bg-deco::before {
+            content: ""; position: absolute; inset: 0;
+            background-image: radial-gradient(var(--border) 1.2px, transparent 1.2px);
+            background-size: 22px 22px;
+            mask-image: radial-gradient(ellipse at 70% 10%, #000 0%, transparent 60%);
+            -webkit-mask-image: radial-gradient(ellipse at 70% 10%, #000 0%, transparent 60%);
+            opacity: .9;
+        }
+        .blob { position: absolute; border-radius: 50%; filter: blur(60px); opacity: .55; }
+        .blob.b1 { width: 520px; height: 520px; background: var(--accent-soft-2); top: -160px; right: -120px; }
+        .blob.b2 { width: 420px; height: 420px; background: var(--accent-tint); top: 40%; left: -180px; }
+
+        /* ---------- Кнопки ---------- */
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+            padding: 15px 26px; border-radius: 999px; border: 0;
+            font-weight: 800; font-size: 17px; line-height: 1.2; text-decoration: none; white-space: nowrap;
+            transition: transform .2s cubic-bezier(.34, 1.56, .64, 1), background .2s, box-shadow .2s;
+        }
+        .btn:hover { transform: translateY(-2px); }
+        .btn:active { transform: scale(.97); }
+        .btn-primary { background: var(--accent); color: #fff; box-shadow: var(--shadow-fab); }
+        .btn-primary:hover { background: var(--accent-hover); }
+        .btn-ghost { background: var(--surface); color: var(--text); box-shadow: var(--shadow-soft); }
+        .btn-small { padding: 10px 18px; font-size: 15px; box-shadow: none; }
+        .btn-block { width: 100%; }
+        .btn svg { width: 20px; height: 20px; flex: none; }
+
+        .pill {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 7px 14px; border-radius: 999px;
+            background: var(--surface); box-shadow: var(--shadow-soft);
+            font-weight: 700; font-size: 14px; color: var(--text-muted);
+        }
+
+        .card {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-crisp);
+            padding: 18px;
+        }
+
+        /* ---------- Шапка ---------- */
+        header {
+            position: sticky; top: 0; z-index: 50;
+            background: color-mix(in srgb, var(--bg) 82%, transparent);
+            backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px);
+            border-bottom: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+        }
+        .nav { display: flex; align-items: center; justify-content: space-between; height: 68px; gap: 16px; }
+        .brand { display: flex; align-items: center; gap: 10px; font-weight: 900; font-size: 22px;
+                 color: var(--text); text-decoration: none; letter-spacing: -.01em; }
+        .brand-ico { width: 42px; height: 42px; border-radius: 14px; background: var(--surface);
+                     box-shadow: var(--shadow-soft); display: grid; place-items: center; }
+        .brand-ico svg { width: 32px; height: 32px; }
+        .nav-links { display: flex; gap: 26px; align-items: center; }
+        .nav-links a.link { color: var(--text-muted); text-decoration: none; font-weight: 700; }
+        .nav-links a.link:hover { color: var(--text); }
+        @media (max-width: 860px) { .nav-links a.link { display: none; } }
+
+        /* ---------- Секции ---------- */
+        section { padding: 88px 0; position: relative; }
+        .sec-head { text-align: center; max-width: 720px; margin: 0 auto 48px; }
+        .eyebrow { display: inline-block; color: var(--accent); font-weight: 800; font-size: 14px;
+                   text-transform: uppercase; letter-spacing: .08em; margin-bottom: 10px; }
+        h1, h2, h3 { letter-spacing: -.02em; }
+        h2 { font-size: clamp(30px, 4.2vw, 46px); line-height: 1.12; margin: 0 0 14px; font-weight: 900; }
+        .sec-head p { margin: 0; color: var(--text-muted); font-size: 19px; }
+        @media (max-width: 640px) { section { padding: 64px 0; } .sec-head { margin-bottom: 32px; } }
+
+        .reveal { opacity: 0; transform: translateY(24px); transition: opacity .7s ease, transform .7s cubic-bezier(.2, .7, .2, 1); }
+        .reveal.in { opacity: 1; transform: none; }
+
+        /* ---------- Первый экран ---------- */
+        .hero { padding: 56px 0 72px; }
+        .hero-grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: 48px; align-items: center; }
+        .hero h1 { font-size: clamp(38px, 5.6vw, 66px); line-height: 1.04; margin: 22px 0 20px; font-weight: 900; }
+        .hl { position: relative; color: var(--accent); white-space: nowrap; }
+        .hl svg { position: absolute; left: 0; right: 0; bottom: -10px; width: 100%; height: 14px; }
+        .hl path { stroke: var(--accent-soft-2); stroke-width: 6; fill: none; stroke-linecap: round;
+                   stroke-dasharray: 420; stroke-dashoffset: 420; animation: draw 1.2s .4s ease forwards; }
+        @keyframes draw { to { stroke-dashoffset: 0; } }
+        .lead { font-size: 20px; color: var(--text-muted); margin: 0 0 32px; max-width: 31em; }
+        .hero-cta { display: flex; flex-wrap: wrap; gap: 14px; }
+        .hero-ways { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 30px; }
+        .way { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: 14px;
+               background: var(--surface-2); border: 1px solid var(--border); font-weight: 700; font-size: 15px; }
+        .way .ico { width: 26px; height: 26px; border-radius: 50%; background: var(--accent-tint); color: var(--accent);
+                    display: grid; place-items: center; }
+        .way .ico svg { width: 15px; height: 15px; }
+        @media (max-width: 940px) {
+            .hero { padding-top: 32px; }
+            .hero-grid { grid-template-columns: 1fr; }
+            .hero-stage { margin-top: 12px; }
+        }
+
+        /* Телефон с живыми компонентами мини-аппа */
+        .hero-stage { position: relative; display: grid; place-items: center; min-height: 640px; }
+        .phone {
+            position: relative; width: 340px; max-width: 100%;
+            background: var(--bg); border-radius: 46px; padding: 16px 14px 0;
+            border: 10px solid #2B201C;
+            box-shadow: 0 40px 80px -30px rgba(62, 39, 35, .45), 0 0 0 1px rgba(0, 0, 0, .05);
+            overflow: hidden; z-index: 2;
+        }
+        .phone::before { /* «чёлка» */
+            content: ""; position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+            width: 92px; height: 24px; border-radius: 20px; background: #2B201C; z-index: 3;
+        }
+        .app-head { display: flex; align-items: center; gap: 10px; padding: 26px 4px 14px; }
+        .app-ava { width: 46px; height: 46px; border-radius: 50%; background: var(--accent-tint);
+                   box-shadow: var(--shadow-soft); display: grid; place-items: center; flex: none; }
+        .app-ava svg { width: 34px; height: 34px; }
+        .app-hello { font-weight: 900; font-size: 19px; line-height: 1.1; }
+        .app-date { color: var(--text-muted); font-size: 13px; font-weight: 600; }
+        .app-streak { margin-left: auto; display: flex; align-items: center; gap: 4px; color: var(--accent); font-weight: 900; }
+
+        .goal { position: relative; box-shadow: var(--shadow-raised); margin-bottom: 12px; padding: 14px 16px 16px; }
+        .ring-wrap { position: relative; display: grid; place-items: center; padding: 4px 0 10px; }
+        .ring { width: 172px; height: 172px; transform: rotate(-90deg); overflow: visible; }
+        .ring .track { stroke: var(--accent-soft); }
+        .ring .seg { stroke: var(--accent); transition: stroke-dasharray .9s cubic-bezier(.4, 0, .2, 1), stroke .2s, stroke-width .2s; cursor: pointer; }
+        .ring .seg.hover { stroke: var(--accent-hover); stroke-width: 15; }
+        .ring .seg.over { stroke: var(--danger); }
+        .ring-center { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; pointer-events: none; }
+        .ring-val { font-size: 38px; font-weight: 900; line-height: 1; }
+        .ring-target { margin-top: 4px; color: var(--text-muted); font-size: 12px; font-weight: 600; }
+        .ring-meal { font-size: 13px; font-weight: 800; max-width: 110px; line-height: 1.2; }
+        .ring-meal-kcal { font-size: 28px; font-weight: 900; color: var(--accent); line-height: 1.1; }
+        .ring-meal-kcal span { font-size: 13px; }
+
+        .macros { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        .macro .label { font-weight: 800; font-size: 13px; }
+        .macro .nums { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+        .macro .nums b { color: var(--text); font-weight: 900; font-size: 12px; }
+        .bar { margin-top: 7px; height: 6px; background: var(--accent-soft); border-radius: 99px; overflow: hidden; }
+        .fill { height: 100%; width: 0; border-radius: 99px; transition: width .9s cubic-bezier(.4, 0, .2, 1); }
+        .fill.p { background: linear-gradient(90deg, #E88B5E, #D97A4A); }
+        .fill.c { background: linear-gradient(90deg, #E8B26A, #D99246); }
+        .fill.f { background: linear-gradient(90deg, #B88C6A, #8F6A4C); }
+
+        .water { display: flex; align-items: center; gap: 10px; padding: 12px 12px 12px 14px; margin-bottom: 12px; box-shadow: var(--shadow-soft); }
+        .water-ico { width: 38px; height: 38px; border-radius: 50%; background: var(--accent-tint); display: grid; place-items: center; flex: none; }
+        .water-ico svg { width: 18px; height: 18px; }
+        .water-body { flex: 1; min-width: 0; }
+        .water-title { font-weight: 900; font-size: 14px; }
+        .water-title span { color: var(--text-muted); font-weight: 600; font-size: 12px; }
+        .water .bar { margin-top: 5px; height: 5px; }
+        .water .fill { background: linear-gradient(90deg, #9CC7EC, var(--water)); }
+        .water-btn { border: 0; border-radius: 12px; padding: 8px 10px; font-weight: 800; font-size: 12px;
+                     background: var(--accent); color: #fff; transition: transform .15s; }
+        .water-btn:active { transform: scale(.92); }
+
+        .logs-title { font-weight: 900; font-size: 17px; margin: 4px 4px 10px; }
+        .log { display: flex; align-items: center; gap: 10px; padding: 11px 12px; margin-bottom: 9px; border-radius: var(--radius); box-shadow: var(--shadow-soft); }
+        .log-ico { width: 38px; height: 38px; border-radius: 50%; background: var(--accent-tint); display: grid; place-items: center; font-size: 19px; flex: none; }
+        .log-body { flex: 1; min-width: 0; }
+        .log-name { font-weight: 900; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .log-sub { color: var(--text-muted); font-size: 12px; font-weight: 600; }
+        .log-kcal { font-weight: 900; color: var(--accent); font-size: 14px; white-space: nowrap; }
+
+        .tabbar { position: relative; margin: 6px -14px 0; height: 70px; background: var(--surface);
+                  border-top: 1px solid var(--border); display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; align-items: center; }
+        .tab { display: grid; place-items: center; color: var(--text-subtle); }
+        .tab svg { width: 22px; height: 22px; }
+        .tab.on { color: var(--accent); }
+        .fab {
+            width: 56px; height: 56px; border-radius: 50%; margin: 0 auto; transform: translateY(-18px);
+            background: var(--fab-ring-inner); border: 3px solid var(--fab-ring-outer); color: var(--accent);
+            display: grid; place-items: center; box-shadow: 0 4px 10px rgba(217, 122, 74, .18);
+            animation: breathe 2.8s ease-in-out infinite;
+        }
+        .fab svg { width: 24px; height: 24px; }
+        @keyframes breathe {
+            0%, 100% { transform: translateY(-18px) scale(1); box-shadow: 0 4px 10px rgba(217, 122, 74, .18); }
+            50% { transform: translateY(-18px) scale(1.07); box-shadow: 0 8px 22px rgba(217, 122, 74, .40); }
+        }
+
+        /* Летающие плашки вокруг телефона */
+        .float {
+            position: absolute; z-index: 3; display: flex; align-items: center; gap: 10px;
+            background: var(--surface); border-radius: 18px; padding: 10px 14px;
+            box-shadow: var(--shadow-raised); font-weight: 800; font-size: 14px; white-space: nowrap;
+            animation: bob 5s ease-in-out infinite;
+        }
+        .float small { display: block; color: var(--text-muted); font-weight: 600; font-size: 12px; }
+        .float .emo { font-size: 24px; }
+        .float.f1 { top: 232px; left: -56px; }
+        .float.f2 { top: 470px; right: -56px; animation-delay: -1.6s; }
+        .float.f3 { bottom: 26px; left: -40px; animation-delay: -3.2s; }
+        @keyframes bob { 0%, 100% { transform: translateY(0) rotate(-1deg); } 50% { transform: translateY(-12px) rotate(1deg); } }
+        @media (max-width: 1240px) { .float.f1 { left: -16px; } .float.f2 { right: -8px; } .float.f3 { left: -8px; } }
+        @media (max-width: 560px) {
+            .hero-stage { min-height: 0; }
+            .float { display: none; }
+            .phone { width: 100%; max-width: 340px; }
+        }
+
+        /* ---------- Демо распознавания ---------- */
+        .demo { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; align-items: stretch; }
+        .demo-pick h3, .calc-form h3 { margin: 0 0 6px; font-size: 22px; font-weight: 900; }
+        .demo-pick > p { margin: 0 0 20px; }
+        .dishes { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .dish-btn {
+            display: flex; align-items: center; gap: 10px; text-align: left;
+            padding: 12px 14px; border-radius: var(--radius); border: 2px solid transparent;
+            background: var(--surface-2); font-weight: 800; font-size: 15px;
+            transition: transform .15s, border-color .2s, background .2s;
+        }
+        .dish-btn:hover { transform: translateY(-2px); border-color: var(--accent-soft-2); }
+        .dish-btn.on { border-color: var(--accent); background: var(--accent-tint); }
+        .dish-btn .emo { font-size: 26px; }
+        .dish-btn small { display: block; color: var(--text-muted); font-weight: 600; font-size: 12px; }
+        .demo-note { margin-top: 18px; font-size: 14px; color: var(--text-muted); display: flex; gap: 8px; align-items: flex-start; }
+
+        .demo-panel { display: flex; flex-direction: column; gap: 14px; }
+        .result { min-height: 290px; position: relative; }
+        .placeholder, .analyzing { display: grid; place-items: center; text-align: center; min-height: 256px; gap: 8px; }
+        .mascot-box { width: 92px; height: 92px; border-radius: 28px; background: var(--accent-tint); display: grid; place-items: center; margin: 0 auto 6px; }
+        .mascot-box svg { width: 72px; height: 72px; }
+        .analyzing .mascot-box { animation: wobble 1s ease-in-out infinite; }
+        @keyframes wobble { 0%, 100% { transform: rotate(-6deg) scale(1); } 50% { transform: rotate(6deg) scale(1.05); } }
+        .skel { height: 10px; border-radius: 99px; margin: 6px auto 0;
+                background: linear-gradient(90deg, var(--accent-soft) 0%, var(--accent-soft-2) 50%, var(--accent-soft) 100%);
+                background-size: 200% 100%; animation: shimmer 1.2s linear infinite; }
+        @keyframes shimmer { to { background-position: -200% 0; } }
+
+        .dish-card { animation: rise .4s ease-out both; }
+        @keyframes rise { from { opacity: 0; transform: translateY(12px) scale(.98); } to { opacity: 1; transform: none; } }
+        .dish-top { display: flex; align-items: center; gap: 14px; }
+        .dish-photo { width: 64px; height: 64px; border-radius: 20px; background: var(--accent-tint); display: grid; place-items: center; font-size: 36px; flex: none; }
+        .dish-name { font-weight: 900; font-size: 19px; line-height: 1.2; }
+        .conf { display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 12px; font-weight: 800;
+                color: var(--success); background: var(--success-soft); padding: 3px 9px; border-radius: 99px; }
+        .kcal-big { margin: 16px 0 12px; display: flex; align-items: baseline; gap: 8px; }
+        .kcal-big b { font-size: 46px; font-weight: 900; line-height: 1; }
+        .kcal-big span { color: var(--text-muted); font-weight: 700; }
+        .chips { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .chip { background: var(--surface-2); border-radius: 14px; padding: 9px 10px; text-align: center; }
+        .chip b { display: block; font-size: 18px; font-weight: 900; }
+        .chip span { font-size: 12px; color: var(--text-muted); font-weight: 700; }
+        .portion { display: flex; align-items: center; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+        .portion .lbl { font-weight: 800; font-size: 14px; margin-right: auto; }
+        .stepper { border: 0; border-radius: 12px; padding: 8px 12px; background: var(--accent-tint); color: var(--accent); font-weight: 900; font-size: 14px; transition: transform .12s; }
+        .stepper:active { transform: scale(.9); }
+        .add-btn { margin-top: 16px; }
+
+        .mini-day { display: flex; align-items: center; gap: 16px; }
+        .mini-ring { width: 84px; height: 84px; transform: rotate(-90deg); flex: none; }
+        .mini-ring .track { stroke: var(--accent-soft); }
+        .mini-ring .prog { stroke: var(--accent); transition: stroke-dashoffset .9s cubic-bezier(.4, 0, .2, 1), stroke .3s; }
+        .mini-ring .prog.over { stroke: var(--danger); }
+        .mini-day b { font-size: 22px; font-weight: 900; }
+        .mini-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+        .mini-list span { background: var(--surface-2); border-radius: 99px; padding: 3px 9px; font-size: 13px; font-weight: 700; animation: rise .3s ease-out both; }
+        @media (max-width: 860px) { .demo { grid-template-columns: 1fr; } }
+        @media (max-width: 420px) { .dishes { grid-template-columns: 1fr; } }
+
+        /* ---------- Калькулятор нормы ---------- */
+        .calc { display: grid; grid-template-columns: 1.1fr .9fr; gap: 28px; }
+        .calc-form { display: flex; flex-direction: column; justify-content: space-between; gap: 18px; }
+        .field-lbl { font-weight: 800; font-size: 14px; margin-bottom: 8px; display: flex; justify-content: space-between; }
+        .field-lbl output { color: var(--accent); font-weight: 900; }
+        .segmented { display: grid; gap: 4px; padding: 4px; border-radius: 16px; background: var(--surface-2); border: 1px solid var(--border); }
+        .segmented.two { grid-template-columns: 1fr 1fr; }
+        .segmented.three { grid-template-columns: 1fr 1fr 1fr; }
+        .segmented button { border: 0; background: transparent; padding: 10px 6px; border-radius: 12px; font-weight: 800; font-size: 14px; color: var(--text-muted); transition: background .2s, color .2s, box-shadow .2s; }
+        .segmented button.on { background: var(--surface); color: var(--text); box-shadow: var(--shadow-soft); }
+        input[type=range] { -webkit-appearance: none; appearance: none; width: 100%; height: 8px; border-radius: 99px; background: var(--accent-soft); outline: none; }
+        input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 24px; height: 24px; border-radius: 50%; background: var(--surface); border: 4px solid var(--accent); box-shadow: var(--shadow-soft); cursor: pointer; }
+        input[type=range]::-moz-range-thumb { width: 18px; height: 18px; border-radius: 50%; background: var(--surface); border: 4px solid var(--accent); cursor: pointer; }
+        .sliders { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+        @media (max-width: 560px) { .sliders { grid-template-columns: 1fr; } }
+
+        .calc-out { display: flex; flex-direction: column; justify-content: space-between; gap: 18px; box-shadow: var(--shadow-raised); }
+        .calc-out .ring-wrap { padding: 0; }
+        .calc-out .ring { width: 200px; height: 200px; }
+        .calc-out .ring .prog { stroke: var(--accent); transition: stroke-dashoffset .8s cubic-bezier(.4, 0, .2, 1); }
+        .calc-out .ring-val { font-size: 46px; }
+        .calc-out .macros .nums { font-size: 13px; }
+        .calc-water { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 14px; background: var(--surface-2); font-weight: 800; }
+        .calc-water svg { width: 18px; height: 18px; flex: none; }
+        .calc-note { font-size: 13px; color: var(--text-muted); margin: 0; }
+        @media (max-width: 860px) { .calc { grid-template-columns: 1fr; } }
+
+        /* ---------- Возможности: бенто ---------- */
+        .bento { display: grid; grid-template-columns: repeat(6, 1fr); gap: 18px; }
+        .tile { position: relative; overflow: hidden; display: flex; flex-direction: column; gap: 6px; padding: 22px; transition: transform .25s cubic-bezier(.34, 1.56, .64, 1); }
+        .tile:hover { transform: translateY(-4px); }
+        .tile h3 { margin: 0; font-size: 20px; font-weight: 900; }
+        .tile > p { margin: 0; color: var(--text-muted); font-size: 15px; }
+        .tile .demo-area { margin-top: auto; padding-top: 16px; }
+        .span-2 { grid-column: span 2; }
+        .span-3 { grid-column: span 3; }
+        .span-4 { grid-column: span 4; }
+        @media (max-width: 980px) {
+            .bento { grid-template-columns: repeat(2, 1fr); }
+            .span-2, .span-3, .span-4 { grid-column: span 1; }
+            .tile.wide-md { grid-column: span 2; }
+        }
+        @media (max-width: 620px) {
+            .bento { grid-template-columns: 1fr; }
+            .tile.wide-md { grid-column: span 1; }
+        }
+
+        /* Меню «добавить еду», как у кнопки + в мини-аппе */
+        .add-menu { display: flex; flex-direction: column; gap: 8px; }
+        .add-item { display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 16px; background: var(--surface-2); font-weight: 800; }
+        .add-item .ico { width: 34px; height: 34px; border-radius: 50%; background: var(--accent); color: #fff; display: grid; place-items: center; flex: none; }
+        .add-item .ico svg { width: 17px; height: 17px; }
+        .add-item small { display: block; font-weight: 600; color: var(--text-muted); font-size: 12px; }
+        .typing { margin-top: 10px; padding: 12px 14px; border-radius: 16px; border: 2px dashed var(--accent-soft-2); font-weight: 700; min-height: 48px; }
+        .typing::after { content: "|"; color: var(--accent); animation: blink 1s steps(1) infinite; margin-left: 1px; }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        /* ИИ-саммари, как AISummaryCard */
+        .ai-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+        .seg-mini { display: inline-flex; padding: 3px; border-radius: 12px; background: var(--surface-2); }
+        .seg-mini button { border: 0; background: transparent; padding: 5px 12px; border-radius: 9px; font-weight: 800; font-size: 13px; color: var(--text-muted); }
+        .seg-mini button.on { background: var(--surface); color: var(--text); box-shadow: var(--shadow-soft); }
+        .ai-headline { font-weight: 900; font-size: 16px; line-height: 1.3; margin-bottom: 10px; }
+        .bullets { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+        .bullets li { display: flex; gap: 10px; align-items: center; padding: 8px 12px 8px 8px; background: var(--surface-2); border-radius: var(--radius-sm); font-size: 14px; line-height: 1.35; animation: rise .35s ease-out both; }
+        .bullets .emoji { flex: none; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: var(--surface); font-size: 17px; }
+        .tip { display: flex; gap: 10px; margin-top: 8px; padding: 10px 12px 10px 8px; border-radius: var(--radius-sm); background: var(--accent-soft); font-size: 14px; line-height: 1.4; }
+        .tip .emoji { flex: none; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: var(--surface); font-size: 17px; }
+        .tip-lbl { font-size: 11px; font-weight: 900; text-transform: uppercase; letter-spacing: .5px; color: var(--accent); }
+
+        /* График недели, как WeeklyTrendCard */
+        .trend svg { width: 100%; height: auto; overflow: visible; }
+        .trend .area { fill: url(#trendFill); }
+        .trend .line { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 900; stroke-dashoffset: 900; }
+        .trend.in .line { animation: draw 1.6s ease forwards; }
+        .trend .dot { fill: var(--surface); stroke: var(--accent); stroke-width: 2.5; }
+        .trend text { font-family: var(--font); }
+        .trend .goal-line { stroke: var(--success); stroke-width: 1.5; stroke-dasharray: 5 5; }
+
+        /* Шаблоны поведения */
+        .pattern { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; background: var(--surface-2); margin-top: 8px; font-size: 14px; font-weight: 700; }
+        .pattern .emoji { font-size: 20px; }
+        .pattern .days { margin-left: auto; display: flex; gap: 3px; }
+        .pattern .days i { width: 8px; height: 18px; border-radius: 4px; background: var(--accent-soft-2); }
+        .pattern .days i.hit { background: var(--accent); }
+
+        /* Вода: стакан */
+        .glass-row { display: flex; align-items: flex-end; gap: 16px; }
+        .glass { position: relative; width: 74px; height: 104px; border: 4px solid var(--border); border-top: 0; border-radius: 0 0 22px 22px; overflow: hidden; background: var(--surface-2); flex: none; }
+        .glass .liquid { position: absolute; left: 0; right: 0; bottom: 0; height: 30%; background: linear-gradient(180deg, #9CC7EC, var(--water)); transition: height .6s cubic-bezier(.34, 1.56, .64, 1); }
+        .glass .liquid::before { content: ""; position: absolute; left: -50%; top: -8px; width: 200%; height: 16px; border-radius: 45%; background: #9CC7EC; animation: wave 3s linear infinite; }
+        @keyframes wave { to { transform: translateX(25%); } }
+        .glass-info b { font-size: 24px; font-weight: 900; display: block; }
+
+        /* Вес: спарклайн */
+        .weight-num { display: flex; align-items: baseline; gap: 10px; }
+        .weight-num b { font-size: 30px; font-weight: 900; }
+        .delta { color: var(--success); background: var(--success-soft); font-weight: 900; font-size: 13px; padding: 3px 9px; border-radius: 99px; }
+        .spark { width: 100%; height: 70px; margin-top: 8px; }
+        .spark path.l { fill: none; stroke: var(--accent); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+        .spark path.a { fill: var(--accent-tint); }
+
+        /* PDF */
+        .pdf-stack { position: relative; height: 128px; }
+        .page { position: absolute; width: 104px; height: 128px; border-radius: 14px; background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow-soft); padding: 12px; }
+        .page:nth-child(1) { left: 0; transform: rotate(-8deg); }
+        .page:nth-child(2) { left: 46px; transform: rotate(-1deg); }
+        .page:nth-child(3) { left: 92px; transform: rotate(7deg); }
+        .page .ln { height: 6px; border-radius: 4px; background: var(--accent-soft); margin-bottom: 6px; }
+        .page .bars { display: flex; align-items: flex-end; gap: 4px; height: 44px; margin-top: 10px; }
+        .page .bars i { flex: 1; border-radius: 3px 3px 0 0; background: var(--accent); opacity: .8; }
+        .tile:hover .page:nth-child(1) { transform: rotate(-14deg) translateX(-6px); }
+        .tile:hover .page:nth-child(3) { transform: rotate(13deg) translateX(8px); }
+        .page { transition: transform .35s cubic-bezier(.34, 1.56, .64, 1); }
+        .pdf-tag { position: absolute; right: 0; top: 0; background: var(--accent); color: #fff; font-weight: 900; font-size: 12px; padding: 4px 10px; border-radius: 99px; }
+
+        /* Напоминание */
+        .notif { display: flex; gap: 12px; align-items: flex-start; padding: 12px 14px; border-radius: 18px; background: var(--surface-2); border: 1px solid var(--border); animation: ping 4s ease-in-out infinite; }
+        .notif .app-ava { width: 36px; height: 36px; }
+        .notif .app-ava svg { width: 26px; height: 26px; }
+        .notif b { display: block; font-size: 14px; }
+        .notif span { font-size: 13px; color: var(--text-muted); }
+        .notif time { margin-left: auto; font-size: 12px; color: var(--text-subtle); font-weight: 700; }
+        @keyframes ping { 0%, 80%, 100% { transform: none; } 84% { transform: translateX(-4px); } 88% { transform: translateX(4px); } 92% { transform: translateX(-2px); } }
+
+        /* Избранное */
+        .fav { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 14px; background: var(--surface-2); margin-top: 7px; font-weight: 800; font-size: 14px; }
+        .fav .star { color: #E8B26A; }
+        .fav .k { margin-left: auto; color: var(--accent); }
+        .fav button { border: 0; width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: #fff; font-weight: 900; line-height: 1; transition: transform .15s; }
+        .fav button:active { transform: scale(.85); }
+        .fav button.done { background: var(--success); }
+
+        /* Варианты от моделей */
+        .variants { display: flex; flex-direction: column; gap: 7px; }
+        .variant { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 14px; border: 2px solid var(--border); background: var(--surface); font-weight: 800; font-size: 14px; text-align: left; transition: border-color .2s, background .2s; }
+        .variant small { color: var(--text-muted); font-weight: 700; }
+        .variant .k { margin-left: auto; color: var(--accent); }
+        .variant.on { border-color: var(--accent); background: var(--accent-tint); }
+
+        /* ---------- Чат бота в Telegram ---------- */
+        .tg-wrap { display: grid; grid-template-columns: .9fr 1.1fr; gap: 48px; align-items: center; }
+        .tg-text h2 { text-align: left; }
+        .tg-text p { color: var(--text-muted); font-size: 18px; margin: 0 0 24px; }
+        .tg-list { list-style: none; padding: 0; margin: 0 0 28px; display: grid; gap: 12px; }
+        .tg-list li { display: flex; gap: 12px; align-items: flex-start; font-weight: 700; }
+        .tg-list li span { width: 30px; height: 30px; border-radius: 50%; background: var(--accent-tint); display: grid; place-items: center; flex: none; font-size: 15px; }
+        .tg {
+            border-radius: 30px; overflow: hidden; box-shadow: var(--shadow-raised); background: var(--tg-bg);
+            background-image: radial-gradient(rgba(255, 255, 255, .25) 1.5px, transparent 1.5px);
+            background-size: 18px 18px;
+        }
+        .tg-top { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: var(--surface); border-bottom: 1px solid var(--border); }
+        .tg-top .app-ava { width: 38px; height: 38px; }
+        .tg-top .app-ava svg { width: 28px; height: 28px; }
+        .tg-top b { display: block; font-size: 15px; }
+        .tg-top small { color: var(--text-muted); font-weight: 600; }
+        .tg-body { padding: 16px; display: flex; flex-direction: column; gap: 8px; min-height: 520px; }
+        .msg { max-width: 88%; border-radius: 16px; padding: 9px 12px 7px; background: var(--tg-bubble); font-size: 14.5px; line-height: 1.4;
+               box-shadow: 0 1px 1px rgba(0, 0, 0, .08); opacity: 0; transform: translateY(10px); transition: opacity .4s, transform .4s; }
+        .msg.show { opacity: 1; transform: none; }
+        .msg.me { align-self: flex-end; background: #E2F7CB; color: #1d2a12; }
+        .msg .time { float: right; margin: 6px 0 0 10px; font-size: 11px; color: #8a9a80; }
+        .msg.photo { padding: 4px; }
+        .photo-img { width: 210px; height: 150px; border-radius: 13px; display: grid; place-items: center; font-size: 76px;
+                     background: radial-gradient(circle at 50% 55%, #fff 0 38%, #f1e7d6 39% 44%, #d9c7a8 45% 100%); }
+        .tg-dish b { font-weight: 800; }
+        .tg-dish .it { font-style: italic; font-weight: 800; }
+        .sq { display: inline-flex; gap: 2px; vertical-align: middle; margin-right: 6px; }
+        .sq i { width: 13px; height: 13px; border-radius: 3px; background: #d8d8d8; }
+        .sq i.ok { background: #6DBE6A; }
+        .sq i.over { background: #D9534F; }
+        .tg-kb { display: grid; gap: 4px; max-width: 88%; opacity: 0; transition: opacity .4s; }
+        .tg-kb.show { opacity: 1; }
+        .tg-kb .row { display: grid; gap: 4px; }
+        .tg-kb .row.r3 { grid-template-columns: 1.2fr 1fr 1fr; }
+        .tg-kb .row.r2 { grid-template-columns: 1fr 1fr; }
+        .tg-kb button { border: 0; border-radius: 10px; padding: 9px 6px; background: var(--tg-button); color: #fff; font-weight: 700; font-size: 13.5px; backdrop-filter: blur(4px); transition: filter .15s, transform .1s; }
+        .tg-kb button:hover { filter: brightness(1.1); }
+        .tg-kb button:active { transform: scale(.97); }
+        .tg-kb button.lbl { cursor: default; background: rgba(84, 110, 64, .32); }
+        .typing-dots { display: inline-flex; gap: 4px; padding: 12px 14px; }
+        .typing-dots i { width: 7px; height: 7px; border-radius: 50%; background: #9aa892; animation: dots 1s infinite; }
+        .typing-dots i:nth-child(2) { animation-delay: .15s; }
+        .typing-dots i:nth-child(3) { animation-delay: .3s; }
+        @keyframes dots { 0%, 60%, 100% { transform: none; opacity: .5; } 30% { transform: translateY(-4px); opacity: 1; } }
+        @media (max-width: 900px) { .tg-wrap { grid-template-columns: 1fr; } }
+
+        /* ---------- Тарифы ---------- */
+        .plans { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 22px; align-items: stretch; margin-bottom: 36px; }
+        .plan { position: relative; display: flex; flex-direction: column; padding: 28px 24px 24px; }
+        .plan.featured { box-shadow: 0 0 0 2px var(--accent), var(--shadow-raised); }
+        .plan h3 { margin: 0 0 14px; font-size: 19px; font-weight: 900; min-height: 2.5em; display: flex; align-items: flex-start; }
+        .plan .price { display: flex; align-items: baseline; gap: 6px; font-size: 42px; font-weight: 900; line-height: 1; }
+        .plan .period { color: var(--text-muted); font-weight: 700; margin: 8px 0 14px; }
+        .plan .points { list-style: none; margin: 0 0 20px; padding: 0; flex: 1; display: grid; gap: 10px; align-content: start;
+                        color: var(--text-muted); font-size: 15px; line-height: 1.4; text-align: left; }
+        .plan .points li { display: flex; align-items: flex-start; gap: 10px; }
+        .plan .points .pt-icon { flex: none; width: 1.4em; text-align: center; }
+        .plan .btn { margin-top: auto; }
+        .badge { position: absolute; top: -13px; left: 50%; transform: translateX(-50%); background: var(--accent); color: #fff;
+                 font-weight: 900; font-size: 13px; padding: 5px 12px; border-radius: 999px; white-space: nowrap; box-shadow: var(--shadow-fab); }
+        .plan-free .price { color: var(--text); }
+
+        .table-wrap { overflow-x: auto; padding: 0; }
+        table { width: 100%; border-collapse: collapse; min-width: 520px; }
+        th, td { padding: 15px 20px; text-align: left; border-bottom: 1px solid var(--border); }
+        tbody tr:last-child td { border-bottom: 0; }
+        th { font-size: 14px; color: var(--text-muted); font-weight: 800; background: var(--surface-2); }
+        td:first-child { font-weight: 700; }
+        .col-premium { color: var(--accent); font-weight: 900; }
+        .pay-note { margin: 18px 0 0; text-align: center; color: var(--text-muted); font-size: 15px; }
+
+        /* ---------- FAQ ---------- */
+        .faq { max-width: 820px; margin: 0 auto; display: grid; gap: 12px; }
+        details { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow-soft); padding: 0 22px; transition: box-shadow .2s; }
+        details[open] { box-shadow: var(--shadow-crisp); }
+        summary { cursor: pointer; font-weight: 800; font-size: 17px; padding: 18px 36px 18px 0; list-style: none; position: relative; }
+        summary::-webkit-details-marker { display: none; }
+        summary::after {
+            content: ""; position: absolute; right: 0; top: 50%; width: 26px; height: 26px; margin-top: -13px; border-radius: 50%;
+            background: var(--accent-tint) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23D97A4A' stroke-width='3' stroke-linecap='round'%3E%3Cpath d='M12 6v12M6 12h12'/%3E%3C/svg%3E") center / 14px no-repeat;
+            transition: transform .25s;
+        }
+        details[open] summary::after { transform: rotate(45deg); }
+        details p { margin: 0 0 18px; color: var(--text-muted); }
+
+        /* ---------- Финальный призыв ---------- */
+        .final { text-align: center; padding: 64px 24px; border-radius: 40px; background: var(--accent); color: #fff; position: relative; overflow: hidden; box-shadow: var(--shadow-fab); }
+        .final h2 { color: #fff; }
+        .final p { margin: 0 auto 30px; max-width: 30em; font-size: 19px; opacity: .92; }
+        .final .btn { background: #fff; color: var(--accent); box-shadow: 0 10px 30px rgba(0, 0, 0, .15); }
+        .final .big-zef { width: 130px; height: 120px; margin: 0 auto 18px; animation: hop 2.4s cubic-bezier(.34, 1.56, .64, 1) infinite; cursor: pointer; }
+        .final .big-zef .eye { transform-origin: center; transform-box: fill-box; animation: eyes 4s infinite; }
+        @keyframes hop { 0%, 60%, 100% { transform: translateY(0) scale(1, 1); } 70% { transform: translateY(0) scale(1.08, .92); } 80% { transform: translateY(-18px) scale(.96, 1.05); } 90% { transform: translateY(0) scale(1.04, .96); } }
+        @keyframes eyes { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(.1); } }
+        .final .sprinkle { position: absolute; border-radius: 50%; background: rgba(255, 255, 255, .14); }
+
+        footer { padding: 40px 0 56px; color: var(--text-muted); font-size: 15px; }
+        .foot { display: flex; flex-wrap: wrap; gap: 14px 28px; justify-content: space-between; align-items: center; }
+        .foot nav { display: flex; flex-wrap: wrap; gap: 8px 22px; }
+        .foot a { color: var(--text-muted); }
+        .foot .brand { font-size: 18px; }
+        .foot .brand-ico { width: 34px; height: 34px; }
+        .foot .brand-ico svg { width: 26px; height: 26px; }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation: none !important; transition: none !important; }
+            .reveal { opacity: 1; transform: none; }
+            .msg, .tg-kb { opacity: 1; transform: none; }
+            .hl path, .trend .line { stroke-dashoffset: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="bg-deco"><div class="blob b1"></div><div class="blob b2"></div></div>
+
+<!-- Иконки: зефирка (как IconUser в мини-аппе) и набор из Icons.tsx -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="zef" viewBox="20 30 160 150">
+        <rect x="30" y="40" width="140" height="130" rx="40" fill="#FFFFFF" stroke="#EAE0D3" stroke-width="6"/>
+        <path d="M 45 60 Q 100 75 155 60" fill="none" stroke="#EAE0D3" stroke-width="6" stroke-linecap="round"/>
+        <circle cx="75" cy="115" r="12" fill="#D3A76C"/>
+        <circle cx="125" cy="115" r="12" fill="#D3A76C"/>
+        <circle cx="50" cy="130" r="9" fill="#F3D1D1"/>
+        <circle cx="150" cy="130" r="9" fill="#F3D1D1"/>
+        <path d="M 85 136 Q 100 152 115 136" fill="none" stroke="#C8A4A9" stroke-width="5" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="tg" viewBox="0 0 24 24">
+        <path fill="currentColor" d="M21.9 4.3 18.7 19.4c-.2 1.1-.9 1.3-1.8.8l-4.9-3.6-2.4 2.3c-.3.3-.5.5-1 .5l.4-5 9.1-8.2c.4-.4-.1-.6-.6-.2L6.2 13 1.4 11.5c-1-.3-1.1-1 .2-1.5L20.5 2.7c.9-.3 1.7.2 1.4 1.6Z"/>
+    </symbol>
+    <symbol id="i-camera" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></g></symbol>
+    <symbol id="i-mic" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/></g></symbol>
+    <symbol id="i-pencil" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/></g></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></g></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></g></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16"/><path d="M7 17v-5"/><path d="M12 17V8"/><path d="M17 17v-8"/></g></symbol>
+    <symbol id="i-gear" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1 1.56V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.54 1.7 1.7 0 0 0-1.87.34l-.06.06A2 2 0 1 1 4.28 16.93l.06-.06A1.7 1.7 0 0 0 4.68 15a1.7 1.7 0 0 0-1.56-1H3a2 2 0 0 1 0-4h.1a1.7 1.7 0 0 0 1.54-1 1.7 1.7 0 0 0-.34-1.87l-.06-.06A2 2 0 1 1 7.07 4.28l.06.06A1.7 1.7 0 0 0 9 4.68 1.7 1.7 0 0 0 10 3.12V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.54 1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.7 1.7 0 0 0-.34 1.87V9a1.7 1.7 0 0 0 1.56 1H21a2 2 0 0 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></g></symbol>
+    <symbol id="i-plus" viewBox="0 0 28 28"><g stroke="currentColor" stroke-width="5" stroke-linecap="round" fill="none"><line x1="14" y1="7" x2="14" y2="21"/><line x1="7" y1="14" x2="21" y2="14"/></g></symbol>
+    <symbol id="i-drop" viewBox="0 0 24 24"><path d="M12 3s6 6.6 6 11a6 6 0 0 1-12 0c0-4.4 6-11 6-11Z" fill="#6FA8DC"/><path d="M9.5 14.5a2.5 2.5 0 0 0 2.5 2.5" stroke="#fff" stroke-width="1.6" fill="none" stroke-linecap="round"/></symbol>
+</svg>
+
+<header>
+    <div class="wrap nav">
+        <a class="brand" href="#top" aria-label="Zefir">
+            <span class="brand-ico"><svg><use href="#zef"/></svg></span>
+            Zefir
+        </a>
+        <nav class="nav-links">
+            <a class="link" href="#demo">Демо</a>
+            <a class="link" href="#calc">Моя норма</a>
+            <a class="link" href="#features">Возможности</a>
+            <a class="link" href="#pricing">Тарифы</a>
+            <a class="link" href="#faq">Вопросы</a>
+            <a class="btn btn-primary btn-small" th:href="${page.botUrl}" target="_blank" rel="noopener">
+                <svg><use href="#tg"/></svg>Открыть
+            </a>
+        </nav>
+    </div>
+</header>
+
+<main id="top">
+
+    <!-- ===== Первый экран ===== -->
+    <section class="hero">
+        <div class="wrap hero-grid">
+            <div>
+                <span class="pill">🍡 Бот и мини-приложение в Telegram</span>
+                <h1>Считай калории по&nbsp;фото <span class="hl">за&nbsp;секунды<svg viewBox="0 0 300 14" preserveAspectRatio="none"><path d="M3 9 C 60 2, 120 13, 180 6 S 270 4, 297 8"/></svg></span></h1>
+                <p class="lead">
+                    Сфотографируй тарелку, напиши или надиктуй, что съел. Zefir посчитает калории и БЖУ,
+                    покажет, сколько осталось на день, и подскажет, что поправить в рационе.
+                </p>
+                <div class="hero-cta">
+                    <a class="btn btn-primary" th:href="${page.botUrl}" target="_blank" rel="noopener">
+                        <svg><use href="#tg"/></svg>Начать бесплатно
+                    </a>
+                    <a class="btn btn-ghost" href="#calc">Посчитать мою норму</a>
+                </div>
+                <div class="hero-ways">
+                    <span class="way"><span class="ico"><svg><use href="#i-camera"/></svg></span>Фото</span>
+                    <span class="way"><span class="ico"><svg><use href="#i-mic"/></svg></span>Голос</span>
+                    <span class="way"><span class="ico"><svg><use href="#i-pencil"/></svg></span>Текст</span>
+                    <span class="way">✨ ИИ-разбор рациона</span>
+                </div>
+            </div>
+
+            <div class="hero-stage">
+                <div class="float f1"><span class="emo">📸</span><div>Распознано<small>Сырники со сметаной · 480 ккал</small></div></div>
+                <div class="float f2"><span class="emo">🎯</span><div>Осталось 640 ккал<small>до дневной нормы</small></div></div>
+                <div class="float f3"><span class="emo">🧠</span><div>Белка маловато<small>добавь творог на ужин</small></div></div>
+
+                <div class="phone" aria-label="Мини-приложение Zefir">
+                    <div class="app-head">
+                        <div class="app-ava"><svg><use href="#zef"/></svg></div>
+                        <div>
+                            <div class="app-hello">Привет!</div>
+                            <div class="app-date" id="today">Сегодня</div>
+                        </div>
+                        <div class="app-streak">🔥 12</div>
+                    </div>
+
+                    <div class="card goal">
+                        <div class="ring-wrap">
+                            <svg class="ring" id="heroRing" viewBox="0 0 200 200"></svg>
+                            <div class="ring-center" id="heroRingCenter"></div>
+                        </div>
+                        <div class="macros" id="heroMacros"></div>
+                    </div>
+
+                    <div class="card water">
+                        <div class="water-ico"><svg><use href="#i-drop"/></svg></div>
+                        <div class="water-body">
+                            <div class="water-title">Вода <span id="heroWaterTxt">1250 / 2000 мл</span></div>
+                            <div class="bar"><div class="fill" id="heroWaterFill"></div></div>
+                        </div>
+                        <button class="water-btn" id="heroWaterBtn" type="button">+ 250</button>
+                    </div>
+
+                    <div class="logs-title">Сегодня</div>
+                    <div id="heroLogs"></div>
+
+                    <div class="tabbar">
+                        <div class="tab on"><svg><use href="#i-home"/></svg></div>
+                        <div class="tab"><svg><use href="#i-clock"/></svg></div>
+                        <div class="fab"><svg><use href="#i-plus"/></svg></div>
+                        <div class="tab"><svg><use href="#i-chart"/></svg></div>
+                        <div class="tab"><svg><use href="#i-gear"/></svg></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== Демо распознавания ===== -->
+    <section id="demo">
+        <div class="wrap">
+            <div class="sec-head reveal">
+                <span class="eyebrow">Попробуй прямо здесь</span>
+                <h2>Выбери блюдо — посмотри, что вернёт Zefir</h2>
+                <p>Так выглядит результат после фото: калории, БЖУ, вес порции и уверенность ИИ.</p>
+            </div>
+            <div class="demo reveal">
+                <div class="card demo-pick">
+                    <h3>Что на тарелке?</h3>
+                    <p class="muted">Нажми на блюдо — как будто отправил его фото боту.</p>
+                    <div class="dishes" id="dishes"></div>
+                    <div class="demo-note">💡 <span>Здесь — заготовленные примеры. В боте блюдо распознаёт ИИ по твоему фото, тексту или голосу.</span></div>
+                </div>
+                <div class="demo-panel">
+                    <div class="card result" id="result">
+                        <div class="placeholder">
+                            <div>
+                                <div class="mascot-box"><svg><use href="#zef"/></svg></div>
+                                <b>Zefir ждёт твоё блюдо</b>
+                                <div class="muted">Выбери что-нибудь слева 👈</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card mini-day">
+                        <svg class="mini-ring" viewBox="0 0 100 100">
+                            <circle class="track" cx="50" cy="50" r="42" fill="none" stroke-width="10"/>
+                            <circle class="prog" id="miniProg" cx="50" cy="50" r="42" fill="none" stroke-width="10" stroke-linecap="round"/>
+                        </svg>
+                        <div style="min-width:0">
+                            <div class="muted" style="font-weight:700;font-size:14px">Дневник демо-дня · норма 1900 ккал</div>
+                            <b id="miniTxt">Пока пусто</b>
+                            <div class="mini-list" id="miniList"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== Калькулятор нормы ===== -->
+    <section id="calc">
+        <div class="wrap">
+            <div class="sec-head reveal">
+                <span class="eyebrow">Твоя норма</span>
+                <h2>Сколько тебе нужно есть?</h2>
+                <p>Считаем так же, как бот: формула Миффлина — Сан-Жеора, поправка на активность и цель.</p>
+            </div>
+            <div class="calc reveal">
+                <div class="card calc-form">
+                    <div>
+                        <div class="field-lbl">Пол</div>
+                        <div class="segmented two" data-name="sex">
+                            <button type="button" data-v="F" class="on">Женский</button>
+                            <button type="button" data-v="M">Мужской</button>
+                        </div>
+                    </div>
+                    <div class="sliders">
+                        <div><div class="field-lbl">Возраст <output id="ageOut">28</output></div><input type="range" id="age" min="14" max="80" value="28"></div>
+                        <div><div class="field-lbl">Рост, см <output id="heightOut">168</output></div><input type="range" id="height" min="140" max="210" value="168"></div>
+                        <div><div class="field-lbl">Вес, кг <output id="weightOut">65</output></div><input type="range" id="weight" min="40" max="160" value="65"></div>
+                    </div>
+                    <div>
+                        <div class="field-lbl">Активность</div>
+                        <div class="segmented three" data-name="activity">
+                            <button type="button" data-v="LOW">Низкая</button>
+                            <button type="button" data-v="MEDIUM" class="on">Средняя</button>
+                            <button type="button" data-v="HIGH">Высокая</button>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="field-lbl">Цель</div>
+                        <div class="segmented three" data-name="goal">
+                            <button type="button" data-v="LOSE" class="on">Похудеть</button>
+                            <button type="button" data-v="MAINTAIN">Держать вес</button>
+                            <button type="button" data-v="GAIN">Набрать</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card calc-out">
+                    <div class="ring-wrap">
+                        <svg class="ring" viewBox="0 0 200 200">
+                            <circle class="track" cx="100" cy="100" r="88" fill="none" stroke-width="14"/>
+                            <circle class="prog" id="calcProg" cx="100" cy="100" r="88" fill="none" stroke-width="14" stroke-linecap="round"/>
+                        </svg>
+                        <div class="ring-center"><div><div class="ring-val" id="calcKcal">0</div><div class="ring-target">ккал в день</div></div></div>
+                    </div>
+                    <div class="macros" id="calcMacros"></div>
+                    <div class="calc-water"><svg><use href="#i-drop"/></svg><span>Вода: <span id="calcWater">0</span> мл в день</span></div>
+                    <a class="btn btn-primary btn-block" id="calcStart" th:href="${page.botUrl}" target="_blank" rel="noopener">
+                        <svg><use href="#tg"/></svg>Вести дневник с этой нормой
+                    </a>
+                    <p class="calc-note">Ориентир, а не медицинская рекомендация. В боте норму можно поправить вручную.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== Возможности ===== -->
+    <section id="features">
+        <div class="wrap">
+            <div class="sec-head reveal">
+                <span class="eyebrow">Возможности</span>
+                <h2>Дневник питания, который ведётся сам</h2>
+                <p>Всё это уже работает — в боте и в мини-приложении.</p>
+            </div>
+
+            <div class="bento">
+                <div class="card tile span-2 reveal">
+                    <h3>Три способа добавить еду</h3>
+                    <p>Как удобнее прямо сейчас — без поиска по базе продуктов.</p>
+                    <div class="demo-area">
+                        <div class="add-menu">
+                            <div class="add-item"><span class="ico"><svg><use href="#i-camera"/></svg></span><div>Фото<small>сфоткай тарелку</small></div></div>
+                            <div class="add-item"><span class="ico"><svg><use href="#i-mic"/></svg></span><div>Голос<small>до 2 минут</small></div></div>
+                            <div class="add-item"><span class="ico"><svg><use href="#i-pencil"/></svg></span><div>Текст<small>как пишешь другу</small></div></div>
+                        </div>
+                        <div class="typing" id="typing"></div>
+                    </div>
+                </div>
+
+                <div class="card tile span-4 wide-md reveal">
+                    <div class="ai-head">
+                        <h3>ИИ-саммари недели и месяца</h3>
+                        <div class="seg-mini" id="aiSeg">
+                            <button type="button" class="on" data-v="week">Неделя</button>
+                            <button type="button" data-v="month">Месяц</button>
+                        </div>
+                    </div>
+                    <p>Zefir смотрит на твой рацион целиком и объясняет простыми словами, что получается и что поправить.</p>
+                    <div class="demo-area" id="aiBody"></div>
+                </div>
+
+                <div class="card tile span-3 reveal">
+                    <h3>Калории за неделю</h3>
+                    <p>Видно, где перебор, а где недобор относительно нормы.</p>
+                    <div class="demo-area trend" id="trend"></div>
+                </div>
+
+                <div class="card tile span-3 reveal">
+                    <h3>Шаблоны поведения</h3>
+                    <p>Привычки, которые сложно заметить самому.</p>
+                    <div class="demo-area">
+                        <div class="pattern"><span class="emoji">🌙</span>Поздние ужины после 22:00<span class="days"><i class="hit"></i><i></i><i class="hit"></i><i class="hit"></i><i></i><i class="hit"></i><i></i></span></div>
+                        <div class="pattern"><span class="emoji">🍰</span>Сладкое вечером<span class="days"><i></i><i class="hit"></i><i></i><i class="hit"></i><i></i><i class="hit"></i><i class="hit"></i></span></div>
+                        <div class="pattern"><span class="emoji">🥚</span>Белок на завтрак<span class="days"><i class="hit"></i><i class="hit"></i><i class="hit"></i><i></i><i class="hit"></i><i class="hit"></i><i class="hit"></i></span></div>
+                    </div>
+                </div>
+
+                <div class="card tile span-2 reveal">
+                    <h3>Вода</h3>
+                    <p>Норма считается от веса и активности. Нажми на стакан.</p>
+                    <div class="demo-area glass-row">
+                        <div class="glass" id="glass" role="button" tabindex="0" aria-label="Добавить 250 мл"><div class="liquid" id="liquid"></div></div>
+                        <div class="glass-info"><b id="glassTxt">750 мл</b><span class="muted">из 2000 мл</span></div>
+                    </div>
+                </div>
+
+                <div class="card tile span-2 reveal">
+                    <h3>История веса</h3>
+                    <p>Вес отмечается в пару касаний, тренд — на графике.</p>
+                    <div class="demo-area">
+                        <div class="weight-num"><b>82,7 кг</b><span class="delta">−1,3 кг за месяц</span></div>
+                        <svg class="spark" viewBox="0 0 300 70" preserveAspectRatio="none">
+                            <path class="a" d="M0 12 C 30 10, 50 22, 75 20 S 120 30, 150 34 S 200 40, 225 48 S 270 52, 300 58 L 300 70 L 0 70 Z"/>
+                            <path class="l" d="M0 12 C 30 10, 50 22, 75 20 S 120 30, 150 34 S 200 40, 225 48 S 270 52, 300 58"/>
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="card tile span-2 reveal">
+                    <h3>PDF-отчёты</h3>
+                    <p>Неделя или месяц с аналитикой — показать тренеру или врачу.</p>
+                    <div class="demo-area">
+                        <div class="pdf-stack">
+                            <div class="page"><div class="ln" style="width:70%"></div><div class="ln"></div><div class="bars"><i style="height:40%"></i><i style="height:70%"></i><i style="height:55%"></i><i style="height:90%"></i></div></div>
+                            <div class="page"><div class="ln" style="width:55%"></div><div class="ln"></div><div class="ln" style="width:80%"></div><div class="bars"><i style="height:60%"></i><i style="height:35%"></i><i style="height:80%"></i><i style="height:50%"></i></div></div>
+                            <div class="page"><div class="ln" style="width:65%"></div><div class="ln" style="width:90%"></div><div class="bars"><i style="height:75%"></i><i style="height:50%"></i><i style="height:65%"></i><i style="height:40%"></i></div></div>
+                            <span class="pdf-tag">PDF</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card tile span-2 reveal">
+                    <h3>Напоминания и итоги дня</h3>
+                    <p>Напомнит поесть и пришлёт итог дня — в твоём часовом поясе.</p>
+                    <div class="demo-area">
+                        <div class="notif">
+                            <div class="app-ava"><svg><use href="#zef"/></svg></div>
+                            <div><b>Zefir</b><span>Итог дня: 1 780 из 1 900 ккал. Отличный день! 🎉</span></div>
+                            <time>21:00</time>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card tile span-2 reveal">
+                    <h3>Избранные блюда</h3>
+                    <p>То, что ешь часто, — в дневник в одно касание.</p>
+                    <div class="demo-area" id="favs"></div>
+                </div>
+
+                <div class="card tile span-2 reveal">
+                    <h3>Варианты от разных моделей</h3>
+                    <p>Не согласен с оценкой? Выбери вариант другой ИИ-модели.</p>
+                    <div class="demo-area variants" id="variants"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== Сам бот в Telegram ===== -->
+    <section id="bot">
+        <div class="wrap tg-wrap">
+            <div class="tg-text reveal">
+                <span class="eyebrow">А это — сам бот</span>
+                <h2>Всё прямо в чате Telegram</h2>
+                <p>Ничего не нужно скачивать: отправил фото — получил разбор. Кнопки под сообщением правят порцию, и итог дня сразу пересчитывается.</p>
+                <ul class="tg-list">
+                    <li><span>⚖️</span>Вес порции ±10% и количество порций</li>
+                    <li><span>⭐</span>Сохранить блюдо в избранное</li>
+                    <li><span>📊</span>Полоска прогресса за день после каждого блюда</li>
+                </ul>
+                <a class="btn btn-primary" th:href="${page.botUrl}" target="_blank" rel="noopener">
+                    <svg><use href="#tg"/></svg>Написать боту
+                </a>
+            </div>
+            <div class="tg reveal" id="tg">
+                <div class="tg-top">
+                    <div class="app-ava"><svg><use href="#zef"/></svg></div>
+                    <div><b>Zefir</b><small>бот</small></div>
+                </div>
+                <div class="tg-body" id="tgBody"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== Тарифы ===== -->
+    <section id="pricing">
+        <div class="wrap">
+            <div class="sec-head reveal">
+                <span class="eyebrow">Тарифы</span>
+                <h2>Основное — бесплатно</h2>
+                <p>Premium снимает дневные лимиты и открывает PDF-отчёты.</p>
+            </div>
+
+            <div class="plans reveal">
+                <div class="card plan plan-free">
+                    <h3>Бесплатно</h3>
+                    <div class="price">0 ⭐</div>
+                    <div class="period">навсегда</div>
+                    <ul class="points">
+                        <li><span class="pt-icon">📸</span><span>Фото-разборы и ИИ-разбор дня с дневным лимитом</span></li>
+                        <li><span class="pt-icon">📒</span><span>Дневник, вода и вес</span></li>
+                    </ul>
+                    <a class="btn btn-ghost btn-block" th:href="${page.botUrl}" target="_blank" rel="noopener">Начать</a>
+                </div>
+                <div class="card plan" th:each="plan : ${page.plans}" th:classappend="${plan.saving != null} ? 'featured'">
+                    <span class="badge" th:if="${plan.saving != null}" th:text="|Выгода ${plan.saving}%|">Выгода</span>
+                    <h3 th:text="${plan.title}">Premium</h3>
+                    <div class="price" th:text="${plan.price}">150 ⭐</div>
+                    <div class="period" th:text="${plan.duration}">1 месяц</div>
+                    <ul class="points" th:unless="${plan.points.isEmpty()}">
+                        <li th:each="point : ${plan.points}">
+                            <span class="pt-icon" th:if="${point.icon != null}" th:text="${point.icon}">✨</span>
+                            <span th:text="${point.text}">Доступ ко всем функциям</span>
+                        </li>
+                    </ul>
+                    <a class="btn btn-primary btn-block" th:href="${page.botUrl}" target="_blank" rel="noopener">Оформить</a>
+                </div>
+            </div>
+
+            <div class="card table-wrap reveal">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>Что входит</th>
+                        <th>Бесплатно</th>
+                        <th class="col-premium" th:if="${!page.plans.isEmpty()}">Premium</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="row : ${page.features}">
+                        <td th:text="${row.name}">Функция</td>
+                        <td th:text="${row.free}">2 в день</td>
+                        <td class="col-premium" th:if="${!page.plans.isEmpty()}" th:text="${row.premium}">Без лимита</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <p class="pay-note">Оплата — Telegram Stars прямо в боте: кнопка «💳 Подписка» на клавиатуре бота.</p>
+        </div>
+    </section>
+
+    <!-- ===== FAQ ===== -->
+    <section id="faq">
+        <div class="wrap">
+            <div class="sec-head reveal">
+                <span class="eyebrow">Вопросы</span>
+                <h2>Частые вопросы</h2>
+            </div>
+            <div class="faq reveal">
+                <details>
+                    <summary>Нужно что-то устанавливать?</summary>
+                    <p>Нет. Zefir работает внутри Telegram: открываешь бота, нажимаешь «Старт» — и можно отправлять еду.
+                        Мини-приложение открывается кнопкой в самом боте.</p>
+                </details>
+                <details>
+                    <summary>Насколько точно ИИ считает калории?</summary>
+                    <p>Для обычных блюд оценка близка к тому, что дают таблицы калорийности. Вес порции по фото —
+                        приблизительный, поэтому его легко поправить кнопками ±10% или текстом. Чем понятнее фото
+                        и подпись («2 яйца, жарил на масле»), тем точнее результат.</p>
+                </details>
+                <details>
+                    <summary>Чем Premium отличается от бесплатной версии?</summary>
+                    <p>В бесплатной версии фото-разборы и ИИ-разбор дня ограничены несколькими в день, а избранное —
+                        несколькими блюдами. Premium снимает эти лимиты и открывает PDF-отчёты за неделю и месяц.
+                        Точные цифры — в таблице тарифов.</p>
+                </details>
+                <details>
+                    <summary>Как оплатить подписку?</summary>
+                    <p>В боте нажми «💳 Подписка» и выбери тариф. Оплата идёт через Telegram Stars — звёзды
+                        можно купить прямо в Telegram.</p>
+                </details>
+                <details>
+                    <summary>Как считается моя норма?</summary>
+                    <p>По формуле Миффлина — Сан-Жеора с поправкой на активность и цель — как в калькуляторе выше.
+                        Белок — от веса, жиры — около 25% калорий, остальное — углеводы. Норму можно задать и вручную.</p>
+                </details>
+                <details>
+                    <summary>Что с моими данными?</summary>
+                    <p>Какие данные хранятся и зачем, описано в
+                        <a href="/calorie/privacy">политике конфиденциальности</a>.</p>
+                </details>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== Финал ===== -->
+    <section style="padding-top:24px">
+        <div class="wrap">
+            <div class="final reveal">
+                <span class="sprinkle" style="width:180px;height:180px;top:-60px;left:-40px"></span>
+                <span class="sprinkle" style="width:120px;height:120px;bottom:-40px;right:8%"></span>
+                <span class="sprinkle" style="width:60px;height:60px;top:30%;right:22%"></span>
+                <svg class="big-zef" id="bigZef" viewBox="20 30 160 150" aria-hidden="true">
+                    <rect x="30" y="40" width="140" height="130" rx="40" fill="#FFFFFF" stroke="#EAE0D3" stroke-width="6"/>
+                    <path d="M 45 60 Q 100 75 155 60" fill="none" stroke="#EAE0D3" stroke-width="6" stroke-linecap="round"/>
+                    <circle class="eye" cx="75" cy="115" r="12" fill="#D3A76C"/>
+                    <circle class="eye" cx="125" cy="115" r="12" fill="#D3A76C"/>
+                    <circle cx="50" cy="130" r="9" fill="#F3D1D1"/>
+                    <circle cx="150" cy="130" r="9" fill="#F3D1D1"/>
+                    <path d="M 85 136 Q 100 152 115 136" fill="none" stroke="#C8A4A9" stroke-width="5" stroke-linecap="round"/>
+                </svg>
+                <h2>Зефирка уже ждёт в Telegram</h2>
+                <p>Открой бота, отправь фото завтрака — и узнай, сколько в нём калорий.</p>
+                <a class="btn" th:href="${page.botUrl}" target="_blank" rel="noopener">
+                    <svg><use href="#tg"/></svg>Открыть @calorydairy_bot
+                </a>
+            </div>
+        </div>
+    </section>
+</main>
+
+<footer>
+    <div class="wrap foot">
+        <a class="brand" href="#top"><span class="brand-ico"><svg><use href="#zef"/></svg></span>Zefir</a>
+        <nav>
+            <a href="/calorie/privacy">Политика конфиденциальности</a>
+            <a href="/calorie/terms">Пользовательское соглашение</a>
+            <a href="https://t.me/zephyr_ai" target="_blank" rel="noopener">Канал @zephyr_ai</a>
+        </nav>
+    </div>
+</footer>
+
+<script>
+(function () {
+    "use strict";
+    var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var NS = "http://www.w3.org/2000/svg";
+    var fmt = function (n) { return Math.round(n).toLocaleString("ru-RU"); };
+
+    function svgEl(tag, attrs) {
+        var el = document.createElementNS(NS, tag);
+        Object.keys(attrs).forEach(function (k) { el.setAttribute(k, attrs[k]); });
+        return el;
+    }
+
+    function countUp(el, to, ms) {
+        var from = parseFloat(el.getAttribute("data-v") || "0");
+        el.setAttribute("data-v", to);
+        if (reduceMotion) { el.textContent = fmt(to); return; }
+        var start = null;
+        function step(t) {
+            if (!start) start = t;
+            var k = Math.min(1, (t - start) / (ms || 800));
+            var e = 1 - Math.pow(1 - k, 3);
+            el.textContent = fmt(from + (to - from) * e);
+            if (k < 1) requestAnimationFrame(step);
+        }
+        requestAnimationFrame(step);
+    }
+
+    function macroHtml(label, val, target, type) {
+        var pct = target > 0 ? Math.min(100, val / target * 100) : 0;
+        return '<div class="macro"><div class="label">' + label + '</div>' +
+            '<div class="nums"><b>' + fmt(val) + ' г</b> / ' + fmt(target) + ' г</div>' +
+            '<div class="bar"><div class="fill ' + type + '" data-w="' + pct + '"></div></div></div>';
+    }
+
+    function growFills(root) {
+        requestAnimationFrame(function () {
+            root.querySelectorAll(".fill[data-w]").forEach(function (f) { f.style.width = f.getAttribute("data-w") + "%"; });
+        });
+    }
+
+    // ---------- Дата в шапке телефона ----------
+    var d = new Date().toLocaleDateString("ru-RU", { weekday: "long", day: "numeric", month: "long" });
+    document.getElementById("today").textContent = d.charAt(0).toUpperCase() + d.slice(1);
+
+    // ---------- Кольцо из приёмов пищи (как DailyGoalCard) ----------
+    var heroMeals = [
+        { emo: "🥞", name: "Сырники со сметаной", time: "08:40", kcal: 480, p: 24, c: 44, f: 22 },
+        { emo: "🍲", name: "Борщ и хлеб", time: "13:15", kcal: 390, p: 14, c: 46, f: 15 },
+        { emo: "🍎", name: "Яблоко и орехи", time: "16:30", kcal: 210, p: 5, c: 22, f: 12 },
+        { emo: "🐟", name: "Лосось с овощами", time: "19:20", kcal: 480, p: 34, c: 18, f: 28 }
+    ];
+    var HERO_TARGET = 2200, HERO_P = 130, HERO_C = 250, HERO_F = 70;
+    var ring = document.getElementById("heroRing");
+    var ringCenter = document.getElementById("heroRingCenter");
+    var R = 86, C = 2 * Math.PI * R, GAP = 4;
+    ring.appendChild(svgEl("circle", { "class": "track", cx: 100, cy: 100, r: R, fill: "none", "stroke-width": 12 }));
+    var total = heroMeals.reduce(function (s, m) { return s + m.kcal; }, 0);
+    var segs = [];
+    var offset = 0;
+    heroMeals.forEach(function (m, i) {
+        var len = Math.max(0, m.kcal / HERO_TARGET * C - GAP);
+        var seg = svgEl("circle", {
+            "class": "seg", cx: 100, cy: 100, r: R, fill: "none", "stroke-width": 12,
+            "stroke-linecap": "round", "stroke-dasharray": "0 " + C, "stroke-dashoffset": -offset
+        });
+        seg.dataset.len = len;
+        seg.addEventListener("mouseenter", function () { showMeal(i); });
+        seg.addEventListener("click", function () { showMeal(i); });
+        seg.addEventListener("mouseleave", showTotal);
+        ring.appendChild(seg);
+        segs.push(seg);
+        offset += m.kcal / HERO_TARGET * C;
+    });
+
+    function showTotal() {
+        segs.forEach(function (s) { s.classList.remove("hover"); });
+        ringCenter.innerHTML = '<div><div class="ring-val" id="heroVal">' + fmt(total) + '</div>' +
+            '<div class="ring-target">/ ' + fmt(HERO_TARGET) + ' ккал</div></div>';
+    }
+    function showMeal(i) {
+        segs.forEach(function (s, j) { s.classList.toggle("hover", i === j); });
+        var m = heroMeals[i];
+        ringCenter.innerHTML = '<div><div class="ring-meal">' + m.emo + ' ' + m.name + '</div>' +
+            '<div class="ring-meal-kcal">' + m.kcal + ' <span>ккал</span></div></div>';
+    }
+    ringCenter.innerHTML = '<div><div class="ring-val" id="heroVal">0</div><div class="ring-target">/ ' + fmt(HERO_TARGET) + ' ккал</div></div>';
+
+    var sum = function (k) { return heroMeals.reduce(function (s, m) { return s + m[k]; }, 0); };
+    var heroMacros = document.getElementById("heroMacros");
+    heroMacros.innerHTML = macroHtml("Белки", sum("p"), HERO_P, "p") + macroHtml("Углеводы", sum("c"), HERO_C, "c") + macroHtml("Жиры", sum("f"), HERO_F, "f");
+
+    document.getElementById("heroLogs").innerHTML = heroMeals.slice(0, 3).map(function (m) {
+        return '<div class="card log"><div class="log-ico">' + m.emo + '</div><div class="log-body">' +
+            '<div class="log-name">' + m.name + '</div><div class="log-sub">' + m.time + ' · Б ' + m.p + ' · Ж ' + m.f + ' · У ' + m.c + '</div></div>' +
+            '<div class="log-kcal">' + m.kcal + ' ккал</div></div>';
+    }).join("");
+
+    setTimeout(function () {
+        segs.forEach(function (s) { s.style.strokeDasharray = s.dataset.len + " " + C; });
+        countUp(document.getElementById("heroVal"), total, 1100);
+        growFills(heroMacros);
+        setTimeout(showTotal, 1150);
+    }, 350);
+
+    // Вода в телефоне
+    var heroWater = 1250;
+    function renderHeroWater() {
+        document.getElementById("heroWaterTxt").textContent = fmt(heroWater) + " / 2 000 мл";
+        document.getElementById("heroWaterFill").style.width = Math.min(100, heroWater / 2000 * 100) + "%";
+    }
+    document.getElementById("heroWaterBtn").addEventListener("click", function () {
+        heroWater = heroWater >= 2000 ? 250 : heroWater + 250;
+        renderHeroWater();
+    });
+    setTimeout(renderHeroWater, 400);
+
+    // ---------- Демо распознавания ----------
+    var DEMO_DISHES = [
+        { emo: "🥣", name: "Овсянка с бананом", w: 260, kcal: 320, p: 10, f: 7, c: 55, conf: 94 },
+        { emo: "🥗", name: "Цезарь с курицей", w: 280, kcal: 410, p: 28, f: 24, c: 18, conf: 91 },
+        { emo: "🍝", name: "Паста карбонара", w: 320, kcal: 640, p: 25, f: 28, c: 70, conf: 88 },
+        { emo: "🥞", name: "Сырники со сметаной", w: 220, kcal: 480, p: 24, f: 22, c: 44, conf: 90 },
+        { emo: "🍔", name: "Бургер и картошка фри", w: 380, kcal: 890, p: 32, f: 45, c: 88, conf: 86 },
+        { emo: "🍲", name: "Борщ со сметаной", w: 350, kcal: 260, p: 9, f: 12, c: 28, conf: 92 }
+    ];
+    var DEMO_TARGET = 1900;
+    var dishesEl = document.getElementById("dishes");
+    var resultEl = document.getElementById("result");
+    var current = null, scale = 1, portions = 1, demoTimer = null, dayItems = [];
+
+    dishesEl.innerHTML = DEMO_DISHES.map(function (dish, i) {
+        return '<button type="button" class="dish-btn" data-i="' + i + '"><span class="emo">' + dish.emo + '</span><span>' +
+            dish.name + '<small>отправить фото</small></span></button>';
+    }).join("");
+
+    dishesEl.addEventListener("click", function (e) {
+        var btn = e.target.closest(".dish-btn");
+        if (!btn) return;
+        dishesEl.querySelectorAll(".dish-btn").forEach(function (b) { b.classList.toggle("on", b === btn); });
+        analyze(DEMO_DISHES[+btn.dataset.i]);
+    });
+
+    function analyze(dish) {
+        clearTimeout(demoTimer);
+        current = dish; scale = 1; portions = 1;
+        resultEl.innerHTML = '<div class="analyzing" role="status"><div style="width:100%">' +
+            '<div class="mascot-box"><svg><use href="#zef"/></svg></div>' +
+            '<b>Zefir анализирует блюдо…</b>' +
+            '<div class="skel" style="width:70%;margin-top:14px"></div><div class="skel" style="width:50%"></div><div class="skel" style="width:60%"></div></div></div>';
+        demoTimer = setTimeout(renderDish, reduceMotion ? 0 : 1300);
+    }
+
+    function k() { return scale * portions; }
+
+    function renderDish() {
+        var dish = current;
+        resultEl.innerHTML = '<div class="dish-card">' +
+            '<div class="dish-top"><div class="dish-photo">' + dish.emo + '</div><div>' +
+            '<div class="dish-name">' + dish.name + '</div><span class="conf">🤖 Уверенность ИИ ' + dish.conf + '%</span></div></div>' +
+            '<div class="kcal-big"><b id="dKcal">' + fmt(dish.kcal) + '</b><span>ккал · <span id="dW">' + dish.w + '</span> г</span></div>' +
+            '<div class="chips">' +
+            '<div class="chip"><b id="dP">' + dish.p + '</b><span>белки, г</span></div>' +
+            '<div class="chip"><b id="dF">' + dish.f + '</b><span>жиры, г</span></div>' +
+            '<div class="chip"><b id="dC">' + dish.c + '</b><span>углеводы, г</span></div></div>' +
+            '<div class="portion"><span class="lbl">Порция</span>' +
+            '<button type="button" class="stepper" data-a="minus">−10%</button>' +
+            '<button type="button" class="stepper" data-a="plus">+10%</button>' +
+            '<button type="button" class="stepper" data-a="portion">Порций: <span id="dPortions">1</span> +</button></div>' +
+            '<button type="button" class="btn btn-primary btn-block add-btn" id="addDay">Добавить в дневник</button></div>';
+    }
+
+    resultEl.addEventListener("click", function (e) {
+        var b = e.target.closest("button");
+        if (!b || !current) return;
+        if (b.id === "addDay") { addToDay(); return; }
+        var a = b.dataset.a;
+        if (a === "minus") scale = Math.max(.3, +(scale - .1).toFixed(2));
+        if (a === "plus") scale = Math.min(3, +(scale + .1).toFixed(2));
+        if (a === "portion") portions = portions >= 4 ? 1 : portions + 1;
+        countUp(document.getElementById("dKcal"), current.kcal * k(), 400);
+        document.getElementById("dW").textContent = fmt(current.w * k());
+        document.getElementById("dP").textContent = fmt(current.p * k());
+        document.getElementById("dF").textContent = fmt(current.f * k());
+        document.getElementById("dC").textContent = fmt(current.c * k());
+        document.getElementById("dPortions").textContent = portions;
+    });
+
+    var miniProg = document.getElementById("miniProg");
+    var MC = 2 * Math.PI * 42;
+    miniProg.setAttribute("stroke-dasharray", MC);
+    miniProg.style.strokeDashoffset = MC;
+
+    function addToDay() {
+        dayItems.push({ emo: current.emo, kcal: Math.round(current.kcal * k()) });
+        var eaten = dayItems.reduce(function (s, it) { return s + it.kcal; }, 0);
+        miniProg.style.strokeDashoffset = MC * (1 - Math.min(1, eaten / DEMO_TARGET));
+        miniProg.classList.toggle("over", eaten > DEMO_TARGET);
+        var left = DEMO_TARGET - eaten;
+        document.getElementById("miniTxt").textContent = left >= 0
+            ? "Осталось " + fmt(left) + " ккал"
+            : "Перебор на " + fmt(-left) + " ккал";
+        document.getElementById("miniList").innerHTML = dayItems.map(function (it) {
+            return "<span>" + it.emo + " " + it.kcal + "</span>";
+        }).join("");
+        var btn = document.getElementById("addDay");
+        btn.textContent = "Добавлено ✓";
+        btn.disabled = true;
+    }
+
+    // ---------- Калькулятор нормы (как UserNutritionProfileService.recalcTargets) ----------
+    var ACTIVITY = { LOW: { coef: 1.2, water: 30 }, MEDIUM: { coef: 1.55, water: 33 }, HIGH: { coef: 1.75, water: 35 } };
+    var GOAL = { LOSE: { coef: 0.8, protein: 2 }, MAINTAIN: { coef: 1, protein: 1.8 }, GAIN: { coef: 1.15, protein: 1.8 } };
+    var calc = { sex: "F", activity: "MEDIUM", goal: "LOSE" };
+    var calcProg = document.getElementById("calcProg");
+    var CC = 2 * Math.PI * 88;
+    calcProg.setAttribute("stroke-dasharray", CC);
+    calcProg.style.strokeDashoffset = CC;
+
+    document.querySelectorAll(".segmented").forEach(function (seg) {
+        seg.addEventListener("click", function (e) {
+            var b = e.target.closest("button");
+            if (!b) return;
+            seg.querySelectorAll("button").forEach(function (x) { x.classList.toggle("on", x === b); });
+            calc[seg.dataset.name] = b.dataset.v;
+            recalc();
+        });
+    });
+    ["age", "height", "weight"].forEach(function (id) {
+        document.getElementById(id).addEventListener("input", function (e) {
+            document.getElementById(id + "Out").textContent = e.target.value;
+            recalc();
+        });
+    });
+
+    function recalc() {
+        var age = +document.getElementById("age").value;
+        var height = +document.getElementById("height").value;
+        var weight = +document.getElementById("weight").value;
+        var bmr = 10 * weight + 6.25 * height - 5 * age + (calc.sex === "M" ? 5 : -161);
+        var kcal = Math.round(bmr * ACTIVITY[calc.activity].coef * GOAL[calc.goal].coef);
+        var p = Math.round(weight * GOAL[calc.goal].protein);
+        var f = Math.floor(Math.round(kcal * 0.25) / 9);
+        var c = Math.max(0, Math.trunc((kcal - p * 4 - f * 9) / 4));
+        var water = Math.round(weight * ACTIVITY[calc.activity].water);
+
+        countUp(document.getElementById("calcKcal"), kcal, 500);
+        // Кольцо: доля от 4000 ккал — просто чтобы было видно, как норма меняется
+        calcProg.style.strokeDashoffset = CC * (1 - Math.min(1, kcal / 4000));
+        var macros = document.getElementById("calcMacros");
+        var total = p * 4 + f * 9 + c * 4 || 1;
+        macros.innerHTML =
+            '<div class="macro"><div class="label">Белки</div><div class="nums"><b>' + p + ' г</b></div><div class="bar"><div class="fill p" style="width:' + (p * 4 / total * 100) + '%"></div></div></div>' +
+            '<div class="macro"><div class="label">Жиры</div><div class="nums"><b>' + f + ' г</b></div><div class="bar"><div class="fill f" style="width:' + (f * 9 / total * 100) + '%"></div></div></div>' +
+            '<div class="macro"><div class="label">Углеводы</div><div class="nums"><b>' + c + ' г</b></div><div class="bar"><div class="fill c" style="width:' + (c * 4 / total * 100) + '%"></div></div></div>';
+        document.getElementById("calcWater").textContent = fmt(water);
+        updateCalcStart(age, height, weight);
+    }
+
+    // Кнопка «Вести дневник с этой нормой»: данные калькулятора в /start → бот заполнит профиль
+    // (CalculatorStartParam: p_<пол>_<возраст>_<рост>_<вес>_<активность>_<цель>[_<utm>], до 64 символов).
+    var calcStart = document.getElementById("calcStart");
+    var calcStartUrl = new URL(calcStart.href);
+    var calcStartUtm = calcStartUrl.searchParams.get("start");
+    calcStartUrl.search = "";
+    function updateCalcStart(age, height, weight) {
+        var param = ["p", calc.sex, age, height, weight, calc.activity.charAt(0), calc.goal.charAt(0)].join("_");
+        if (calcStartUtm && param.length + 1 + calcStartUtm.length <= 64) param += "_" + calcStartUtm;
+        calcStart.href = calcStartUrl + "?start=" + param;
+    }
+
+    // ---------- Бенто: печатающийся текст ----------
+    var phrases = ["гречка с котлетой, 250 г", "капучино и круассан", "2 яйца, жарил на масле", "салат с тунцом и хлеб"];
+    var typingEl = document.getElementById("typing");
+    var pi = 0, ci = 0, deleting = false;
+    function typeTick() {
+        var s = phrases[pi];
+        if (!deleting) {
+            ci++;
+            if (ci >= s.length) { deleting = true; setTimeout(typeTick, 1600); typingEl.textContent = s; return; }
+        } else {
+            ci--;
+            if (ci <= 0) { deleting = false; pi = (pi + 1) % phrases.length; }
+        }
+        typingEl.textContent = s.slice(0, ci);
+        setTimeout(typeTick, deleting ? 28 : 65);
+    }
+    if (reduceMotion) typingEl.textContent = phrases[0]; else typeTick();
+
+    // ---------- Бенто: ИИ-саммари ----------
+    var AI = {
+        week: {
+            headline: "Неделя ровная: в норму попал 5 дней из 7",
+            bullets: [ ["🎯", "Средние калории — 1 840 при норме 1 900"], ["🥩", "Белка в среднем 96 г — на 20% меньше нормы"], ["🌙", "Ужины тяжелее обеда в 4 днях из 7"] ],
+            tip: "Перенеси часть ужина на обед и добавь творог или яйца на завтрак — белок подтянется."
+        },
+        month: {
+            headline: "За месяц −1,3 кг — темп комфортный",
+            bullets: [ ["📉", "Вес снижается на 0,3 кг в неделю"], ["🍰", "Сладкое — 12 дней из 30, чаще по выходным"], ["💧", "Воды в среднем 1,4 л из 2 л"] ],
+            tip: "Держи текущий дефицит — он работает. Добавь стакан воды к каждому приёму пищи."
+        }
+    };
+    var aiBody = document.getElementById("aiBody");
+    function renderAi(key) {
+        var a = AI[key];
+        aiBody.innerHTML = '<div class="ai-headline">' + a.headline + '</div><ul class="bullets">' +
+            a.bullets.map(function (b, i) {
+                return '<li style="animation-delay:' + (i * 80) + 'ms"><span class="emoji">' + b[0] + '</span>' + b[1] + '</li>';
+            }).join("") + '</ul>' +
+            '<div class="tip"><span class="emoji">💡</span><div><div class="tip-lbl">Совет</div>' + a.tip + '</div></div>';
+    }
+    document.getElementById("aiSeg").addEventListener("click", function (e) {
+        var b = e.target.closest("button");
+        if (!b) return;
+        this.querySelectorAll("button").forEach(function (x) { x.classList.toggle("on", x === b); });
+        renderAi(b.dataset.v);
+    });
+    renderAi("week");
+
+    // ---------- Бенто: график недели (как WeeklyTrendCard) ----------
+    (function () {
+        var data = [ ["Пн", 1720], ["Вт", 2050], ["Ср", 1880], ["Чт", 1640], ["Пт", 2310], ["Сб", 1960], ["Вс", 1790] ];
+        var goal = 1900, W = 320, H = 150, pl = 36, pt = 18, w = W - pl - 8, h = H - pt - 26, max = 2500;
+        var pts = data.map(function (dd, i) { return { x: pl + i / (data.length - 1) * w, y: pt + h - dd[1] / max * h }; });
+        var line = "M " + pts[0].x + " " + pts[0].y;
+        for (var i = 0; i < pts.length - 1; i++) {
+            var cur = pts[i], nx = pts[i + 1], pv = pts[i - 1] || cur, n2 = pts[i + 2] || nx;
+            line += " C " + (cur.x + (nx.x - pv.x) * .2) + " " + (cur.y + (nx.y - pv.y) * .2) + ", " +
+                (nx.x - (n2.x - cur.x) * .2) + " " + (nx.y - (n2.y - cur.y) * .2) + ", " + nx.x + " " + nx.y;
+        }
+        var area = line + " L " + (pl + w) + " " + (pt + h) + " L " + pl + " " + (pt + h) + " Z";
+        var gy = pt + h - goal / max * h;
+        var s = '<svg viewBox="0 0 ' + W + ' ' + H + '"><defs><linearGradient id="trendFill" x1="0" y1="0" x2="0" y2="1">' +
+            '<stop offset="0%" stop-color="#D97A4A" stop-opacity=".28"/><stop offset="100%" stop-color="#D97A4A" stop-opacity="0"/></linearGradient></defs>';
+        [0, .5, 1].forEach(function (l) {
+            var y = pt + h - l * h;
+            s += '<line x1="' + pl + '" y1="' + y + '" x2="' + (pl + w) + '" y2="' + y + '" stroke="var(--border)" stroke-dasharray="4 4"/>' +
+                '<text x="' + (pl - 6) + '" y="' + (y + 4) + '" text-anchor="end" font-size="10" font-weight="700" fill="var(--text-muted)">' + Math.round(max * l) + '</text>';
+        });
+        s += '<line class="goal-line" x1="' + pl + '" y1="' + gy + '" x2="' + (pl + w) + '" y2="' + gy + '"/>' +
+            '<line x1="' + (pl + w - 92) + '" y1="4" x2="' + (pl + w - 74) + '" y2="4" class="goal-line"/>' +
+            '<text x="' + (pl + w) + '" y="8" text-anchor="end" font-size="10" font-weight="800" fill="var(--success)">норма ' + goal + '</text>' +
+            '<path class="area" d="' + area + '"/><path class="line" d="' + line + '"/>';
+        pts.forEach(function (p, j) {
+            s += '<circle class="dot" cx="' + p.x + '" cy="' + p.y + '" r="4"/>' +
+                '<text x="' + p.x + '" y="' + (H - 6) + '" text-anchor="middle" font-size="11" font-weight="700" fill="var(--text-muted)">' + data[j][0] + '</text>';
+        });
+        document.getElementById("trend").innerHTML = s + "</svg>";
+    })();
+
+    // ---------- Бенто: стакан воды ----------
+    var glassMl = 750;
+    function renderGlass() {
+        document.getElementById("liquid").style.height = Math.min(100, glassMl / 2000 * 100) + "%";
+        document.getElementById("glassTxt").textContent = fmt(glassMl) + " мл";
+    }
+    function addGlass() { glassMl = glassMl >= 2000 ? 250 : glassMl + 250; renderGlass(); }
+    var glass = document.getElementById("glass");
+    glass.addEventListener("click", addGlass);
+    glass.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); addGlass(); } });
+    renderGlass();
+
+    // ---------- Бенто: избранное ----------
+    var favs = [ ["Овсянка с бананом", 320], ["Капучино 300 мл", 140], ["Курица с рисом", 520] ];
+    var favsEl = document.getElementById("favs");
+    favsEl.innerHTML = favs.map(function (f) {
+        return '<div class="fav"><span class="star">★</span>' + f[0] + '<span class="k">' + f[1] + '</span><button type="button" aria-label="Добавить">+</button></div>';
+    }).join("");
+    favsEl.addEventListener("click", function (e) {
+        var b = e.target.closest("button");
+        if (!b) return;
+        b.classList.add("done"); b.textContent = "✓";
+        setTimeout(function () { b.classList.remove("done"); b.textContent = "+"; }, 1400);
+    });
+
+    // ---------- Бенто: варианты моделей ----------
+    var variants = [ ["Плов с курицей", "модель A", 610], ["Рис с курицей и морковью", "модель B", 540] ];
+    var varEl = document.getElementById("variants");
+    varEl.innerHTML = variants.map(function (v, i) {
+        return '<button type="button" class="variant' + (i === 0 ? " on" : "") + '"><span>🍛</span><span>' + v[0] + '<br><small>' + v[1] + '</small></span><span class="k">' + v[2] + '</span></button>';
+    }).join("");
+    varEl.addEventListener("click", function (e) {
+        var b = e.target.closest(".variant");
+        if (!b) return;
+        varEl.querySelectorAll(".variant").forEach(function (x) { x.classList.toggle("on", x === b); });
+    });
+
+    // ---------- Чат бота: сообщения в формате DishUpdateHandler ----------
+    var tgBody = document.getElementById("tgBody");
+    var tgDish = { emo: "🥑", name: "Авокадо-тост (2 ломтика)", w: 125, kcal: 271, p: 13, f: 14, c: 24, portions: 1 };
+    var TG_DAY = { kcal: 1490, p: 80, f: 40, c: 150 }, TG_NORM = { kcal: 1931, p: 120, f: 53, c: 230 };
+    var tgScale = 1;
+
+    function tgDishHtml() {
+        var m = tgScale * tgDish.portions;
+        var kcal = Math.round(tgDish.kcal * m), p = Math.round(tgDish.p * m), f = Math.round(tgDish.f * m), c = Math.round(tgDish.c * m);
+        var eaten = TG_DAY.kcal + kcal, pct = Math.round(eaten / TG_NORM.kcal * 100), add = Math.round(kcal / TG_NORM.kcal * 100);
+        var filled = Math.min(10, Math.round(pct / 10)), sq = "";
+        for (var i = 0; i < 10; i++) sq += '<i class="' + (i < filled ? (pct > 100 ? "over" : "ok") : "") + '"></i>';
+        return '<div class="tg-dish"><span class="it">' + tgDish.emo + ' ' + tgDish.name + '</span> (+' + kcal + ' ккал)<br>' +
+            '<b>Б:</b> ' + (TG_DAY.p + p) + '/' + TG_NORM.p + 'г (<b>+' + p + '</b>) | <b>Ж:</b> ' + (TG_DAY.f + f) + '/' + TG_NORM.f + 'г (<b>+' + f + '</b>) | <b>У:</b> ' + (TG_DAY.c + c) + '/' + TG_NORM.c + 'г (<b>+' + c + '</b>)<br>' +
+            '<b>Вес порции:</b> ' + Math.round(tgDish.w * tgScale) + ' г<br><b>Количество порций:</b> ' + tgDish.portions + '<br><br>' +
+            eaten + '/' + TG_NORM.kcal + ' <b>+' + kcal + ' ккал</b> (+' + add + '%)<br>' +
+            '<span class="sq">' + sq + '</span>' + (pct > 100 ? "🔥 " : "") + '<b>' + pct + '%</b></div>' +
+            '<span class="time">12:47</span>';
+    }
+
+    var tgStarted = false;
+    function startTg() {
+        if (tgStarted) return;
+        tgStarted = true;
+        var photo = document.createElement("div");
+        photo.className = "msg me photo";
+        photo.innerHTML = '<div class="photo-img">🥑</div>';
+        tgBody.appendChild(photo);
+        requestAnimationFrame(function () { photo.classList.add("show"); });
+
+        var typing = document.createElement("div");
+        typing.className = "msg";
+        typing.innerHTML = '<span class="typing-dots"><i></i><i></i><i></i></span>';
+        setTimeout(function () { tgBody.appendChild(typing); requestAnimationFrame(function () { typing.classList.add("show"); }); }, reduceMotion ? 0 : 700);
+
+        setTimeout(function () {
+            typing.remove();
+            var reply = document.createElement("div");
+            reply.className = "msg";
+            reply.id = "tgReply";
+            reply.innerHTML = tgDishHtml();
+            tgBody.appendChild(reply);
+            var kb = document.createElement("div");
+            kb.className = "tg-kb";
+            kb.innerHTML =
+                '<div class="row r3"><button type="button" class="lbl">Вес порции:</button><button type="button" data-a="-">-10%</button><button type="button" data-a="+">+10%</button></div>' +
+                '<div class="row r2"><button type="button" class="lbl">Порций:</button><button type="button" data-a="p">➕</button></div>' +
+                '<div class="row"><button type="button" data-a="fav">⭐ Сохранить блюдо</button></div>' +
+                '<div class="row"><button type="button" data-a="del">Удалить из дневника</button></div>';
+            tgBody.appendChild(kb);
+            requestAnimationFrame(function () { reply.classList.add("show"); kb.classList.add("show"); });
+            kb.addEventListener("click", onTgButton);
+        }, reduceMotion ? 0 : 2000);
+    }
+
+    function onTgButton(e) {
+        var b = e.target.closest("button");
+        if (!b || !b.dataset.a) return;
+        var a = b.dataset.a;
+        if (a === "-") tgScale = Math.max(.3, +(tgScale - .1).toFixed(2));
+        if (a === "+") tgScale = Math.min(3, +(tgScale + .1).toFixed(2));
+        if (a === "p") tgDish.portions = tgDish.portions >= 4 ? 1 : tgDish.portions + 1;
+        if (a === "fav" || a === "del") {
+            var note = document.createElement("div");
+            note.className = "msg";
+            note.innerHTML = (a === "fav" ? "⭐ Блюдо сохранено в избранное" : "🗑 Блюдо удалено из дневника") + '<span class="time">12:48</span>';
+            tgBody.appendChild(note);
+            requestAnimationFrame(function () { note.classList.add("show"); });
+            setTimeout(function () { note.classList.remove("show"); setTimeout(function () { note.remove(); }, 400); }, 2200);
+            return;
+        }
+        document.getElementById("tgReply").innerHTML = tgDishHtml();
+    }
+
+    // ---------- Появление при прокрутке ----------
+    var io = "IntersectionObserver" in window ? new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) {
+            if (!en.isIntersecting) return;
+            en.target.classList.add("in");
+            if (en.target.id === "tg") startTg();
+            io.unobserve(en.target);
+        });
+    }, { threshold: .18 }) : null;
+
+    var watched = document.querySelectorAll(".reveal, #trend");
+    if (io) watched.forEach(function (el) { io.observe(el); });
+    else { watched.forEach(function (el) { el.classList.add("in"); }); startTg(); }
+
+    recalc();
+
+    // Зефирка в финале подпрыгивает по клику
+    document.getElementById("bigZef").addEventListener("click", function () {
+        this.style.animation = "none";
+        void this.getBoundingClientRect();
+        this.style.animation = "";
+    });
+})();
+</script>
+</body>
+</html>
