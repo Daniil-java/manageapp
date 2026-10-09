@@ -6,6 +6,7 @@ import com.kuklin.manageapp.bots.channelposter.entities.TopicCategory;
 import com.kuklin.manageapp.bots.channelposter.entities.parser.RedditPost;
 import com.kuklin.manageapp.bots.channelposter.model.TopicCategoryNotFoundException;
 import com.kuklin.manageapp.bots.channelposter.services.PostQueueService;
+import com.kuklin.manageapp.bots.channelposter.services.PostReviewService;
 import com.kuklin.manageapp.bots.channelposter.services.parser.RedditPostService;
 import com.kuklin.manageapp.bots.channelposter.telegram.ChannelPosterBotKeyComponent;
 import com.kuklin.manageapp.bots.channelposter.telegram.ChannelPosterTelegramBot;
@@ -18,8 +19,17 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
 
-import static com.kuklin.manageapp.bots.channelposter.telegram.handlers.ArticlePosterUpdateHandler.getGeneratedTextKeyboard;
 
+/**
+ * @deprecated Генерация постов из одобренных Reddit-постов (шаг 3). Заменена на SourceItemPostService.
+ * <p>Устарело в et-85. Причина: old.reddit.com без логина теперь редиректит на /login (reason=lor2) —
+ * парсер получал страницу входа вместо ленты и находил 0 постов, а ошибки уходили только в warn-лог.
+ * Поэтому в канал почти ничего не приходило. Вместо Reddit-only конвейера сделан общий:
+ * ContentSource / SourceItem, парсеры RSS, PubMed и Reddit (официальный API) и ContentPipeline.
+ * <p>Код не запускается по расписанию и не пополняет таблицы subreddit / reddit_post.
+ * Оставлен для истории; удалить вместе с таблицами отдельной миграцией.
+ */
+@Deprecated(since = "et-85", forRemoval = true)
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -137,7 +147,7 @@ public class ParseRedditPostScheduleProcessor implements ScheduleProcessor {
                 channelPosterTelegramBot.sendReturnedMessage(
                         adminId,
                         postQueue.getTextContent(),
-                        getGeneratedTextKeyboard(postQueue.getId()),
+                        PostReviewService.keyboard(postQueue.getId()),
                         null
                 );
             } catch (Exception e) {

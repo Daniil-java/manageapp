@@ -107,11 +107,13 @@ public enum Command {
 
     //==========================POSTER============================
     POSTER_GET_ARTICLE("/article", BotIdentifier.CHANNEL_POSTER),
-    POSTER_IMAGE("/image", BotIdentifier.CHANNEL_POSTER),
-    POSTER_POST("/post", BotIdentifier.CHANNEL_POSTER),
+    POSTER_REVIEW("/rev", BotIdentifier.CHANNEL_POSTER),
     POSTER_MINI_APP("/app", BotIdentifier.CHANNEL_POSTER),
     POSTER_SCHEDULE_ARTICLE("/artsch", BotIdentifier.CHANNEL_POSTER),
     POSTER_GET_QUEUE("/q", BotIdentifier.CHANNEL_POSTER),
+    POSTER_SOURCES("/src", BotIdentifier.CHANNEL_POSTER),
+    /** @deprecated et-85: старая команда добавления сабреддита, заменена на «/src add reddit» */
+    @Deprecated(since = "et-85", forRemoval = true)
     POSTER_SUBREDDIT("/sub", BotIdentifier.CHANNEL_POSTER),
 
     //==========================NICOTINE============================

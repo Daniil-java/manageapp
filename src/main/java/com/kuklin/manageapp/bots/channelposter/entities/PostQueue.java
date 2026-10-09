@@ -27,10 +27,23 @@ public class PostQueue {
     private Instant sentAt;
     private Integer tgMessageId;
     private Integer parentPostId;
+    // откуда материал (null — статья прислана админом вручную)
+    private Long sourceItemId;
+    private String sourceUrl;
+    private String sourceName;
+    // оценка AI-фильтра 0–10: по ней автопилот решает, ставить ли пост в очередь без админа
+    private Integer aiScore;
+    // когда превью ушло админам на проверку
+    private Instant reviewSentAt;
     @CreationTimestamp
     private Instant created;
     public enum PostQueueStatus {
-        TEXT_GENERATED, IMAGE_GENERATED, SENT, PENDING, QUEUED, FAILED, PROCESSED
+        TEXT_GENERATED, IMAGE_GENERATED, SENT, PENDING, QUEUED, FAILED, PROCESSED,
+        // текст и картинка готовы, превью у админов — ждёт «в очередь» / «опубликовать» / «удалить»
+        REVIEW,
+        // висел на проверке дольше channelposter.review-ttl — снят с конвейера (не занимает место),
+        // но кнопки превью работают: админ может поставить его в очередь и позже
+        EXPIRED
 
     }
 }

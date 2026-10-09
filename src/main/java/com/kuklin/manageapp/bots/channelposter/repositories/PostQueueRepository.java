@@ -1,13 +1,16 @@
 package com.kuklin.manageapp.bots.channelposter.repositories;
 
 import com.kuklin.manageapp.bots.channelposter.entities.PostQueue;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface PostQueueRepository extends JpaRepository<PostQueue, Long> {
@@ -30,4 +33,15 @@ public interface PostQueueRepository extends JpaRepository<PostQueue, Long> {
     );
 
     List<PostQueue> findAllByStatus(PostQueue.PostQueueStatus status);
+
+    List<PostQueue> findAllByStatusOrderByScheduledAtAsc(PostQueue.PostQueueStatus status);
+
+    long countByStatusIn(Collection<PostQueue.PostQueueStatus> statuses);
+
+    // заголовки недавних постов — AI-фильтр не пропускает повторы тем
+    List<PostQueue> findAllByStatusInOrderByCreatedDesc(Collection<PostQueue.PostQueueStatus> statuses, Pageable pageable);
+
+    Optional<PostQueue> findTopByStatusOrderBySentAtDesc(PostQueue.PostQueueStatus status);
+
+    List<PostQueue> findAllByStatusAndReviewSentAtBefore(PostQueue.PostQueueStatus status, Instant before);
 }

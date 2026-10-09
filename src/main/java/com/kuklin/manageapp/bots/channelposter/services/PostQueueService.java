@@ -14,11 +14,13 @@ import com.kuklin.manageapp.bots.channelposter.telegram.ChannelPosterBotKeyCompo
 import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.time.*;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -30,6 +32,8 @@ public class PostQueueService {
     private final ScheduleSlotService scheduleSlotService;
     private final OpenAiProviderProcessor openAiProviderProcessor;
     private final ChannelPosterBotKeyComponent component;
+    // 2 слота в день × 14 дней = 28 мест — хватает на конвейер из 20 постов
+    public static final int SLOT_SEARCH_DAYS = 14;
     private static final String SHORT_PROMPT =
             """
                     Сделай данную статью в половину короче.            
@@ -143,6 +147,47 @@ public class PostQueueService {
         return postQueueRepository.findAllByStatus(status);
     }
 
+    public List<PostQueue> getQueuedOrdered() {
+        return postQueueRepository.findAllByStatusOrderByScheduledAtAsc(PostQueue.PostQueueStatus.QUEUED);
+    }
+
+    // сколько постов уже в работе: на проверке у админа + в очереди на публикацию
+    public long countInPipeline() {
+        return postQueueRepository.countByStatusIn(List.of(
+                PostQueue.PostQueueStatus.REVIEW, PostQueue.PostQueueStatus.QUEUED));
+    }
+
+    public Optional<PostQueue> getLastSent() {
+        return postQueueRepository.findTopByStatusOrderBySentAtDesc(PostQueue.PostQueueStatus.SENT);
+    }
+
+    public List<String> getRecentTitles(int limit) {
+        return postQueueRepository.findAllByStatusInOrderByCreatedDesc(
+                        List.of(PostQueue.PostQueueStatus.SENT, PostQueue.PostQueueStatus.QUEUED,
+                                PostQueue.PostQueueStatus.REVIEW),
+                        PageRequest.of(0, limit))
+                .stream()
+                .map(PostQueue::getTitle)
+                .filter(t -> t != null && !t.isBlank())
+                .toList();
+    }
+
+    // посты, которые ждут админа дольше заданного времени (для автопилота)
+    public List<PostQueue> getReviewSentBefore(Instant before) {
+        return postQueueRepository.findAllByStatusAndReviewSentAtBefore(PostQueue.PostQueueStatus.REVIEW, before);
+    }
+
+    public PostQueue markReview(PostQueue postQueue) {
+        return postQueueRepository.save(postQueue
+                .setStatus(PostQueue.PostQueueStatus.REVIEW)
+                .setReviewSentAt(Instant.now()));
+    }
+
+    // снят с конвейера: не считается в countInPipeline, но кнопки превью работают
+    public PostQueue markExpired(PostQueue postQueue) {
+        return postQueueRepository.save(postQueue.setStatus(PostQueue.PostQueueStatus.EXPIRED));
+    }
+
     // Метод для назначения времени посту при аппруве
     public PostQueue assignNextAvailableSlot(Long postId, ZoneId zoneId) throws PostQueueNotFoundException {
         return assignNextAvailableSlot(getPostQueueById(postId), zoneId);
@@ -160,8 +205,8 @@ public class PostQueueService {
         Instant scheduledTime = null;
         int daysOffset = 0;
 
-        // Ищем свободный слот в течение ближайших 7 дней (чтобы не зациклиться)
-        while (scheduledTime == null && daysOffset < 7) {
+        // Ищем свободный слот в течение ближайших SLOT_SEARCH_DAYS дней (чтобы не зациклиться)
+        while (scheduledTime == null && daysOffset < SLOT_SEARCH_DAYS) {
             Instant startOfDay = dateToCheck.atStartOfDay(zoneId).toInstant();
             Instant endOfDay = dateToCheck.atTime(LocalTime.MAX).atZone(zoneId).toInstant();
 

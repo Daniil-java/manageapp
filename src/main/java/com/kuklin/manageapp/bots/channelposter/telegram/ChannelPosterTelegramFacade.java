@@ -44,10 +44,15 @@ public class ChannelPosterTelegramFacade extends TelegramFacade {
             if (update.getMessage().hasDocument()) {
                 return getUpdateHandlerMap().get(Command.POSTER_GET_ARTICLE.getCommandText());
             }
-            if (update.getMessage().getText().contains(Command.POSTER_SUBREDDIT.getCommandText())) {
-                return getUpdateHandlerMap().get(Command.POSTER_SUBREDDIT.getCommandText());
+            String text = update.getMessage().getText();
+            if (text == null || text.isBlank()) {
+                return null;
             }
-            request = update.getMessage().getText().split(TelegramBot.DEFAULT_DELIMETER)[0];
+            // не команда — это статья или ссылка на неё
+            if (!text.startsWith("/")) {
+                return getUpdateHandlerMap().get(Command.POSTER_GET_ARTICLE.getCommandText());
+            }
+            request = text.trim().split("\\s+")[0];
         }
 
         UpdateHandler updateHandler = getUpdateHandlerMap().get(request);

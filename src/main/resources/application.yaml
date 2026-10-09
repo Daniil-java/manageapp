@@ -88,6 +88,17 @@ security:
     allow-localhost: ${DOMAIN_FILTER_ALLOW_LOCALHOST:false}
 
 # Ограничения на ввод для ИИ (бот, мини-апп, сайт) — меняются только здесь.
+# Конвейер Telegram-канала (ChannelPosterProperties): сбор источников → AI-фильтр → посты на проверку.
+channelposter:
+  pipeline-target: ${CHANNELPOSTER_PIPELINE_TARGET:20}   # постов в работе (проверка + очередь); 2 слота в день → запас на 10 дней
+  posts-per-run: ${CHANNELPOSTER_POSTS_PER_RUN:3}        # новых постов за запуск генерации (каждый с картинкой — стоит денег)
+  max-backlog: ${CHANNELPOSTER_MAX_BACKLOG:150}          # необработанных материалов столько — новые не собираем
+  approve-score: ${CHANNELPOSTER_APPROVE_SCORE:7}        # оценка AI 0–10, с которой материал идёт в работу
+  autopilot-min-score: ${CHANNELPOSTER_AUTOPILOT_MIN_SCORE:8}  # с такой оценкой автопилот ставит пост в очередь без админа
+  autopilot-after: ${CHANNELPOSTER_AUTOPILOT_AFTER:12h}  # через сколько без ответа админа; 0 — автопилот выключен
+  max-item-age: ${CHANNELPOSTER_MAX_ITEM_AGE:30d}        # материалы старше не берём в работу
+  review-ttl: ${CHANNELPOSTER_REVIEW_TTL:3d}             # пост на проверке дольше — снимаем с конвейера
+
 calorie:
   ai-input:
     text-max-length: 4096            # как одно сообщение Telegram — влезает рецепт

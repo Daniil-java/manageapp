@@ -1,9 +1,9 @@
 package com.kuklin.manageapp.bots.channelposter.components.schedulers;
 
+import com.kuklin.manageapp.bots.channelposter.components.PostPublisher;
 import com.kuklin.manageapp.bots.channelposter.entities.PostQueue;
 import com.kuklin.manageapp.bots.channelposter.services.PostQueueService;
 import com.kuklin.manageapp.bots.channelposter.telegram.ChannelPosterBotKeyComponent;
-import com.kuklin.manageapp.bots.channelposter.telegram.handlers.PostMessagePosterUpdateHandler;
 import com.kuklin.manageapp.common.library.ScheduleProcessor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +17,7 @@ import java.util.List;
 public class PostPublishChannelScheduleProcessor implements ScheduleProcessor {
 
     private final PostQueueService postQueueService;
-    private final PostMessagePosterUpdateHandler posterUpdateHandler;
+    private final PostPublisher postPublisher;
     private final ChannelPosterBotKeyComponent component;
 
     @Override
@@ -30,7 +30,10 @@ public class PostPublishChannelScheduleProcessor implements ScheduleProcessor {
                 log.info("Publishing a post ID: {}", post.getId());
 
                 // Используем метод отправки
-                Integer tgMessageId = posterUpdateHandler.sendPostContent(component.getChannelId(), post.getId(), null);
+                Integer tgMessageId = postPublisher.publish(component.getChannelId(), post);
+                if (tgMessageId == null) {
+                    throw new IllegalStateException("Telegram did not accept the post");
+                }
 
                 // Маркируем как отправленный
                 postQueueService.markAsSentAndDeleteFile(post.getId(), tgMessageId);

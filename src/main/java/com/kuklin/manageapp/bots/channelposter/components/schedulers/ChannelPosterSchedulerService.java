@@ -1,5 +1,7 @@
 package com.kuklin.manageapp.bots.channelposter.components.schedulers;
 
+import com.kuklin.manageapp.bots.channelposter.services.ChannelAutopilotService;
+import com.kuklin.manageapp.bots.channelposter.services.source.ContentPipeline;
 import com.kuklin.manageapp.common.configurations.BotScheduler;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import lombok.RequiredArgsConstructor;
@@ -7,36 +9,59 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+/**
+ * Расписание канала (время московское):
+ * сбор источников раз в 6 ч → AI-фильтр каждый час → генерация постов каждые 2 ч →
+ * автопилот и снятие залежавшихся на проверке постов каждый час,
+ * публикация по слотам каждые 10 мин, отчёт админам в 10:00.
+ */
 @Slf4j
 @Component
 @RequiredArgsConstructor
 @BotScheduler(BotIdentifier.CHANNEL_POSTER)
 public class ChannelPosterSchedulerService {
+    private static final String ZONE = "Europe/Moscow";
+
     private final PostPublishChannelScheduleProcessor postPublishChannelScheduleProcessor;
     private final PathImageCleanerScheduleProcessor pathImageCleanerScheduleProcessor;
-    private final ParseRedditPostScheduleProcessor parseRedditPostScheduleProcessor;
-    private final RedditPostFilterPosterScheduler redditPostFilterPosterScheduler;
-    private final SubredditPosterScheduler subredditPosterScheduler;
+    private final ContentPipeline contentPipeline;
+    private final ChannelAutopilotService autopilotService;
 
-    // 00:00, 06:00, 12:00, 18:00
-    @Scheduled(cron = "0 0 0,6,12,18 * * *")
-    public void subredditPosterScheduler() {
-        getInfo(subredditPosterScheduler.getSchedulerName());
-        subredditPosterScheduler.process();
+    // 03:00, 09:00, 15:00, 21:00
+    @Scheduled(cron = "0 0 3,9,15,21 * * *", zone = ZONE)
+    public void fetchSources() {
+        getInfo("fetchSources");
+        log.info("Sources fetched: {} new items", contentPipeline.fetch());
     }
 
-    // 00:20, 06:20, 12:20, 18:20
-    @Scheduled(cron = "0 20 0,6,12,18 * * *")
-    public void redditPostFilterPosterScheduler() {
-        getInfo(redditPostFilterPosterScheduler.getSchedulerName());
-        redditPostFilterPosterScheduler.process();
+    @Scheduled(cron = "0 20 * * * *", zone = ZONE)
+    public void filterSourceItems() {
+        getInfo("filterSourceItems");
+        contentPipeline.filter();
     }
 
-    // 00:40, 06:40, 12:40, 18:40
-    @Scheduled(cron = "0 40 0,6,12,18 * * *")
-    public void parseRedditPostScheduleProcessor() {
-        getInfo(parseRedditPostScheduleProcessor.getSchedulerName());
-        parseRedditPostScheduleProcessor.process();
+    // 08:40 … 22:40 — ночью превью админам не шлём
+    @Scheduled(cron = "0 40 8-22/2 * * *", zone = ZONE)
+    public void generatePosts() {
+        getInfo("generatePosts");
+        contentPipeline.generate();
+    }
+
+    @Scheduled(cron = "0 50 * * * *", zone = ZONE)
+    public void autopilot() {
+        getInfo("autopilot");
+        int queued = autopilotService.runAutopilot();
+        if (queued > 0) {
+            log.info("Autopilot queued {} posts", queued);
+        }
+        // после автопилота: сильные посты он уже забрал, снимаем только залежавшиеся остальные
+        autopilotService.expireStaleReviews();
+    }
+
+    @Scheduled(cron = "0 0 10 * * *", zone = ZONE)
+    public void dailyReport() {
+        getInfo("dailyReport");
+        autopilotService.sendDailyReport();
     }
 
     @Scheduled(cron = "0 0/10 * * * *")

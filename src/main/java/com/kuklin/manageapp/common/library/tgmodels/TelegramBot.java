@@ -183,8 +183,9 @@ public abstract class TelegramBot extends TelegramLongPollingBot implements Tele
         SendMessage sendMessage = buildMessage(chatId, text, replyKeyboard, replyMessageId);
         Message message = sendReturnedMessage(sendMessage);
         if (message == null) {
+            // HTML не разобрался — шлём простым текстом и возвращаем то, что реально ушло
             sendMessage.setParseMode(null);
-            sendReturnedMessage(sendMessage);
+            message = sendReturnedMessage(sendMessage);
         }
         return message;
     }

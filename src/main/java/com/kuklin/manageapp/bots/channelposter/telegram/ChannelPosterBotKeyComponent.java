@@ -20,6 +20,9 @@ public class ChannelPosterBotKeyComponent {
     private final String aiKey;
     private final List<Long> adminIds;
     private final Long channelId;
+    // ключи приложения Reddit (app-only OAuth); без них Reddit-источники почти всегда пустые
+    private final String redditClientId;
+    private final String redditClientSecret;
 
     @Autowired
     public ChannelPosterBotKeyComponent(Environment environment) {
@@ -39,6 +42,15 @@ public class ChannelPosterBotKeyComponent {
         }
         this.channelId = channelTempId;
         log.info("Channel ID initiated!");
+
+        this.redditClientId = environment.getProperty("CHANNELPOSTER_REDDIT_CLIENT_ID");
+        this.redditClientSecret = environment.getProperty("CHANNELPOSTER_REDDIT_CLIENT_SECRET");
+        log.info("Reddit API keys {}", hasRedditCredentials() ? "initiated" : "not set — Reddit sources use public RSS");
+    }
+
+    public boolean hasRedditCredentials() {
+        return redditClientId != null && !redditClientId.isBlank()
+                && redditClientSecret != null && !redditClientSecret.isBlank();
     }
 
     private List<Long> getAdminIdsList(String admIds) {
