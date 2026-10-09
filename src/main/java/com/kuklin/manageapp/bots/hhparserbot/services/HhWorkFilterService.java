@@ -48,8 +48,8 @@ public class HhWorkFilterService {
     }
 
     //Получение ДТО вакансий, по переденной ссылке
-    public List<HhSimpleResponseDto> loadHhVacancies(WorkFilter workFilter) {
-        return hhApiService.loadAndParseHhVacancies(workFilter);
+    public List<HhSimpleResponseDto> loadHhVacancies(WorkFilter workFilter, int page) {
+        return hhApiService.loadAndParseHhVacancies(workFilter, page);
     }
 
     public WorkFilter getWorkFilterByIdOrNull(Long id) {

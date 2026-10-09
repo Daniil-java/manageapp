@@ -34,11 +34,9 @@ public class HhApiService {
     private static final String USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118 Safari/537.36";
     private static final Pattern EMPLOYER_ID_PATTERN = Pattern.compile("/employer/(\\d+)");
 
-    //Загрузка страницы, с использованием Jsoup, и парсинг результатов в сущности
-    public List<HhSimpleResponseDto> loadAndParseHhVacancies(WorkFilter workFilter) {
-        //Пользователи сохраняют ссылки на поиск с hh.ru, а без российского IP он может не открыться —
-        //поэтому переписываем домен на hh.kz (параметры поиска у сайтов совпадают)
-        String url = HH_RU_HOST_PATTERN.matcher(workFilter.getUrl()).replaceFirst(HH_URL);
+    //Загрузка страницы поиска (page — с 0), с использованием Jsoup, и парсинг результатов в сущности
+    public List<HhSimpleResponseDto> loadAndParseHhVacancies(WorkFilter workFilter, int page) {
+        String url = searchPageUrl(workFilter.getUrl(), page);
         List<HhSimpleResponseDto> hhSimpleResponseDtos = new ArrayList<>();
         try {
             //Получение страницы
@@ -65,12 +63,32 @@ public class HhApiService {
                 Thread.currentThread().interrupt();
                 log.warn("HH request interrupted for url={}", url);
             } else {
-                log.error("HhApiService: Jsoup connection error!", e);
+                //HttpStatusException.toString() — код ответа и ссылка (403/429 — hh не пустил)
+                log.error("HhApiService: search page error {}: {}", url, e.toString());
             }
         }
         return hhSimpleResponseDtos;
     }
 
+
+    //Ссылка на страницу поиска, которую загружаем:
+    //- пользователи сохраняют ссылки с hh.ru, а без российского IP он может не открыться —
+    //  поэтому переписываем домен на hh.kz (параметры поиска у сайтов совпадают);
+    //- сортировка по дате публикации: по умолчанию hh сортирует по релевантности, и первая страница
+    //  почти не меняется — новые вакансии на неё не попадают (из 20 вакансий 19–20 уже были в БД);
+    //- номер страницы, чтобы дочитать новые, если их больше одной страницы.
+    static String searchPageUrl(String filterUrl, int page) {
+        String url = HH_RU_HOST_PATTERN.matcher(filterUrl).replaceFirst(HH_URL);
+        url = withQueryParam(url, "order_by", "publication_time");
+        return withQueryParam(url, "page", String.valueOf(page));
+    }
+
+    //Ставит параметр запроса: убирает прежнее значение, если было, и дописывает новое в конец
+    static String withQueryParam(String url, String name, String value) {
+        String cleaned = url.replaceAll("([?&])" + Pattern.quote(name) + "=[^&#]*&?", "$1")
+                .replaceAll("[?&]$", "");
+        return cleaned + (cleaned.contains("?") ? "&" : "?") + name + "=" + value;
+    }
 
     //Получение id-вакансии из ссылка на вакансию
     private Long getVacancyIdFromUrl(String url) {

@@ -212,9 +212,8 @@ public class HhVacancyService {
         return vacancyRepository.save(vacancy);
     }
 
-    public void parseHhVacancies(List<HhSimpleResponseDto> hhSimpleResponseDtos, WorkFilter workFilter) {
-        //Обработка полученного списка ДТО-вакансий
-
+    //Обработка полученного списка ДТО-вакансий; возвращает число новых (не дубликатов)
+    public int parseHhVacancies(List<HhSimpleResponseDto> hhSimpleResponseDtos, WorkFilter workFilter) {
         //Ограничение на количество новый вакансий для одной ссылки
         int limit = 75, duplicate = 0, uniq = 0;
         for (HhSimpleResponseDto dto : hhSimpleResponseDtos) {
@@ -233,20 +232,21 @@ public class HhVacancyService {
                         .setStatus(VacancyStatus.CREATED)
                 );
             } else {
-                log.info("Duplicate vacancy id: {}", dto.getHhId());
+                log.debug("Duplicate vacancy id: {}", dto.getHhId());
                 duplicate++;
             }
         }
-        log.info("\nParsed vacancies: {}\n Duplicates: {}\n Unique: {}",
-                hhSimpleResponseDtos.size(), duplicate, uniq
-        );
+        log.info("HH filter {}: parsed {}, duplicates {}, new {}",
+                workFilter.getId(), hhSimpleResponseDtos.size(), duplicate, uniq);
+        return uniq;
     }
 
 
     //Обработка незаполненых вакансий, посредством обращения к api
-    public void fetchAndSaveEntity(Vacancy vacancy) {
+    //group — вакансии с одним hhId (одна вакансия HH из разных фильтров): страница загружается один раз
+    public void fetchAndSaveEntities(List<Vacancy> group) {
         //Получение ДТО-вакансии со страницы hh.ru
-        HhResponseDto responseDto = hhApiService.getHhVacancyDtoByHhId(vacancy.getHhId());
+        HhResponseDto responseDto = hhApiService.getHhVacancyDtoByHhId(group.get(0).getHhId());
         //Работодатель может быть скрыт
         String employerDescription = responseDto.getEmployer() == null ? null
                 : hhApiService.getHhEmployerDtoByHhId(responseDto.getEmployer().getId()).getDescription();
@@ -258,16 +258,18 @@ public class HhVacancyService {
             }
         }
 
-        //Конвертация ДТО в сущность вакансии и сохранение
-        vacancyRepository.save(vacancy
-                .setName(responseDto.getName())
-                .setExperience(responseDto.getExperience().getName())
-                .setKeySkills(builder.toString())
-                .setEmployment(responseDto.getEmployment().getName())
-                .setDescription(responseDto.getDescription())
-                .setEmployerDescription(employerDescription)
-                .setStatus(VacancyStatus.PARSED)
-        );
+        //Конвертация ДТО в сущности вакансий и сохранение
+        for (Vacancy vacancy : group) {
+            vacancy
+                    .setName(responseDto.getName())
+                    .setExperience(responseDto.getExperience().getName())
+                    .setKeySkills(builder.toString())
+                    .setEmployment(responseDto.getEmployment().getName())
+                    .setDescription(responseDto.getDescription())
+                    .setEmployerDescription(employerDescription)
+                    .setStatus(VacancyStatus.PARSED);
+        }
+        vacancyRepository.saveAll(group);
 
         if (responseDto.getKeySkills() != null) {
             hhSkillService.saveSkills(responseDto.getKeySkills(), SkillSource.API);

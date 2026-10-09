@@ -17,6 +17,8 @@ import java.util.List;
 @AllArgsConstructor
 @Slf4j
 public class HhWorkFilterScheduleProcessor implements ScheduleProcessor {
+    //Сколько страниц поиска (по 20 вакансий, свежие первыми) читать за прогон на один фильтр
+    private static final int MAX_PAGES = 3;
 
     private final HhWorkFilterService hhWorkFilterService;
     private final HhVacancyService hhVacancyService;
@@ -25,16 +27,23 @@ public class HhWorkFilterScheduleProcessor implements ScheduleProcessor {
     public void process() {
         //Формирование общего листа пользовательских ссылок
         List<WorkFilter> workFilterList = hhWorkFilterService.getAll();
+        int totalNew = 0;
         //Загрузка, парсинг и сохранение в БД id вакансий
         for (WorkFilter workFilter: workFilterList) {
-            //Получение ДТО вакансий
-            List<HhSimpleResponseDto> hhSimpleResponseDtos =
-                    hhWorkFilterService.loadHhVacancies(workFilter);
-            //Парсинг полученных вакансий
-            log.info("HH Vacancies parsed count: {}", hhSimpleResponseDtos.size());
-            hhVacancyService.parseHhVacancies(hhSimpleResponseDtos, workFilter);
-            ThreadUtil.sleep(1000);
+            //Поиск отсортирован по дате: читаем страницы, пока на них есть новые вакансии
+            for (int page = 0; page < MAX_PAGES; page++) {
+                //Получение ДТО вакансий
+                List<HhSimpleResponseDto> hhSimpleResponseDtos =
+                        hhWorkFilterService.loadHhVacancies(workFilter, page);
+                //Парсинг полученных вакансий
+                int newCount = hhVacancyService.parseHhVacancies(hhSimpleResponseDtos, workFilter);
+                totalNew += newCount;
+                ThreadUtil.sleep(1000);
+                //Пустая страница (конец выдачи или ошибка загрузки) или только уже известные — дальше старые
+                if (hhSimpleResponseDtos.isEmpty() || newCount == 0) break;
+            }
         }
+        log.info("HH filters: {} filters, {} new vacancies", workFilterList.size(), totalNew);
     }
 
     @Override
