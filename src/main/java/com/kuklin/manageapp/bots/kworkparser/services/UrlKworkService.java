@@ -1,8 +1,8 @@
 package com.kuklin.manageapp.bots.kworkparser.services;
 
+import com.kuklin.manageapp.bots.kworkparser.repositories.UrlKworkRepository;
 import com.kuklin.manageapp.bots.kworkparser.entities.Kwork;
 import com.kuklin.manageapp.bots.kworkparser.entities.UrlKwork;
-import com.kuklin.manageapp.bots.kworkparser.repositories.UrlKworkRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;

@@ -11,22 +11,50 @@ spring:
     url: jdbc:postgresql://localhost:5453/manageapp
   jpa:
     database: postgresql
+    # Open Session in View выключен: иначе HTTP-запрос держит соединение с БД с первого обращения
+    # до конца ответа — в том числе пока ждёт ИИ (10–30 с). Ленивые связи читать только внутри @Transactional.
+    open-in-view: false
     properties:
       hibernate:
         format_sql: true
     database-platform: org.hibernate.dialect.PostgreSQLDialect
+  liquibase:
+    enabled: true
+    change-log: classpath:/db/changelog/db.changelog-master.yaml
+  mvc:
+    problemdetails:
+      enabled: false
+  # Потоки для всех @Scheduled приложения. По умолчанию поток один: долгая задача одного бота
+  # (прогон HH 51 мин) задерживала все остальные — таймеры, напоминания, отчёт метрик.
+  # Одна и та же задача сама с собой не пересекается — следующий запуск только после окончания текущего
+  task:
+    scheduling:
+      pool:
+        size: 4
+
+# Выключенные боты: не регистрируются в Telegram и не запускают шедулеры (EnabledBots, @BotScheduler).
+# Через запятую, имена из BotIdentifier: BOTS_DISABLED=HH_BOT,KWORK. Пусто — включены все
+bots:
+  disabled: ${BOTS_DISABLED:}
+
+# Ошибки приложения в метрикс-бот (ErrorReportFormatter): ссылка на строку кода в GitHub.
+# commit — хеш задеплоенного коммита, Railway отдаёт его сам при деплое из GitHub; пусто — без ссылки
+metrics:
+  errors:
+    repo-url: https://github.com/Daniil-java/manageapp
+    commit: ${RAILWAY_GIT_COMMIT_SHA:}
 
 feign:
   client:
     config:
       default:
-        connectTimeout: 5000
-        readTimeout: 1000000
+        connectTimeout: 15000
+        readTimeout: 120000
         loggerLevel: basic
 
 integrations:
-  connect-timeout: 5000
-  read-timeout: 1000000
+  connect-timeout: 20000
+  read-timeout: 120000
   write-timeout: 5000
   openai-api:
     url: https://api.openai.com/v1/
@@ -35,3 +63,94 @@ integrations:
 
 locale:
   tag: ru-RU
+
+google:
+  oauth:
+    client-id: ${GOOGLE_OAUTH_CLIENT_ID}
+    client-secret: ${GOOGLE_CALENDAR_KEY}   # опционально (для PKCE можно пустым)
+    redirect-uri: https://kuklin.dev/auth/google/callback
+    start-uri: https://kuklin.dev/auth/google/start?linkId=
+    auth-uri: https://accounts.google.com/o/oauth2/v2/auth
+    token-uri: https://oauth2.googleapis.com/token
+    revoke-uri: https://oauth2.googleapis.com/revoke
+    userinfo-uri: https://openidconnect.googleapis.com/v1/userinfo
+    scopes:
+      - openid
+      - email
+      - profile
+      - https://www.googleapis.com/auth/calendar
+security:
+  crypto:
+    aes-key-b64: ${APP_AES_KEY_B64}
+  # Локальная разработка: DOMAIN_FILTER_ALLOW_LOCALHOST=true пускает запросы на localhost.
+  # На проде НЕ включать — заголовок Host задаёт клиент.
+  domain-filter:
+    allow-localhost: ${DOMAIN_FILTER_ALLOW_LOCALHOST:false}
+
+# Ограничения на ввод для ИИ (бот, мини-апп, сайт) — меняются только здесь.
+calorie:
+  ai-input:
+    text-max-length: 4096            # как одно сообщение Telegram — влезает рецепт
+    photo-comment-max-length: 1024   # как подпись к фото в Telegram
+    photo-max-size: 5MB
+    photo-formats: [jpeg, png, webp, gif]          # что принимает OpenAI Vision
+    voice-max-size: 3MB              # ~2 минуты даже при высоком битрейте
+    voice-max-duration: 2m           # бот: длительность голосового сообщает Telegram
+    voice-formats: [ogg, webm, mp4, m4a, mp3, wav] # бот — ogg, Android/Chrome — webm, iPhone — mp4
+    request-max-size: 8MB            # тело любого запроса: фото 5 МБ в Base64 ≈ 6,7 МБ
+    insight-max-dishes: 1000         # инсайты: последние N блюд за период (~50 токенов на блюдо)
+  # Блюда без ИИ (вручную, из избранного) не ограничены лимитами ИИ — ограничиваем отдельно,
+  # чтобы ими нельзя было забить базу и раздуть промпт инсайтов.
+  dish-limits:
+    per-day: 1000                    # блюд за последние 24 часа (любых), дальше — 429 DISH_DAILY_LIMIT
+  # Сколько обращений к ИИ может сделать пользователь: текст, фото, голос, отчёты, инсайты.
+  # Одно действие = одно обращение (голос = расшифровка + анализ, но считается за одно).
+  ai-rate-limit:
+    per-minute: 10                   # за последние 60 секунд — защита от скриптов
+    per-day: 100                     # за последние 24 часа, без подписки
+    per-day-premium: 300             # за последние 24 часа, с подпиской
+  # Вечерний отчёт за день (ИИ + сообщение в Telegram). На проде включён;
+  # локально CALORIE_DAILY_SUMMARY_ENABLED=false — иначе тратит ИИ на всех пользователей локальной базы.
+  daily-summary:
+    enabled: ${CALORIE_DAILY_SUMMARY_ENABLED:true}
+  # Лендинг zefir.fit: код UTM-ссылки (создаётся в /calorie/utm-form) для кнопок «Открыть в Telegram».
+  # Пусто — ссылка на бота без метки.
+  landing:
+    start-code: ${CALORIE_LANDING_START_CODE:}
+    # Закрытый доступ: если задан — лендинг открывается только по ссылке https://zefir.fit/?key=<значение>
+    # (дальше 30 дней по cookie), без ключа — 404. Пусто — лендинг открыт всем.
+    access-key: ${CALORIE_LANDING_ACCESS_KEY:}
+
+# Вход на сайт (/auth/*). Мини-аппу не затрагивает — там авторизация через initData.
+auth:
+  # Регистрация и вход по email + паролю. Выключено, пока нет подтверждения email:
+  # без него аккаунты можно плодить скриптом. Вход через Telegram работает всегда.
+  # Локально (демо-юзер) — AUTH_EMAIL_PASSWORD_ENABLED=true.
+  email-password:
+    enabled: ${AUTH_EMAIL_PASSWORD_ENABLED:false}
+  # Не больше max за последние window. IP клиента — из X-Real-IP / X-Forwarded-For от прокси Railway (ClientIpResolver).
+  rate-limit:
+    register:
+      max: 5
+      window: 1h
+    login:                           # попытки входа по паролю с одного IP
+      max: 20
+      window: 10m
+    telegram:
+      max: 20
+      window: 10m
+    failed-password-per-email:       # неверные пароли для одного email — с любых IP
+      max: 10
+      window: 15m
+
+jwt:
+  secret: ${APP_JWT_SECRET}
+  expiration: 86400000   # 24 часа
+
+# Закрытое тестирование сайта: JWT (/auth/login, /auth/register, /auth/telegram) выдаётся
+# только перечисленным email и telegramId. Списки — через запятую. Мини-аппу не затрагивает.
+site:
+  access:
+    restricted: ${SITE_ACCESS_RESTRICTED:true}
+    allowed-emails: ${SITE_ALLOWED_EMAILS:}
+    allowed-telegram-ids: ${SITE_ALLOWED_TELEGRAM_IDS:}
