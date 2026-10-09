@@ -1,5 +1,7 @@
 package com.kuklin.manageapp.bots.aiassistantcalendar.services.google;
 
+import com.kuklin.manageapp.common.configurations.BotScheduler;
+import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import com.kuklin.manageapp.bots.aiassistantcalendar.repositories.OAuthLinkRepository;
 import com.kuklin.manageapp.bots.aiassistantcalendar.repositories.OAuthStateRepository;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +14,7 @@ import java.time.Instant;
 @Component
 @RequiredArgsConstructor
 @Slf4j
+@BotScheduler(BotIdentifier.ASSISTANT_BOT)
 public class Housekeeping {
     private final OAuthLinkRepository linkRepo;
     private final OAuthStateRepository stateRepo;

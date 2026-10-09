@@ -1,5 +1,7 @@
 package com.kuklin.manageapp.bots.aiassistantcalendar.services.scheduler;
 
+import com.kuklin.manageapp.common.configurations.BotScheduler;
+import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -8,6 +10,7 @@ import org.springframework.stereotype.Service;
 @Service
 @AllArgsConstructor
 @Slf4j
+@BotScheduler(BotIdentifier.ASSISTANT_BOT)
 public class AssistantSchedulerService {
 
     private final EventNotificationSchedulerProcessor eventNotificationSchedulerProcessor;

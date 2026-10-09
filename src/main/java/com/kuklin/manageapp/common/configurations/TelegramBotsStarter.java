@@ -28,6 +28,7 @@ public class TelegramBotsStarter implements SmartLifecycle {
 
     private final TelegramBotsApi api;
     private final List<TelegramBot> bots;
+    private final EnabledBots enabledBots;
 
     /**
      * Контейнер для ресурсов/сессий, которые нужно закрыть при остановке.
@@ -90,9 +91,9 @@ public class TelegramBotsStarter implements SmartLifecycle {
         sessions.clear();
     }
 
+    // Включение/выключение ботов — в EnabledBots (bots.disabled), там же выключаются их шедулеры
     private boolean isEnabled(TelegramBot bot) {
-        var id = bot.getBotIdentifier();
-        return true;
+        return enabledBots.isEnabled(bot.getBotIdentifier());
     }
 
     private String safeName(TelegramBot bot) {

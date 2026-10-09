@@ -24,6 +24,18 @@ spring:
   mvc:
     problemdetails:
       enabled: false
+  # Потоки для всех @Scheduled приложения. По умолчанию поток один: долгая задача одного бота
+  # (прогон HH 51 мин) задерживала все остальные — таймеры, напоминания, отчёт метрик.
+  # Одна и та же задача сама с собой не пересекается — следующий запуск только после окончания текущего
+  task:
+    scheduling:
+      pool:
+        size: 4
+
+# Выключенные боты: не регистрируются в Telegram и не запускают шедулеры (EnabledBots, @BotScheduler).
+# Через запятую, имена из BotIdentifier: BOTS_DISABLED=HH_BOT,KWORK. Пусто — включены все
+bots:
+  disabled: ${BOTS_DISABLED:}
 
 feign:
   client:

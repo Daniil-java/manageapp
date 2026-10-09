@@ -1,5 +1,7 @@
 package com.kuklin.manageapp.bots.channelposter.components.schedulers;
 
+import com.kuklin.manageapp.common.configurations.BotScheduler;
+import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -8,6 +10,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@BotScheduler(BotIdentifier.CHANNEL_POSTER)
 public class ChannelPosterSchedulerService {
     private final PostPublishChannelScheduleProcessor postPublishChannelScheduleProcessor;
     private final PathImageCleanerScheduleProcessor pathImageCleanerScheduleProcessor;
@@ -17,27 +20,27 @@ public class ChannelPosterSchedulerService {
 
     // 00:00, 06:00, 12:00, 18:00
     @Scheduled(cron = "0 0 0,6,12,18 * * *")
-    private void subredditPosterScheduler() {
+    public void subredditPosterScheduler() {
         getInfo(subredditPosterScheduler.getSchedulerName());
         subredditPosterScheduler.process();
     }
 
     // 00:20, 06:20, 12:20, 18:20
     @Scheduled(cron = "0 20 0,6,12,18 * * *")
-    private void redditPostFilterPosterScheduler() {
+    public void redditPostFilterPosterScheduler() {
         getInfo(redditPostFilterPosterScheduler.getSchedulerName());
         redditPostFilterPosterScheduler.process();
     }
 
     // 00:40, 06:40, 12:40, 18:40
     @Scheduled(cron = "0 40 0,6,12,18 * * *")
-    private void parseRedditPostScheduleProcessor() {
+    public void parseRedditPostScheduleProcessor() {
         getInfo(parseRedditPostScheduleProcessor.getSchedulerName());
         parseRedditPostScheduleProcessor.process();
     }
 
     @Scheduled(cron = "0 0/10 * * * *")
-    private void postPublishChannelScheduler() {
+    public void postPublishChannelScheduler() {
         getInfo(postPublishChannelScheduleProcessor.getSchedulerName());
         postPublishChannelScheduleProcessor.process();
     }

@@ -1,5 +1,7 @@
 package com.kuklin.manageapp.bots.hhparserbot.services;
 
+import com.kuklin.manageapp.common.configurations.BotScheduler;
+import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import com.kuklin.manageapp.bots.hhparserbot.processors.HhNotificationScheduleProcessor;
 import com.kuklin.manageapp.bots.hhparserbot.processors.HhOpenAiScheduleProcessor;
 import com.kuklin.manageapp.bots.hhparserbot.processors.HhVacancyScheduleProcessor;
@@ -12,6 +14,7 @@ import org.springframework.stereotype.Service;
 @Service
 @AllArgsConstructor
 @Slf4j
+@BotScheduler(BotIdentifier.HH_BOT)
 public class HhScheduleService {
     private final HhWorkFilterScheduleProcessor hhWorkFilterScheduleProcessor;
     private final HhOpenAiScheduleProcessor hhOpenAiScheduleProcessor;
