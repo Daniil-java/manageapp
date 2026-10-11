@@ -5,7 +5,6 @@ import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramFacade;
 import com.kuklin.manageapp.common.library.tgmodels.UpdateHandler;
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import com.kuklin.manageapp.common.services.TelegramUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -24,7 +23,7 @@ public class HhTelegramFacade extends TelegramFacade {
                 update.getCallbackQuery().getFrom();
 
         TelegramUser telegramUser = telegramUserService
-                .createOrGetUserByTelegram(BotIdentifier.KWORK, user);
+                .createOrGetUserByTelegram(HhTelegramBot.BOT_IDENTIFIER, user);
 
         processInputUpdate(update).handle(update, telegramUser);
     }
