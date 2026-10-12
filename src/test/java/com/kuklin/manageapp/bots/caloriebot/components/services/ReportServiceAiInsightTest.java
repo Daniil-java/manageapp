@@ -8,6 +8,7 @@ import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserSettings;
 import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTextsService;
+import com.kuklin.manageapp.bots.caloriebot.i18n.I18nProperties;
 import com.kuklin.manageapp.bots.caloriebot.models.AiInsightType;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
@@ -75,9 +76,9 @@ class ReportServiceAiInsightTest {
         AiInputLimitsProperties aiInputLimits = new AiInputLimitsProperties();
         aiInputLimits.setInsightMaxDishes(1000);
 
-        // Язык пользователя — не язык по умолчанию (ru), чтобы видеть, что он доходит до промпта
-        CalorieTextsService texts = mock(CalorieTextsService.class);
-        when(texts.languageOf(USER_ID)).thenReturn(AppLanguage.EN);
+        // Язык пользователя — не язык по умолчанию (ru), чтобы видеть, что он доходит до промпта и PDF
+        when(settingsService.findLanguageCode(USER_ID)).thenReturn("en");
+        CalorieTextsService texts = new CalorieTextsService(new I18nProperties(), settingsService);
 
         service = new ReportService(dishService, profileService, entryService, settingsService,
                 weightService, ai, components, aiInputLimits, texts);

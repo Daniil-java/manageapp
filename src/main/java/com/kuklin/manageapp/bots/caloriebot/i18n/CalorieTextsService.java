@@ -33,7 +33,8 @@ public class CalorieTextsService {
     /** Словари: i18n/calorie/<имя>_<код языка>.properties. Новый словарь — сюда же. */
     static final List<String> BUNDLES = List.of(
             "i18n/calorie/bot",
-            "i18n/calorie/errors"
+            "i18n/calorie/errors",
+            "i18n/calorie/pdf"
     );
 
     private final I18nProperties properties;

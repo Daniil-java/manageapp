@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="ru" xmlns="http://www.w3.org/1999/xhtml">
+<html lang="{{LANG}}" xmlns="http://www.w3.org/1999/xhtml">
 <head>
     <meta charset="UTF-8"/>
-    <title>Weekly Deep Report</title>
+    <title>{{pdf.weekly.title}}</title>
 
     <style>
         @page {
@@ -10,7 +10,7 @@
             margin: 20mm;
 
             @bottom-right {
-                content: "Страница " counter(page) " из " counter(pages);
+                content: "{{pdf.page}} " counter(page) " {{pdf.page-of}} " counter(pages);
                 font-family: "DejaVu Sans", sans-serif;
                 font-size: 8pt;
                 color: #95a5a6;
@@ -244,9 +244,9 @@
 
             <div class="header-center">
                 <div class="header-text">
-                    <h1>Еженедельный отчет</h1>
+                    <h1>{{pdf.weekly.title}}</h1>
                     <div class="report-period">
-                        Глубокий анализ рациона и динамики веса
+                        {{pdf.weekly.subtitle}}
                     </div>
                 </div>
             </div>
@@ -258,30 +258,30 @@
         </div>
     </div>
 
-    <h2>Аналитический разбор</h2>
+    <h2>{{pdf.weekly.analysis}}</h2>
     <div class="subnote">
-        Детализированный анализ закономерностей, рисков и точек роста.
+        {{pdf.weekly.analysis-note}}
     </div>
 
     <div class="ai-analysis-content">
         {{AI_ANALYSIS}}
     </div>
 
-    <h2>Распределение каллорий по категориями еды</h2>
+    <h2>{{pdf.section.calories-by-category}}</h2>
     {{CATEGORY_CHART}}
 
-    <h2>Распределение каллорий по времени суток, в среднем</h2>
+    <h2>{{pdf.section.calories-by-time}}</h2>
     {{TIMING_CHART}}
 
-    <h2>Детализация питания</h2>
+    <h2>{{pdf.weekly.dishes}}</h2>
     <div class="subnote">
-        Развернутая таблица приемов пищи и КБЖУ по дням.
+        {{pdf.weekly.dishes-note}}
     </div>
 
     {{DISHES_TABLE}}
 
     <div class="footer">
-        Информация носит рекомендательный характер. Для медицинских назначений обратитесь к специалисту.
+        {{pdf.weekly.disclaimer}}
     </div>
 
 </div>

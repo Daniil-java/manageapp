@@ -2,6 +2,7 @@ package com.kuklin.manageapp.bots.caloriebot.i18n;
 
 import com.ibm.icu.text.MessageFormat;
 import com.ibm.icu.text.MessagePattern;
+import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorParams;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
 import org.junit.jupiter.api.Test;
@@ -23,11 +24,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Страховка словарей: у каждого языка есть все словари, во всех одинаковые ключи и подстановки,
  * шаблоны разбираются ICU, и каждая константа из *TextKeys есть в словарях.
+ * Плюс тексты категорий блюд и ключи {{pdf.…}} из HTML-шаблонов отчётов.
  */
 class TextBundlesConsistencyTest {
 
     /** Классы с константами ключей. Новый класс ключей — сюда же. */
-    private static final List<Class<?>> KEY_CLASSES = List.of(BotTextKeys.class);
+    private static final List<Class<?>> KEY_CLASSES = List.of(BotTextKeys.class, PdfTextKeys.class);
+    /** HTML-шаблоны PDF с текстами {{pdf.…}}. */
+    static final List<String> PDF_TEMPLATES = List.of("templates/report.html", "templates/weeklyreport.html");
 
     @Test
     void everyLanguageHasSameKeysAsDefault() throws IOException {
@@ -99,6 +103,28 @@ class TextBundlesConsistencyTest {
         assertThat(missing).as("ErrorStatus without user text").isEmpty();
     }
 
+    @Test
+    void everyFoodCategoryHasText() throws IOException {
+        Properties bot = load("i18n/calorie/bot", AppLanguage.RU);
+        List<String> missing = new ArrayList<>();
+        for (Dish.FoodCategory category : Dish.FoodCategory.values()) {
+            if (!bot.containsKey(category.getTextKey())) missing.add(category.getTextKey());
+        }
+        assertThat(missing).as("FoodCategory without user text").isEmpty();
+    }
+
+    /** {{pdf.…}} в HTML-шаблонах отчётов подставляется по ключу — опечатка оставила бы в PDF фигурные скобки. */
+    @Test
+    void everyTemplateKeyExistsInPdfBundle() throws IOException {
+        Properties pdf = load("i18n/calorie/pdf", AppLanguage.RU);
+        for (String template : PDF_TEMPLATES) {
+            Set<String> keys = PdfTexts.templateKeys(read(template));
+
+            assertThat(keys).as("keys of %s", template).isNotEmpty();
+            assertThat(pdf.stringPropertyNames()).as("pdf_ru has all keys of %s", template).containsAll(keys);
+        }
+    }
+
     /**
      * В текстах ошибок — только подстановки из ErrorParams: {maxSizeMB} вместо {maxSizeMb}
      * не подставится, и пользователь увидит фигурные скобки. И наоборот: каждый параметр где-то используется.
@@ -130,6 +156,13 @@ class TextBundlesConsistencyTest {
             }
         }
         return values;
+    }
+
+    static String read(String resource) throws IOException {
+        try (InputStream in = TextBundlesConsistencyTest.class.getClassLoader().getResourceAsStream(resource)) {
+            assertThat(in).as("resource %s", resource).isNotNull();
+            return new String(in.readAllBytes(), StandardCharsets.UTF_8);
+        }
     }
 
     private static Properties load(String bundle, AppLanguage language) throws IOException {

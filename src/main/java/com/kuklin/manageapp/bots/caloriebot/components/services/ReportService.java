@@ -14,6 +14,7 @@ import com.kuklin.manageapp.bots.caloriebot.configurations.AiInputLimitsProperti
 import com.kuklin.manageapp.bots.caloriebot.models.AiInsightType;
 import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTextsService;
+import com.kuklin.manageapp.bots.caloriebot.i18n.PdfTexts;
 import com.kuklin.manageapp.bots.caloriebot.models.airesponse.AiPatternAnalysisResponse;
 import com.kuklin.manageapp.bots.caloriebot.models.airesponse.InsightPayloadRecord;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
@@ -89,6 +90,7 @@ public class ReportService {
     /**
      * Все данные пользователя за период, загруженные одним заходом.
      * Передаётся во все шаги построения отчёта, чтобы не ходить в БД повторно.
+     * texts — тексты PDF и язык ответа ИИ: язык пользователя из настроек.
      */
     private record ReportData(
             Long userId,
@@ -98,7 +100,8 @@ public class ReportService {
             List<UserNutritionProfileEntry> targets,
             List<WeightEntry> weights,
             UserNutritionProfile profile,
-            UserSettings settings
+            UserSettings settings,
+            PdfTexts texts
     ) {
         ZoneId zoneId() {
             return settings.getZoneId();
@@ -119,14 +122,15 @@ public class ReportService {
             ReportData data = loadReportData(userId, from, to);
             String aiAnalysis = getWeeklyDeepReport(data);
 
-            Table dishesTable = ReportUtils.buildDetailedDishTable(data.dishes(), data.targets(), data.zoneId());
+            Table dishesTable = ReportUtils.buildDetailedDishTable(data.dishes(), data.targets(), data.zoneId(), data.texts());
             String dishesTableHtml = ReportUtils.tableToHtml(dishesTable);
 
             // Генерируем оба графика для глубокого отчета
-            String categoryChartHtml = ReportUtils.buildCategoryBarChartHtml(data.dishes());
-            String timingChartHtml = ReportUtils.buildHourlyCaloriesChartHtml(data.dishes(), data.zoneId());
+            String categoryChartHtml = ReportUtils.buildCategoryBarChartHtml(data.dishes(), data.texts());
+            String timingChartHtml = ReportUtils.buildHourlyCaloriesChartHtml(data.dishes(), data.zoneId(), data.texts());
 
-            String html = template
+            // Сначала тексты шаблона, потом данные: {{pdf.…}} в ответе ИИ подставляться не должны
+            String html = data.texts().localizeTemplate(template)
                     .replace("{{AI_ANALYSIS}}", escapeHtml(aiAnalysis))
                     .replace("{{DISHES_TABLE}}", dishesTableHtml)
                     .replace("{{CATEGORY_CHART}}", categoryChartHtml)
@@ -193,7 +197,7 @@ public class ReportService {
      */
     private String getWeeklyDeepReport(ReportData data) {
         String prompt = AI_PERSONA + String.format(WEEK_AI_REQUEST,
-                data.dishes().toString(), data.profile().toString(), aiLanguageOf(data.userId()));
+                data.dishes().toString(), data.profile().toString(), data.texts().language().getNativeName());
         return fetchAiResponse(prompt, "WEEKLY DEEP REPORT");
     }
 
@@ -224,9 +228,10 @@ public class ReportService {
     public AccessResult<byte[]> buildPdfReportOrNull(Instant from, Instant to, Long userId) {
         try {
             // 1. Сбор контекста (все данные и ответы ИИ в одном объекте)
-            ReportContext context = gatherReportContext(loadReportData(userId, from, to));
-            // 2. Заполнение HTML-шаблона данными
-            String filledHtml = fillTemplateOrNull(context);
+            ReportData data = loadReportData(userId, from, to);
+            ReportContext context = gatherReportContext(data);
+            // 2. Заполнение HTML-шаблона текстами на языке пользователя и данными
+            String filledHtml = fillTemplateOrNull(context, data.texts());
             if (filledHtml == null) return AccessResult.success(null);
             // 3. Конвертация HTML в PDF байты
             return AccessResult.success(renderPdfOrNull(filledHtml));
@@ -248,7 +253,8 @@ public class ReportService {
                 userNutritionProfileEntryService.getAllByUserId(userId),
                 weightEntryService.getAllWeightHistory(userId),
                 userNutritionProfileService.getOrCreateProfile(userId),
-                userSettingsService.getOrCreate(userId)
+                userSettingsService.getOrCreate(userId),
+                new PdfTexts(calorieTextsService, calorieTextsService.languageOf(userId))
         );
     }
 
@@ -260,15 +266,15 @@ public class ReportService {
         AiPatternAnalysisResponse patternAnalysis = getNutritionReportByPeriod(data);
 
         Table weeklyTable = ReportUtils.buildPeriodReportPerWeek(
-                data.dishes(), data.weights(), data.settings(), data.from(), data.to()
+                data.dishes(), data.weights(), data.settings(), data.from(), data.to(), data.texts()
         );
         Table weightTable = ReportUtils.buildWeightHistoryTable(
-                data.weights(), data.from(), data.to(), data.zoneId()
+                data.weights(), data.from(), data.to(), data.zoneId(), data.texts()
         );
 
         // Генерируем HTML диаграммы
-        String categoryChartHtml = ReportUtils.buildCategoryBarChartHtml(data.dishes());
-        String timingChartHtml = ReportUtils.buildHourlyCaloriesChartHtml(data.dishes(), data.zoneId());
+        String categoryChartHtml = ReportUtils.buildCategoryBarChartHtml(data.dishes(), data.texts());
+        String timingChartHtml = ReportUtils.buildHourlyCaloriesChartHtml(data.dishes(), data.zoneId(), data.texts());
 
         return new ReportContext(
                 periodAnalysis.text(),
@@ -295,7 +301,7 @@ public class ReportService {
 
         String jsonContext = mapper.writeValueAsString(payload);
         String response = fetchAiResponse(
-                String.format(AI_REQUEST_PATTERN_ANALYSIS, jsonContext, aiLanguageOf(data.userId())), "Nutrition Report");
+                String.format(AI_REQUEST_PATTERN_ANALYSIS, jsonContext, data.texts().language().getNativeName()), "Nutrition Report");
 
         // Маппинг JSON-ответа от ИИ обратно в Java-объект
         return mapper.readValue(response, AiPatternAnalysisResponse.class);
@@ -308,12 +314,12 @@ public class ReportService {
     private ReportResponseRecord getPeriodReport(ReportData data) {
         // Построение таблицы "День | Вес | Калории | Дефицит"
         Table dailyTable = ReportUtils.buildPeriodReportPerDay(
-                data.dishes(), data.targets(), data.weights(), data.settings(), data.from(), data.to()
+                data.dishes(), data.targets(), data.weights(), data.settings(), data.from(), data.to(), data.texts()
         );
 
         // Анализ текстового представления таблицы через ИИ
         String aiResponse = fetchAiResponse(
-                String.format(AI_REQUEST_PREDICTION, dailyTable.print(), aiLanguageOf(data.userId())), "PERIOD REPORT");
+                String.format(AI_REQUEST_PREDICTION, dailyTable.print(), data.texts().language().getNativeName()), "PERIOD REPORT");
 
         return new ReportResponseRecord(dailyTable, aiResponse, "");
     }
@@ -323,15 +329,17 @@ public class ReportService {
     /**
      * Наполняет HTML шаблон данными из контекста отчета.
      */
-    private String fillTemplateOrNull(ReportContext ctx) {
-        String html = loadTemplateOrNull(REPORT_TEMPLATE_PATH);
-        if (html == null) return null;
+    private String fillTemplateOrNull(ReportContext ctx, PdfTexts texts) {
+        String template = loadTemplateOrNull(REPORT_TEMPLATE_PATH);
+        if (template == null) return null;
 
-        return html.replace(VAR_AI_TEXT, escapeHtml(ctx.aiSummary()))
+        // Сначала тексты шаблона, потом данные: {{pdf.…}} в ответе ИИ подставляться не должны
+        return texts.localizeTemplate(template)
+                .replace(VAR_AI_TEXT, escapeHtml(ctx.aiSummary()))
                 .replace(VAR_DAILY_TABLE, tableToHtml(ctx.dailyTable()))
                 .replace(VAR_WEEKLY_TABLE, tableToHtml(ctx.weeklyTable()))
                 .replace(VAR_WEIGHT_TABLE, tableToHtml(ctx.weightTable()))
-                .replace(VAR_NUTRITION_ANALYSIS, ctx.patternAnalysis().toHtml())
+                .replace(VAR_NUTRITION_ANALYSIS, ctx.patternAnalysis().toHtml(texts))
                 .replace(VAR_CATEGORY_CHART, ctx.categoryChartHtml())
                 .replace(VAR_TIMING_CHART, ctx.timingChartHtml());
     }

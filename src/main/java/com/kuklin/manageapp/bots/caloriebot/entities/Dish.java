@@ -3,9 +3,7 @@ package com.kuklin.manageapp.bots.caloriebot.entities;
 import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.DishDto;
 import jakarta.persistence.*;
 import lombok.Data;
-import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.CreationTimestamp;
 
@@ -52,24 +50,24 @@ public class Dish {
     @CreationTimestamp
     private Instant created;
 
-    @Getter
-    @RequiredArgsConstructor
+    /** Категория блюда. Название для пользователя — в словарях i18n/calorie/bot_* по ключу {@link #getTextKey()}. */
     public enum FoodCategory {
+        MAIN_COURSE,
+        SIDE_DISH,
+        SOUP,
+        SALAD,
+        SNACK,
+        DESSERT,
+        DRINK,
+        BREAKFAST_ITEM,
+        BREAD_BAKERY,
+        FAST_FOOD,
+        SAUCE_DIP,
+        UNKNOWN;
 
-        MAIN_COURSE("Основное блюдо"),
-        SIDE_DISH("Гарнир"),
-        SOUP("Суп"),
-        SALAD("Салат"),
-        SNACK("Снэк / перекус"),
-        DESSERT("Десерт"),
-        DRINK("Напиток"),
-        BREAKFAST_ITEM("Блюдо для завтрака"),
-        BREAD_BAKERY("Хлеб / выпечка"),
-        FAST_FOOD("Фастфуд"),
-        SAUCE_DIP("Соус / дип"),
-        UNKNOWN("Неизвестно");
-
-        private final String name;
+        public String getTextKey() {
+            return "dish.category." + name();
+        }
     }
 
 

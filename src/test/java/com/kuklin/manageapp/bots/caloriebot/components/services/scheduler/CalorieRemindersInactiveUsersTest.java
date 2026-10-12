@@ -4,6 +4,8 @@ import com.kuklin.manageapp.bots.caloriebot.components.services.DishService;
 import com.kuklin.manageapp.bots.caloriebot.components.services.ReportService;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserSettingsService;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserSettings;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTextsService;
+import com.kuklin.manageapp.bots.caloriebot.i18n.I18nProperties;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.AccessResult;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.history.TodayUpdateHandler;
@@ -96,7 +98,8 @@ class CalorieRemindersInactiveUsersTest {
     @Nested
     class MealReminder {
         private final MealReminderSchedulerProcessor processor =
-                new MealReminderSchedulerProcessor(userSettingsService, bot, telegramUserService, dishService);
+                new MealReminderSchedulerProcessor(userSettingsService, bot, telegramUserService, dishService,
+                        new CalorieTextsService(new I18nProperties(), userSettingsService));
 
         @BeforeEach
         void settings() {
@@ -114,8 +117,18 @@ class CalorieRemindersInactiveUsersTest {
 
             processor.process();
 
-            verify(bot).sendReturnedMessage(eq(CHAT_ID), anyString());
+            verify(bot).sendReturnedMessage(eq(CHAT_ID), startsWith("🍽 Давно не было записей о еде."));
             verify(userSettingsService).updateMealLastReminder(USER_ID);
+        }
+
+        @Test
+        void reminderIsInUserLanguage() {
+            when(userSettingsService.findLanguageCode(USER_ID)).thenReturn("en");
+            lastDish(Instant.now().minus(Duration.ofHours(4)));
+
+            processor.process();
+
+            verify(bot).sendReturnedMessage(eq(CHAT_ID), startsWith("🍽 You haven't logged a meal"));
         }
 
         @Test

@@ -14,4 +14,7 @@ public final class BotTextKeys {
     public static final String DEV_LANG_CHANGED = "dev.lang.changed";
     public static final String DEV_LANG_RESET = "dev.lang.reset";
     public static final String DEV_LANG_UNKNOWN = "dev.lang.unknown";
+
+    // ── Рассылки ──────────────────────────────────────────────────
+    public static final String REMINDER_MEAL = "reminder.meal";
 }
