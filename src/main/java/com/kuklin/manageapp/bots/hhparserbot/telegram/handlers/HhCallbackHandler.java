@@ -39,8 +39,11 @@ public class HhCallbackHandler implements HhUpdateHandler {
             HhUserInfo hhUserInfo = hhUserInfoService.getHhUserInfoByTelegramIdOrCreate(telegramUser.getTelegramId());
             long vacancyId = Long.parseLong(decision.substring(APPLIED_COMMAND.length()));
             String coverLetter = vacancyService.fetchGenerateCoverLetter(vacancyId, hhUserInfo.getInfo());
-            //Отправка сообщения пользователю и обработка, в случае удачного отправления
-            if (telegramBot.sendReturnedMessage(chatId, coverLetter,
+            if (coverLetter == null) {
+                return;
+            }
+            //Отправка письма в блоке <pre> — в Telegram у него есть кнопка «копировать» в углу
+            if (telegramBot.sendReturnedMessage(chatId, "<pre>" + escapeHtml(coverLetter) + "</pre>",
                     null, messageId) != null) {
                 vacancyService.updateStatusById(vacancyId, VacancyStatus.APPLIED);
             }
@@ -50,6 +53,9 @@ public class HhCallbackHandler implements HhUpdateHandler {
         }
     }
 
+    private static String escapeHtml(String s) {
+        return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+    }
 
     @Override
     public String getHandlerListName() {
