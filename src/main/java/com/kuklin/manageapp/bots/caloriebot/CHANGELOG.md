@@ -1,4 +1,12 @@
 ## 0.0.60 (12.10.2026)
+[et-87] — Блюда на языке пользователя
+* Карточка блюда (AnalyticsService.getInfo) из словаря: название и +ккал, Б/Ж/У (en — P/F/C), вес и число порций, строка калорий от нормы, «Итого за сегодня». Русская карточка не изменилась (AnalyticsServiceDishCardTest). Числа передаются строками — без разделителей разрядов, как раньше.
+* DishKeyboards — кнопки под карточкой на языке пользователя: buildPortionKeyboard, buildFavoritePortionKeyboard («✅ В избранном»), buildNotCountedKeyboard («НЕ УЧИТЫВАЕТСЯ» после удаления). Заменили static-методы DishUpdateHandler.getPortionWeightKeyboard / getPortionKeyboardFavorite и DeleteUpdateHandler.getInlineMessage; две почти одинаковые копии клавиатуры слиты в одну, неиспользуемая getPortionKeyboard удалена. Вызовы — в DishUpdateHandler, CalorieScaleCallbackUpdateHandler, DeleteUpdateHandler, избранном (CalorieFavoriteDishUpdateHandler, CalorieFavoriteDishAddCallbackUpdateHandler) и TodayUpdateHandler.
+* Сообщения распознавания: «Это не съедобно!», «сообщение не поддерживается», ошибка голосового, голосовое слишком длинное, фото без еды (засчитано / не засчитано), ошибка провайдера; ошибки изменения порции (Scale) и выбора модели (Choice).
+* AiInputValidator.voiceMaxDurationText («2 мин» по-русски) заменён на getVoiceMaxDuration(): текст «2 мин» / «2 min» собирает бот из common.duration.*.
+* Удалены неиспользуемые тексты DishUpdateHandler: SUB_MESSAGE, ERROR_LIMIT_MSG, PHOTO_ERROR_MESSAGE (последний был только в закомментированном коде), PORTION_WEIGHT_CMD.
+* Счётчик русских строк в коде: 261 → 233.
+
 [et-87] — Онбординг на языке пользователя
 * Тексты в bot_ru|en: приветствие /start, знакомство после «Далее» и шаг «Заполни профиль» (StartFlow), FAQ, /menu, «Клавиатура обновлена», /support, реферальная программа и кнопка «Переслать другу», создание UTM-ссылки (админы). Общие подписи кнопок — common.button.close / next / instruction.
 * В английском приветствии канал ЗЕФИР оставлен (с пометкой «in Russian»), «(или ссылка на канал)» убрано; что делать с каналом для en — задача в бэклоге. Ссылки на privacy и terms пока на русские страницы.

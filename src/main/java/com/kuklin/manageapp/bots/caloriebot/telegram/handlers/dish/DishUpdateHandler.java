@@ -10,6 +10,7 @@ import com.kuklin.manageapp.bots.caloriebot.components.services.DishService;
 import com.kuklin.manageapp.bots.caloriebot.configurations.TelegramCaloriesBotKeyComponents;
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.entities.DishChoiceChatModel;
+import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTextsService;
 import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.DishDto;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
@@ -36,6 +37,7 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -60,28 +62,7 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
     private final AiRateLimiter aiRateLimiter;
     private final CalorieTextsService texts;
     private final CalorieMenuButtons menuButtons;
-    private static final String PORTION_COUNT_CMD = "PC";
-    private static final String PORTION_WEIGHT_CMD = "PW";
-    private static final String VOICE_ERROR_MESSAGE =
-            "Ошибка! Не получилось обработать голосовое сообщение";
-    private static final String PHOTO_ERROR_MESSAGE =
-            "Ошибка! Не получилось обработать фото";
-    private static final String ERROR_MESSAGE =
-            "Данное сообщение не поддерживается";
-    private static final String ERROR_CONTENT_MESSAGE =
-            "Это не съедобно!";
-    private static final String SUB_MESSAGE =
-            "Для использования бота необходимо приобрести подписку! Введите команду /plan";
-    private static final String VOICE_TOO_LONG_MESSAGE =
-            "Голосовое слишком длинное — максимум %s. Запиши, пожалуйста, покороче или опиши блюдо текстом.";
-    private static final String PHOTO_NOT_RECOGNIZED_NOT_COUNTED_MESSAGE =
-            "🤔 Не удалось найти еду на фото.\n\n"
-                    + "В этот раз попытку не засчитали, но следующее нераспознанное фото сегодня уже будет засчитано. "
-                    + "Фотографируйте блюдо крупно и при хорошем свете или опишите его текстом.";
-    private static final String PHOTO_NOT_RECOGNIZED_COUNTED_MESSAGE =
-            "🤔 Не удалось найти еду на фото. Попытка засчитана.\n\n"
-                    + "Фотографируйте блюдо крупно и при хорошем свете или опишите его текстом.";
-    private static final String ERROR_LIMIT_MSG = "Количество запросов, доступных вам, достигло предела!";
+    private final DishKeyboards dishKeyboards;
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
@@ -105,7 +86,7 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
             calorieTelegramBot.sendReturnedMessage(
                     update.getMessage().getChatId(),
                     analyticsService.getInfo(dish, telegramUser.getAppUserId()),
-                    getPortionWeightKeyboard(dish),
+                    dishKeyboards.buildPortionKeyboard(dish, telegramUser.getAppUserId()),
                     null
             );
             ThreadUtil.sleep(100);
@@ -138,9 +119,9 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
             if (photoResult.emptyResultCharge() != EmptyResultCharge.NONE) {
                 calorieTelegramBot.sendReturnedMessage(
                         update.getMessage().getChatId(),
-                        photoResult.emptyResultCharge() == EmptyResultCharge.FORGIVEN
-                                ? PHOTO_NOT_RECOGNIZED_NOT_COUNTED_MESSAGE
-                                : PHOTO_NOT_RECOGNIZED_COUNTED_MESSAGE,
+                        texts.get(userId, photoResult.emptyResultCharge() == EmptyResultCharge.FORGIVEN
+                                ? BotTextKeys.DISH_PHOTO_NOT_RECOGNIZED_NOT_COUNTED
+                                : BotTextKeys.DISH_PHOTO_NOT_RECOGNIZED_COUNTED),
                         menuButtons.buildKeyboard(userId),
                         null
                 );
@@ -164,7 +145,7 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
         if (dishes == null || dishes.isEmpty()) {
             calorieTelegramBot.sendReturnedMessage(
                     update.getMessage().getChatId(),
-                    ERROR_CONTENT_MESSAGE,
+                    texts.get(userId, BotTextKeys.DISH_NOT_FOOD),
                     menuButtons.buildKeyboard(userId),
                     null
             );
@@ -192,7 +173,7 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
 
     private List<Dish> processTextOrNull(Long userId, String message, long chatId) {
         if (message == null) {
-            calorieTelegramBot.sendReturnedMessage(chatId, ERROR_MESSAGE);
+            calorieTelegramBot.sendReturnedMessage(chatId, texts.get(userId, BotTextKeys.DISH_UNSUPPORTED_MESSAGE));
             return null;
         }
         return dishService.getDishByDescriptionOrNull(userId, message);
@@ -213,8 +194,8 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
         Long chatId = message.getChatId();
         // Длительность сообщает Telegram — проверяем до скачивания и до вызова ИИ
         if (!aiInputValidator.isVoiceDurationAllowed(message.getVoice().getDuration())) {
-            calorieTelegramBot.sendReturnedMessage(chatId,
-                    String.format(VOICE_TOO_LONG_MESSAGE, aiInputValidator.voiceMaxDurationText()));
+            calorieTelegramBot.sendReturnedMessage(chatId, texts.get(userId, BotTextKeys.DISH_VOICE_TOO_LONG,
+                    getDurationText(userId, aiInputValidator.getVoiceMaxDuration())));
             return null;
         }
         // Одно обращение на голосовое, хотя ИИ вызывается дважды (расшифровка + анализ)
@@ -226,12 +207,20 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
                 AI_VOICE_TRANSCRIPTION_PROMPT);
 
         if (request == null) {
-            calorieTelegramBot.sendReturnedMessage(chatId, VOICE_ERROR_MESSAGE);
+            calorieTelegramBot.sendReturnedMessage(chatId, texts.get(userId, BotTextKeys.DISH_VOICE_ERROR));
             return null;
         }
 
         log.info(request);
         return request;
+    }
+
+    /** «2 мин» / «90 сек»: целые минуты — минутами, иначе секундами. */
+    private String getDurationText(Long userId, Duration duration) {
+        long seconds = duration.toSeconds();
+        return seconds % 60 == 0
+                ? texts.get(userId, BotTextKeys.COMMON_DURATION_MINUTES, String.valueOf(seconds / 60))
+                : texts.get(userId, BotTextKeys.COMMON_DURATION_SECONDS, String.valueOf(seconds));
     }
 
     /**
@@ -250,7 +239,8 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
             return dishResult;
         } catch (IOException e) {
             log.error("Provider error!");
-            calorieTelegramBot.sendReturnedMessage(message.getChatId(), "Один из провайдеров не смог обработать фото");
+            calorieTelegramBot.sendReturnedMessage(message.getChatId(),
+                    texts.get(telegramUser.getAppUserId(), BotTextKeys.DISH_PHOTO_PROVIDER_ERROR));
             return null;
         }
     }
@@ -282,154 +272,6 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
 //                null
 //        );
 //    }
-
-    public static InlineKeyboardMarkup getPortionKeyboardFavorite(Dish dish) {
-        String base = Command.CALORIE_SCALE.getCommandText()
-                + TelegramBot.DEFAULT_DELIMETER + dish.getId()
-                + TelegramBot.DEFAULT_DELIMETER;
-
-        // здесь просто копируем ряды, но кнопку "Сохранить блюдо"
-        // меняем на "✅ В избранном" и делаем её неактивной
-
-        TelegramKeyboard.TelegramKeyboardBuilder builder = TelegramKeyboard.builder()
-                .row(
-                        TelegramKeyboard.button("Вес порции:", "temp"),
-                        TelegramKeyboard.button("-10%", base + "-10"),
-                        TelegramKeyboard.button("+10%", base + "10")
-                );
-        if (dish.getPortions() > 1) {
-            builder.row(
-                    TelegramKeyboard.button("Порций:", "temp"),
-                    TelegramKeyboard.button(
-                            "➖",
-                            base + PORTION_COUNT_CMD
-                                    + TelegramBot.DEFAULT_DELIMETER + (dish.getPortions() - 1)
-                    ),
-                    TelegramKeyboard.button(
-                            "➕",
-                            base + PORTION_COUNT_CMD
-                                    + TelegramBot.DEFAULT_DELIMETER + (dish.getPortions() + 1)
-                    )
-            );
-        } else {
-            // Если порция одна — показываем только "+"
-            builder.row(
-                    TelegramKeyboard.button("Порций:", "temp"),
-                    TelegramKeyboard.button(
-                            "➕",
-                            base + PORTION_COUNT_CMD
-                                    + TelegramBot.DEFAULT_DELIMETER + 2
-                    )
-            );
-        }
-        return builder
-                .row(
-                        TelegramKeyboard.button(
-                                "✅ В избранном",
-                                // сюда поставь callback для игнорируемой кнопки
-                                // если у тебя в TelegramKeyboard есть что-то типа IGNORE/EMPTY – используй его
-                                "temp" //Заглушка
-                        )
-                )
-                .row(
-                        TelegramKeyboard.button(
-                                "Удалить из дневника",
-                                Command.CALORIE_DELETE.getCommandText()
-                                        + TelegramBot.DEFAULT_DELIMETER + dish.getId()
-                        )
-                )
-                .build();
-
-
-    }
-
-    public static InlineKeyboardMarkup getPortionWeightKeyboard(Dish dish) {
-        // Базовая часть для всех кнопок изменения порции
-        String base = Command.CALORIE_SCALE.getCommandText()
-                + TelegramBot.DEFAULT_DELIMETER + dish.getId()
-                + TelegramBot.DEFAULT_DELIMETER;
-
-        //<scale_command>delim<dishId>delim<+-scale>
-        TelegramKeyboard.TelegramKeyboardBuilder builder = TelegramKeyboard.builder()
-                .row(
-                        TelegramKeyboard.button("Вес порции:", "temp"),
-                        TelegramKeyboard.button("-10%", base + "-10"),
-                        TelegramKeyboard.button("+10%", base + "10")
-                );
-        if (dish.getPortions() > 1) {
-            builder.row(
-                    TelegramKeyboard.button("Порций:", "temp"),
-                    TelegramKeyboard.button(
-                            "➖",
-                            base + PORTION_COUNT_CMD
-                                    + TelegramBot.DEFAULT_DELIMETER + (dish.getPortions() - 1)
-                    ),
-                    TelegramKeyboard.button(
-                            "➕",
-                            base + PORTION_COUNT_CMD
-                                    + TelegramBot.DEFAULT_DELIMETER + (dish.getPortions() + 1)
-                    )
-            );
-        } else {
-            // Если порция одна — показываем только "+"
-            builder.row(
-                    TelegramKeyboard.button("Порций:", "temp"),
-                    TelegramKeyboard.button(
-                            "➕",
-                            base + PORTION_COUNT_CMD
-                                    + TelegramBot.DEFAULT_DELIMETER + 2
-                    )
-            );
-        }
-        return builder
-                .row(
-                        TelegramKeyboard.button(
-                                "⭐ Сохранить блюдо",
-                                Command.CALORIE_FAVORITE_ADD.getCommandText()
-                                        + TelegramBot.DEFAULT_DELIMETER + dish.getId()
-                        )
-                )
-                .row(
-                        TelegramKeyboard.button(
-                                "Удалить из дневника",
-                                Command.CALORIE_DELETE.getCommandText()
-                                        + TelegramBot.DEFAULT_DELIMETER + dish.getId()
-                        )
-                )
-                .build();
-    }
-
-    public static InlineKeyboardMarkup getPortionKeyboard(Long dishId) {
-        // Базовая часть для всех кнопок изменения порции
-        String base = Command.CALORIE_SCALE.getCommandText()
-                + TelegramBot.DEFAULT_DELIMETER + dishId
-                + TelegramBot.DEFAULT_DELIMETER;
-
-        //<scale_command>delim<dishId>delim<+-scale>
-        return TelegramKeyboard.builder()
-                .row(
-                        TelegramKeyboard.button("-50%", base + "-50"),
-                        TelegramKeyboard.button("-10%", base + "-10"),
-//                        TelegramKeyboard.button("ОК",   base + "OK"),
-                        TelegramKeyboard.button("+10%", base + "10"),
-                        TelegramKeyboard.button("+50%", base + "50")
-                )
-                .row(
-                        TelegramKeyboard.button(
-                                "⭐ Сохранить блюдо",
-                                Command.CALORIE_FAVORITE_ADD.getCommandText()
-                                        + TelegramBot.DEFAULT_DELIMETER + dishId
-                        )
-                )
-                .row(
-                        TelegramKeyboard.button(
-                                "Удалить из дневника",
-                                Command.CALORIE_DELETE.getCommandText()
-                                        + TelegramBot.DEFAULT_DELIMETER + dishId
-                        )
-                )
-                .build();
-    }
 
     public InlineKeyboardMarkup getModelChooseListKeyboard(
             List<DishChoiceChatModel> dishChoiceList

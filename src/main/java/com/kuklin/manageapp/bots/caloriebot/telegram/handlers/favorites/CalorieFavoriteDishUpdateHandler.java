@@ -6,7 +6,7 @@ import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserFavoriteDish;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
-import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.dish.DishUpdateHandler;
+import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.dish.DishKeyboards;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.Command;
@@ -27,6 +27,7 @@ public class CalorieFavoriteDishUpdateHandler implements CalorieBotUpdateHandler
     private final CalorieTelegramBot calorieTelegramBot;
     private final UserFavoriteDishService userFavoriteDishService;
     private final AnalyticsService analyticsService;
+    private final DishKeyboards dishKeyboards;
     private static final Integer PAGE_SIZE = 5;
 
     private static final String EXTRACT_DATA_ERROR = "Ошибка данных!";
@@ -154,7 +155,7 @@ public class CalorieFavoriteDishUpdateHandler implements CalorieBotUpdateHandler
         calorieTelegramBot.sendReturnedMessage(
                 chatId,
                 analyticsService.getInfo(dish, telegramUser.getAppUserId()),
-                DishUpdateHandler.getPortionWeightKeyboard(dish),
+                dishKeyboards.buildPortionKeyboard(dish, telegramUser.getAppUserId()),
                 null
         );
 

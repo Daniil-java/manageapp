@@ -9,6 +9,7 @@ import com.kuklin.manageapp.bots.caloriebot.components.services.UserNutritionPro
 import com.kuklin.manageapp.bots.caloriebot.entities.UserSettings;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
+import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.dish.DishKeyboards;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.Command;
@@ -26,8 +27,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.stream.Stream;
 
-import static com.kuklin.manageapp.bots.caloriebot.telegram.handlers.dish.DishUpdateHandler.getPortionWeightKeyboard;
-
 /**
  * Обработчик для отображения статистики и списка блюд пользователя за текущий день.
  */
@@ -39,6 +38,7 @@ public class TodayUpdateHandler implements CalorieBotUpdateHandler {
     private final CalorieTelegramBot calorieTelegramBot;
     private final DishService dishService;
     private final AnalyticsService analyticsService;
+    private final DishKeyboards dishKeyboards;
     private final UserNutritionProfileService userNutritionProfileService;
 
     // Константы для формирования callback-данных
@@ -101,7 +101,7 @@ public class TodayUpdateHandler implements CalorieBotUpdateHandler {
             calorieTelegramBot.sendReturnedMessage(
                     update.getCallbackQuery().getMessage().getChatId(),
                     analyticsService.getInfo(dish, userId),
-                    getPortionWeightKeyboard(dish),
+                    dishKeyboards.buildPortionKeyboard(dish, userId),
                     null
             );
         } catch (Exception e) {

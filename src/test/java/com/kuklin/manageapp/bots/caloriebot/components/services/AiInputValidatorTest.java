@@ -128,7 +128,7 @@ class AiInputValidatorTest {
         assertThat(validator.isVoiceDurationAllowed(120)).isTrue();
         assertThat(validator.isVoiceDurationAllowed(121)).isFalse();
         assertThat(validator.isVoiceDurationAllowed(null)).isTrue();
-        assertThat(validator.voiceMaxDurationText()).isEqualTo("2 мин");
+        assertThat(validator.getVoiceMaxDuration()).isEqualTo(Duration.ofMinutes(2));
     }
 
     // ── Helpers ─────────────────────────────────────────────

@@ -3,6 +3,8 @@ package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.dish;
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.components.services.AnalyticsService;
 import com.kuklin.manageapp.bots.caloriebot.components.services.DishService;
+import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTextsService;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
@@ -21,7 +23,8 @@ public class CalorieScaleCallbackUpdateHandler implements CalorieBotUpdateHandle
     private final CalorieTelegramBot calorieTelegramBot;
     private final DishService dishService;
     private final AnalyticsService analyticsService;
-    private static final String ERROR_MSG = "Не получилось выполнить операцию!";
+    private final DishKeyboards dishKeyboards;
+    private final CalorieTextsService texts;
     //<command>delim<dishId>delim<+-scale%> - для увеличения веса порции
     private static final int WEIGHT_PORTIONS_PARTS = 3;
     //<command>delim<dishId>delim<cmd><value> - для увеличения количества порций
@@ -45,7 +48,7 @@ public class CalorieScaleCallbackUpdateHandler implements CalorieBotUpdateHandle
             log.error("Callback data error! {}", BotIdentifier.CALORIE_BOT);
             calorieTelegramBot.sendReturnedMessage(
                     update.getCallbackQuery().getMessage().getChatId(),
-                    ERROR_MSG
+                    texts.get(telegramUser.getAppUserId(), BotTextKeys.DISH_SCALE_ERROR)
             );
             return;
         }
@@ -53,7 +56,7 @@ public class CalorieScaleCallbackUpdateHandler implements CalorieBotUpdateHandle
                 update.getCallbackQuery().getMessage().getChatId(),
                 analyticsService.getInfo(dish, telegramUser.getAppUserId()),
                 update.getCallbackQuery().getMessage().getMessageId(),
-                DishUpdateHandler.getPortionWeightKeyboard(dish)
+                dishKeyboards.buildPortionKeyboard(dish, telegramUser.getAppUserId())
         );
 
     }

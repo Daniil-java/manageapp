@@ -10,7 +10,7 @@ import com.kuklin.manageapp.bots.caloriebot.models.feature.AccessResult;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.FeatureLimitNotifier;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
-import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.dish.DishUpdateHandler;
+import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.dish.DishKeyboards;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.Command;
@@ -29,6 +29,7 @@ public class CalorieFavoriteDishAddCallbackUpdateHandler implements CalorieBotUp
     private final DishService dishService;
     private final FeatureLimitNotifier featureLimitNotifier;
     private final CalorieTextsService texts;
+    private final DishKeyboards dishKeyboards;
 
     private static final String SAVED_MSG = "⭐ Добавил блюдо в список сохранённых.";
     private static final String ERROR_MSG = "Не получилось сохранить блюдо. Попробуйте ещё раз.";
@@ -70,7 +71,7 @@ public class CalorieFavoriteDishAddCallbackUpdateHandler implements CalorieBotUp
                 chatId,
                 query.getMessage().getText(),                         // текст оставляем как был
                 query.getMessage().getMessageId(),
-                DishUpdateHandler.getPortionKeyboardFavorite(dishService.getDishByIdOrNull(dishId))  // новая клавиатура
+                dishKeyboards.buildFavoritePortionKeyboard(dishService.getDishByIdOrNull(dishId), telegramUser.getAppUserId())  // новая клавиатура
         );
     }
 

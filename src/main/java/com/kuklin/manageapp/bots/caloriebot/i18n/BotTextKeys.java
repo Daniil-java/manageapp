@@ -49,6 +49,35 @@ public final class BotTextKeys {
     public static final String ADMIN_UTM_BUTTON_CREATE = "admin.utm.button.create";
     public static final String ADMIN_UTM_CREATED = "admin.utm.created";
 
+    // ── Длительность ───────────────────────────────────────────────
+    public static final String COMMON_DURATION_MINUTES = "common.duration.minutes";
+    public static final String COMMON_DURATION_SECONDS = "common.duration.seconds";
+
+    // ── Карточка блюда и кнопки под ней ────────────────────────────
+    public static final String DISH_CARD_TITLE = "dish.card.title";
+    public static final String DISH_CARD_MACROS = "dish.card.macros";
+    public static final String DISH_CARD_PORTION_WEIGHT = "dish.card.portion-weight";
+    public static final String DISH_CARD_PORTIONS = "dish.card.portions";
+    public static final String DISH_CARD_CALORIES_PROGRESS = "dish.card.calories-progress";
+    public static final String DISH_CARD_TODAY_TOTAL = "dish.card.today-total";
+    public static final String DISH_BUTTON_PORTION_WEIGHT = "dish.button.portion-weight";
+    public static final String DISH_BUTTON_PORTIONS = "dish.button.portions";
+    public static final String DISH_BUTTON_SAVE_FAVORITE = "dish.button.save-favorite";
+    public static final String DISH_BUTTON_IN_FAVORITES = "dish.button.in-favorites";
+    public static final String DISH_BUTTON_DELETE = "dish.button.delete";
+    public static final String DISH_BUTTON_NOT_COUNTED = "dish.button.not-counted";
+
+    // ── Распознавание блюда ────────────────────────────────────────
+    public static final String DISH_NOT_FOOD = "dish.not-food";
+    public static final String DISH_UNSUPPORTED_MESSAGE = "dish.unsupported-message";
+    public static final String DISH_VOICE_ERROR = "dish.voice.error";
+    public static final String DISH_VOICE_TOO_LONG = "dish.voice.too-long";
+    public static final String DISH_PHOTO_PROVIDER_ERROR = "dish.photo.provider-error";
+    public static final String DISH_PHOTO_NOT_RECOGNIZED_NOT_COUNTED = "dish.photo.not-recognized.not-counted";
+    public static final String DISH_PHOTO_NOT_RECOGNIZED_COUNTED = "dish.photo.not-recognized.counted";
+    public static final String DISH_SCALE_ERROR = "dish.scale.error";
+    public static final String DISH_CHOICE_ERROR = "dish.choice.error";
+
     // ── Рассылки ──────────────────────────────────────────────────
     public static final String REMINDER_MEAL = "reminder.meal";
 }

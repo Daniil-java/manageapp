@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.unit.DataSize;
 
+import java.time.Duration;
 import java.util.Base64;
 import java.util.Locale;
 import java.util.Map;
@@ -134,10 +135,9 @@ public class AiInputValidator {
         return durationSeconds == null || durationSeconds <= limits.getVoiceMaxDuration().toSeconds();
     }
 
-    /** Лимит длительности голосового по-русски — для сообщений бота: «2 мин», «90 сек». */
-    public String voiceMaxDurationText() {
-        long seconds = limits.getVoiceMaxDuration().toSeconds();
-        return seconds % 60 == 0 ? seconds / 60 + " мин" : seconds + " сек";
+    /** Лимит длительности голосового — текст для пользователя собирает бот на его языке. */
+    public Duration getVoiceMaxDuration() {
+        return limits.getVoiceMaxDuration();
     }
 
     // ── Private ─────────────────────────────────────────────

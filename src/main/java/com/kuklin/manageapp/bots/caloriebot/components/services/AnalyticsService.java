@@ -4,6 +4,9 @@ import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
 import com.kuklin.manageapp.bots.caloriebot.entities.WaterEntry;
 import com.kuklin.manageapp.bots.caloriebot.entities.WeightEntry;
+import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
+import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTextsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -23,6 +26,7 @@ public class AnalyticsService {
     private final DishService dishService;
     private final UserNutritionProfileService userNutritionProfileService;
     private final UserSettingsService userSettingsService;
+    private final CalorieTextsService texts;
 
     /**
      * Возвращает суммарный объем воды, выпитый пользователем за сегодня.
@@ -59,33 +63,27 @@ public class AnalyticsService {
         UserNutritionProfile profile = userNutritionProfileService.getOrCreateProfile(userId);
         boolean hasTargets = userNutritionProfileService.checkTargetCalculateParams(profile);
 
+        AppLanguage language = texts.languageOf(userId);
         StringBuilder sb = new StringBuilder();
 
+        // Числа передаём строками: ICU иначе поставил бы разделители разрядов (1 850)
         // 1. Название и прибавка калорий
         String emoji = dish.getEmojiIcon() == null ? "🍽️" : dish.getEmojiIcon();
-        sb.append(emoji).append("<b><i>").append(dish.getName()).append("</i></b> ")
-                .append("(+").append(dish.getCalories()).append(" ккал)\n");
+        sb.append(texts.get(language, BotTextKeys.DISH_CARD_TITLE,
+                emoji, dish.getName(), String.valueOf(dish.getCalories()))).append("\n");
 
         // 2. БЖУ итоги всегда, с прибавками
-        sb.append("<b>Б:</b> ").append(totalProteins);
-        if (hasTargets) {
-            sb.append("/").append(profile.getProteinsNormGramsPerDay());
-        }
-        sb.append("г (<b>+").append(dish.getProteins()).append("</b>) | ");
-
-        sb.append("<b>Ж:</b> ").append(totalFats);
-        if (hasTargets) {
-            sb.append("/").append(profile.getFatsNormGramsPerDay());
-        }
-        sb.append("г (<b>+").append(dish.getFats()).append("</b>) | ");
-
-        sb.append("<b>У:</b> ").append(totalCarbs);
-        if (hasTargets) {
-            sb.append("/").append(profile.getCarbsNormGramsPerDay());
-        }
-        sb.append("г (<b>+").append(dish.getCarbohydrates()).append("</b>)\n");
-        sb.append("<b>Вес порции:</b> ").append(dish.getPortionWeight()).append(" г\n");
-        sb.append("<b>Количество порций:</b> ").append(dish.getPortions()).append("\n\n");
+        sb.append(texts.get(language, BotTextKeys.DISH_CARD_MACROS,
+                getEatenText(totalProteins, hasTargets ? profile.getProteinsNormGramsPerDay() : null),
+                String.valueOf(dish.getProteins()),
+                getEatenText(totalFats, hasTargets ? profile.getFatsNormGramsPerDay() : null),
+                String.valueOf(dish.getFats()),
+                getEatenText(totalCarbs, hasTargets ? profile.getCarbsNormGramsPerDay() : null),
+                String.valueOf(dish.getCarbohydrates()))).append("\n");
+        sb.append(texts.get(language, BotTextKeys.DISH_CARD_PORTION_WEIGHT, String.valueOf(dish.getPortionWeight())))
+                .append("\n");
+        sb.append(texts.get(language, BotTextKeys.DISH_CARD_PORTIONS, String.valueOf(dish.getPortions())))
+                .append("\n\n");
 
         if (hasTargets) {
             int norm = profile.getCaloriesNormPerDay();
@@ -97,19 +95,25 @@ public class AnalyticsService {
             if (itemPercent == 0 && dish.getCalories() > 0) itemPercent = 1;
 
             // 3. Строка калорий и процент блюда
-            sb.append(totalCalories).append("/").append(norm).append(" ")
-                    .append("<b>+").append(dish.getCalories()).append(" ккал</b> ")
-                    .append(" (<b>+").append(itemPercent).append("%</b>)\n");
+            sb.append(texts.get(language, BotTextKeys.DISH_CARD_CALORIES_PROGRESS,
+                    String.valueOf(totalCalories), String.valueOf(norm),
+                    String.valueOf(dish.getCalories()), String.valueOf(itemPercent))).append("\n");
 
             // 4. Прогресс-бар и итоговый %
             sb.append(generateSmartBar(prevTotal, dish.getCalories(), norm))
                     .append(" 🔥 <b>").append(totalPercent).append("%</b>");
         } else {
             // когда целей нет — просто суммарные калории
-            sb.append("📊 Итого за сегодня: <b>").append(totalCalories).append(" ккал</b>\n");
+            sb.append(texts.get(language, BotTextKeys.DISH_CARD_TODAY_TOTAL, String.valueOf(totalCalories)))
+                    .append("\n");
         }
 
         return sb.toString();
+    }
+
+    /** «30/120» — съедено и норма, или просто «30», если нормы нет. */
+    private static String getEatenText(int eaten, Integer norm) {
+        return norm == null ? String.valueOf(eaten) : eaten + "/" + norm;
     }
 
 

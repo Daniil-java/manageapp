@@ -10,16 +10,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Update;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
-
-import java.util.Collections;
 
 @RequiredArgsConstructor
 @Component
 public class DeleteUpdateHandler implements CalorieBotUpdateHandler {
     private final CalorieTelegramBot calorieTelegramBot;
     private final DishService dishService;
+    private final DishKeyboards dishKeyboards;
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
         CallbackQuery callback = update.getCallbackQuery();
@@ -30,7 +27,7 @@ public class DeleteUpdateHandler implements CalorieBotUpdateHandler {
         if (dishId == null) return;
 
         dishService.removeByDishId(dishId);
-        calorieTelegramBot.editMarkup(chatId, messageId, getInlineMessage());
+        calorieTelegramBot.editMarkup(chatId, messageId, dishKeyboards.buildNotCountedKeyboard(telegramUser.getAppUserId()));
     }
 
     private Long extractDishIdOrNull(String data) {
@@ -41,20 +38,6 @@ public class DeleteUpdateHandler implements CalorieBotUpdateHandler {
         } catch (Exception e) {
             return null;
         }
-    }
-
-    public static InlineKeyboardMarkup getInlineMessage() {
-        String callbackData = "temp";
-        String buttonText = "НЕ УЧИТЫВАЕТСЯ";
-
-        InlineKeyboardButton button = new InlineKeyboardButton();
-        button.setText(buttonText);
-        button.setCallbackData(callbackData);
-
-        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
-        markup.setKeyboard(Collections.singletonList(Collections.singletonList(button)));
-
-        return markup;
     }
 
     @Override
