@@ -1,5 +1,7 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common;
 
+import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTextsService;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieMenuButtons;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.common.entities.TelegramUser;
@@ -15,14 +17,15 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 public class MenuCalorieUpdateHandler implements CalorieBotUpdateHandler {
     private final CalorieTelegramBot calorieTelegramBot;
     private final CalorieMenuButtons menuButtons;
-    private static final String MSG = "FAQ - поможет вам разобраться в боте \uD83D\uDE0A";
+    private final CalorieTextsService texts;
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
+        String text = texts.get(telegramUser.getAppUserId(), BotTextKeys.MENU_TEXT);
         if (update.hasMessage()) {
             calorieTelegramBot.sendReturnedMessage(
                     update.getMessage().getChatId(),
-                    MSG,
+                    text,
                     menuButtons.buildInlineMenu(telegramUser.getAppUserId()),
                     null
             );
@@ -35,7 +38,7 @@ public class MenuCalorieUpdateHandler implements CalorieBotUpdateHandler {
 
             calorieTelegramBot.sendReturnedMessage(
                     update.getCallbackQuery().getMessage().getChatId(),
-                    MSG,
+                    text,
                     menuButtons.buildInlineMenu(telegramUser.getAppUserId()),
                     null
             );

@@ -1,5 +1,7 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common;
 
+import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTextsService;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgutils.Command;
@@ -17,35 +19,29 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKe
 public class SupportCalorieUpdateHandler implements CalorieBotUpdateHandler {
 
     private final CalorieTelegramBot calorieTelegramBot;
+    private final CalorieTextsService texts;
 
-    private static final String MSG =
-            """
-                    Если у вас возникли вопросы или проблемы — свяжитесь с нашей поддержкой.
-                                        
-                    Пожалуйста, включите следующие информацию в сообщение:
-                    User ID: %s
-                                        
-                    Нажмите кнопку ниже, чтобы перейти в чат с поддержкой. 👇
-                    """;
     private static final String SUPPORT_URL = "tg://user?id=7666281607";
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
+        Long appUserId = telegramUser.getAppUserId();
         calorieTelegramBot.sendReturnedMessage(
                 update.getMessage().getChatId(),
-                String.format(MSG, telegramUser.getTelegramId()),
-                getKeyboard(),
+                // ID строкой: число ICU напечатал бы с разделителями разрядов (425 120 436)
+                texts.get(appUserId, BotTextKeys.SUPPORT_TEXT, String.valueOf(telegramUser.getTelegramId())),
+                getKeyboard(appUserId),
                 null
         );
 
     }
 
-    private InlineKeyboardMarkup getKeyboard() {
+    private InlineKeyboardMarkup getKeyboard(Long appUserId) {
         TelegramKeyboard.TelegramKeyboardBuilder keyboard =
                 new TelegramKeyboard.TelegramKeyboardBuilder();
 
         InlineKeyboardButton linkButton = new InlineKeyboardButton();
-        linkButton.setText("Написать в поддержку");
+        linkButton.setText(texts.get(appUserId, BotTextKeys.SUPPORT_BUTTON));
         linkButton.setUrl(SUPPORT_URL);
 
         keyboard.row(linkButton);

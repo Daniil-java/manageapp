@@ -1,5 +1,7 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.welcome;
 
+import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTextsService;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
@@ -17,8 +19,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class WelcomeCalorieUpdateHandler implements CalorieBotUpdateHandler {
     private final CalorieTelegramBot calorieTelegramBot;
+    private final CalorieTextsService texts;
     public static final String INSTR_URL = "https://kuklin.dev/calorie/instruction";
-    private static final String TEXT_MSG = "📖 Инструкция";
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
@@ -30,30 +32,32 @@ public class WelcomeCalorieUpdateHandler implements CalorieBotUpdateHandler {
     }
 
     private void processMessage(Update update, TelegramUser telegramUser) {
+        Long appUserId = telegramUser.getAppUserId();
         calorieTelegramBot.sendReturnedMessage(
                 update.getMessage().getChatId(),
-                TEXT_MSG,
-                buildInstructionKeyboard(),
+                texts.get(appUserId, BotTextKeys.WELCOME_TEXT),
+                buildInstructionKeyboard(appUserId),
                 null
         );
     }
 
     private void processCallbackQuery(Update update, TelegramUser telegramUser) {
+        Long appUserId = telegramUser.getAppUserId();
         calorieTelegramBot.sendEditMessage(
                 update.getCallbackQuery().getMessage().getChatId(),
-                TEXT_MSG,
+                texts.get(appUserId, BotTextKeys.WELCOME_TEXT),
                 update.getCallbackQuery().getMessage().getMessageId(),
-                buildInstructionKeyboard()
+                buildInstructionKeyboard(appUserId)
         );
     }
 
-    private InlineKeyboardMarkup buildInstructionKeyboard() {
+    private InlineKeyboardMarkup buildInstructionKeyboard(Long appUserId) {
         InlineKeyboardButton button = new InlineKeyboardButton();
-        button.setText("📖 Инструкция в miniApp");
+        button.setText(texts.get(appUserId, BotTextKeys.COMMON_BUTTON_INSTRUCTION));
         button.setWebApp(new WebAppInfo(INSTR_URL));
 
         InlineKeyboardButton close = new InlineKeyboardButton();
-        close.setText("Закрыть");
+        close.setText(texts.get(appUserId, BotTextKeys.COMMON_BUTTON_CLOSE));
         close.setCallbackData(Command.CALORIE_CLOSE.getCommandText());
 
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();

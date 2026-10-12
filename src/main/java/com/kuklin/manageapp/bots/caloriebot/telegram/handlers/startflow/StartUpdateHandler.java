@@ -3,6 +3,8 @@ package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.startflow;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserNutritionProfileService;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UtmService;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
+import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTextsService;
 import com.kuklin.manageapp.bots.caloriebot.models.landing.CalculatorStartParam;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.KeyboardCalorieUpdateHandler;
@@ -26,14 +28,6 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMa
 @RequiredArgsConstructor
 public class StartUpdateHandler implements CalorieBotUpdateHandler {
 
-    private static final String START_MESSAGE =
-            """
-                    Добро пожаловать! 👋 Я превращаю фото еды в точные данные о калориях и БЖУ. Забудь о ручном вводе и весах: просто сфотографируй тарелку — и ты сразу увидишь свой прогресс на удобных графиках и шкалах. Это самый быстрый способ держать форму под контролем!
-                                        
-                    Кстати, я запустил канал ЗЕФИР, где рассказываю о питании и ИИ. Там мы разбираем мифы о диетах, делимся научными фактами и играем в интерактивы «Угадай КБЖУ по фото». Подписывайся, там много пользы и немного юмора: @zephyr_ai (или ссылка на канал).
-                                        
-                    Начиная работу с ботом, вы принимаете условия <a href="https://kuklin.dev/calorie/privacy">Политики конфиденциальности</a> и <a href="https://kuklin.dev/calorie/terms">Пользовательского соглашения</a>.
-                    """;
     private final UserSubscriptionService userSubscriptionService;
     private final CalorieTelegramBot calorieTelegramBot;
     private final SubscriptionStatusCalorieUpdateHandler subscriptionStatusCalorieUpdateHandler;
@@ -42,14 +36,16 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
     private final UtmService utmService;
     private final KeyboardCalorieUpdateHandler keyboardCalorieUpdateHandler;
     private final CalculatorProfileUpdateHandler calculatorProfileUpdateHandler;
+    private final CalorieTextsService texts;
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
-        keyboardCalorieUpdateHandler.updateKeyboard(update.getMessage().getChatId(), telegramUser.getAppUserId());
+        Long appUserId = telegramUser.getAppUserId();
+        keyboardCalorieUpdateHandler.updateKeyboard(update.getMessage().getChatId(), appUserId);
         calorieTelegramBot.sendReturnedMessage(
                 update.getMessage().getChatId(),
-                START_MESSAGE,
-                getStartFlowKeyboard(),
+                texts.get(appUserId, BotTextKeys.START_WELCOME),
+                getStartFlowKeyboard(appUserId),
                 null
         );
         processStartParam(update, telegramUser);
@@ -74,13 +70,13 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
         }
     }
 
-    private InlineKeyboardMarkup getStartFlowKeyboard() {
+    private InlineKeyboardMarkup getStartFlowKeyboard(Long appUserId) {
         return new TelegramKeyboard.TelegramKeyboardBuilder()
                 .row(TelegramKeyboard.button(
-                        "Далее",
+                        texts.get(appUserId, BotTextKeys.COMMON_BUTTON_NEXT),
                         Command.CALORIE_START_FLOW_1.getCommandText())
                 ).row(TelegramKeyboard.button(
-                        "Закрыть",
+                        texts.get(appUserId, BotTextKeys.COMMON_BUTTON_CLOSE),
                         Command.CALORIE_CLOSE.getCommandText()
                         )
                 ).build();

@@ -1,6 +1,8 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.startflow;
 
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserNutritionProfileService;
+import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTextsService;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
@@ -20,32 +22,14 @@ import static com.kuklin.manageapp.bots.caloriebot.telegram.handlers.welcome.Wel
 public class StartFlowCalorieUpdateHandler implements CalorieBotUpdateHandler {
     private final CalorieTelegramBot calorieTelegramBot;
     private final UserNutritionProfileService userNutritionProfileService;
-    private static final String MSG =
-            """
-            Привет! 👋 Я — твой умный помощник для учета калорий и дневник питания.
-                        
-            Как записывать еду? Это очень просто:
-            Текстом 📝: Просто напиши в чат (например: «два вареных яйца, тост и кофе с молоком»).
-            Голосом 🎙: Лень печатать? Наговори съеденное в голосовом сообщении — я сам всё расшифрую и посчитаю.
-            По фото 📸: Отправь фотографию своей тарелки, а мой ИИ распознает блюдо и оценит порцию.
-                        
-            Полезные команды, которые всегда под рукой:
-            /menu — вызов главного меню с кнопками прямо в чате.
-            /keyboard — вернуть меню-клавиатуру в самый низ экрана, если она пропала.
-            /support — написать в нашу поддержку (если есть вопросы или что-то пошло не так).
-                    """;
-    // Отдельным сообщением: анкета профиля редактирует сообщение с кнопкой — инструкция выше остаётся в чате
-    private static final String FILL_PROFILE_MSG =
-            """
-            Шаг 1. Заполни профиль
-            Пожалуйста, нажми на кнопку «Заполнить профиль» под этим сообщением. Это нужно, чтобы я рассчитал твою личную суточную норму. Как только ты это сделаешь, у тебя появятся красивые и удобные шкалы прогресса по калориям и БЖУ вместо скучных цифр! 📊
-            """;
+    private final CalorieTextsService texts;
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
         if (!update.hasCallbackQuery()) return;
+        Long appUserId = telegramUser.getAppUserId();
         boolean isFilledProfile = userNutritionProfileService
-                .getOrCreateProfile(telegramUser.getAppUserId())
+                .getOrCreateProfile(appUserId)
                 .checkTargetCalculateParams();
 
         Long chatId = update.getCallbackQuery().getMessage().getChatId();
@@ -55,31 +39,38 @@ public class StartFlowCalorieUpdateHandler implements CalorieBotUpdateHandler {
                 update.getCallbackQuery().getMessage().getMessageId()
         );
 
-        calorieTelegramBot.sendReturnedMessage(chatId, MSG, getStartFlowKeyboard(), null);
+        calorieTelegramBot.sendReturnedMessage(chatId,
+                texts.get(appUserId, BotTextKeys.START_FLOW_INTRO), getStartFlowKeyboard(appUserId), null);
 
-        // Пришёл с лендинга с данными калькулятора — профиль уже заполнен, шаг не нужен
+        // Пришёл с лендинга с данными калькулятора — профиль уже заполнен, шаг не нужен.
+        // Отдельным сообщением: анкета профиля редактирует сообщение с кнопкой — инструкция выше остаётся в чате
         if (!isFilledProfile) {
-            calorieTelegramBot.sendReturnedMessage(chatId, FILL_PROFILE_MSG, getFillProfileKeyboard(), null);
+            calorieTelegramBot.sendReturnedMessage(chatId,
+                    texts.get(appUserId, BotTextKeys.START_FLOW_FILL_PROFILE), getFillProfileKeyboard(appUserId), null);
         }
     }
 
-    private InlineKeyboardMarkup getFillProfileKeyboard() {
+    private InlineKeyboardMarkup getFillProfileKeyboard(Long appUserId) {
         return TelegramKeyboard.builder()
-                .row(TelegramKeyboard.button("Заполнить профиль", Command.CALORIE_PROFILE_DIALOGUE.getCommandText()))
+                .row(TelegramKeyboard.button(
+                        texts.get(appUserId, BotTextKeys.START_FLOW_BUTTON_FILL_PROFILE),
+                        Command.CALORIE_PROFILE_DIALOGUE.getCommandText()))
                 .build();
     }
 
-    private InlineKeyboardMarkup getStartFlowKeyboard() {
+    private InlineKeyboardMarkup getStartFlowKeyboard(Long appUserId) {
         TelegramKeyboard.TelegramKeyboardBuilder keyboard = new TelegramKeyboard.TelegramKeyboardBuilder();
 
         InlineKeyboardButton button = new InlineKeyboardButton();
-        button.setText("📖 Инструкция в miniApp");
+        button.setText(texts.get(appUserId, BotTextKeys.COMMON_BUTTON_INSTRUCTION));
         button.setWebApp(new WebAppInfo(INSTR_URL));
 
-        keyboard.row(TelegramKeyboard.button("Далее", Command.CALORIE_MENU.getCommandText()));
+        keyboard.row(TelegramKeyboard.button(
+                texts.get(appUserId, BotTextKeys.COMMON_BUTTON_NEXT), Command.CALORIE_MENU.getCommandText()));
 
         return keyboard.row(button)
-                .row(TelegramKeyboard.button("Закрыть", Command.CALORIE_CLOSE.getCommandText()))
+                .row(TelegramKeyboard.button(
+                        texts.get(appUserId, BotTextKeys.COMMON_BUTTON_CLOSE), Command.CALORIE_CLOSE.getCommandText()))
                 .build();
     }
 

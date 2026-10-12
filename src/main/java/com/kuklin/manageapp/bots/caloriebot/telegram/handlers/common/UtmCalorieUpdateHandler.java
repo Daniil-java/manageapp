@@ -5,6 +5,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UtmService;
 import com.kuklin.manageapp.bots.caloriebot.entities.utm.UtmLink;
+import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTextsService;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgutils.Command;
@@ -31,35 +33,15 @@ public class UtmCalorieUpdateHandler implements CalorieBotUpdateHandler {
     private final CalorieTelegramBot calorieTelegramBot;
     private final UtmService utmService;
     private final ObjectMapper objectMapper; // Инжектится из контекста
+    private final CalorieTextsService texts;
 
     // Константы конфигурации
     private static final String WEB_APP_URL = "https://kuklin.dev/calorie/utm-form";
     private static final Set<Long> ADMIN_IDS = Set.of(425120436L, 420478432L);
 
-    // Шаблоны сообщений
-    private static final String REFERRAL_TEMPLATE = """
-            <b>💎 Твоя реферальная программа</b>
-            
-            Делись ботом с друзьями! При переходе по ссылке они автоматически станут твоими рефералами.
-            
-            Твоя персональная ссылка (нажми, чтобы скопировать):
-            <code>%s</code>
-            """;
-
-    private static final String UTM_SUCCESS_TEMPLATE = """
-            ✅ <b>UTM-ссылка успешно создана!</b>
-            
-            🏷 <b>Название:</b> %s
-            👤 <b>Тип:</b> %s
-            🌐 <b>Источник:</b> %s
-            📝 <b>Описание:</b> %s
-            
-            🔗 <b>Ваша ссылка:</b>
-            <code>%s</code>
-            """;
-
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
+        Long appUserId = telegramUser.getAppUserId();
         Long chatId = update.hasMessage() ?
                 update.getMessage().getChatId() :
                 update.getCallbackQuery().getMessage().getChatId();
@@ -72,15 +54,15 @@ public class UtmCalorieUpdateHandler implements CalorieBotUpdateHandler {
         }
 
         // 2. Логика для обычного вызова команды (показать ссылки)
-        String userCode = utmService.getOrCreateReferralLink(telegramUser.getAppUserId());
+        String userCode = utmService.getOrCreateReferralLink(appUserId);
         String botUrl = buildBotLink(userCode);
 
         // Админу даем кнопку создания, юзеру — кнопку "Переслать"
-        ReplyKeyboard keyboard = isAdmin ? getAdminReplyKeyboard() : getReferralButtons(botUrl);
+        ReplyKeyboard keyboard = isAdmin ? getAdminReplyKeyboard(appUserId) : getReferralButtons(appUserId, botUrl);
 
         calorieTelegramBot.sendReturnedMessage(
                 chatId,
-                String.format(REFERRAL_TEMPLATE, botUrl),
+                texts.get(appUserId, BotTextKeys.REFERRAL_TEXT, botUrl),
                 keyboard,
                 null
         );
@@ -94,7 +76,7 @@ public class UtmCalorieUpdateHandler implements CalorieBotUpdateHandler {
             UtmLink link = utmService.saveLink(dto, telegramUser.getAppUserId());
             String fullBotLink = buildBotLink(link.getCode());
 
-            String responseText = UTM_SUCCESS_TEMPLATE.formatted(
+            String responseText = texts.get(telegramUser.getAppUserId(), BotTextKeys.ADMIN_UTM_CREATED,
                     link.getTittle(),
                     link.getOwnerType().getType(),
                     link.getSourceUrl(),
@@ -105,7 +87,7 @@ public class UtmCalorieUpdateHandler implements CalorieBotUpdateHandler {
             calorieTelegramBot.sendReturnedMessage(update.getMessage().getChatId(), responseText);
 
         } catch (JsonProcessingException e) {
-            log.error("Ошибка парсинга JSON из WebApp: {}", e.getMessage());
+            log.error("Failed to parse WebApp JSON: {}", e.getMessage());
         }
     }
 
@@ -117,19 +99,17 @@ public class UtmCalorieUpdateHandler implements CalorieBotUpdateHandler {
         return "https://t.me/" + botUserName + "?start=" + code;
     }
 
-    public InlineKeyboardMarkup getReferralButtons(String botUrl) {
-        String shareText = "Привет! Пользуюсь этим ботом для подсчета калорий, очень удобно. Залетай: " + botUrl;
-
+    private InlineKeyboardMarkup getReferralButtons(Long appUserId, String botUrl) {
         InlineKeyboardButton shareBtn = new InlineKeyboardButton();
-        shareBtn.setText("🚀 Переслать другу");
-        shareBtn.setSwitchInlineQuery(shareText);
+        shareBtn.setText(texts.get(appUserId, BotTextKeys.REFERRAL_BUTTON_SHARE));
+        shareBtn.setSwitchInlineQuery(texts.get(appUserId, BotTextKeys.REFERRAL_SHARE_TEXT, botUrl));
 
         return new InlineKeyboardMarkup(List.of(List.of(shareBtn)));
     }
 
-    private ReplyKeyboardMarkup getAdminReplyKeyboard() {
+    private ReplyKeyboardMarkup getAdminReplyKeyboard(Long appUserId) {
         KeyboardButton webAppButton = new KeyboardButton();
-        webAppButton.setText("➕ Создать ссылку для канала");
+        webAppButton.setText(texts.get(appUserId, BotTextKeys.ADMIN_UTM_BUTTON_CREATE));
         webAppButton.setWebApp(new WebAppInfo(WEB_APP_URL));
 
         KeyboardRow row = new KeyboardRow();

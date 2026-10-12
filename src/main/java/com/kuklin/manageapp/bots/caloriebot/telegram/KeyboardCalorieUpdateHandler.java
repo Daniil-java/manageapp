@@ -1,5 +1,7 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram;
 
+import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTextsService;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgutils.Command;
@@ -12,6 +14,7 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 public class KeyboardCalorieUpdateHandler implements CalorieBotUpdateHandler {
     private final CalorieTelegramBot calorieTelegramBot;
     private final CalorieMenuButtons menuButtons;
+    private final CalorieTextsService texts;
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
@@ -21,7 +24,7 @@ public class KeyboardCalorieUpdateHandler implements CalorieBotUpdateHandler {
     public void updateKeyboard(Long chatId, Long appUserId) {
         calorieTelegramBot.sendReturnedMessage(
                 chatId,
-                "Клавиатура обновлена",
+                texts.get(appUserId, BotTextKeys.KEYBOARD_UPDATED),
                 menuButtons.buildKeyboard(appUserId),
                 null
         );
