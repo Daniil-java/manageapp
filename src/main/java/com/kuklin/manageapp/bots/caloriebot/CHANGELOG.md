@@ -1,3 +1,11 @@
+## 0.0.60 (12.10.2026)
+[et-87] — Кнопки меню на языке пользователя
+* CalorieMenuButtons: 9 кнопок главного меню, у каждой ключ подписи в bot_* (button.*) и команда. buildKeyboard(appUserId) — нижняя клавиатура, buildInlineMenu(appUserId) — кнопки под сообщением /menu (подпись переведена, в callbackData прежний текст команды), findCommand(text) — команда по подписи на любом языке.
+* Фасад сначала ищет нажатую кнопку через findCommand, дальше — прежняя логика. Command.java и UpdateHandler не менялись.
+* Русские подписи = старые тексты команд, сами тексты команд тоже узнаются — клавиатуры, оставшиеся в чатах, работают. Одна подпись у двух разных кнопок — бот не стартует.
+* Убраны две копии клавиатуры (KeyboardCalorieUpdateHandler.getCommandKeyboard, StartUpdateHandler.getCommandKeyboard). Клавиатура на языке пользователя в /start, /keyboard, /menu, ответах на блюдо, недельном отчёте и рассылке админа (у каждого получателя своя).
+* Тесты: CalorieMenuButtonsTest; HardcodedTextsCountTest — счётчик строк кода с русским текстом в telegram/** (сейчас 303), число может только уменьшаться.
+
 ## 0.0.59 (12.10.2026)
 [et-86] — PDF-отчёты и напоминания на языке пользователя
 * Новый словарь i18n/calorie/pdf_ru|en, ключи — PdfTextKeys. PdfTexts — тексты одного отчёта (язык пользователя выбран один раз): get(key), category(…), форматы дат, localizeTemplate(html).

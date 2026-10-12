@@ -1,7 +1,7 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common;
 
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
-import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.startflow.StartUpdateHandler;
+import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieMenuButtons;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import com.kuklin.manageapp.common.library.tgutils.Command;
@@ -18,6 +18,7 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 public class AdminMessageSenderUpdateHandler implements CalorieBotUpdateHandler {
     private final CalorieTelegramBot calorieTelegramBot;
     private final TelegramUserService telegramUserService;
+    private final CalorieMenuButtons menuButtons;
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
@@ -26,7 +27,7 @@ public class AdminMessageSenderUpdateHandler implements CalorieBotUpdateHandler 
             calorieTelegramBot.sendReturnedMessage(
                     tgUser.getTelegramId(),
                     update.getMessage().getText().substring(getHandlerListName().length()),
-                    StartUpdateHandler.getCommandKeyboard(),
+                    menuButtons.buildKeyboard(tgUser.getAppUserId()),
                     null
             );
         }

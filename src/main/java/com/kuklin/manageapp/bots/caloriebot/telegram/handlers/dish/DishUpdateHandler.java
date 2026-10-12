@@ -19,7 +19,7 @@ import com.kuklin.manageapp.bots.caloriebot.models.feature.AccessResult;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.EmptyResultCharge;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.FeatureLimitNotifier;
-import com.kuklin.manageapp.bots.caloriebot.telegram.KeyboardCalorieUpdateHandler;
+import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieMenuButtons;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
@@ -59,6 +59,7 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
     private final AiInputValidator aiInputValidator;
     private final AiRateLimiter aiRateLimiter;
     private final CalorieTextsService texts;
+    private final CalorieMenuButtons menuButtons;
     private static final String PORTION_COUNT_CMD = "PC";
     private static final String PORTION_WEIGHT_CMD = "PW";
     private static final String VOICE_ERROR_MESSAGE =
@@ -93,7 +94,7 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
             calorieTelegramBot.sendReturnedMessage(
                     update.getMessage().getChatId(),
                     texts.error(telegramUser.getAppUserId(), e),
-                    KeyboardCalorieUpdateHandler.getCommandKeyboard(),
+                    menuButtons.buildKeyboard(telegramUser.getAppUserId()),
                     null
             );
             return;
@@ -140,7 +141,7 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
                         photoResult.emptyResultCharge() == EmptyResultCharge.FORGIVEN
                                 ? PHOTO_NOT_RECOGNIZED_NOT_COUNTED_MESSAGE
                                 : PHOTO_NOT_RECOGNIZED_COUNTED_MESSAGE,
-                        KeyboardCalorieUpdateHandler.getCommandKeyboard(),
+                        menuButtons.buildKeyboard(userId),
                         null
                 );
                 return null;
@@ -164,7 +165,7 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
             calorieTelegramBot.sendReturnedMessage(
                     update.getMessage().getChatId(),
                     ERROR_CONTENT_MESSAGE,
-                    KeyboardCalorieUpdateHandler.getCommandKeyboard(),
+                    menuButtons.buildKeyboard(userId),
                     null
             );
             return null;

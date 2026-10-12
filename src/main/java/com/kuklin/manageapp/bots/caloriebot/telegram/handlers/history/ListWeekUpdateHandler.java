@@ -5,9 +5,9 @@ import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
 import com.kuklin.manageapp.bots.caloriebot.components.services.DishService;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserNutritionProfileService;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserSettingsService;
+import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieMenuButtons;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
-import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.startflow.StartUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import lombok.RequiredArgsConstructor;
@@ -28,6 +28,7 @@ public class ListWeekUpdateHandler implements CalorieBotUpdateHandler {
     private final DishService dishService;
     private final UserNutritionProfileService userNutritionProfileService;
     private final UserSettingsService userSettingsService;
+    private final CalorieMenuButtons menuButtons;
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
         List<Dish> dishes = dishService.getWeekDishes(telegramUser.getAppUserId());
@@ -35,7 +36,7 @@ public class ListWeekUpdateHandler implements CalorieBotUpdateHandler {
         calorieTelegramBot.sendReturnedMessage(
                 update.getMessage().getChatId(),
                 getWeeklyAnalytics(dishes, profile, telegramUser),
-                StartUpdateHandler.getCommandKeyboard(),
+                menuButtons.buildKeyboard(telegramUser.getAppUserId()),
                 null
         );
     }

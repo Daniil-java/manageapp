@@ -15,11 +15,15 @@ import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.User;
 
+import java.util.Optional;
+
 @Component
 @Slf4j
 public class TelegramCalorieBotFacade extends TelegramFacade {
     @Autowired
     private TelegramUserService telegramUserService;
+    @Autowired
+    private CalorieMenuButtons menuButtons;
 
     @Override
     public void handleUpdate(Update update) {
@@ -97,6 +101,10 @@ public class TelegramCalorieBotFacade extends TelegramFacade {
         if (text == null || text.isEmpty()) {
             return getHandler(Command.CALORIE_GENERAL);
         }
+
+        // Кнопка нижней клавиатуры — подпись на любом языке
+        Optional<Command> menuCommand = menuButtons.findCommand(text);
+        if (menuCommand.isPresent()) return getHandler(menuCommand.get());
 
         // Специфичные команды через startsWith
         if (text.startsWith(Command.CALORIE_WATER.getCommandText()))         return getHandler(Command.CALORIE_WATER);

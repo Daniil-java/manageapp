@@ -21,10 +21,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
-
-import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -49,7 +45,7 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
-        keyboardCalorieUpdateHandler.updateKeyboard(update.getMessage().getChatId());
+        keyboardCalorieUpdateHandler.updateKeyboard(update.getMessage().getChatId(), telegramUser.getAppUserId());
         calorieTelegramBot.sendReturnedMessage(
                 update.getMessage().getChatId(),
                 START_MESSAGE,
@@ -115,42 +111,6 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
         if (!profile.checkTargetCalculateParams()) {
             calorieNutritionProfileUpdateHandler.handle(update, telegramUser);
         }
-    }
-
-    public static ReplyKeyboardMarkup getCommandKeyboard() {
-        ReplyKeyboardMarkup markup = new ReplyKeyboardMarkup();
-        markup.setResizeKeyboard(true);
-        markup.setOneTimeKeyboard(false);
-
-        KeyboardRow settingsRow = new KeyboardRow();
-        settingsRow.add(Command.CALORIE_SETTINGS.getCommandText());
-        settingsRow.add(Command.CALORIE_PROFILE.getCommandText());
-
-        KeyboardRow profileRow = new KeyboardRow();
-        profileRow.add(Command.CALORIE_WATER.getCommandText());
-        profileRow.add(Command.CALORIE_FAVORITE.getCommandText());
-
-        KeyboardRow statisticsRow = new KeyboardRow();
-        statisticsRow.add(Command.CALORIE_TODAY_LIST.getCommandText());
-
-        KeyboardRow reportRow = new KeyboardRow();
-        reportRow.add(Command.CALORIE_REPORT.getCommandText());
-        reportRow.add(Command.CALORIE_WELCOME.getCommandText());
-
-        KeyboardRow subRow = new KeyboardRow();
-        subRow.add(Command.CALORIE_PAYMENT_PAYLOAD_PLAN.getCommandText());
-        subRow.add(Command.CALORIE_UTM.getCommandText());
-
-        // Собираем в список в том порядке, в котором они должны идти в интерфейсе
-        markup.setKeyboard(List.of(
-                statisticsRow,
-                profileRow,
-                settingsRow,
-                reportRow,
-                subRow
-        ));
-
-        return markup;
     }
 
     @Override

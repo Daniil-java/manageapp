@@ -15,6 +15,17 @@ public final class BotTextKeys {
     public static final String DEV_LANG_RESET = "dev.lang.reset";
     public static final String DEV_LANG_UNKNOWN = "dev.lang.unknown";
 
+    // ── Кнопки главного меню (CalorieMenuButtons) ──────────────────
+    public static final String BUTTON_TODAY = "button.today";
+    public static final String BUTTON_WATER = "button.water";
+    public static final String BUTTON_FAVORITES = "button.favorites";
+    public static final String BUTTON_SETTINGS = "button.settings";
+    public static final String BUTTON_PROFILE = "button.profile";
+    public static final String BUTTON_REPORT = "button.report";
+    public static final String BUTTON_FAQ = "button.faq";
+    public static final String BUTTON_SUBSCRIPTION = "button.subscription";
+    public static final String BUTTON_INVITE = "button.invite";
+
     // ── Рассылки ──────────────────────────────────────────────────
     public static final String REMINDER_MEAL = "reminder.meal";
 }
