@@ -1,6 +1,9 @@
 package com.kuklin.manageapp.bots.caloriebot.i18n;
 
 import com.ibm.icu.text.MessageFormat;
+import com.ibm.icu.text.MessagePattern;
+import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorParams;
+import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -14,8 +17,6 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -27,8 +28,6 @@ class TextBundlesConsistencyTest {
 
     /** Классы с константами ключей. Новый класс ключей — сюда же. */
     private static final List<Class<?>> KEY_CLASSES = List.of(BotTextKeys.class);
-
-    private static final Pattern ARGUMENT = Pattern.compile("\\{\\s*(\\d+)");
 
     @Test
     void everyLanguageHasSameKeysAsDefault() throws IOException {
@@ -83,15 +82,54 @@ class TextBundlesConsistencyTest {
         }
         List<String> missing = new ArrayList<>();
         for (Class<?> keyClass : KEY_CLASSES) {
-            for (Field field : keyClass.getDeclaredFields()) {
-                int mod = field.getModifiers();
-                if (Modifier.isStatic(mod) && Modifier.isFinal(mod) && field.getType() == String.class) {
-                    String key = (String) field.get(null);
-                    if (!allKeys.contains(key)) missing.add(keyClass.getSimpleName() + "." + field.getName() + " = " + key);
-                }
+            for (String key : stringConstants(keyClass)) {
+                if (!allKeys.contains(key)) missing.add(keyClass.getSimpleName() + ": " + key);
             }
         }
         assertThat(missing).as("key constants without texts").isEmpty();
+    }
+
+    @Test
+    void everyErrorStatusHasText() throws IOException {
+        Properties errors = load("i18n/calorie/errors", AppLanguage.RU);
+        List<String> missing = new ArrayList<>();
+        for (ErrorStatus status : ErrorStatus.values()) {
+            if (!errors.containsKey(status.getTextKey())) missing.add(status.getTextKey());
+        }
+        assertThat(missing).as("ErrorStatus without user text").isEmpty();
+    }
+
+    /**
+     * В текстах ошибок — только подстановки из ErrorParams: {maxSizeMB} вместо {maxSizeMb}
+     * не подставится, и пользователь увидит фигурные скобки. И наоборот: каждый параметр где-то используется.
+     */
+    @Test
+    void errorTextsUseOnlyErrorParams() throws IOException, IllegalAccessException {
+        Set<String> paramNames = stringConstants(ErrorParams.class);
+        Set<String> used = new TreeSet<>();
+        for (AppLanguage language : AppLanguage.values()) {
+            Properties errors = load("i18n/calorie/errors", language);
+            for (String key : errors.stringPropertyNames()) {
+                Set<String> arguments = arguments(errors.getProperty(key));
+                assertThat(paramNames)
+                        .as("'%s' in errors_%s uses names that are not in ErrorParams", key, language.getCode())
+                        .containsAll(arguments);
+                used.addAll(arguments);
+            }
+        }
+        assertThat(used).as("ErrorParams used in error texts").containsAll(paramNames);
+    }
+
+    /** Значения всех public static final String полей класса — так читаем константы ключей и имён. */
+    private static Set<String> stringConstants(Class<?> type) throws IllegalAccessException {
+        Set<String> values = new TreeSet<>();
+        for (Field field : type.getDeclaredFields()) {
+            int mod = field.getModifiers();
+            if (Modifier.isPublic(mod) && Modifier.isStatic(mod) && Modifier.isFinal(mod) && field.getType() == String.class) {
+                values.add((String) field.get(null)); // null — поле статическое, объект не нужен
+            }
+        }
+        return values;
     }
 
     private static Properties load(String bundle, AppLanguage language) throws IOException {
@@ -104,10 +142,22 @@ class TextBundlesConsistencyTest {
         }
     }
 
+    /**
+     * Имена подстановок в шаблоне: "Максимум — {max}" → [max], "{0} из {1}" → [0, 1].
+     * Шаблон разбирает сам ICU (MessagePattern) — так же, как при выводе текста, поэтому находятся
+     * и подстановки внутри вариантов plural, а сами варианты (one{…}, few{…}) подстановками не считаются.
+     */
     private static Set<String> arguments(String pattern) {
-        Set<String> result = new TreeSet<>();
-        Matcher m = ARGUMENT.matcher(pattern);
-        while (m.find()) result.add(m.group(1));
-        return result;
+        MessagePattern parsed = new MessagePattern(pattern);
+        Set<String> names = new TreeSet<>();
+        for (int i = 0; i < parsed.countParts(); i++) {
+            MessagePattern.Part part = parsed.getPart(i);
+            boolean isArgument = part.getType() == MessagePattern.Part.Type.ARG_NAME
+                    || part.getType() == MessagePattern.Part.Type.ARG_NUMBER;
+            if (isArgument) {
+                names.add(parsed.getSubstring(part));
+            }
+        }
+        return names;
     }
 }

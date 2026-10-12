@@ -12,6 +12,7 @@ import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserFavoriteDish;
 import com.kuklin.manageapp.bots.caloriebot.models.ManualDishRequest;
 import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.DishDto;
+import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorParams;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.MissingFeatureException;
@@ -205,8 +206,7 @@ public class DishService {
      */
     public void checkDailyDishLimitOrThrow(Long userId) {
         if (isDailyDishLimitReached(userId)) {
-            throw new ErrorResponseException(ErrorStatus.DISH_DAILY_LIMIT, String.format(
-                    "Too many dishes added in the last 24 hours (max %d). Try again later.", dishLimits.getPerDay()));
+            throw new ErrorResponseException(ErrorStatus.DISH_DAILY_LIMIT, ErrorParams.max(dishLimits.getPerDay()));
         }
     }
 

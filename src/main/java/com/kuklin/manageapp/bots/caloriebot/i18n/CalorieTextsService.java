@@ -2,13 +2,17 @@ package com.kuklin.manageapp.bots.caloriebot.i18n;
 
 import com.ibm.icu.text.MessageFormat;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserSettingsService;
+import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
+import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSource;
 import org.springframework.context.NoSuchMessageException;
 import org.springframework.context.support.ReloadableResourceBundleMessageSource;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Тексты калорийного бота на языке пользователя — одна точка для бота, рассылок, PDF.
@@ -26,7 +30,8 @@ import java.util.List;
 public class CalorieTextsService {
     /** Словари: i18n/calorie/<имя>_<код языка>.properties. Новый словарь — сюда же. */
     static final List<String> BUNDLES = List.of(
-            "i18n/calorie/bot"
+            "i18n/calorie/bot",
+            "i18n/calorie/errors"
     );
 
     private final MessageSource messages;
@@ -46,17 +51,38 @@ public class CalorieTextsService {
 
     /** Текст на заданном языке — когда пользователя нет (лендинг) или язык уже известен. */
     public String get(AppLanguage language, String key, Object... args) {
-        String pattern = findPattern(language, key);
-        if (pattern == null && language != defaultLanguage) {
-            log.warn("No text '{}' for language {}, using {}", key, language, defaultLanguage);
-            language = defaultLanguage;
-            pattern = findPattern(language, key);
-        }
-        if (pattern == null) {
-            log.error("No text '{}' in any bundle", key);
-            return key;
-        }
-        return format(language, pattern, args);
+        Template template = findTemplate(language, key);
+        return template == null ? key : format(template.language(), template.pattern(), args);
+    }
+
+    /** Текст с именованными подстановками ({max}, {waitMinutes}) на языке пользователя. */
+    public String get(Long appUserId, String key, Map<String, ?> params) {
+        return get(languageOf(appUserId), key, params);
+    }
+
+    /** Текст с именованными подстановками на заданном языке. */
+    public String get(AppLanguage language, String key, Map<String, ?> params) {
+        Template template = findTemplate(language, key);
+        return template == null ? key : format(template.language(), template.pattern(), params);
+    }
+
+    /** Текст ошибки для пользователя (словарь errors_*) — со значениями из params исключения. */
+    public String error(Long appUserId, ErrorResponseException e) {
+        return get(appUserId, e.getErrorStatus().getTextKey(), e.getParams());
+    }
+
+    /**
+     * Текст ошибки для поля message в ответе API — всегда по-английски (errors_en): фронт сам переводит по коду
+     * и params, а английский показывает как есть. Переносы строк (они для бота) склеиваем в пробел — в API одна строка.
+     */
+    public String errorForApi(ErrorResponseException e) {
+        String text = get(AppLanguage.EN, e.getErrorStatus().getTextKey(), e.getParams());
+        return String.join(" ", text.lines().map(String::strip).filter(line -> !line.isEmpty()).toList());
+    }
+
+    /** Текст ошибки без значений — когда исключения нет, а код ошибки известен. */
+    public String error(Long appUserId, ErrorStatus status) {
+        return get(appUserId, status.getTextKey(), Map.of());
     }
 
     /** Язык пользователя: выбранный в настройках или язык по умолчанию. */
@@ -82,6 +108,29 @@ public class CalorieTextsService {
 
     static String format(AppLanguage language, String pattern, Object... args) {
         return new MessageFormat(pattern, language.getLocale()).format(args == null ? new Object[0] : args);
+    }
+
+    static String format(AppLanguage language, String pattern, Map<String, ?> params) {
+        // ICU принимает только Map<String, Object> — копируем значения в мапу этого типа
+        return new MessageFormat(pattern, language.getLocale()).format(new HashMap<String, Object>(params));
+    }
+
+    /** Шаблон на нужном языке; нет ключа — из словаря по умолчанию; нет и там — null (и ошибка в лог). */
+    private Template findTemplate(AppLanguage language, String key) {
+        String pattern = findPattern(language, key);
+        if (pattern == null && language != defaultLanguage) {
+            log.warn("No text '{}' for language {}, using {}", key, language, defaultLanguage);
+            language = defaultLanguage;
+            pattern = findPattern(language, key);
+        }
+        if (pattern == null) {
+            log.error("No text '{}' in any bundle", key);
+            return null;
+        }
+        return new Template(language, pattern);
+    }
+
+    private record Template(AppLanguage language, String pattern) {
     }
 
     private String findPattern(AppLanguage language, String key) {

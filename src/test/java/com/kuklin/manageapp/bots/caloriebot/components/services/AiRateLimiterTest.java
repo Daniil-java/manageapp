@@ -1,6 +1,7 @@
 package com.kuklin.manageapp.bots.caloriebot.components.services;
 
 import com.kuklin.manageapp.bots.caloriebot.configurations.AiRateLimitProperties;
+import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorParams;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
@@ -140,7 +141,7 @@ class AiRateLimiterTest {
                 .satisfies(e -> {
                     ErrorResponseException ex = (ErrorResponseException) e;
                     assertThat(ex.getErrorStatus()).isEqualTo(ErrorStatus.AI_RATE_LIMIT);
-                    assertThat(ex.getClientMessage()).contains("60 seconds");
+                    assertThat(ex.getParams()).containsEntry(ErrorParams.RETRY_AFTER_SECONDS, 60L);
                 });
 
         clock.advance(Duration.ofMinutes(5));

@@ -1,13 +1,13 @@
 package com.kuklin.manageapp.bots.caloriebot.components.services;
 
 import com.kuklin.manageapp.bots.caloriebot.configurations.AiInputLimitsProperties;
+import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorParams;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.util.unit.DataSize;
 
-import java.time.Duration;
 import java.util.Base64;
 import java.util.Locale;
 import java.util.Map;
@@ -15,7 +15,7 @@ import java.util.Map;
 /**
  * Проверяет ввод пользователя перед отправкой в ИИ: длину текста, размер и формат фото и аудио.
  * Лимиты берутся из {@link AiInputLimitsProperties} (application.yaml, calorie.ai-input).
- * При нарушении бросает {@link ErrorResponseException} с конкретным лимитом в сообщении —
+ * При нарушении бросает {@link ErrorResponseException} с конкретным лимитом в params (ErrorParams) —
  * GlobalExceptionHandler превращает его в ответ 400 / 413 / 415 с errorCode.
  *
  * Используется в DishService для эндпоинтов мини-аппы и сайта (/calorie/dishes/text, /photo, /voice)
@@ -65,8 +65,7 @@ public class AiInputValidator {
     public void validateText(String text) {
         int max = limits.getTextMaxLength();
         if (text != null && text.length() > max) {
-            throw new ErrorResponseException(ErrorStatus.TEXT_TOO_LONG,
-                    String.format("Text is too long. Maximum is %d characters.", max));
+            throw new ErrorResponseException(ErrorStatus.TEXT_TOO_LONG, ErrorParams.max(max));
         }
     }
 
@@ -83,21 +82,18 @@ public class AiInputValidator {
         // 1. Подпись к фото — тоже текст, который уходит в промпт
         int maxComment = limits.getPhotoCommentMaxLength();
         if (comment != null && comment.length() > maxComment) {
-            throw new ErrorResponseException(ErrorStatus.PHOTO_COMMENT_TOO_LONG,
-                    String.format("Photo comment is too long. Maximum is %d characters.", maxComment));
+            throw new ErrorResponseException(ErrorStatus.PHOTO_COMMENT_TOO_LONG, ErrorParams.max(maxComment));
         }
 
         // 2. Размер + корректность Base64
         String base64 = stripDataUrlPrefix(base64Image);
         DataSize maxSize = limits.getPhotoMaxSize();
-        byte[] bytes = decodeWithinLimit(base64, maxSize, ErrorStatus.IMAGE_TOO_LARGE,
-                String.format("Photo is too large. Maximum is %s.", formatSize(maxSize)));
+        byte[] bytes = decodeWithinLimit(base64, maxSize, ErrorStatus.IMAGE_TOO_LARGE, ErrorParams.maxSize(maxSize));
 
         // 3. Формат определяем по первым байтам файла — клиенту не верим
         String format = detectImageFormat(bytes);
         if (format == null || !limits.getPhotoFormats().contains(format)) {
-            throw new ErrorResponseException(ErrorStatus.UNSUPPORTED_IMAGE_FORMAT,
-                    "Unsupported photo format. Allowed: " + String.join(", ", limits.getPhotoFormats()) + ".");
+            throw new ErrorResponseException(ErrorStatus.UNSUPPORTED_IMAGE_FORMAT, ErrorParams.formats(limits.getPhotoFormats()));
         }
         return "data:image/" + format + ";base64," + base64;
     }
@@ -116,15 +112,13 @@ public class AiInputValidator {
         // 1. Формат: приводим к короткому имени и сверяем с voice-formats из yaml
         String normalized = normalizeAudioFormat(format);
         if (normalized == null || !limits.getVoiceFormats().contains(normalized)) {
-            throw new ErrorResponseException(ErrorStatus.UNSUPPORTED_AUDIO_FORMAT,
-                    "Unsupported audio format. Allowed: " + String.join(", ", limits.getVoiceFormats()) + ".");
+            throw new ErrorResponseException(ErrorStatus.UNSUPPORTED_AUDIO_FORMAT, ErrorParams.formats(limits.getVoiceFormats()));
         }
 
         // 2. Размер + корректность Base64
         DataSize maxSize = limits.getVoiceMaxSize();
         byte[] bytes = decodeWithinLimit(stripDataUrlPrefix(base64Audio), maxSize, ErrorStatus.AUDIO_TOO_LARGE,
-                String.format("Voice message is too long. Maximum is %s (about %s).",
-                        formatSize(maxSize), formatDuration(limits.getVoiceMaxDuration())));
+                ErrorParams.maxSizeAndDuration(maxSize, limits.getVoiceMaxDuration()));
 
         // 3. Имя файла с правильным расширением — по нему Whisper поймёт формат
         return new VoiceInput(bytes, "audio." + normalized,
@@ -154,14 +148,15 @@ public class AiInputValidator {
      * чтобы не тратить память на декодирование заведомо слишком большого файла.
      * Затем декодируем (битый Base64 → INVALID_FILE) и проверяем точный размер.
      */
-    private byte[] decodeWithinLimit(String base64, DataSize maxSize, ErrorStatus tooLargeStatus, String tooLargeMessage) {
+    private byte[] decodeWithinLimit(String base64, DataSize maxSize, ErrorStatus tooLargeStatus,
+                                     Map<String, ?> tooLargeParams) {
         if (base64 == null || base64.isBlank()) {
             throw new ErrorResponseException(ErrorStatus.INVALID_FILE);
         }
         // +2 — запас на округление: в конце Base64 бывает до двух символов-заполнителей "="
         long estimatedBytes = base64.length() / 4L * 3;
         if (estimatedBytes > maxSize.toBytes() + 2) {
-            throw new ErrorResponseException(tooLargeStatus, tooLargeMessage);
+            throw new ErrorResponseException(tooLargeStatus, tooLargeParams);
         }
 
         byte[] bytes;
@@ -174,7 +169,7 @@ public class AiInputValidator {
             throw new ErrorResponseException(ErrorStatus.INVALID_FILE);
         }
         if (bytes.length > maxSize.toBytes()) {
-            throw new ErrorResponseException(tooLargeStatus, tooLargeMessage);
+            throw new ErrorResponseException(tooLargeStatus, tooLargeParams);
         }
         return bytes;
     }
@@ -228,17 +223,5 @@ public class AiInputValidator {
         if (slash >= 0) value = value.substring(slash + 1);
         if (value.startsWith(".")) value = value.substring(1);  // ".ogg" → "ogg"
         return AUDIO_FORMAT_ALIASES.getOrDefault(value, value); // "mpeg" → "mp3"
-    }
-
-    /** Размер для сообщения об ошибке: 5MB → "5 MB", 500KB → "500 KB". */
-    private static String formatSize(DataSize size) {
-        long mb = size.toMegabytes();
-        return mb > 0 && DataSize.ofMegabytes(mb).equals(size) ? mb + " MB" : size.toKilobytes() + " KB";
-    }
-
-    /** Длительность для сообщения об ошибке: 2m → "2 min", 90s → "90 s". */
-    private static String formatDuration(Duration duration) {
-        long seconds = duration.toSeconds();
-        return seconds % 60 == 0 ? seconds / 60 + " min" : seconds + " s";
     }
 }

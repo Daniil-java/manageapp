@@ -8,6 +8,7 @@ import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.WebRequest;
 
 import java.util.Date;
+import java.util.Map;
 
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -19,6 +20,8 @@ public class ErrorResponse {
     private String message;
     private String error;
     private String path;
+    // Значения для текста ошибки на языке клиента ({"max": 4096}); message — тот же текст по-английски
+    private Map<String, Object> params;
 
     public ErrorResponse(String message, HttpStatusCode status, WebRequest request) {
         HttpStatus httpStatus = HttpStatus.resolve(status.value());
@@ -29,11 +32,13 @@ public class ErrorResponse {
         this.path = ((ServletWebRequest) request).getRequest().getRequestURL().toString();
     }
 
-    public ErrorResponse(ErrorResponseException e, WebRequest request) {
+    /** @param message текст ошибки по-английски — CalorieTextsService.errorForApi(e) */
+    public ErrorResponse(ErrorResponseException e, String message, WebRequest request) {
         this.status = e.getErrorStatus().getHttpStatus().value();
         this.reasonPhrase = e.getErrorStatus().getHttpStatus().getReasonPhrase();
-        this.message = e.getClientMessage() != null ? e.getClientMessage() : e.getErrorStatus().getMessage();
+        this.message = message;
         this.errorCode = e.getErrorStatus();
+        this.params = e.getParams().isEmpty() ? null : e.getParams();
         this.path = ((ServletWebRequest) request).getRequest().getRequestURL().toString();
         this.timestamp = new Date();
     }

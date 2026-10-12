@@ -3,6 +3,7 @@ package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.favorites;
 import com.kuklin.manageapp.bots.caloriebot.components.services.DishService;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserFavoriteDishService;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserFavoriteDish;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTextsService;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.AccessResult;
@@ -27,10 +28,9 @@ public class CalorieFavoriteDishAddCallbackUpdateHandler implements CalorieBotUp
     private final UserFavoriteDishService userFavoriteDishService;
     private final DishService dishService;
     private final FeatureLimitNotifier featureLimitNotifier;
+    private final CalorieTextsService texts;
 
     private static final String SAVED_MSG = "⭐ Добавил блюдо в список сохранённых.";
-    private static final String ALREADY_EXISTS_MSG = "Блюдо с таким названием уже есть в сохранённых.";
-    private static final String DISH_NOT_FOUND_MSG = "Не нашёл это блюдо. Возможно, оно было удалено.";
     private static final String ERROR_MSG = "Не получилось сохранить блюдо. Попробуйте ещё раз.";
 
     @Override
@@ -42,7 +42,7 @@ public class CalorieFavoriteDishAddCallbackUpdateHandler implements CalorieBotUp
 
         Long dishId = extractDishIdOrNull(query.getData());
         if (dishId == null) {
-            calorieTelegramBot.sendReturnedMessage(chatId, DISH_NOT_FOUND_MSG);
+            calorieTelegramBot.sendReturnedMessage(chatId, texts.error(telegramUser.getAppUserId(), ErrorStatus.DISH_NOT_FOUND));
             return;
         }
 
@@ -50,7 +50,7 @@ public class CalorieFavoriteDishAddCallbackUpdateHandler implements CalorieBotUp
         try {
             result = userFavoriteDishService.saveFromDish(telegramUser.getAppUserId(), dishId);
         } catch (ErrorResponseException e) {
-            calorieTelegramBot.sendReturnedMessage(chatId, toUserMessage(e.getErrorStatus()));
+            calorieTelegramBot.sendReturnedMessage(chatId, toUserMessage(telegramUser.getAppUserId(), e));
             return;
         } catch (Exception e) {
             log.error("Favorite dish save failed! appUserId {}, dishId {}", telegramUser.getAppUserId(), dishId, e);
@@ -74,10 +74,9 @@ public class CalorieFavoriteDishAddCallbackUpdateHandler implements CalorieBotUp
         );
     }
 
-    private String toUserMessage(ErrorStatus status) {
-        return switch (status) {
-            case FAVORITE_DISH_ALREADY_EXISTS -> ALREADY_EXISTS_MSG;
-            case DISH_NOT_FOUND -> DISH_NOT_FOUND_MSG;
+    private String toUserMessage(Long appUserId, ErrorResponseException e) {
+        return switch (e.getErrorStatus()) {
+            case FAVORITE_DISH_ALREADY_EXISTS, DISH_NOT_FOUND -> texts.error(appUserId, e);
             default -> ERROR_MSG;
         };
     }

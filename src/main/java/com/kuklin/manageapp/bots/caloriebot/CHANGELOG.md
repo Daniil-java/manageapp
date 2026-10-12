@@ -1,4 +1,23 @@
 ## 0.0.49 (в работе)
+[et-86] — Тексты ошибок из словарей, значения ошибок в params
+* Ошибка — только код и значения: new ErrorResponseException(ErrorStatus.X, ErrorParams.max(20)). Английских фраз в коде больше нет — ни в throw, ни в ErrorStatus (там остался только HTTP-статус). Поле clientMessage и конструктор с текстом убраны; getMessage() для логов — «AI_DAILY_LIMIT {dailyLimit=100, …}».
+* Словари i18n/calorie/errors_ru|en.properties — тексты всех 34 кодов, ключ error.<код> (ErrorStatus.getTextKey()). Склонения по числу: «4 096 символов», «через 1 час 2 минуты».
+* ErrorParams — единственное место с именами параметров (MAX, MAX_SIZE_MB, MAX_DURATION_MINUTES, FORMATS, DAILY_LIMIT, RETRY_AFTER_SECONDS, WAIT_HOURS, WAIT_MINUTES) и методы, которые их собирают: max, maxSize, maxSizeAndDuration, formats, retryAfter, dailyLimit. Значения передаются в AiInputValidator, AiRateLimiter, DishService (DISH_DAILY_LIMIT), RequestSizeLimitFilter, AuthRateLimiter.
+* API: в ответе ошибки новое поле params ({"max": 4096}) — фронт может показать точный лимит на своём языке. message — текст из errors_en одной строкой (CalorieTextsService.errorForApi, вызывают GlobalExceptionHandler и RequestSizeLimitFilter). Формулировки английских message немного поменялись («per day» вместо «per 24 hours», «1 hour 2 minutes» вместо «1 h 2 min»), у PHOTO_NOT_RECOGNIZED_* и DISH_SAVE_FAILED в начале эмодзи; errorCode прежние.
+* CalorieTextsService: error(userId, exception) и error(userId, ErrorStatus) — текст ошибки на языке пользователя; get(…, Map) — именованные подстановки.
+* Бот: «уже в сохранённых», «блюдо не найдено» (CalorieFavoriteDishAddCallbackUpdateHandler) и «не получилось сохранить блюдо» (DishUpdateHandler) — из словаря; по-русски тексты прежние.
+* Убраны помощники английских фраз: formatWait (AiRateLimiter, AuthRateLimiter), formatSize, formatDuration (AiInputValidator), tooLargeMessage (RequestSizeLimitFilter).
+* Тесты: у каждого ErrorStatus есть текст; в errors_* только подстановки из ErrorParams и все они используются; настоящие ошибки валидатора и фильтра переводятся без «{…}»; message для API — английский в одну строку. Подстановки в шаблонах ищет ICU (MessagePattern), а не регулярка. Тесты валидатора и лимитеров проверяют params вместо английских фраз.
+
+[et-86] — Основа для нескольких языков (выбор языка пользователям пока не открыт)
+* Язык пользователя — user_settings.language (миграция 0.0.57, changeset 60): код ru / en, NULL — не выбирал, действует язык по умолчанию.
+* AppLanguage (RU, EN) — список языков: код, Locale, название на самом языке. Новый язык — строка в enum + словари.
+* CalorieTextsService — тексты на языке пользователя: get(userId, KEY, args) / get(language, KEY, args). Язык: выбранный в настройках → calorie.i18n.default-language (ru). Нет ключа в словаре языка — из словаря по умолчанию, нет и там — сам ключ и ошибка в лог. Шаблоны — ICU MessageFormat (склонения по числу; зависимость icu4j). Свой MessageSource, не общий бин помидор-бота.
+* Ключи — только константами (BotTextKeys), словари i18n/calorie/bot_ru|en.properties.
+* /lang — только для разработчиков (calorie.i18n.dev-telegram-ids, CALORIE_I18N_DEV_IDS): /lang — текущий язык, /lang en — переключить, /lang reset — сбросить. Остальным бот на команду не отвечает.
+* Конфиг calorie.i18n: default-language: ru, dev-telegram-ids.
+* Тесты: во всех языках одинаковые ключи и подстановки, шаблоны разбираются ICU, у каждой константы ключа есть текст; выбор языка, запасной язык, склонения (CalorieTextsServiceTest, TextBundlesConsistencyTest).
+
 [et-84] — Отчёты и напоминания только активным пользователям
 * Вечерний отчёт (DailySummarySchedulerProcessor) — только если за день отчёта записано хотя бы одно блюдо. Раньше уходил всем, кто не заблокировал бота, с вызовом ИИ даже на пустой день: 08.10 — 98 отчётов в 21:00 МСК при десятке остальных обращений к ИИ за сутки. Пустой день отмечается обработанным (dailyLastReminder), чтобы блюдо в 23:40 не дало «вечерний» отчёт в полночь.
 * Напоминание о еде (MealReminderSchedulerProcessor): не шлётся, если блюдо записано за последний интервал (раньше «Ты давно не ел» приходило и сразу после еды — интервал считался только от прошлого напоминания), и тем, кто не записывал еду 7 дней.

@@ -2,6 +2,8 @@ package com.kuklin.manageapp.bots.caloriebot.components.services.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kuklin.manageapp.bots.caloriebot.configurations.AiInputLimitsProperties;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTextsService;
+import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorParams;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponse;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
@@ -39,6 +41,7 @@ public class RequestSizeLimitFilter extends OncePerRequestFilter {
 
     private final AiInputLimitsProperties limits;
     private final ObjectMapper objectMapper;
+    private final CalorieTextsService texts;
 
     @Override
     protected void doFilterInternal(
@@ -60,15 +63,17 @@ public class RequestSizeLimitFilter extends OncePerRequestFilter {
     }
 
     private void writeTooLarge(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        ErrorResponseException e = new ErrorResponseException(ErrorStatus.REQUEST_TOO_LARGE, tooLargeMessage(limits));
+        ErrorResponseException e = tooLarge(limits);
         response.setStatus(HttpServletResponse.SC_REQUEST_ENTITY_TOO_LARGE);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-        objectMapper.writeValue(response.getOutputStream(), new ErrorResponse(e, new ServletWebRequest(request)));
+        objectMapper.writeValue(response.getOutputStream(),
+                new ErrorResponse(e, texts.errorForApi(e), new ServletWebRequest(request)));
     }
 
-    public static String tooLargeMessage(AiInputLimitsProperties limits) {
-        return String.format("Request is too large. Maximum is %d MB.", limits.getRequestMaxSize().toMegabytes());
+    /** 413 REQUEST_TOO_LARGE с лимитом в params (maxSizeMb). */
+    public static ErrorResponseException tooLarge(AiInputLimitsProperties limits) {
+        return new ErrorResponseException(ErrorStatus.REQUEST_TOO_LARGE, ErrorParams.maxSize(limits.getRequestMaxSize()));
     }
 
     /** Тело запроса оказалось больше лимита — бросается при чтении тела без Content-Length. */
