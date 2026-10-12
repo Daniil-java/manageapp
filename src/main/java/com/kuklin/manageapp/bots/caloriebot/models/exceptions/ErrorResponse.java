@@ -32,7 +32,7 @@ public class ErrorResponse {
         this.path = ((ServletWebRequest) request).getRequest().getRequestURL().toString();
     }
 
-    /** @param message текст ошибки по-английски — CalorieTextsService.errorForApi(e) */
+    /** @param message текст ошибки по-английски — CalorieTexts.errorForApi(e) */
     public ErrorResponse(ErrorResponseException e, String message, WebRequest request) {
         this.status = e.getErrorStatus().getHttpStatus().value();
         this.reasonPhrase = e.getErrorStatus().getHttpStatus().getReasonPhrase();

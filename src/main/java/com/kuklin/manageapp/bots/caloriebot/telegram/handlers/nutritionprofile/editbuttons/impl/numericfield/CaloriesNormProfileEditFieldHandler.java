@@ -1,6 +1,8 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.editbuttons.impl.numericfield;
 
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
+import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
+import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserNutritionProfileService;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.CalorieNutritionProfileEditCallbackUpdateHandler;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.editbuttons.ProfileEditAction;
@@ -40,17 +42,18 @@ public class CaloriesNormProfileEditFieldHandler
 
     @Override
     protected String buildText(UserNutritionProfile profile) {
+        AppLanguage language = texts.languageOf(profile.getUserId());
         StringBuilder sb = new StringBuilder(profile.getCaloriesNormPerDay() == null
-                ? "Калории: не указаны"
-                : "Калории: " + profile.getCaloriesNormPerDay() + " ккал"
-                + (profile.isManualNorm() ? " (вручную)" : " (по формуле)"));
+                ? texts.get(language, BotTextKeys.PROFILE_FIELD_CALORIES_EMPTY)
+                : texts.get(language, BotTextKeys.PROFILE_FIELD_CALORIES, String.valueOf(profile.getCaloriesNormPerDay()))
+                + " " + texts.get(language, profile.isManualNorm()
+                ? BotTextKeys.PROFILE_FIELD_MARK_MANUAL : BotTextKeys.PROFILE_FIELD_MARK_FORMULA));
 
         Integer formula = profileService.calcFormulaCaloriesOrNull(profile);
         if (formula != null && profile.isManualNorm()) {
-            sb.append("\nПо формуле: ").append(formula).append(" ккал");
+            sb.append("\n").append(texts.get(language, BotTextKeys.PROFILE_FIELD_CALORIES_FORMULA, String.valueOf(formula)));
         }
-        sb.append("\n\nСохранённая норма выключает автопересчёт: она не меняется от веса и цели, БЖУ считаются от неё. ")
-                .append("Вернуть расчёт по формуле — кнопка «Автопересчёт» в редактировании профиля.");
+        sb.append("\n\n").append(texts.get(language, BotTextKeys.PROFILE_FIELD_CALORIES_HINT));
         return sb.toString();
     }
 

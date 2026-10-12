@@ -2,11 +2,15 @@ package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile;
 
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserNutritionProfileService;
+import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
+import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.editbuttons.CalorieNutritionProfileRecalculate;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.editbuttons.ProfileEditAction;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.editbuttons.ProfileEditFieldHandler;
+import com.kuklin.manageapp.bots.caloriebot.texts.NutritionProfileTexts;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.Command;
@@ -38,6 +42,8 @@ import static com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionpr
 public class CalorieNutritionProfileEditCallbackUpdateHandler implements CalorieBotUpdateHandler {
     private final CalorieTelegramBot calorieTelegramBot;
     private final UserNutritionProfileService userNutritionProfileService;
+    private final NutritionProfileTexts profileTexts;
+    private final CalorieTexts texts;
     private final Map<ProfileEditAction, ProfileEditFieldHandler> actionHandlers =
             new EnumMap<>(ProfileEditAction.class);
 
@@ -116,45 +122,48 @@ public class CalorieNutritionProfileEditCallbackUpdateHandler implements Calorie
     }
 
     public InlineKeyboardMarkup buildKeyboard(UserNutritionProfile profile) {
+        AppLanguage language = texts.languageOf(profile.getUserId());
         // Режим нормы — пара кнопок, текущий отмечен ✅ (CalorieNutritionProfileRecalculate)
         boolean manual = profile.isManualNorm();
         return TelegramKeyboard.builder().row(
-                        buildActivityButton(ProfileEditAction.SEX),
-                        buildActivityButton(ProfileEditAction.AGE)
+                        buildActivityButton(ProfileEditAction.SEX, language),
+                        buildActivityButton(ProfileEditAction.AGE, language)
                 ).row(
-                        buildActivityButton(ProfileEditAction.HEIGHT),
-                        buildActivityButton(ProfileEditAction.CURRENT_WEIGHT)
+                        buildActivityButton(ProfileEditAction.HEIGHT, language),
+                        buildActivityButton(ProfileEditAction.CURRENT_WEIGHT, language)
                 ).row(
-                        buildActivityButton(ProfileEditAction.ACTIVITY),
-                        buildActivityButton(ProfileEditAction.GOAL)
+                        buildActivityButton(ProfileEditAction.ACTIVITY, language),
+                        buildActivityButton(ProfileEditAction.GOAL, language)
                 ).row(
-                        buildActivityButton(ProfileEditAction.DIET_TYPE)
+                        buildActivityButton(ProfileEditAction.DIET_TYPE, language)
                 ).row(
-                        buildActivityButton(ProfileEditAction.CALORIE_NORM),
-                        buildActivityButton(ProfileEditAction.WATER_TARGET)
+                        buildActivityButton(ProfileEditAction.CALORIE_NORM, language),
+                        buildActivityButton(ProfileEditAction.WATER_TARGET, language)
                 ).row(
                         TelegramKeyboard.button(
-                                (manual ? "" : "✅ ") + "Автопересчёт",
+                                (manual ? "" : "✅ ") + texts.get(language, BotTextKeys.PROFILE_EDIT_BUTTON_AUTO),
                                 CalorieNutritionProfileRecalculate.callback(CalorieNutritionProfileRecalculate.AUTO)),
                         TelegramKeyboard.button(
-                                (manual ? "✅ " : "") + "Без пересчёта",
+                                (manual ? "✅ " : "") + texts.get(language, BotTextKeys.PROFILE_EDIT_BUTTON_MANUAL),
                                 CalorieNutritionProfileRecalculate.callback(CalorieNutritionProfileRecalculate.MANUAL))
                 ).row(
-                        TelegramKeyboard.button("Вернуться", Command.CALORIE_PROFILE.getCommandText())
+                        TelegramKeyboard.button(texts.get(language, BotTextKeys.COMMON_BUTTON_RETURN),
+                                Command.CALORIE_PROFILE.getCommandText())
                 )
                 .build();
 
     }
 
-    private InlineKeyboardButton buildActivityButton(ProfileEditAction action) {
+    private InlineKeyboardButton buildActivityButton(ProfileEditAction action, AppLanguage language) {
         return TelegramKeyboard.button(
-                action.getLabel(),
+                texts.get(language, action.getTextKey()),
                 getHandlerListName() + TelegramBot.DEFAULT_DELIMETER + action.getCode()
         );
     }
 
     private String buildMessageText(UserNutritionProfile profile) {
-        return profile.toTelegramView() + "\n\nЧто хотите изменить?";
+        return profileTexts.buildProfileText(profile) + "\n\n"
+                + texts.get(profile.getUserId(), BotTextKeys.PROFILE_EDIT_QUESTION);
     }
 
     @Override

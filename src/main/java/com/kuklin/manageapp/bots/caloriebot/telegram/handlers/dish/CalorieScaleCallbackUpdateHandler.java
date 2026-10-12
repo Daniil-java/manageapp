@@ -1,10 +1,10 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.dish;
 
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
-import com.kuklin.manageapp.bots.caloriebot.components.services.AnalyticsService;
+import com.kuklin.manageapp.bots.caloriebot.texts.DishTexts;
 import com.kuklin.manageapp.bots.caloriebot.components.services.DishService;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
-import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTextsService;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
@@ -22,9 +22,9 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 public class CalorieScaleCallbackUpdateHandler implements CalorieBotUpdateHandler {
     private final CalorieTelegramBot calorieTelegramBot;
     private final DishService dishService;
-    private final AnalyticsService analyticsService;
+    private final DishTexts dishTexts;
     private final DishKeyboards dishKeyboards;
-    private final CalorieTextsService texts;
+    private final CalorieTexts texts;
     //<command>delim<dishId>delim<+-scale%> - для увеличения веса порции
     private static final int WEIGHT_PORTIONS_PARTS = 3;
     //<command>delim<dishId>delim<cmd><value> - для увеличения количества порций
@@ -54,7 +54,7 @@ public class CalorieScaleCallbackUpdateHandler implements CalorieBotUpdateHandle
         }
         calorieTelegramBot.sendEditMessage(
                 update.getCallbackQuery().getMessage().getChatId(),
-                analyticsService.getInfo(dish, telegramUser.getAppUserId()),
+                dishTexts.buildDishCardText(dish, telegramUser.getAppUserId()),
                 update.getCallbackQuery().getMessage().getMessageId(),
                 dishKeyboards.buildPortionKeyboard(dish, telegramUser.getAppUserId())
         );

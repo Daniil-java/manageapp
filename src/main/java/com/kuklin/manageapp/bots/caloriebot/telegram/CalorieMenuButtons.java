@@ -2,7 +2,7 @@ package com.kuklin.manageapp.bots.caloriebot.telegram;
 
 import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
-import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTextsService;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
@@ -54,11 +54,11 @@ public class CalorieMenuButtons {
             List.of(Button.SUBSCRIPTION, Button.INVITE)
     );
 
-    private final CalorieTextsService texts;
+    private final CalorieTexts texts;
     /** Подпись на любом языке (и старый текст команды) → команда. */
     private final Map<String, Command> commandsByLabel;
 
-    public CalorieMenuButtons(CalorieTextsService texts) {
+    public CalorieMenuButtons(CalorieTexts texts) {
         this.texts = texts;
         this.commandsByLabel = buildCommandsByLabel(texts);
     }
@@ -98,7 +98,7 @@ public class CalorieMenuButtons {
                 .toList()).toList());
     }
 
-    private static Map<String, Command> buildCommandsByLabel(CalorieTextsService texts) {
+    private static Map<String, Command> buildCommandsByLabel(CalorieTexts texts) {
         Map<String, Command> map = new HashMap<>();
         for (Button button : Button.values()) {
             putUnique(map, button.getCommand().getCommandText(), button.getCommand());

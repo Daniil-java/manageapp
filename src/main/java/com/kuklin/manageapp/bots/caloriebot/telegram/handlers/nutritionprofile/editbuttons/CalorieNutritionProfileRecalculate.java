@@ -4,6 +4,9 @@ import com.kuklin.manageapp.bots.caloriebot.components.services.UserNutritionPro
 import com.kuklin.manageapp.bots.caloriebot.components.services.exceptions.InsufficientProfileDataException;
 import com.kuklin.manageapp.bots.caloriebot.components.services.exceptions.validation.UserNutritionProfileValidationException;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
+import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
+import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.UserNutritionProfileDto;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
@@ -19,20 +22,6 @@ import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 
-/*
- * Режим нормы калорий в редактировании профиля: «Автопересчёт» / «Без пересчёта».
- *
- * /recalculate AUTO     — включить автопересчёт: при ручной норме сначала спрашиваем (норма поменяется),
- *                         при уже включённом — просто пересчитываем
- * /recalculate AUTO_YES — подтверждение: норма по формуле, автопересчёт включён
- * /recalculate MANUAL   — выключить автопересчёт: текущие числа остаются, подтверждение не нужно
- *
- * Вода — отдельно от калорий (кнопка «↺ По формуле» на экране «Норма воды»):
- * /recalculate WATER_AUTO     — спросить: своя норма воды заменится расчётом по весу
- * /recalculate WATER_AUTO_YES — подтверждение: вода по формуле
- *
- * Всё — редактированием того же сообщения; после действия возвращается сообщение редактирования профиля.
- */
 @Component
 @RequiredArgsConstructor
 @Slf4j
@@ -43,14 +32,10 @@ public class CalorieNutritionProfileRecalculate implements CalorieBotUpdateHandl
     public static final String WATER_AUTO = "WATER_AUTO";
     public static final String WATER_AUTO_YES = "WATER_AUTO_YES";
 
-    private static final String FORMULA_NEEDS_PROFILE =
-            "Для расчёта по формуле заполните пол, возраст, рост, вес, активность и цель.";
-    private static final String WATER_FORMULA_NEEDS_PROFILE =
-            "Для расчёта воды по формуле заполните вес и активность.";
-
     private final UserNutritionProfileService userNutritionProfileService;
     private final CalorieNutritionProfileEditCallbackUpdateHandler calorieNutritionProfileEditCallbackUpdateHandler;
     private final CalorieTelegramBot calorieTelegramBot;
+    private final CalorieTexts texts;
 
     public static String callback(String action) {
         return Command.CALORIE_PROFILE_RECALCULATE.getCommandText() + TelegramBot.DEFAULT_DELIMETER + action;
@@ -60,6 +45,7 @@ public class CalorieNutritionProfileRecalculate implements CalorieBotUpdateHandl
     public void handle(Update update, TelegramUser telegramUser) {
         if (!update.hasCallbackQuery()) return;
         UserNutritionProfile profile = userNutritionProfileService.getOrCreateProfile(telegramUser.getAppUserId());
+        AppLanguage language = texts.languageOf(telegramUser.getAppUserId());
         // Старые сообщения с кнопкой «Пересчитать нормы» присылают команду без действия — это включение автопересчёта
         String action = extractActionOrDefault(update.getCallbackQuery().getData());
 
@@ -70,20 +56,20 @@ public class CalorieNutritionProfileRecalculate implements CalorieBotUpdateHandl
                 }
                 case AUTO_YES -> userNutritionProfileService.switchToAutoNorm(profile);
                 case WATER_AUTO -> {
-                    askWaterAutoConfirmation(update, profile);
+                    askWaterAutoConfirmation(update, profile, language);
                     return;
                 }
                 case WATER_AUTO_YES -> {
                     try {
                         userNutritionProfileService.switchToAutoWater(profile);
                     } catch (InsufficientProfileDataException e) {
-                        editWithBackButton(update, WATER_FORMULA_NEEDS_PROFILE);
+                        editWithBackButton(update, texts.get(language, BotTextKeys.PROFILE_RECALC_WATER_NEEDS_PROFILE), language);
                         return;
                     }
                 }
                 default -> {
                     if (profile.isManualNorm()) {
-                        askAutoConfirmation(update, profile);
+                        askAutoConfirmation(update, profile, language);
                         return;
                     }
                     // Автопересчёт уже включён — просто пересчитать
@@ -91,36 +77,38 @@ public class CalorieNutritionProfileRecalculate implements CalorieBotUpdateHandl
                 }
             }
         } catch (InsufficientProfileDataException e) {
-            editWithBackButton(update, FORMULA_NEEDS_PROFILE);
+            editWithBackButton(update, texts.get(language, BotTextKeys.PROFILE_RECALC_NEEDS_PROFILE), language);
             return;
         } catch (UserNutritionProfileValidationException e) {
-            editWithBackButton(update, e.getMessage());
+            // Текст исключения — для логов; пользователю — общее «Некорректные данные!»
+            log.warn("Profile validation failed on recalculation: {}", e.getMessage());
+            editWithBackButton(update, texts.get(language, BotTextKeys.PROFILE_VALIDATION_ERROR), language);
             return;
         }
         calorieNutritionProfileEditCallbackUpdateHandler.sendMainMessage(update, telegramUser);
     }
 
     // Предупреждение: КБЖУ будут пересчитаны по формуле — показываем, что именно поменяется
-    private void askAutoConfirmation(Update update, UserNutritionProfile profile) {
+    private void askAutoConfirmation(Update update, UserNutritionProfile profile, AppLanguage language) {
         UserNutritionProfileDto formula;
         try {
             formula = userNutritionProfileService.previewAutoNorm(profile);
         } catch (InsufficientProfileDataException e) {
-            editWithBackButton(update, FORMULA_NEEDS_PROFILE);
+            editWithBackButton(update, texts.get(language, BotTextKeys.PROFILE_RECALC_NEEDS_PROFILE), language);
             return;
         }
 
-        String text = "Включить автопересчёт?\n\n"
-                + "КБЖУ будут пересчитаны по формуле, ваша норма калорий заменится. "
-                + "Дальше норма будет меняться вместе с весом, активностью и целью.\n\n"
-                + diffLine("Калории", profile.getCaloriesNormPerDay(), formula.getCaloriesNormPerDay(), "ккал")
-                + diffLine("Белки", profile.getProteinsNormGramsPerDay(), formula.getProteinsNormGramsPerDay(), "г")
-                + diffLine("Жиры", profile.getFatsNormGramsPerDay(), formula.getFatsNormGramsPerDay(), "г")
-                + diffLine("Углеводы", profile.getCarbsNormGramsPerDay(), formula.getCarbsNormGramsPerDay(), "г");
+        String kcal = texts.get(language, BotTextKeys.COMMON_UNIT_KCAL);
+        String gram = texts.get(language, BotTextKeys.COMMON_UNIT_GRAM);
+        String text = texts.get(language, BotTextKeys.PROFILE_RECALC_ASK_AUTO) + "\n\n"
+                + diffLine(language, BotTextKeys.PROFILE_LABEL_CALORIES, profile.getCaloriesNormPerDay(), formula.getCaloriesNormPerDay(), kcal)
+                + diffLine(language, BotTextKeys.PROFILE_LABEL_PROTEINS, profile.getProteinsNormGramsPerDay(), formula.getProteinsNormGramsPerDay(), gram)
+                + diffLine(language, BotTextKeys.PROFILE_LABEL_FATS, profile.getFatsNormGramsPerDay(), formula.getFatsNormGramsPerDay(), gram)
+                + diffLine(language, BotTextKeys.PROFILE_LABEL_CARBS, profile.getCarbsNormGramsPerDay(), formula.getCarbsNormGramsPerDay(), gram);
 
         InlineKeyboardMarkup keyboard = TelegramKeyboard.builder().row(
-                TelegramKeyboard.button("Да, пересчитать", callback(AUTO_YES)),
-                TelegramKeyboard.button("Нет", Command.CALORIE_PROFILE_EDIT.getCommandText())
+                TelegramKeyboard.button(texts.get(language, BotTextKeys.PROFILE_RECALC_BUTTON_YES), callback(AUTO_YES)),
+                TelegramKeyboard.button(texts.get(language, BotTextKeys.COMMON_BUTTON_NO), Command.CALORIE_PROFILE_EDIT.getCommandText())
         ).build();
 
         edit(update, text, keyboard);
@@ -128,35 +116,37 @@ public class CalorieNutritionProfileRecalculate implements CalorieBotUpdateHandl
 
     // Своя вода → по формуле: предупреждаем и показываем, какой станет норма.
     // «Нет» возвращает на экран «Норма воды», откуда пришли
-    private void askWaterAutoConfirmation(Update update, UserNutritionProfile profile) {
+    private void askWaterAutoConfirmation(Update update, UserNutritionProfile profile, AppLanguage language) {
         Integer formula = UserNutritionProfileService.calcFormulaWaterOrNull(profile);
         if (formula == null) {
-            editWithBackButton(update, WATER_FORMULA_NEEDS_PROFILE);
+            editWithBackButton(update, texts.get(language, BotTextKeys.PROFILE_RECALC_WATER_NEEDS_PROFILE), language);
             return;
         }
 
-        String text = "Вернуть норму воды по формуле?\n\n"
-                + "Ваша норма воды заменится расчётом по весу и активности "
-                + "и дальше будет меняться вместе с ними. Калории это не затронет.\n\n"
-                + diffLine("Вода", profile.getWaterTargetMlPerDay(), formula, "мл");
+        String text = texts.get(language, BotTextKeys.PROFILE_RECALC_ASK_WATER) + "\n\n"
+                + diffLine(language, BotTextKeys.PROFILE_LABEL_WATER, profile.getWaterTargetMlPerDay(), formula,
+                texts.get(language, BotTextKeys.COMMON_UNIT_ML));
 
         InlineKeyboardMarkup keyboard = TelegramKeyboard.builder().row(
-                TelegramKeyboard.button("Да, по формуле", callback(WATER_AUTO_YES)),
-                TelegramKeyboard.button("Нет", Command.CALORIE_PROFILE_EDIT.getCommandText()
+                TelegramKeyboard.button(texts.get(language, BotTextKeys.PROFILE_RECALC_BUTTON_YES_WATER), callback(WATER_AUTO_YES)),
+                TelegramKeyboard.button(texts.get(language, BotTextKeys.COMMON_BUTTON_NO), Command.CALORIE_PROFILE_EDIT.getCommandText()
                         + TelegramBot.DEFAULT_DELIMETER + ProfileEditAction.WATER_TARGET.getCode())
         ).build();
 
         edit(update, text, keyboard);
     }
 
-    private static String diffLine(String label, Integer was, Integer will, String unit) {
+    /** «• Калории: 1800 → 2100 ккал». Числа строками — без разделителей разрядов. */
+    private String diffLine(AppLanguage language, String labelKey, Integer was, Integer will, String unit) {
         String wasText = was == null ? "—" : was.toString();
-        return "• " + label + ": " + wasText + " → " + will + " " + unit + "\n";
+        return texts.get(language, BotTextKeys.PROFILE_RECALC_DIFF_LINE,
+                texts.get(language, labelKey), wasText, String.valueOf(will), unit) + "\n";
     }
 
-    private void editWithBackButton(Update update, String text) {
+    private void editWithBackButton(Update update, String text, AppLanguage language) {
         edit(update, text, TelegramKeyboard.builder().row(
-                TelegramKeyboard.button("Вернуться", Command.CALORIE_PROFILE_EDIT.getCommandText())
+                TelegramKeyboard.button(texts.get(language, BotTextKeys.COMMON_BUTTON_RETURN),
+                        Command.CALORIE_PROFILE_EDIT.getCommandText())
         ).build());
     }
 

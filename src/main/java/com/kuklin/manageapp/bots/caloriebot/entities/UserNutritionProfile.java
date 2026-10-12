@@ -11,7 +11,6 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.Objects;
 
 @Entity
 @Table(name = "user_nutrition_profiles")
@@ -81,17 +80,14 @@ public class UserNutritionProfile {
         COMPLETED
     }
 
+    /** Значение, которое пользователь выбирает кнопкой; подпись — в словаре bot_* по ключу getTextKey(). */
     public interface Labeled {
-        String getLabel();
+        String getTextKey();
     }
 
-    @Getter
-    @RequiredArgsConstructor
-    public enum NormMode implements Labeled {
-        AUTO("По формуле"),
-        MANUAL("Вручную");
-
-        private final String label;
+    public enum NormMode {
+        AUTO,
+        MANUAL
     }
 
     public boolean isManualNorm() {
@@ -102,48 +98,58 @@ public class UserNutritionProfile {
         return waterMode == NormMode.MANUAL;
     }
 
-    @Getter
-    @RequiredArgsConstructor
     public enum DietType implements Labeled {
-        REGULAR("Обычная"),
-        LOW_CARB("Низкоуглеводная"),
-        VEGAN("Веганская");
+        REGULAR,
+        LOW_CARB,
+        VEGAN;
 
-        private final String label;
+        @Override
+        public String getTextKey() {
+            return "profile.diet." + name();
+        }
     }
 
     @Getter
     @RequiredArgsConstructor
     public enum Goal implements Labeled {
-        LOSE_WEIGHT("Похудение", 0.8d, 2d, 0.9d),
-        MAINTAIN("Поддержание", 1d, 1.8d, 0.9d),
-        GAIN_WEIGHT("Набор веса", 1.15d, 1.8d, 0.9d);
+        LOSE_WEIGHT(0.8d, 2d, 0.9d),
+        MAINTAIN(1d, 1.8d, 0.9d),
+        GAIN_WEIGHT(1.15d, 1.8d, 0.9d);
 
-        private final String label;
         private final Double coef;
         private final Double proteinsPerKg;
         private final Double fatsPerKg;
+
+        @Override
+        public String getTextKey() {
+            return "profile.goal." + name();
+        }
     }
 
     @Getter
     @RequiredArgsConstructor
-    public enum ActivityLevel implements Labeled{
-        LOW("Низкая", 1.2d, 30),
-        MEDIUM("Средняя", 1.55d, 33),
-        HIGH("Высокая", 1.75d, 35);
+    public enum ActivityLevel implements Labeled {
+        LOW(1.2d, 30),
+        MEDIUM(1.55d, 33),
+        HIGH(1.75d, 35);
 
-        private final String label;
         private final Double coef;
         private final Integer waterMlPerKg;
+
+        @Override
+        public String getTextKey() {
+            return "profile.activity." + name();
+        }
     }
 
-    @Getter
-    @RequiredArgsConstructor
-    public enum Sex implements Labeled{
-        MALE("Мужской"),
-        FEMALE("Женский");
+    public enum Sex implements Labeled {
+        MALE,
+        FEMALE;
 
-        private final String label;
+        @Override
+        public String getTextKey() {
+            return "profile.sex." + name();
+        }
     }
 
 
@@ -170,227 +176,6 @@ public class UserNutritionProfile {
                 .setUpdatedAt(this.updatedAt);
     }
 
-    public String toTelegramView() {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append("📋 Профиль питания\n");
-        sb.append("──────────────────────\n\n");
-
-        // Основные данные
-        sb.append("👤 Пол: ")
-                .append(formatSex())
-                .append("\n");
-
-        sb.append("🎂 Возраст: ")
-                .append(formatInt(ageYears, v -> v + " лет"))
-                .append("\n");
-
-        sb.append("📏 Рост: ")
-                .append(formatInt(heightCm, v -> v + " см"))
-                .append("\n");
-
-        sb.append("⚖️ Текущий вес: ")
-                .append(formatBigDecimal(currentWeightKg, v -> v + " кг"))
-                .append("\n");
-
-        sb.append("🏃 Активность: ")
-                .append(activityLevel == null ? "нет данных" : activityLevel.label)
-                .append("\n");
-
-        sb.append("🎯 Цель: ")
-                .append(goal == null ? "нет данных" : goal.label)
-                .append("\n");
-
-        sb.append("🥗 Тип питания: ")
-                .append(dietType == null ? "нет данных" : dietType.label)
-                .append("\n");
-
-        // Нормы по калориям и БЖУ
-        sb.append("\n🔥 Норма калорий и БЖУ\n");
-
-        boolean hasTargets =
-                caloriesNormPerDay != null ||
-                        proteinsNormGramsPerDay != null ||
-                        fatsNormGramsPerDay != null ||
-                        carbsNormGramsPerDay != null;
-
-        if (!hasTargets) {
-            sb.append("нет данных (нужно заполнить профиль)\n");
-        } else {
-            sb.append("• Калории: ")
-                    .append(formatInt(caloriesNormPerDay, v -> v + " ккал"))
-                    .append(isManualNorm() ? " ✍️ вручную" : "")
-                    .append("\n");
-            sb.append("• Белки: ")
-                    .append(formatInt(proteinsNormGramsPerDay, v -> v + " г"))
-                    .append("\n");
-            sb.append("• Жиры: ")
-                    .append(formatInt(fatsNormGramsPerDay, v -> v + " г"))
-                    .append("\n");
-            sb.append("• Углеводы: ")
-                    .append(formatInt(carbsNormGramsPerDay, v -> v + " г"))
-                    .append("\n");
-        }
-
-        if (hasTargets) {
-            sb.append(isManualNorm()
-                    ? "Без пересчёта: калории не меняются от веса и цели, БЖУ считаются от них.\n"
-                    : "Автопересчёт: норма меняется вместе с весом, активностью и целью.\n");
-        }
-
-        // Вода
-        sb.append("\n💧 Вода\n");
-        if (waterTargetMlPerDay == null) {
-            sb.append("Цель по воде: нет данных\n");
-        } else {
-            double liters = waterTargetMlPerDay / 1000.0;
-            sb.append("Цель по воде: ")
-                    .append(waterTargetMlPerDay)
-                    .append(" мл (≈ ")
-                    .append(String.format("%.1f", liters))
-                    .append(" л)")
-                    .append(isManualWater() ? " ✍️ вручную" : "")
-                    .append("\n");
-        }
-
-        return sb.toString();
-    }
-
-    public String toTelegramDiffView(UserNutritionProfile oldProfile) {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append("📊 Нормы пересчитаны\n");
-        sb.append("──────────────────────\n\n");
-
-        appendDiff(
-                sb,
-                "⚖️ Вес",
-                oldProfile.getCurrentWeightKg(),
-                currentWeightKg,
-                "кг"
-        );
-
-        appendDiff(
-                sb,
-                "🔥 Калории",
-                oldProfile.getCaloriesNormPerDay(),
-                caloriesNormPerDay,
-                "ккал"
-        );
-
-        appendDiff(
-                sb,
-                "🥩 Белки",
-                oldProfile.getProteinsNormGramsPerDay(),
-                proteinsNormGramsPerDay,
-                "г"
-        );
-
-        appendDiff(
-                sb,
-                "🧈 Жиры",
-                oldProfile.getFatsNormGramsPerDay(),
-                fatsNormGramsPerDay,
-                "г"
-        );
-
-        appendDiff(
-                sb,
-                "🍞 Углеводы",
-                oldProfile.getCarbsNormGramsPerDay(),
-                carbsNormGramsPerDay,
-                "г"
-        );
-
-        appendDiff(
-                sb,
-                "💧 Вода",
-                oldProfile.getWaterTargetMlPerDay(),
-                waterTargetMlPerDay,
-                "мл"
-        );
-
-        return sb.toString();
-    }
-
-    private void appendDiff(
-            StringBuilder sb,
-            String label,
-            Number oldValue,
-            Number newValue,
-            String unit
-    ) {
-        sb.append(label).append(": ");
-
-        if (oldValue == null && newValue == null) {
-            sb.append("нет данных\n");
-            return;
-        }
-
-        if (Objects.equals(oldValue, newValue)) {
-            sb.append(format(newValue))
-                    .append(" ")
-                    .append(unit)
-                    .append(" (=)\n");
-            return;
-        }
-
-        if (oldValue == null) {
-            sb.append("— → ")
-                    .append(format(newValue))
-                    .append(" ")
-                    .append(unit)
-                    .append(" (новое)\n");
-            return;
-        }
-
-        if (newValue == null) {
-            sb.append(format(oldValue))
-                    .append(" → — (удалено)\n");
-            return;
-        }
-
-        double diff = newValue.doubleValue() - oldValue.doubleValue();
-
-        sb.append(format(oldValue))
-                .append(" → ")
-                .append(format(newValue))
-                .append(" ")
-                .append(unit)
-                .append(" (")
-                .append(diff > 0 ? "+" : "")
-                .append(trimZero(diff))
-                .append(" ")
-                .append(unit)
-                .append(")\n");
-    }
-
-    private String format(Number value) {
-        if (value == null) {
-            return "—";
-        }
-
-        if (value instanceof Integer || value instanceof Long) {
-            return String.valueOf(value.longValue());
-        }
-
-        double d = value.doubleValue();
-
-        if (d == Math.floor(d)) {
-            return String.valueOf((long) d);
-        }
-
-        return String.format("%.1f", d);
-    }
-
-    private String trimZero(double value) {
-        if (value == Math.floor(value)) {
-            return String.valueOf((long) value);
-        }
-
-        return String.format("%.1f", value);
-    }
-
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
@@ -412,47 +197,6 @@ public class UserNutritionProfile {
         sb.append("waterMode: ").append(waterMode).append("\n");
         sb.append("fillingState: ").append(userProfileFillingState);
         return sb.toString();
-    }
-
-    private String formatSex() {
-        if (sex == null) {
-            return "нет данных";
-        }
-        switch (sex) {
-            case MALE:
-                return "Мужской ♂️";
-            case FEMALE:
-                return "Женский ♀️";
-            default:
-                return formatEnum(sex);
-        }
-    }
-
-    private String formatEnum(Enum<?> e) {
-        if (e == null) {
-            return "нет данных";
-        }
-        // Преобразуем SNAKE_CASE → "Нормальный текст"
-        String raw = e.name().toLowerCase().replace('_', ' ');
-        if (raw.isEmpty()) {
-            return "нет данных";
-        }
-        return Character.toUpperCase(raw.charAt(0)) + raw.substring(1);
-    }
-
-    private String formatBigDecimal(BigDecimal value, java.util.function.Function<String, String> formatter) {
-        if (value == null) {
-            return "нет данных";
-        }
-        String plain = value.stripTrailingZeros().toPlainString();
-        return formatter.apply(plain);
-    }
-
-    private String formatInt(Integer value, java.util.function.Function<Integer, String> formatter) {
-        if (value == null) {
-            return "нет данных";
-        }
-        return formatter.apply(value);
     }
 
     public Boolean checkTargetCalculateParams() {

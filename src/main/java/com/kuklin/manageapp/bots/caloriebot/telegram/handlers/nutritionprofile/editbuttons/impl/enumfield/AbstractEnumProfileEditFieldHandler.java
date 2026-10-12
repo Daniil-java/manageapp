@@ -4,6 +4,9 @@ import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserNutritionProfileService;
 import com.kuklin.manageapp.bots.caloriebot.components.services.exceptions.InsufficientProfileDataException;
 import com.kuklin.manageapp.bots.caloriebot.components.services.exceptions.validation.UserNutritionProfileValidationException;
+import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
+import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.CalorieNutritionProfileEditCallbackUpdateHandler;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.editbuttons.KeyboardTemplates;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.editbuttons.ProfileEditAction;
@@ -11,6 +14,7 @@ import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.e
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.Command;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
@@ -28,10 +32,12 @@ public abstract class AbstractEnumProfileEditFieldHandler<
         implements ProfileEditFieldHandler {
 
     protected static final int ELEMENT_PER_ROW = 2;
-    protected static final String VALIDATION_ERROR = "Некорректные данные!";
 
     protected final CalorieNutritionProfileEditCallbackUpdateHandler callbackHandler;
     protected final UserNutritionProfileService profileService;
+    // Полем, а не в конструкторе: иначе пришлось бы менять конструкторы всех наследников
+    @Autowired
+    protected CalorieTexts texts;
 
     protected AbstractEnumProfileEditFieldHandler(
             CalorieNutritionProfileEditCallbackUpdateHandler callbackHandler,
@@ -71,27 +77,28 @@ public abstract class AbstractEnumProfileEditFieldHandler<
                 profileService.recalculateAndSave(profile);
             } catch (UserNutritionProfileValidationException e) {
                 //Недопустимые данные
-                telegramBot.sendReturnedMessage(chatId, VALIDATION_ERROR);
+                telegramBot.sendReturnedMessage(chatId,
+                        texts.get(telegramUser.getAppUserId(), BotTextKeys.PROFILE_VALIDATION_ERROR));
             } catch (InsufficientProfileDataException e) {
                 return;
             }
         } else {
+            AppLanguage language = texts.languageOf(telegramUser.getAppUserId());
             telegramBot.sendEditMessage(
                     chatId,
-                    getTitle(),
+                    // Заголовок выбора: «Выберите пол»
+                    texts.get(language, getProfileAction().getChooseKey()),
                     messageId,
                     KeyboardTemplates.buildEnumKeyboard(
                             command,
                             action,
                             EnumSet.allOf(getEnumClass()),
-                            ELEMENT_PER_ROW
+                            ELEMENT_PER_ROW,
+                            value -> texts.get(language, value.getTextKey())
                     )
             );
         }
     }
-
-    /** Текст в сообщении */
-    protected abstract String getTitle();
 
     /** Enum класс */
     protected abstract Class<E> getEnumClass();

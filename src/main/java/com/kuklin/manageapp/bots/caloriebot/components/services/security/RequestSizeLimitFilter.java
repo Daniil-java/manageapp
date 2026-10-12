@@ -2,7 +2,7 @@ package com.kuklin.manageapp.bots.caloriebot.components.services.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kuklin.manageapp.bots.caloriebot.configurations.AiInputLimitsProperties;
-import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTextsService;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorParams;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponse;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
@@ -41,7 +41,7 @@ public class RequestSizeLimitFilter extends OncePerRequestFilter {
 
     private final AiInputLimitsProperties limits;
     private final ObjectMapper objectMapper;
-    private final CalorieTextsService texts;
+    private final CalorieTexts texts;
 
     @Override
     protected void doFilterInternal(

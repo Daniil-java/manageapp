@@ -1,7 +1,7 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common;
 
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
-import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTextsService;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgutils.Command;
@@ -19,7 +19,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKe
 public class SupportCalorieUpdateHandler implements CalorieBotUpdateHandler {
 
     private final CalorieTelegramBot calorieTelegramBot;
-    private final CalorieTextsService texts;
+    private final CalorieTexts texts;
 
     private static final String SUPPORT_URL = "tg://user?id=7666281607";
 

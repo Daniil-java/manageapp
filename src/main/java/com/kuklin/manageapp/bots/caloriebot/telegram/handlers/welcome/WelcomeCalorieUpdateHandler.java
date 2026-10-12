@@ -1,7 +1,7 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.welcome;
 
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
-import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTextsService;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
@@ -19,7 +19,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class WelcomeCalorieUpdateHandler implements CalorieBotUpdateHandler {
     private final CalorieTelegramBot calorieTelegramBot;
-    private final CalorieTextsService texts;
+    private final CalorieTexts texts;
     public static final String INSTR_URL = "https://kuklin.dev/calorie/instruction";
 
     @Override

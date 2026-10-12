@@ -18,11 +18,6 @@ public class DietProfileEditFieldHandler
     }
 
     @Override
-    protected String getTitle() {
-        return "Выберите тип питания";
-    }
-
-    @Override
     protected Class<UserNutritionProfile.DietType> getEnumClass() {
         return UserNutritionProfile.DietType.class;
     }

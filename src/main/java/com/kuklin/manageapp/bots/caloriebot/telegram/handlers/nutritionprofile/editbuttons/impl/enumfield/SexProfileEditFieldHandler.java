@@ -18,11 +18,6 @@ public class SexProfileEditFieldHandler
     }
 
     @Override
-    protected String getTitle() {
-        return "Выберите пол";
-    }
-
-    @Override
     protected Class<UserNutritionProfile.Sex> getEnumClass() {
         return UserNutritionProfile.Sex.class;
     }

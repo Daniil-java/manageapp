@@ -1,6 +1,6 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.favorites;
 
-import com.kuklin.manageapp.bots.caloriebot.components.services.AnalyticsService;
+import com.kuklin.manageapp.bots.caloriebot.texts.DishTexts;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserFavoriteDishService;
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserFavoriteDish;
@@ -26,7 +26,7 @@ import java.util.List;
 public class CalorieFavoriteDishUpdateHandler implements CalorieBotUpdateHandler {
     private final CalorieTelegramBot calorieTelegramBot;
     private final UserFavoriteDishService userFavoriteDishService;
-    private final AnalyticsService analyticsService;
+    private final DishTexts dishTexts;
     private final DishKeyboards dishKeyboards;
     private static final Integer PAGE_SIZE = 5;
 
@@ -154,7 +154,7 @@ public class CalorieFavoriteDishUpdateHandler implements CalorieBotUpdateHandler
         // Отправляем отдельное сообщение с добавленным блюдом
         calorieTelegramBot.sendReturnedMessage(
                 chatId,
-                analyticsService.getInfo(dish, telegramUser.getAppUserId()),
+                dishTexts.buildDishCardText(dish, telegramUser.getAppUserId()),
                 dishKeyboards.buildPortionKeyboard(dish, telegramUser.getAppUserId()),
                 null
         );

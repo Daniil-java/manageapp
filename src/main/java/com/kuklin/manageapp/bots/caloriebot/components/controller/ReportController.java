@@ -4,7 +4,7 @@ import com.kuklin.manageapp.bots.caloriebot.components.services.CalorieAiInsight
 import com.kuklin.manageapp.bots.caloriebot.components.services.UiAnalyticsService;
 import com.kuklin.manageapp.bots.caloriebot.models.AiInsightType;
 import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
-import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTextsService;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.models.report.AiInsightDto;
 import com.kuklin.manageapp.bots.caloriebot.models.report.DashboardResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
@@ -29,7 +29,7 @@ import java.util.Map;
 public class ReportController {
     private final UiAnalyticsService uiAnalyticsService;
     private final CalorieAiInsightService calorieAiInsightService;
-    private final CalorieTextsService calorieTextsService;
+    private final CalorieTexts calorieTexts;
 
     @GetMapping("/dashboard")
     @Operation(summary = "Получить данные для дашборда", description = "Возвращает сводку за сегодня и данные для графиков за период")
@@ -69,7 +69,7 @@ public class ReportController {
             @RequestParam(name = "lang", required = false) String lang) {
 
         AppLanguage language = AppLanguage.fromCode(lang)
-                .orElseGet(() -> calorieTextsService.languageOf(appUserId));
+                .orElseGet(() -> calorieTexts.languageOf(appUserId));
         return calorieAiInsightService.refresh(appUserId, type, language);
     }
 }

@@ -11,7 +11,7 @@ import java.util.Set;
  * Тексты одного PDF-отчёта: язык выбран один раз, дальше построители таблиц и диаграмм
  * просят текст по ключу, не зная про язык.
  */
-public record PdfTexts(CalorieTextsService texts, AppLanguage language) {
+public record PdfTexts(CalorieTexts texts, AppLanguage language) {
 
     /** {{pdf.weekly.title}} в HTML-шаблоне — текст из словаря pdf_*. Заглавные {{AI_ANALYSIS}} — данные, их не трогаем. */
     private static final String KEY_START = "{{pdf.";

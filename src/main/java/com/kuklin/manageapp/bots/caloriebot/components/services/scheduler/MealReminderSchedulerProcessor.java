@@ -4,7 +4,7 @@ import com.kuklin.manageapp.bots.caloriebot.components.services.DishService;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserSettingsService;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserSettings;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
-import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTextsService;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.ScheduleProcessor;
@@ -33,7 +33,7 @@ public class MealReminderSchedulerProcessor implements ScheduleProcessor {
     private final CalorieTelegramBot calorieTelegramBot;
     private final TelegramUserService telegramUserService;
     private final DishService dishService;
-    private final CalorieTextsService calorieTextsService;
+    private final CalorieTexts calorieTexts;
     static final int INACTIVE_DAYS = 7;
     private final Integer QUIET_HOUR_START = 23;
     private final Integer QUIET_HOUR_END = 7;
@@ -105,7 +105,7 @@ public class MealReminderSchedulerProcessor implements ScheduleProcessor {
         if (tgUser != null) {
             calorieTelegramBot.sendReturnedMessage(
                     tgUser.getTelegramId(),
-                    calorieTextsService.get(settings.getUserId(), BotTextKeys.REMINDER_MEAL)
+                    calorieTexts.get(settings.getUserId(), BotTextKeys.REMINDER_MEAL)
             );
         }
 

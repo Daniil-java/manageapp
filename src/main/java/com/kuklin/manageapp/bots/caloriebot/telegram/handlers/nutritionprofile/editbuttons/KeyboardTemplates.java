@@ -11,18 +11,20 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Function;
 
 //Класс с шаблонными клавиатурами
 public class KeyboardTemplates {
     public static final String SET_CMD = "SET";
     public static final String ADJ_CMD = "ADJ";
 
-    //Labeled Enum-клавиатурура
+    //Labeled Enum-клавиатурура. labelOf — подпись значения на языке пользователя
     public static InlineKeyboardMarkup buildEnumKeyboard(
             Command command,
             ProfileEditAction action,
             Collection<? extends UserNutritionProfile.Labeled> values,
-            int perRow
+            int perRow,
+            Function<UserNutritionProfile.Labeled, String> labelOf
     ) {
         if (values == null || values.isEmpty()) {
             return TelegramKeyboard.builder().build();
@@ -44,10 +46,10 @@ public class KeyboardTemplates {
                 Enum<?> en = (Enum<?>) labeled;
                 payload = en.name();
             } else {
-                // fallback: если вдруг не enum — используем label как payload (или пропускаем)
-                payload = labeled.getLabel();
+                // fallback: если вдруг не enum — используем ключ текста как payload
+                payload = labeled.getTextKey();
             }
-            String label = labeled.getLabel();
+            String label = labelOf.apply(labeled);
             String callback = callbackBase + payload + TelegramBot.DEFAULT_DELIMETER + SET_CMD;  // используем name() как payload
                                                                 // SET комманда, чтобы знать что в этом колбэке сразу идет установка параметра
 
@@ -78,7 +80,8 @@ public class KeyboardTemplates {
             Integer neg,
             Integer pos,
             Integer bigPos,
-            String labelFormat // <-- новый параметр
+            Function<String, String> valueLabel, // подпись текущего значения: «Ваш рост: 175 см»
+            String saveLabel
     ) {
 
         if (currentValue == null) currentValue = defValue;
@@ -94,7 +97,7 @@ public class KeyboardTemplates {
         // 🔹 Отдельная строка с текущим значением
         valueRow.add(
                 TelegramKeyboard.button(
-                        String.format(labelFormat, currentValue),
+                        valueLabel.apply(String.valueOf(currentValue)),
                         "noop" // заглушка, чтобы не реагировала
                 )
         );
@@ -129,7 +132,7 @@ public class KeyboardTemplates {
         }
 
         row2.add(TelegramKeyboard.button(
-                "Сохранить",
+                saveLabel,
                 callbackBase + SET_CMD + TelegramBot.DEFAULT_DELIMETER + currentValue
         ));
 
@@ -152,7 +155,8 @@ public class KeyboardTemplates {
             BigDecimal neg,
             BigDecimal pos,
             BigDecimal bigPos,
-            String labelFormat // новый параметр
+            Function<String, String> valueLabel, // подпись текущего значения: «Ваш вес: 70.5 кг»
+            String saveLabel
     ) {
 
         if (currentValue == null) currentValue = def;
@@ -168,7 +172,7 @@ public class KeyboardTemplates {
         // ===== Строка с текущим значением =====
         valueRow.add(
                 TelegramKeyboard.button(
-                        String.format(labelFormat, currentValue.toPlainString()),
+                        valueLabel.apply(currentValue.toPlainString()),
                         "noop"
                 )
         );
@@ -220,7 +224,7 @@ public class KeyboardTemplates {
         // ===== Кнопка сохранения =====
         saveRow.add(
                 TelegramKeyboard.button(
-                        "Сохранить",
+                        saveLabel,
                         callbackBase + SET_CMD + TelegramBot.DEFAULT_DELIMETER + currentValue
                 )
         );

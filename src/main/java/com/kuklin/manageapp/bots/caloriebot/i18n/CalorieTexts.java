@@ -29,7 +29,7 @@ import java.util.Map;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class CalorieTextsService {
+public class CalorieTexts {
     /** Словари: i18n/calorie/<имя>_<код языка>.properties. Новый словарь — сюда же. */
     static final List<String> BUNDLES = List.of(
             "i18n/calorie/bot",

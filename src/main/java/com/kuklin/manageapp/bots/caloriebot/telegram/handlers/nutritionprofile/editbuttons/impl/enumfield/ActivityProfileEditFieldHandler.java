@@ -18,11 +18,6 @@ public class ActivityProfileEditFieldHandler
     }
 
     @Override
-    protected String getTitle() {
-        return "Выберите уровень активности";
-    }
-
-    @Override
     protected Class<UserNutritionProfile.ActivityLevel> getEnumClass() {
         return UserNutritionProfile.ActivityLevel.class;
     }

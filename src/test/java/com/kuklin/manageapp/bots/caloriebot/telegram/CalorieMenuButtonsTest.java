@@ -2,7 +2,7 @@ package com.kuklin.manageapp.bots.caloriebot.telegram;
 
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserSettingsService;
 import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
-import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTextsService;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.i18n.I18nProperties;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieMenuButtons.Button;
 import com.kuklin.manageapp.common.library.tgutils.Command;
@@ -31,7 +31,7 @@ class CalorieMenuButtonsTest {
         UserSettingsService settings = mock(UserSettingsService.class);
         when(settings.findLanguageCode(RU_USER)).thenReturn("ru");
         when(settings.findLanguageCode(EN_USER)).thenReturn("en");
-        buttons = new CalorieMenuButtons(new CalorieTextsService(new I18nProperties(), settings));
+        buttons = new CalorieMenuButtons(new CalorieTexts(new I18nProperties(), settings));
     }
 
     /** Русские подписи = старые тексты команд: клавиатуры, которые уже висят в чатах, выглядят и работают как раньше. */

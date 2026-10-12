@@ -18,11 +18,6 @@ public class GoalProfileEditFieldHandler
     }
 
     @Override
-    protected String getTitle() {
-        return "Выберите цель";
-    }
-
-    @Override
     protected Class<UserNutritionProfile.Goal> getEnumClass() {
         return UserNutritionProfile.Goal.class;
     }

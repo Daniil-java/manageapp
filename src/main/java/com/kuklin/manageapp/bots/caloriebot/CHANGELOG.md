@@ -1,4 +1,22 @@
 ## 0.0.60 (12.10.2026)
+[et-87] — Пакет texts: сборка текстов бота отдельно от логики
+* CalorieTextsService переименован в CalorieTexts (остался в i18n); тест — CalorieTextsTest. Поля calorieTextsService → calorieTexts.
+* Новый пакет caloriebot/texts. AbstractBotTexts — общий родитель: доступ к словарю, getWithUnit («175 см» / «нет данных»), getDurationText («3 ч» / «2 мин» / «90 сек» — раньше две отдельные копии в DishUpdateHandler и настройках).
+* NutritionProfileTexts переехал сюда. DishTexts — карточка блюда (было AnalyticsService.getInfo → buildDishCardText), дневник «Сегодня» (getTodayDiaryText → buildTodayDiaryText), «голосовое слишком длинное». WeightTexts — история веса (getWeightHistoryTextList → buildWeightHistoryText; таймзона читается один раз, а не на каждый замер). SettingsTexts — экран настроек и тексты напоминаний: раньше итоги дня и напоминания о еде собирались дважды — в CalorieSettingsUpdateHandler и CalorieRemindersSettingsHandler.
+* В AnalyticsService остались подсчёты за сегодня и шкалы в кнопках «Сегодня».
+* Тесты: DishTextsTest (бывший AnalyticsServiceTextsTest, + длительность голосового), SettingsTextsTest (русский экран настроек как раньше), NutritionProfileTextsTest — в пакете texts.
+
+[et-87] — Профиль и настройки на языке пользователя
+* Профиль питания: экран профиля, «Изменить профиль» / «Заполнить профиль», меню редактирования (подписи действий, «Автопересчёт» / «Без пересчёта», «Вернуться»), выбор пола / активности / цели / диеты, счётчики возраста, роста, веса, нормы калорий и воды с пояснениями, «Сохранить», «Некорректные данные!».
+* Текст профиля перенесён из сущности (UserNutritionProfile.toTelegramView удалён; неиспользуемый toTelegramDiffView тоже) в NutritionProfileTexts — язык берётся у владельца профиля. Русский профиль не изменился (NutritionProfileTextsTest), кроме возраста: теперь «21 год», «23 года» вместо «21 лет».
+* Пол, активность, цель, диета: русские label убраны из enum, вместо них getTextKey() → profile.sex.* / profile.activity.* / profile.goal.* / profile.diet.* в bot_*. У NormMode подпись не использовалась — убрана. ProfileEditAction: подписи и форматы «Ваш вес: %s кг» → ключи getTextKey / getValueKey / getChooseKey. KeyboardTemplates получает подписи готовыми (labelOf, valueLabel, saveLabel); getTitle() у полей-перечислений больше не нужен — заголовок по getChooseKey.
+* Сервис текстов в базовых классах полей (AbstractEnum/Numeric/DecimalProfileEditFieldHandler) — @Autowired-полем, чтобы не менять конструкторы наследников. Удалён неиспользуемый AbstractProfileEditFieldHandler.
+* Пересчёт норм: вопросы и строки «было → станет», кнопки. При ошибке валидации пользователю — «Некорректные данные!» вместо текста исключения (он русский и для логов).
+* Калькулятор с лендинга: все сообщения, данные с сайта (возраст склоняется), норма на день, кнопки.
+* Настройки: экран настроек (UserSettings.toPrettyText удалён → SettingsTexts), кнопки разделов (CalorieSettingsHandler.getLabel → getLabelKey), таймзона, напоминания (итоги дня, напоминания о еде, ВКЛ / ВЫКЛ, «⬅ Назад», «💾 Сохранить»).
+* Тест: у каждого значения пола / активности / цели / диеты и каждого действия редактирования есть тексты (TextBundlesConsistencyTest).
+* Счётчик русских строк в коде: 201 → 87.
+
 [et-87] — История и аналитика на языке пользователя
 * «Сегодня»: дневник питания, кнопки «Перейти к удалению» / «Назад» / «Закрыть», «ОШИБКА»; дата в заголовке на языке пользователя («12 ОКТЯБРЯ 2026» / «12 OCTOBER 2026»). Шкалы в кнопках — подписи из словаря (macro.label.*: «🔥 К» / «🔥 Cal», …).
 * Дневник перенесён из сущности (Dish.getDishesString / Dish.getInfo удалены) в AnalyticsService.getTodayDiaryText — сущности не нужно знать язык. Русский дневник не изменился (тест).

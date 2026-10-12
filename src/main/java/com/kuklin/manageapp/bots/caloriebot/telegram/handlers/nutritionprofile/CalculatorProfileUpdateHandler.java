@@ -3,6 +3,9 @@ package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserNutritionProfileService;
 import com.kuklin.manageapp.bots.caloriebot.components.services.exceptions.InsufficientProfileDataException;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
+import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
+import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.models.landing.CalculatorStartParam;
 import com.kuklin.manageapp.bots.caloriebot.models.landing.CalculatorStartParam.Calculator;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
@@ -36,32 +39,36 @@ public class CalculatorProfileUpdateHandler implements CalorieBotUpdateHandler {
 
     private final CalorieTelegramBot calorieTelegramBot;
     private final UserNutritionProfileService userNutritionProfileService;
+    private final CalorieTexts texts;
 
     /** Вызывается из /start, когда в параметре пришли данные калькулятора. */
     public void offer(long chatId, Long userId, Calculator calculator) {
+        AppLanguage language = texts.languageOf(userId);
         UserNutritionProfile profile = userNutritionProfileService.getOrCreateProfile(userId);
 
         if (!profile.checkTargetCalculateParams()) {
             profile = userNutritionProfileService.applyCalculator(userId, calculator);
             calorieTelegramBot.sendReturnedMessage(chatId,
-                    "Перенёс данные из калькулятора — профиль заполнен ✅\n\n" + normText(profile),
-                    profileKeyboard(), null);
+                    texts.get(language, BotTextKeys.CALC_APPLIED) + "\n\n" + normText(profile, language),
+                    profileKeyboard(language), null);
             return;
         }
 
         if (calculator.sameAs(profile)) {
             calorieTelegramBot.sendReturnedMessage(chatId,
-                    "Профиль уже совпадает с калькулятором 👌\n\n" + normText(profile),
-                    profileKeyboard(), null);
+                    texts.get(language, BotTextKeys.CALC_SAME) + "\n\n" + normText(profile, language),
+                    profileKeyboard(language), null);
             return;
         }
 
-        calorieTelegramBot.sendReturnedMessage(chatId, questionText(profile, calculator), questionKeyboard(calculator), null);
+        calorieTelegramBot.sendReturnedMessage(chatId,
+                questionText(profile, calculator, language), questionKeyboard(calculator, language), null);
     }
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
         if (!update.hasCallbackQuery()) return;
+        AppLanguage language = texts.languageOf(telegramUser.getAppUserId());
         CallbackQuery query = update.getCallbackQuery();
         long chatId = query.getMessage().getChatId();
         int messageId = query.getMessage().getMessageId();
@@ -70,42 +77,48 @@ public class CalculatorProfileUpdateHandler implements CalorieBotUpdateHandler {
         String arg = parts.length > 1 ? parts[1] : "";
 
         if (SKIP.equals(arg)) {
-            calorieTelegramBot.sendEditMessage(chatId, "Оставил профиль как есть 👌", messageId, profileKeyboard());
+            calorieTelegramBot.sendEditMessage(chatId, texts.get(language, BotTextKeys.CALC_SKIPPED), messageId,
+                    profileKeyboard(language));
             return;
         }
 
         Calculator calculator = CalculatorStartParam.parse(arg).calculator();
         if (calculator == null) {
             log.warn("Broken calculator callback: {}", query.getData());
-            calorieTelegramBot.sendEditMessage(chatId,
-                    "Не получилось прочитать данные калькулятора. Профиль можно заполнить вручную 👇",
-                    messageId, profileKeyboard());
+            calorieTelegramBot.sendEditMessage(chatId, texts.get(language, BotTextKeys.CALC_BROKEN),
+                    messageId, profileKeyboard(language));
             return;
         }
 
         UserNutritionProfile profile = userNutritionProfileService.applyCalculator(telegramUser.getAppUserId(), calculator);
         calorieTelegramBot.sendEditMessage(chatId,
-                "Обновил профиль данными из калькулятора ✅\n\n" + normText(profile),
-                messageId, profileKeyboard());
+                texts.get(language, BotTextKeys.CALC_UPDATED) + "\n\n" + normText(profile, language),
+                messageId, profileKeyboard(language));
     }
 
-    private String questionText(UserNutritionProfile profile, Calculator calculator) {
-        StringBuilder sb = new StringBuilder("На сайте ты посчитал норму");
+    // Калории строками — без разделителей разрядов; возраст числом — от него зависит «год / года / лет»
+    private String questionText(UserNutritionProfile profile, Calculator calculator, AppLanguage language) {
+        StringBuilder sb = new StringBuilder();
         Integer siteCalories = previewCalories(profile, calculator);
-        if (siteCalories != null) {
-            sb.append(" <b>").append(siteCalories).append(" ккал</b>");
-        }
-        sb.append(", а сейчас в профиле <b>").append(profile.getCaloriesNormPerDay()).append(" ккал</b>.\n\n");
-        sb.append("С сайта: ").append(calculator.sex().getLabel().toLowerCase())
-                .append(", ").append(calculator.ageYears()).append(" лет")
-                .append(", ").append(calculator.heightCm()).append(" см")
-                .append(", ").append(calculator.weightKg()).append(" кг")
-                .append(", активность — ").append(calculator.activityLevel().getLabel().toLowerCase())
-                .append(", цель — ").append(calculator.goal().getLabel().toLowerCase()).append(".\n\n");
+        String profileCalories = String.valueOf(profile.getCaloriesNormPerDay());
+        sb.append(siteCalories != null
+                ? texts.get(language, BotTextKeys.CALC_QUESTION_NORM, String.valueOf(siteCalories), profileCalories)
+                : texts.get(language, BotTextKeys.CALC_QUESTION_NORM_UNKNOWN, profileCalories)).append("\n\n");
+        sb.append(texts.get(language, BotTextKeys.CALC_QUESTION_DATA,
+                lowerLabel(calculator.sex(), language),
+                calculator.ageYears(),
+                String.valueOf(calculator.heightCm()),
+                String.valueOf(calculator.weightKg()),
+                lowerLabel(calculator.activityLevel(), language),
+                lowerLabel(calculator.goal(), language))).append("\n\n");
         if (profile.isManualNorm()) {
-            sb.append("Сейчас у тебя своя норма калорий — она заменится расчётной.\n\n");
+            sb.append(texts.get(language, BotTextKeys.CALC_QUESTION_MANUAL_NORM)).append("\n\n");
         }
-        return sb.append("Обновить профиль этими данными?").toString();
+        return sb.append(texts.get(language, BotTextKeys.CALC_QUESTION_ASK)).toString();
+    }
+
+    private String lowerLabel(UserNutritionProfile.Labeled value, AppLanguage language) {
+        return texts.get(language, value.getTextKey()).toLowerCase(language.getLocale());
     }
 
     private Integer previewCalories(UserNutritionProfile profile, Calculator calculator) {
@@ -122,23 +135,26 @@ public class CalculatorProfileUpdateHandler implements CalorieBotUpdateHandler {
         }
     }
 
-    private static String normText(UserNutritionProfile profile) {
-        return "🎯 Норма на день: <b>" + profile.getCaloriesNormPerDay() + " ккал</b>\n"
-                + "Б " + profile.getProteinsNormGramsPerDay() + " г · Ж " + profile.getFatsNormGramsPerDay()
-                + " г · У " + profile.getCarbsNormGramsPerDay() + " г\n"
-                + "💧 Вода: " + profile.getWaterTargetMlPerDay() + " мл";
+    private String normText(UserNutritionProfile profile, AppLanguage language) {
+        return texts.get(language, BotTextKeys.CALC_NORM,
+                String.valueOf(profile.getCaloriesNormPerDay()),
+                String.valueOf(profile.getProteinsNormGramsPerDay()),
+                String.valueOf(profile.getFatsNormGramsPerDay()),
+                String.valueOf(profile.getCarbsNormGramsPerDay()),
+                String.valueOf(profile.getWaterTargetMlPerDay()));
     }
 
-    private InlineKeyboardMarkup questionKeyboard(Calculator calculator) {
+    private InlineKeyboardMarkup questionKeyboard(Calculator calculator, AppLanguage language) {
         return TelegramKeyboard.builder()
-                .row(TelegramKeyboard.button("✅ Обновить", callback(calculator.encode())))
-                .row(TelegramKeyboard.button("Оставить как есть", callback(SKIP)))
+                .row(TelegramKeyboard.button(texts.get(language, BotTextKeys.CALC_BUTTON_UPDATE), callback(calculator.encode())))
+                .row(TelegramKeyboard.button(texts.get(language, BotTextKeys.CALC_BUTTON_KEEP), callback(SKIP)))
                 .build();
     }
 
-    private static InlineKeyboardMarkup profileKeyboard() {
+    private InlineKeyboardMarkup profileKeyboard(AppLanguage language) {
         return TelegramKeyboard.builder()
-                .row(TelegramKeyboard.button("✏️ Изменить профиль", Command.CALORIE_PROFILE_EDIT.getCommandText()))
+                .row(TelegramKeyboard.button(texts.get(language, BotTextKeys.PROFILE_BUTTON_EDIT),
+                        Command.CALORIE_PROFILE_EDIT.getCommandText()))
                 .build();
     }
 

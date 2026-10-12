@@ -2,7 +2,7 @@ package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common;
 
 import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
-import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTextsService;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.i18n.I18nProperties;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.common.entities.TelegramUser;
@@ -25,7 +25,7 @@ public class LanguageDevUpdateHandler implements CalorieBotUpdateHandler {
     private static final String RESET = "reset";
 
     private final CalorieTelegramBot calorieTelegramBot;
-    private final CalorieTextsService texts;
+    private final CalorieTexts texts;
     private final I18nProperties i18nProperties;
 
     @Override

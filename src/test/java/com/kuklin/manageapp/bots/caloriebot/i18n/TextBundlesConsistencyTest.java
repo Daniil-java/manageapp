@@ -3,6 +3,8 @@ package com.kuklin.manageapp.bots.caloriebot.i18n;
 import com.ibm.icu.text.MessageFormat;
 import com.ibm.icu.text.MessagePattern;
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
+import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
+import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.editbuttons.ProfileEditAction;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorParams;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
 import org.junit.jupiter.api.Test;
@@ -14,10 +16,12 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -35,7 +39,7 @@ class TextBundlesConsistencyTest {
 
     @Test
     void everyLanguageHasSameKeysAsDefault() throws IOException {
-        for (String bundle : CalorieTextsService.BUNDLES) {
+        for (String bundle : CalorieTexts.BUNDLES) {
             Properties reference = load(bundle, AppLanguage.RU);
             for (AppLanguage language : AppLanguage.values()) {
                 assertThat(load(bundle, language).stringPropertyNames())
@@ -47,7 +51,7 @@ class TextBundlesConsistencyTest {
 
     @Test
     void translationsUseSameArguments() throws IOException {
-        for (String bundle : CalorieTextsService.BUNDLES) {
+        for (String bundle : CalorieTexts.BUNDLES) {
             Properties reference = load(bundle, AppLanguage.RU);
             for (AppLanguage language : AppLanguage.values()) {
                 Properties texts = load(bundle, language);
@@ -62,7 +66,7 @@ class TextBundlesConsistencyTest {
 
     @Test
     void everyPatternIsValidIcu() throws IOException {
-        for (String bundle : CalorieTextsService.BUNDLES) {
+        for (String bundle : CalorieTexts.BUNDLES) {
             for (AppLanguage language : AppLanguage.values()) {
                 Properties texts = load(bundle, language);
                 for (String key : texts.stringPropertyNames()) {
@@ -81,7 +85,7 @@ class TextBundlesConsistencyTest {
     @Test
     void everyKeyConstantExistsInBundles() throws IOException, IllegalAccessException {
         Set<String> allKeys = new TreeSet<>();
-        for (String bundle : CalorieTextsService.BUNDLES) {
+        for (String bundle : CalorieTexts.BUNDLES) {
             allKeys.addAll(load(bundle, AppLanguage.RU).stringPropertyNames());
         }
         List<String> missing = new ArrayList<>();
@@ -111,6 +115,34 @@ class TextBundlesConsistencyTest {
             if (!bot.containsKey(category.getTextKey())) missing.add(category.getTextKey());
         }
         assertThat(missing).as("FoodCategory without user text").isEmpty();
+    }
+
+    /** Ключи значений профиля и действий редактирования строятся из имён enum — опечатку в словаре ловим здесь. */
+    @Test
+    void everyProfileValueAndEditActionHasText() throws IOException {
+        Properties bot = load("i18n/calorie/bot", AppLanguage.RU);
+        List<String> keys = new ArrayList<>();
+        Stream.of(UserNutritionProfile.Sex.values(), UserNutritionProfile.ActivityLevel.values(),
+                        UserNutritionProfile.Goal.values(), UserNutritionProfile.DietType.values())
+                .flatMap(Arrays::stream)
+                .forEach(value -> keys.add(value.getTextKey()));
+        for (UserNutritionProfile.Sex sex : UserNutritionProfile.Sex.values()) {
+            keys.add("profile.view.sex." + sex.name());
+        }
+        for (ProfileEditAction action : ProfileEditAction.values()) {
+            keys.add(action.getTextKey());
+        }
+        // Счётчики — у числовых полей, заголовок выбора — у полей-перечислений
+        for (ProfileEditAction action : List.of(ProfileEditAction.AGE, ProfileEditAction.HEIGHT,
+                ProfileEditAction.CURRENT_WEIGHT, ProfileEditAction.CALORIE_NORM, ProfileEditAction.WATER_TARGET)) {
+            keys.add(action.getValueKey());
+        }
+        for (ProfileEditAction action : List.of(ProfileEditAction.SEX, ProfileEditAction.ACTIVITY,
+                ProfileEditAction.GOAL, ProfileEditAction.DIET_TYPE)) {
+            keys.add(action.getChooseKey());
+        }
+
+        assertThat(keys).as("profile texts missing in bot_ru").allMatch(bot::containsKey);
     }
 
     /** {{pdf.…}} в HTML-шаблонах отчётов подставляется по ключу — опечатка оставила бы в PDF фигурные скобки. */

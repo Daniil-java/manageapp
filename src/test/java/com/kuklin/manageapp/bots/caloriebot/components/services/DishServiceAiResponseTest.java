@@ -7,7 +7,7 @@ import com.kuklin.manageapp.bots.caloriebot.configurations.DishLimitsProperties;
 import com.kuklin.manageapp.bots.caloriebot.configurations.TelegramCaloriesBotKeyComponents;
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
-import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTextsService;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
 import com.kuklin.manageapp.common.services.TelegramUserService;
@@ -54,7 +54,7 @@ class DishServiceAiResponseTest {
         self = mock(DishService.class);
         ObjectProvider<DishService> selfProvider = mock(ObjectProvider.class);
         when(selfProvider.getObject()).thenReturn(self);
-        CalorieTextsService texts = mock(CalorieTextsService.class);
+        CalorieTexts texts = mock(CalorieTexts.class);
         when(texts.languageOf(USER_ID)).thenReturn(AppLanguage.EN);
 
         service = new DishService(mock(DishRepository.class), openAi,

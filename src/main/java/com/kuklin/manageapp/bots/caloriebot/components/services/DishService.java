@@ -10,7 +10,7 @@ import com.kuklin.manageapp.bots.caloriebot.configurations.DishLimitsProperties;
 import com.kuklin.manageapp.bots.caloriebot.configurations.TelegramCaloriesBotKeyComponents;
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserFavoriteDish;
-import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTextsService;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.models.ManualDishRequest;
 import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.DishDto;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorParams;
@@ -56,7 +56,7 @@ public class DishService {
     private final AiInputValidator aiInputValidator;
     private final AiRateLimiter aiRateLimiter;
     private final DishLimitsProperties dishLimits;
-    private final CalorieTextsService calorieTextsService;
+    private final CalorieTexts calorieTexts;
 
     // --- Public Methods ---
 
@@ -123,7 +123,7 @@ public class DishService {
 
     /** Язык пользователя для промпта: на нём ИИ называет блюда, если по описанию язык не понять (или описания нет). */
     private String aiLanguageOf(Long userId) {
-        return calorieTextsService.languageOf(userId).getNativeName();
+        return calorieTexts.languageOf(userId).getNativeName();
     }
 
     @Transactional

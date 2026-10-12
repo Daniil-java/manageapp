@@ -74,7 +74,7 @@ public class UserSettings {
 
     /**
      * Код языка пользователя (ru, en…). null — не выбирал, берётся язык по умолчанию
-     * (calorie.i18n.default-language). Читать через {@link com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTextsService}.
+     * (calorie.i18n.default-language). Читать через {@link com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts}.
      */
     @Column(name = "language")
     private String language;
@@ -109,54 +109,6 @@ public class UserSettings {
 
                 .setMealReminderEnabled(DEF_MEAL_REMINDER_ENABLED)
                 .setMealReminderIntervalMinutes(DEF_MEAL_REMINDER_INTERVAL_MIN);
-    }
-
-    public String toPrettyText() {
-        StringBuilder sb = new StringBuilder();
-
-        // Общий статус
-        sb.append(
-                remindersEnabled
-                        ? "🔔 Напоминания: 🟢 включены"
-                        : "🔕 Напоминания: 🔴 выключены"
-        );
-
-        sb.append("\n");
-        sb.append("🌍 Таймзона: ").append(getZoneId().getId());
-
-        sb.append("\n\n");
-
-        // --- Daily summary ---
-        if (!dailySummaryEnabled) {
-            sb.append("📊 Итоги дня: 🔴 выключены");
-        } else {
-            sb.append("📊 Итоги дня: 🟢 включены\n");
-            sb.append("⏰ Время: ")
-                    .append(String.format("%02d:00", dailySummaryHour))
-                    .append(" (локальное)");
-        }
-
-        sb.append("\n\n");
-
-        // --- Meal reminder ---
-        if (!mealReminderEnabled) {
-            sb.append("🍽 Напоминания о еде: 🔴 выключены");
-        } else {
-            sb.append("🍽 Напоминания о еде: 🟢 включены\n");
-
-            int minutes = mealReminderIntervalMinutes;
-            if (minutes % 60 == 0) {
-                sb.append("⏳ Интервал без еды: ")
-                        .append(minutes / 60)
-                        .append(" ч");
-            } else {
-                sb.append("⏳ Интервал без еды: ")
-                        .append(minutes)
-                        .append(" мин");
-            }
-        }
-
-        return sb.toString();
     }
 
 }

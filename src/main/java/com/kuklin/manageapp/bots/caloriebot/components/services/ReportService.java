@@ -13,7 +13,7 @@ import com.kuklin.manageapp.bots.caloriebot.components.RequiresFeature;
 import com.kuklin.manageapp.bots.caloriebot.configurations.AiInputLimitsProperties;
 import com.kuklin.manageapp.bots.caloriebot.models.AiInsightType;
 import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
-import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTextsService;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.i18n.PdfTexts;
 import com.kuklin.manageapp.bots.caloriebot.models.airesponse.AiPatternAnalysisResponse;
 import com.kuklin.manageapp.bots.caloriebot.models.airesponse.InsightPayloadRecord;
@@ -81,7 +81,7 @@ public class ReportService {
     private final OpenAiProviderProcessor openAiProviderProcessor;
     private final TelegramCaloriesBotKeyComponents components;
     private final AiInputLimitsProperties aiInputLimits;
-    private final CalorieTextsService calorieTextsService;
+    private final CalorieTexts calorieTexts;
     // Маппер с поддержкой Java 8 Time API (даты блюд в JSON для ИИ)
     private final ObjectMapper mapper = new ObjectMapper()
             .registerModule(new JavaTimeModule())
@@ -254,7 +254,7 @@ public class ReportService {
                 weightEntryService.getAllWeightHistory(userId),
                 userNutritionProfileService.getOrCreateProfile(userId),
                 userSettingsService.getOrCreate(userId),
-                new PdfTexts(calorieTextsService, calorieTextsService.languageOf(userId))
+                new PdfTexts(calorieTexts, calorieTexts.languageOf(userId))
         );
     }
 
@@ -371,7 +371,7 @@ public class ReportService {
      * Язык ответа ИИ в отчётах бота — язык пользователя (user_settings.language или язык по умолчанию).
      */
     private String aiLanguageOf(Long userId) {
-        return calorieTextsService.languageOf(userId).getNativeName();
+        return calorieTexts.languageOf(userId).getNativeName();
     }
 
     /**

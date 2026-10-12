@@ -1,6 +1,7 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.editbuttons.impl.numericfield;
 
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
+import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserNutritionProfileService;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.CalorieNutritionProfileEditCallbackUpdateHandler;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.editbuttons.ProfileEditAction;
@@ -37,8 +38,8 @@ public class HeightProfileEditFieldHandler
     @Override
     protected String buildText(UserNutritionProfile profile) {
         return profile.getHeightCm() == null
-                ? "Рост: не указан"
-                : "Рост: " + profile.getHeightCm() + " см";
+                ? texts.get(profile.getUserId(), BotTextKeys.PROFILE_FIELD_HEIGHT_EMPTY)
+                : texts.get(profile.getUserId(), BotTextKeys.PROFILE_FIELD_HEIGHT, String.valueOf(profile.getHeightCm()));
     }
 
     @Override

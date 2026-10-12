@@ -3,22 +3,39 @@ package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
+/**
+ * Что редактируем в профиле. code — в callbackData, тексты — в словаре bot_*:
+ * подпись кнопки getTextKey(), значение на кнопке-счётчике getValueKey(), заголовок выбора getChooseKey().
+ */
 @Getter
 @AllArgsConstructor
 public enum ProfileEditAction {
-    SEX("SEX", "Пол", "Ваш пол: %s"),
-    AGE("AGE", "Возраст", "Ваш возраст: %d"),
-    HEIGHT("HEIGHT", "Рост", "Ваш рост: %d см"),
-    CURRENT_WEIGHT("CUR_WEIGHT", "Текущий вес", "Ваш вес: %s кг"),
-    ACTIVITY("ACTIVITY", "Активность", "Ваша активность: %s"),
-    GOAL("GOAL", "Цель", "Ваша цель: %s"),
-    DIET_TYPE("DIET_TYPE", "Тип питания", "Ваш тип диеты: %s"),
-    CALORIE_NORM("CALORIES", "Норма калорий", "Ваша норма: %d ккал"),
-    WATER_TARGET("WATER", "Норма воды", "Ваша норма воды: %d мл");
+    SEX("SEX"),
+    AGE("AGE"),
+    HEIGHT("HEIGHT"),
+    CURRENT_WEIGHT("CUR_WEIGHT"),
+    ACTIVITY("ACTIVITY"),
+    GOAL("GOAL"),
+    DIET_TYPE("DIET_TYPE"),
+    CALORIE_NORM("CALORIES"),
+    WATER_TARGET("WATER");
 
     private final String code;
-    private final String label;
-    private final String labelFormat;
+
+    /** Подпись кнопки в меню редактирования: «Пол», «Норма воды». */
+    public String getTextKey() {
+        return "profile.edit." + name();
+    }
+
+    /** Значение на кнопке-счётчике: «Ваш рост: {0} см». Есть только у числовых полей. */
+    public String getValueKey() {
+        return "profile.edit.value." + name();
+    }
+
+    /** Заголовок выбора из списка: «Выберите пол». Есть только у полей-перечислений. */
+    public String getChooseKey() {
+        return "profile.choose." + name();
+    }
 
     public static ProfileEditAction fromCode(String code) {
         if (code == null) return null;

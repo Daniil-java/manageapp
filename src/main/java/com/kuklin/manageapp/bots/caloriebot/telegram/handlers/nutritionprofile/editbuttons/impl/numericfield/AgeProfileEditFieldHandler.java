@@ -1,6 +1,7 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.editbuttons.impl.numericfield;
 
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
+import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserNutritionProfileService;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.CalorieNutritionProfileEditCallbackUpdateHandler;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.editbuttons.ProfileEditAction;
@@ -40,8 +41,8 @@ public class AgeProfileEditFieldHandler
     @Override
     protected String buildText(UserNutritionProfile profile) {
         return profile.getAgeYears() == null
-                ? "Возраст: не указан"
-                : "Возраст: " + profile.getAgeYears();
+                ? texts.get(profile.getUserId(), BotTextKeys.PROFILE_FIELD_AGE_EMPTY)
+                : texts.get(profile.getUserId(), BotTextKeys.PROFILE_FIELD_AGE, String.valueOf(profile.getAgeYears()));
     }
 
     @Override

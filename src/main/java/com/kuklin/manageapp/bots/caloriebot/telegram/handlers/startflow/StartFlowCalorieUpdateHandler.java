@@ -2,7 +2,7 @@ package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.startflow;
 
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserNutritionProfileService;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
-import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTextsService;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
@@ -22,7 +22,7 @@ import static com.kuklin.manageapp.bots.caloriebot.telegram.handlers.welcome.Wel
 public class StartFlowCalorieUpdateHandler implements CalorieBotUpdateHandler {
     private final CalorieTelegramBot calorieTelegramBot;
     private final UserNutritionProfileService userNutritionProfileService;
-    private final CalorieTextsService texts;
+    private final CalorieTexts texts;
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {

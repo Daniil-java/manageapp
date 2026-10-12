@@ -1,6 +1,8 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.editbuttons.impl.numericfield;
 
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
+import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
+import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserNutritionProfileService;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.CalorieNutritionProfileEditCallbackUpdateHandler;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.editbuttons.CalorieNutritionProfileRecalculate;
@@ -45,20 +47,26 @@ public class WaterTargetProfileEditFieldHandler
 
     @Override
     protected String buildText(UserNutritionProfile profile) {
+        AppLanguage language = texts.languageOf(profile.getUserId());
         StringBuilder sb = new StringBuilder(profile.getWaterTargetMlPerDay() == null
-                ? "Вода: не указана"
-                : "Вода: " + profile.getWaterTargetMlPerDay() + " мл"
-                + (profile.isManualWater() ? " (вручную)" : " (по формуле)"));
+                ? texts.get(language, BotTextKeys.PROFILE_FIELD_WATER_EMPTY)
+                : texts.get(language, BotTextKeys.PROFILE_FIELD_WATER, String.valueOf(profile.getWaterTargetMlPerDay()))
+                + " " + texts.get(language, profile.isManualWater()
+                ? BotTextKeys.PROFILE_FIELD_MARK_MANUAL : BotTextKeys.PROFILE_FIELD_MARK_FORMULA));
 
         Integer formula = UserNutritionProfileService.calcFormulaWaterOrNull(profile);
         if (formula != null && profile.isManualWater()) {
-            sb.append("\nПо формуле: ").append(formula).append(" мл");
+            sb.append("\n").append(texts.get(language, BotTextKeys.PROFILE_FIELD_WATER_FORMULA, String.valueOf(formula)));
         }
-        sb.append(profile.isManualWater()
-                ? "\n\nСвоя норма не меняется от веса и активности."
-                + (formula != null ? " Вернуть расчёт по весу — кнопка «↺ По формуле»." : "")
-                : "\n\nПо формуле: вес × 30–35 мл в зависимости от активности. "
-                + "Если сохранить своё число, оно перестанет меняться от веса и активности.");
+        sb.append("\n\n");
+        if (profile.isManualWater()) {
+            sb.append(texts.get(language, BotTextKeys.PROFILE_FIELD_WATER_HINT_MANUAL));
+            if (formula != null) {
+                sb.append(" ").append(texts.get(language, BotTextKeys.PROFILE_FIELD_WATER_HINT_MANUAL_FORMULA));
+            }
+        } else {
+            sb.append(texts.get(language, BotTextKeys.PROFILE_FIELD_WATER_HINT_AUTO));
+        }
         return sb.toString();
     }
 
@@ -69,7 +77,7 @@ public class WaterTargetProfileEditFieldHandler
             return List.of();
         }
         return List.of(TelegramKeyboard.button(
-                "↺ По формуле",
+                texts.get(profile.getUserId(), BotTextKeys.PROFILE_FIELD_BUTTON_WATER_FORMULA),
                 CalorieNutritionProfileRecalculate.callback(CalorieNutritionProfileRecalculate.WATER_AUTO)));
     }
 

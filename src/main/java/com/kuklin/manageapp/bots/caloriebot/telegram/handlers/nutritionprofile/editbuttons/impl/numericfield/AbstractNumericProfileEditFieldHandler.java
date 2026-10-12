@@ -8,10 +8,13 @@ import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.C
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.editbuttons.KeyboardTemplates;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.editbuttons.ProfileEditAction;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.editbuttons.ProfileEditFieldHandler;
+import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
@@ -22,7 +25,6 @@ import java.util.List;
 
 import static com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.CalorieNutritionProfileEditCallbackUpdateHandler.checkNewData;
 import static com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.CalorieNutritionProfileEditCallbackUpdateHandler.extractActionOrNull;
-import static com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.editbuttons.impl.numericfield.AbstractDecimalProfileEditFieldHandler.VALIDATION_ERROR;
 
 /*
  * Абстрактный обработчик изменения полей, с целочисленными значениями
@@ -39,6 +41,9 @@ public abstract class AbstractNumericProfileEditFieldHandler
 
     protected final UserNutritionProfileService profileService;
     protected final CalorieNutritionProfileEditCallbackUpdateHandler callbackHandler;
+    // Полем, а не в конструкторе: иначе пришлось бы менять конструкторы всех наследников
+    @Autowired
+    protected CalorieTexts texts;
 
     // ===== конфигурация =====
     protected final Integer defaultValue;
@@ -108,7 +113,8 @@ public abstract class AbstractNumericProfileEditFieldHandler
                     profileService.recalculateAndSave(profile);
                 } catch (UserNutritionProfileValidationException e) {
                     //Недопустимые данные
-                    telegramBot.sendReturnedMessage(chatId, VALIDATION_ERROR);
+                    telegramBot.sendReturnedMessage(chatId,
+                            texts.get(telegramUser.getAppUserId(), BotTextKeys.PROFILE_VALIDATION_ERROR));
                 } catch (InsufficientProfileDataException e) {
                     //Профиль ещё заполняется (диалог) — норму посчитаем, когда хватит данных
                 }
@@ -128,7 +134,8 @@ public abstract class AbstractNumericProfileEditFieldHandler
                 neg,
                 pos,
                 bigPos,
-                action.getLabelFormat()
+                value -> texts.get(telegramUser.getAppUserId(), action.getValueKey(), value),
+                texts.get(telegramUser.getAppUserId(), BotTextKeys.COMMON_BUTTON_SAVE)
         );
         List<InlineKeyboardButton> extra = extraRow(profile);
         if (!extra.isEmpty()) {

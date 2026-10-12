@@ -1,6 +1,6 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.weight;
 
-import com.kuklin.manageapp.bots.caloriebot.components.services.AnalyticsService;
+import com.kuklin.manageapp.bots.caloriebot.texts.WeightTexts;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
@@ -14,18 +14,18 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 @RequiredArgsConstructor
 public class CalorieWeightHistoryUpdateHandler implements CalorieBotUpdateHandler {
     private final CalorieTelegramBot calorieTelegramBot;
-    private final AnalyticsService analyticsService;
+    private final WeightTexts weightTexts;
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
         if (update.hasCallbackQuery()) {
             calorieTelegramBot.sendReturnedMessage(
                     update.getCallbackQuery().getMessage().getChatId(),
-                    analyticsService.getWeightHistoryTextList(telegramUser.getAppUserId())
+                    weightTexts.buildWeightHistoryText(telegramUser.getAppUserId())
             );
         } else if (update.hasMessage()) {
             calorieTelegramBot.sendReturnedMessage(
                     update.getMessage().getChatId(),
-                    analyticsService.getWeightHistoryTextList(telegramUser.getAppUserId())
+                    weightTexts.buildWeightHistoryText(telegramUser.getAppUserId())
             );
         }
     }

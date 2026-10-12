@@ -7,5 +7,6 @@ import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotU
  */
 public interface CalorieSettingsHandler extends CalorieBotUpdateHandler {
 
-    String getLabel();
+    /** Подпись кнопки в меню настроек — ключ словаря bot_*. */
+    String getLabelKey();
 }

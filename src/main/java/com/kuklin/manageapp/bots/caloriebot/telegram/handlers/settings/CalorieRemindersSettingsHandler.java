@@ -2,7 +2,11 @@ package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.settings;
 
 import com.kuklin.manageapp.bots.caloriebot.entities.UserSettings;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserSettingsService;
+import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
+import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
+import com.kuklin.manageapp.bots.caloriebot.texts.SettingsTexts;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.Command;
@@ -22,14 +26,16 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMa
 public class CalorieRemindersSettingsHandler implements CalorieSettingsHandler{
     private final CalorieTelegramBot calorieTelegramBot;
     private final UserSettingsService userSettingsService;
+    private final CalorieTexts texts;
+    private final SettingsTexts settingsTexts;
     //Команда переключения булевых параметров
     private static final String TOGGLE_CMD = "TOGGLE";
     //Команды для идентификации уведомлений
     private static final String DAILY = "DAILY";
     private static final String MEAL = "MEAL";
     @Override
-    public String getLabel() {
-        return "⏰Напоминания";
+    public String getLabelKey() {
+        return BotTextKeys.SETTINGS_BUTTON_REMINDERS;
     }
 
     //Ожидаю только callback
@@ -41,6 +47,7 @@ public class CalorieRemindersSettingsHandler implements CalorieSettingsHandler{
         Message message = query.getMessage();
         Long chatId = message.getChatId();
         String data = query.getData();
+        AppLanguage language = texts.languageOf(telegramUser.getAppUserId());
 
         //Получаем настройки пользователя
         UserSettings settings =
@@ -50,9 +57,9 @@ public class CalorieRemindersSettingsHandler implements CalorieSettingsHandler{
         if (data.equals(getHandlerListName())) {
             calorieTelegramBot.sendEditMessage(
                     chatId,
-                    getRemindersStatusText(settings),
+                    settingsTexts.buildRemindersText(settings, language),
                     message.getMessageId(),
-                    buildReminderKeyboard()
+                    buildReminderKeyboard(language)
             );
             return;
         }
@@ -63,40 +70,23 @@ public class CalorieRemindersSettingsHandler implements CalorieSettingsHandler{
 
         //Обработка команд настройки напоминаний о приеме пищи
         if (MEAL.equals(cmd[1])) {
-            handleMeal(query, telegramUser, settings);
+            handleMeal(query, telegramUser, settings, language);
             return;
         }
 
         //Обработка команд настройки ежедневных отчетов
         if (DAILY.equals(cmd[1])) {
-            handleDaily(query, telegramUser, settings, cmd);
+            handleDaily(query, telegramUser, settings, cmd, language);
         }
     }
 
-    //Текстовка для статуса настроек
-    private String getRemindersStatusText(UserSettings s) {
-        StringBuilder sb = new StringBuilder();
-
-        // общий флаг
-        sb.append(
-                s.isRemindersEnabled()
-                        ? "🔔 Напоминания: 🟢 включены"
-                        : "🔕 Напоминания: 🔴 выключены"
-        );
-
-        sb.append("\n\n");
-        sb.append(getDailySummaryText(s));
-        sb.append("\n\n");
-        sb.append(getMealReminderText(s));
-
-        return sb.toString();
-    }
 
     private void handleDaily(
             CallbackQuery query,
             TelegramUser user,
             UserSettings userSettings,
-            String[] cmd
+            String[] cmd,
+            AppLanguage language
     ) {
         Long chatId = query.getMessage().getChatId();
 
@@ -122,9 +112,9 @@ public class CalorieRemindersSettingsHandler implements CalorieSettingsHandler{
 
                     calorieTelegramBot.sendEditMessage(
                             chatId,
-                            getRemindersStatusText(userSettings),
+                            settingsTexts.buildRemindersText(userSettings, language),
                             query.getMessage().getMessageId(),
-                            buildReminderKeyboard()
+                            buildReminderKeyboard(language)
                     );
                     return;
                 }
@@ -133,28 +123,17 @@ public class CalorieRemindersSettingsHandler implements CalorieSettingsHandler{
 
         calorieTelegramBot.sendEditMessage(
                 chatId,
-                getDailySummaryText(userSettings),
+                settingsTexts.buildDailySummaryText(userSettings, language, false),
                 query.getMessage().getMessageId(),
-                buildDailyKeyboard(hour, enabled)
+                buildDailyKeyboard(hour, enabled, language)
         );
-    }
-
-    private String getDailySummaryText(UserSettings userSettings) {
-        if (!userSettings.isDailySummaryEnabled()) {
-            return "📊 Итоги дня: 🔴 выключены";
-        }
-
-        int hour = userSettings.getDailySummaryHour();
-        String time = String.format("%02d:00", hour);
-
-        return "📊 Итоги дня: 🟢 включены\n" +
-                "⏰ Время: " + time;
     }
 
     private void handleMeal(
             CallbackQuery query,
             TelegramUser user,
-            UserSettings userSettings
+            UserSettings userSettings,
+            AppLanguage language
     ) {
         if (userSettings.isMealReminderEnabled()) {
             userSettingsService.disableMealReminder(user.getAppUserId());
@@ -167,34 +146,18 @@ public class CalorieRemindersSettingsHandler implements CalorieSettingsHandler{
 
         calorieTelegramBot.sendEditMessage(
                 query.getMessage().getChatId(),
-                getMealReminderText(userSettings),
+                settingsTexts.buildMealReminderText(userSettings, language),
                 query.getMessage().getMessageId(),
-                buildMealKeyboard(updated)
+                buildMealKeyboard(updated, language)
         );
     }
 
-    private String getMealReminderText(UserSettings userSettings) {
-        if (!userSettings.isMealReminderEnabled()) {
-            return "🍽 Напоминания о еде: 🔴 выключены";
-        }
-
-        int minutes = userSettings.getMealReminderIntervalMinutes();
-        int hours = minutes / 60;
-
-        String intervalText = minutes % 60 == 0
-                ? hours + " ч"
-                : minutes + " мин";
-
-        return "🍽 Напоминания о еде: 🟢 включены\n" +
-                "⏳ Интервал без еды: " + intervalText;
-    }
-
-    private InlineKeyboardMarkup buildMealKeyboard(UserSettings s) {
+    private InlineKeyboardMarkup buildMealKeyboard(UserSettings s, AppLanguage language) {
         TelegramKeyboard.TelegramKeyboardBuilder builder = TelegramKeyboard.builder();
 
-        String stateText = s.isMealReminderEnabled()
-                ? "🟢 ВКЛ"
-                : "🔴 ВЫКЛ";
+        String stateText = texts.get(language, s.isMealReminderEnabled()
+                ? BotTextKeys.COMMON_BUTTON_ON
+                : BotTextKeys.COMMON_BUTTON_OFF);
 
         builder.row(
                 TelegramKeyboard.button(
@@ -206,25 +169,25 @@ public class CalorieRemindersSettingsHandler implements CalorieSettingsHandler{
         );
 
         builder.row(
-                TelegramKeyboard.button("⬅ Назад", getHandlerListName())
+                TelegramKeyboard.button(getBackLabel(language), getHandlerListName())
         );
 
         return builder.build();
     }
 
-    private InlineKeyboardMarkup buildReminderKeyboard() {
+    private InlineKeyboardMarkup buildReminderKeyboard(AppLanguage language) {
         TelegramKeyboard.TelegramKeyboardBuilder b = TelegramKeyboard.builder();
 
         String cb = getHandlerListName() + TelegramBot.DEFAULT_DELIMETER;
 
-        b.row(TelegramKeyboard.button("📊 Итоги дня", cb + DAILY));
-        b.row(TelegramKeyboard.button("🍽 Напоминания о еде", cb + MEAL));
-        b.row(TelegramKeyboard.button("⬅ Назад", Command.CALORIE_SETTINGS.getCommandText()));
+        b.row(TelegramKeyboard.button(texts.get(language, BotTextKeys.SETTINGS_BUTTON_DAILY), cb + DAILY));
+        b.row(TelegramKeyboard.button(texts.get(language, BotTextKeys.SETTINGS_BUTTON_MEAL), cb + MEAL));
+        b.row(TelegramKeyboard.button(getBackLabel(language), Command.CALORIE_SETTINGS.getCommandText()));
 
         return b.build();
     }
 
-    private InlineKeyboardMarkup buildDailyKeyboard(int hour, boolean enabled) {
+    private InlineKeyboardMarkup buildDailyKeyboard(int hour, boolean enabled, AppLanguage language) {
         TelegramKeyboard.TelegramKeyboardBuilder b = TelegramKeyboard.builder();
 
         String base = getHandlerListName()
@@ -244,23 +207,28 @@ public class CalorieRemindersSettingsHandler implements CalorieSettingsHandler{
 
         b.row(
                 TelegramKeyboard.button(
-                        enabled ? "🟢 ВКЛ" : "🔴 ВЫКЛ",
+                        texts.get(language, enabled ? BotTextKeys.COMMON_BUTTON_ON : BotTextKeys.COMMON_BUTTON_OFF),
                         base + "TOGGLE" + TelegramBot.DEFAULT_DELIMETER + hour + TelegramBot.DEFAULT_DELIMETER + state
                 )
         );
 
         b.row(
                 TelegramKeyboard.button(
-                        "💾 Сохранить",
+                        "💾 " + texts.get(language, BotTextKeys.COMMON_BUTTON_SAVE),
                         base + "SAVE" + TelegramBot.DEFAULT_DELIMETER + hour + TelegramBot.DEFAULT_DELIMETER + state
                 )
         );
 
         b.row(
-                TelegramKeyboard.button("⬅ Назад", getHandlerListName())
+                TelegramKeyboard.button(getBackLabel(language), getHandlerListName())
         );
 
         return b.build();
+    }
+
+    /** «⬅ Назад» / «⬅ Back». */
+    private String getBackLabel(AppLanguage language) {
+        return "⬅ " + texts.get(language, BotTextKeys.COMMON_BUTTON_BACK);
     }
 
     @Override

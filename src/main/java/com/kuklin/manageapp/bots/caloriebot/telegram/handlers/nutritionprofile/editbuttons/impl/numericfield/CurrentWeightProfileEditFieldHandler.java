@@ -1,6 +1,7 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.editbuttons.impl.numericfield;
 
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
+import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserNutritionProfileService;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.CalorieNutritionProfileEditCallbackUpdateHandler;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.editbuttons.ProfileEditAction;
@@ -45,8 +46,8 @@ public class CurrentWeightProfileEditFieldHandler
     @Override
     public String buildText(UserNutritionProfile profile) {
         return profile.getCurrentWeightKg() == null
-                ? "Вес: не указан"
-                : "Вес: " + profile.getCurrentWeightKg().toPlainString() + " кг";
+                ? texts.get(profile.getUserId(), BotTextKeys.PROFILE_FIELD_WEIGHT_EMPTY)
+                : texts.get(profile.getUserId(), BotTextKeys.PROFILE_FIELD_WEIGHT, profile.getCurrentWeightKg().toPlainString());
     }
 
     @Override

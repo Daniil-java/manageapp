@@ -3,7 +3,7 @@ package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.dish;
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
-import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTextsService;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;
@@ -24,7 +24,7 @@ public class DishKeyboards {
     // Заглушка для кнопок-подписей, которые ничего не делают
     private static final String NO_ACTION = "temp";
 
-    private final CalorieTextsService texts;
+    private final CalorieTexts texts;
 
     /** Кнопки под карточкой блюда: порции, «Сохранить блюдо», «Удалить из дневника». */
     public InlineKeyboardMarkup buildPortionKeyboard(Dish dish, Long appUserId) {

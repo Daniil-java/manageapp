@@ -4,7 +4,7 @@ import com.kuklin.manageapp.bots.caloriebot.components.services.AiRateLimiter;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.MissingFeatureException;
 import com.kuklin.manageapp.bots.caloriebot.components.services.ReportService;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
-import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTextsService;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.i18n.PdfTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.FeatureLimitNotifier;
@@ -41,7 +41,7 @@ public class CalorieReportUpdateHandler implements CalorieBotUpdateHandler {
     private final CalorieWeightHistoryUpdateHandler calorieWeightHistoryUpdateHandler;
     private final FeatureLimitNotifier featureLimitNotifier;
     private final AiRateLimiter aiRateLimiter;
-    private final CalorieTextsService calorieTextsService;
+    private final CalorieTexts calorieTexts;
 
 
     @Override
@@ -52,7 +52,7 @@ public class CalorieReportUpdateHandler implements CalorieBotUpdateHandler {
             Long chatId = update.getMessage().getChatId();
             Long appUserId = telegramUser.getAppUserId();
             calorieTelegramBot.sendReturnedMessage(chatId,
-                    calorieTextsService.get(appUserId, BotTextKeys.REPORT_CHOOSE), buildReportKeyboard(appUserId), null);
+                    calorieTexts.get(appUserId, BotTextKeys.REPORT_CHOOSE), buildReportKeyboard(appUserId), null);
         }
     }
 
@@ -66,7 +66,7 @@ public class CalorieReportUpdateHandler implements CalorieBotUpdateHandler {
         if (data.equals(getHandlerListName())) {
             Long appUserId = telegramUser.getAppUserId();
             calorieTelegramBot.sendEditMessage(chatId,
-                    calorieTextsService.get(appUserId, BotTextKeys.REPORT_CHOOSE), messageId, buildReportKeyboard(appUserId));
+                    calorieTexts.get(appUserId, BotTextKeys.REPORT_CHOOSE), messageId, buildReportKeyboard(appUserId));
             return;
         }
 
@@ -100,7 +100,7 @@ public class CalorieReportUpdateHandler implements CalorieBotUpdateHandler {
         } catch (Exception e) {
             log.error("{} Callback error! Data: {}", calorieTelegramBot.getBotUsername(), data, e);
             calorieTelegramBot.sendReturnedMessage(chatId,
-                    calorieTextsService.get(telegramUser.getAppUserId(), BotTextKeys.REPORT_DATA_ERROR));
+                    calorieTexts.get(telegramUser.getAppUserId(), BotTextKeys.REPORT_DATA_ERROR));
         }
     }
 
@@ -111,7 +111,7 @@ public class CalorieReportUpdateHandler implements CalorieBotUpdateHandler {
     private void executeWithAwait(Long chatId, Long appUserId, Runnable action) {
         Integer awaitMsgId = null;
         try {
-            Message message = calorieTelegramBot.sendReturnedMessage(chatId, calorieTextsService.get(appUserId, PdfTextKeys.GENERATING));
+            Message message = calorieTelegramBot.sendReturnedMessage(chatId, calorieTexts.get(appUserId, PdfTextKeys.GENERATING));
             if (message != null) {
                 awaitMsgId = message.getMessageId();
             }
@@ -166,9 +166,9 @@ public class CalorieReportUpdateHandler implements CalorieBotUpdateHandler {
 
     private void sendPdfOrError(Long chatId, Long appUserId, byte[] content, ReportType type) {
         if (content != null && content.length > 0) {
-            calorieTelegramBot.sendDocument(chatId, content, type.fileName, calorieTextsService.get(appUserId, type.captionKey));
+            calorieTelegramBot.sendDocument(chatId, content, type.fileName, calorieTexts.get(appUserId, type.captionKey));
         } else {
-            calorieTelegramBot.sendReturnedMessage(chatId, calorieTextsService.get(appUserId, PdfTextKeys.FAILED));
+            calorieTelegramBot.sendReturnedMessage(chatId, calorieTexts.get(appUserId, PdfTextKeys.FAILED));
         }
     }
 
@@ -198,11 +198,11 @@ public class CalorieReportUpdateHandler implements CalorieBotUpdateHandler {
         String base = getHandlerListName() + TelegramBot.DEFAULT_DELIMETER;
 
         for (ReportType type : ReportType.values()) {
-            builder.row(TelegramKeyboard.button(calorieTextsService.get(appUserId, type.getButtonKey()), base + type.name()));
+            builder.row(TelegramKeyboard.button(calorieTexts.get(appUserId, type.getButtonKey()), base + type.name()));
         }
 
         builder.row(TelegramKeyboard.button(
-                calorieTextsService.get(appUserId, BotTextKeys.COMMON_BUTTON_CLOSE), Command.CALORIE_CLOSE.getCommandText()));
+                calorieTexts.get(appUserId, BotTextKeys.COMMON_BUTTON_CLOSE), Command.CALORIE_CLOSE.getCommandText()));
         return builder.build();
     }
 

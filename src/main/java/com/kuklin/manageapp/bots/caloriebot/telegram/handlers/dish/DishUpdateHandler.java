@@ -3,7 +3,7 @@ package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.dish;
 import com.kuklin.manageapp.aiconversation.models.enums.ChatModel;
 import com.kuklin.manageapp.bots.caloriebot.components.services.AiInputValidator;
 import com.kuklin.manageapp.bots.caloriebot.components.services.AiRateLimiter;
-import com.kuklin.manageapp.bots.caloriebot.components.services.AnalyticsService;
+import com.kuklin.manageapp.bots.caloriebot.texts.DishTexts;
 import com.kuklin.manageapp.bots.caloriebot.components.services.CalorieAccessService;
 import com.kuklin.manageapp.bots.caloriebot.components.services.DishChoiceChatModelService;
 import com.kuklin.manageapp.bots.caloriebot.components.services.DishService;
@@ -11,7 +11,7 @@ import com.kuklin.manageapp.bots.caloriebot.configurations.TelegramCaloriesBotKe
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.entities.DishChoiceChatModel;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
-import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTextsService;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.DishDto;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
@@ -37,7 +37,6 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 
 import java.io.IOException;
-import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -56,11 +55,11 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
     private final DishChoiceChatModelService dishChoiceChatModelService;
     private final PaymentPlanListUpdateHandler paymentPlanListUpdateHandler;
     private final CalorieAccessService calorieAccessService;
-    private final AnalyticsService analyticsService;
+    private final DishTexts dishTexts;
     private final FeatureLimitNotifier featureLimitNotifier;
     private final AiInputValidator aiInputValidator;
     private final AiRateLimiter aiRateLimiter;
-    private final CalorieTextsService texts;
+    private final CalorieTexts texts;
     private final CalorieMenuButtons menuButtons;
     private final DishKeyboards dishKeyboards;
 
@@ -85,7 +84,7 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
         for (Dish dish: dishes) {
             calorieTelegramBot.sendReturnedMessage(
                     update.getMessage().getChatId(),
-                    analyticsService.getInfo(dish, telegramUser.getAppUserId()),
+                    dishTexts.buildDishCardText(dish, telegramUser.getAppUserId()),
                     dishKeyboards.buildPortionKeyboard(dish, telegramUser.getAppUserId()),
                     null
             );
@@ -194,8 +193,8 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
         Long chatId = message.getChatId();
         // Длительность сообщает Telegram — проверяем до скачивания и до вызова ИИ
         if (!aiInputValidator.isVoiceDurationAllowed(message.getVoice().getDuration())) {
-            calorieTelegramBot.sendReturnedMessage(chatId, texts.get(userId, BotTextKeys.DISH_VOICE_TOO_LONG,
-                    getDurationText(userId, aiInputValidator.getVoiceMaxDuration())));
+            calorieTelegramBot.sendReturnedMessage(chatId,
+                    dishTexts.getVoiceTooLongText(userId, aiInputValidator.getVoiceMaxDuration()));
             return null;
         }
         // Одно обращение на голосовое, хотя ИИ вызывается дважды (расшифровка + анализ)
@@ -213,14 +212,6 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
 
         log.info(request);
         return request;
-    }
-
-    /** «2 мин» / «90 сек»: целые минуты — минутами, иначе секундами. */
-    private String getDurationText(Long userId, Duration duration) {
-        long seconds = duration.toSeconds();
-        return seconds % 60 == 0
-                ? texts.get(userId, BotTextKeys.COMMON_DURATION_MINUTES, String.valueOf(seconds / 60))
-                : texts.get(userId, BotTextKeys.COMMON_DURATION_SECONDS, String.valueOf(seconds));
     }
 
     /**

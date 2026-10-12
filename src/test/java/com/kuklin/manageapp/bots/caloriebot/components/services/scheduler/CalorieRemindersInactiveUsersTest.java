@@ -4,7 +4,7 @@ import com.kuklin.manageapp.bots.caloriebot.components.services.DishService;
 import com.kuklin.manageapp.bots.caloriebot.components.services.ReportService;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserSettingsService;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserSettings;
-import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTextsService;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.i18n.I18nProperties;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.AccessResult;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
@@ -99,7 +99,7 @@ class CalorieRemindersInactiveUsersTest {
     class MealReminder {
         private final MealReminderSchedulerProcessor processor =
                 new MealReminderSchedulerProcessor(userSettingsService, bot, telegramUserService, dishService,
-                        new CalorieTextsService(new I18nProperties(), userSettingsService));
+                        new CalorieTexts(new I18nProperties(), userSettingsService));
 
         @BeforeEach
         void settings() {

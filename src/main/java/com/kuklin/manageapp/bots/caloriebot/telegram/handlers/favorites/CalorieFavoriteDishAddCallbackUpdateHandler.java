@@ -3,7 +3,7 @@ package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.favorites;
 import com.kuklin.manageapp.bots.caloriebot.components.services.DishService;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserFavoriteDishService;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserFavoriteDish;
-import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTextsService;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.AccessResult;
@@ -28,7 +28,7 @@ public class CalorieFavoriteDishAddCallbackUpdateHandler implements CalorieBotUp
     private final UserFavoriteDishService userFavoriteDishService;
     private final DishService dishService;
     private final FeatureLimitNotifier featureLimitNotifier;
-    private final CalorieTextsService texts;
+    private final CalorieTexts texts;
     private final DishKeyboards dishKeyboards;
 
     private static final String SAVED_MSG = "⭐ Добавил блюдо в список сохранённых.";

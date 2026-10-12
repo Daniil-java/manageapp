@@ -8,10 +8,13 @@ import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.C
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.editbuttons.KeyboardTemplates;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.editbuttons.ProfileEditAction;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.editbuttons.ProfileEditFieldHandler;
+import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
@@ -34,10 +37,12 @@ public abstract class AbstractDecimalProfileEditFieldHandler
     //Команда для продолжения работы со старым значением, без сохранения
     protected static final String ADJ_CMD = "ADJ";
 
-    protected static final String VALIDATION_ERROR = "Некорректные данные!";
 
     protected final UserNutritionProfileService profileService;
     protected final CalorieNutritionProfileEditCallbackUpdateHandler callbackHandler;
+    // Полем, а не в конструкторе: иначе пришлось бы менять конструкторы всех наследников
+    @Autowired
+    protected CalorieTexts texts;
 
     // === конфигурация ===
     protected final BigDecimal defaultValue;
@@ -107,7 +112,8 @@ public abstract class AbstractDecimalProfileEditFieldHandler
                     profile = profileService.recalculateAndSave(profile);
                 } catch (UserNutritionProfileValidationException e) {
                     //Недопустимые данные
-                    telegramBot.sendReturnedMessage(chatId, VALIDATION_ERROR);
+                    telegramBot.sendReturnedMessage(chatId,
+                            texts.get(telegramUser.getAppUserId(), BotTextKeys.PROFILE_VALIDATION_ERROR));
                 } catch (InsufficientProfileDataException e) {
                     return;
                 }
@@ -132,7 +138,8 @@ public abstract class AbstractDecimalProfileEditFieldHandler
                         neg,
                         pos,
                         bigPos,
-                        action.getLabelFormat()
+                        value -> texts.get(telegramUser.getAppUserId(), action.getValueKey(), value),
+                        texts.get(telegramUser.getAppUserId(), BotTextKeys.COMMON_BUTTON_SAVE)
                 )
         );
     }

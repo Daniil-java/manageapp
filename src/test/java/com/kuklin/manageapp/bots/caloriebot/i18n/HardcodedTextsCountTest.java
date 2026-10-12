@@ -23,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class HardcodedTextsCountTest {
 
     private static final Path TELEGRAM_SOURCES = Path.of("src/main/java/com/kuklin/manageapp/bots/caloriebot/telegram");
-    private static final int EXPECTED = 201;
+    private static final int EXPECTED = 87;
 
     @Test
     void hardcodedTextsOnlyDecrease() throws IOException {

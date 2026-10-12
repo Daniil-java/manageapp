@@ -7,10 +7,11 @@ import com.kuklin.manageapp.bots.caloriebot.components.services.DishService;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserSettings;
 import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
-import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTextsService;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.dish.DishKeyboards;
+import com.kuklin.manageapp.bots.caloriebot.texts.DishTexts;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.Command;
@@ -38,8 +39,9 @@ public class TodayUpdateHandler implements CalorieBotUpdateHandler {
     private final CalorieTelegramBot calorieTelegramBot;
     private final DishService dishService;
     private final AnalyticsService analyticsService;
+    private final DishTexts dishTexts;
     private final DishKeyboards dishKeyboards;
-    private final CalorieTextsService texts;
+    private final CalorieTexts texts;
 
     // Константы для формирования callback-данных
     private static final String DELIMITER = TelegramBot.DEFAULT_DELIMETER;
@@ -94,7 +96,7 @@ public class TodayUpdateHandler implements CalorieBotUpdateHandler {
 
             calorieTelegramBot.sendReturnedMessage(
                     update.getCallbackQuery().getMessage().getChatId(),
-                    analyticsService.getInfo(dish, userId),
+                    dishTexts.buildDishCardText(dish, userId),
                     dishKeyboards.buildPortionKeyboard(dish, userId),
                     null
             );
@@ -146,7 +148,7 @@ public class TodayUpdateHandler implements CalorieBotUpdateHandler {
      * Генерирует текстовый отчет по блюдам и КБЖУ профиля пользователя.
      */
     private String getTodaySummaryText(Long userId) {
-        return analyticsService.getTodayDiaryText(userId, getUserTime(userId));
+        return dishTexts.buildTodayDiaryText(userId, getUserTime(userId));
     }
 
     /**

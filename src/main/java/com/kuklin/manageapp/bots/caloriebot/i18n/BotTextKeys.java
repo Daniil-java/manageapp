@@ -132,6 +132,118 @@ public final class BotTextKeys {
     public static final String WEIGHT_HISTORY_ENTRY = "weight.history.entry";
     public static final String WEIGHT_HISTORY_TOTAL = "weight.history.total";
 
+    // ── Общие кнопки и единицы ─────────────────────────────────────
+    public static final String COMMON_BUTTON_RETURN = "common.button.return";
+    public static final String COMMON_BUTTON_SAVE = "common.button.save";
+    public static final String COMMON_BUTTON_NO = "common.button.no";
+    public static final String COMMON_BUTTON_ON = "common.button.on";
+    public static final String COMMON_BUTTON_OFF = "common.button.off";
+    public static final String COMMON_UNIT_ML = "common.unit.ml";
+    public static final String COMMON_UNIT_CM = "common.unit.cm";
+    public static final String COMMON_UNIT_KG = "common.unit.kg";
+    public static final String COMMON_DURATION_HOURS = "common.duration.hours";
+
+    // ── Профиль питания: просмотр ──────────────────────────────────
+    // Значения пола, активности, цели, диеты — UserNutritionProfile.*.getTextKey(); пол с иконкой — profile.view.sex.<SEX>
+    public static final String PROFILE_VIEW_TITLE = "profile.view.title";
+    public static final String PROFILE_VIEW_SEX = "profile.view.sex";
+    public static final String PROFILE_VIEW_AGE = "profile.view.age";
+    public static final String PROFILE_VIEW_AGE_VALUE = "profile.view.age-value";
+    public static final String PROFILE_VIEW_HEIGHT = "profile.view.height";
+    public static final String PROFILE_VIEW_WEIGHT = "profile.view.weight";
+    public static final String PROFILE_VIEW_ACTIVITY = "profile.view.activity";
+    public static final String PROFILE_VIEW_GOAL = "profile.view.goal";
+    public static final String PROFILE_VIEW_DIET = "profile.view.diet";
+    public static final String PROFILE_VIEW_NO_DATA = "profile.view.no-data";
+    public static final String PROFILE_VIEW_NORMS_TITLE = "profile.view.norms-title";
+    public static final String PROFILE_VIEW_NORMS_NO_DATA = "profile.view.norms-no-data";
+    public static final String PROFILE_VIEW_CALORIES = "profile.view.calories";
+    public static final String PROFILE_VIEW_PROTEINS = "profile.view.proteins";
+    public static final String PROFILE_VIEW_FATS = "profile.view.fats";
+    public static final String PROFILE_VIEW_CARBS = "profile.view.carbs";
+    public static final String PROFILE_VIEW_MANUAL_MARK = "profile.view.manual-mark";
+    public static final String PROFILE_VIEW_MODE_MANUAL = "profile.view.mode.manual";
+    public static final String PROFILE_VIEW_MODE_AUTO = "profile.view.mode.auto";
+    public static final String PROFILE_VIEW_WATER_TITLE = "profile.view.water-title";
+    public static final String PROFILE_VIEW_WATER_NO_DATA = "profile.view.water-no-data";
+    public static final String PROFILE_VIEW_WATER = "profile.view.water";
+
+    // ── Профиль питания: экран, редактирование, поля ───────────────
+    // Подписи действий — ProfileEditAction.getTextKey(), значение на счётчике — getValueKey(), заголовок выбора — getChooseKey()
+    public static final String PROFILE_EMPTY = "profile.empty";
+    public static final String PROFILE_BUTTON_FILL = "profile.button.fill";
+    public static final String PROFILE_BUTTON_EDIT = "profile.button.edit";
+    public static final String PROFILE_EDIT_QUESTION = "profile.edit.question";
+    public static final String PROFILE_EDIT_BUTTON_AUTO = "profile.edit.button.auto";
+    public static final String PROFILE_EDIT_BUTTON_MANUAL = "profile.edit.button.manual";
+    public static final String PROFILE_VALIDATION_ERROR = "profile.validation-error";
+    public static final String PROFILE_FIELD_AGE = "profile.field.age";
+    public static final String PROFILE_FIELD_AGE_EMPTY = "profile.field.age-empty";
+    public static final String PROFILE_FIELD_HEIGHT = "profile.field.height";
+    public static final String PROFILE_FIELD_HEIGHT_EMPTY = "profile.field.height-empty";
+    public static final String PROFILE_FIELD_WEIGHT = "profile.field.weight";
+    public static final String PROFILE_FIELD_WEIGHT_EMPTY = "profile.field.weight-empty";
+    public static final String PROFILE_FIELD_CALORIES = "profile.field.calories";
+    public static final String PROFILE_FIELD_CALORIES_EMPTY = "profile.field.calories-empty";
+    public static final String PROFILE_FIELD_CALORIES_FORMULA = "profile.field.calories-formula";
+    public static final String PROFILE_FIELD_CALORIES_HINT = "profile.field.calories-hint";
+    public static final String PROFILE_FIELD_WATER = "profile.field.water";
+    public static final String PROFILE_FIELD_WATER_EMPTY = "profile.field.water-empty";
+    public static final String PROFILE_FIELD_WATER_FORMULA = "profile.field.water-formula";
+    public static final String PROFILE_FIELD_WATER_HINT_MANUAL = "profile.field.water-hint.manual";
+    public static final String PROFILE_FIELD_WATER_HINT_MANUAL_FORMULA = "profile.field.water-hint.manual-formula";
+    public static final String PROFILE_FIELD_WATER_HINT_AUTO = "profile.field.water-hint.auto";
+    public static final String PROFILE_FIELD_MARK_MANUAL = "profile.field.mark.manual";
+    public static final String PROFILE_FIELD_MARK_FORMULA = "profile.field.mark.formula";
+    public static final String PROFILE_FIELD_BUTTON_WATER_FORMULA = "profile.field.button.water-formula";
+
+    // ── Пересчёт норм ──────────────────────────────────────────────
+    public static final String PROFILE_RECALC_NEEDS_PROFILE = "profile.recalc.needs-profile";
+    public static final String PROFILE_RECALC_WATER_NEEDS_PROFILE = "profile.recalc.water-needs-profile";
+    public static final String PROFILE_RECALC_ASK_AUTO = "profile.recalc.ask-auto";
+    public static final String PROFILE_RECALC_ASK_WATER = "profile.recalc.ask-water";
+    public static final String PROFILE_RECALC_DIFF_LINE = "profile.recalc.diff-line";
+    public static final String PROFILE_RECALC_BUTTON_YES = "profile.recalc.button.yes";
+    public static final String PROFILE_RECALC_BUTTON_YES_WATER = "profile.recalc.button.yes-water";
+    public static final String PROFILE_LABEL_CALORIES = "profile.label.calories";
+    public static final String PROFILE_LABEL_PROTEINS = "profile.label.proteins";
+    public static final String PROFILE_LABEL_FATS = "profile.label.fats";
+    public static final String PROFILE_LABEL_CARBS = "profile.label.carbs";
+    public static final String PROFILE_LABEL_WATER = "profile.label.water";
+
+    // ── Калькулятор с лендинга ─────────────────────────────────────
+    public static final String CALC_APPLIED = "calc.applied";
+    public static final String CALC_SAME = "calc.same";
+    public static final String CALC_SKIPPED = "calc.skipped";
+    public static final String CALC_BROKEN = "calc.broken";
+    public static final String CALC_UPDATED = "calc.updated";
+    public static final String CALC_QUESTION_NORM = "calc.question.norm";
+    public static final String CALC_QUESTION_NORM_UNKNOWN = "calc.question.norm-unknown";
+    public static final String CALC_QUESTION_DATA = "calc.question.data";
+    public static final String CALC_QUESTION_MANUAL_NORM = "calc.question.manual-norm";
+    public static final String CALC_QUESTION_ASK = "calc.question.ask";
+    public static final String CALC_NORM = "calc.norm";
+    public static final String CALC_BUTTON_UPDATE = "calc.button.update";
+    public static final String CALC_BUTTON_KEEP = "calc.button.keep";
+
+    // ── Настройки ──────────────────────────────────────────────────
+    public static final String SETTINGS_REMINDERS_ON = "settings.reminders-on";
+    public static final String SETTINGS_REMINDERS_OFF = "settings.reminders-off";
+    public static final String SETTINGS_TIMEZONE = "settings.timezone";
+    public static final String SETTINGS_DAILY_ON = "settings.daily-on";
+    public static final String SETTINGS_DAILY_OFF = "settings.daily-off";
+    public static final String SETTINGS_DAILY_TIME = "settings.daily-time";
+    public static final String SETTINGS_DAILY_TIME_LOCAL = "settings.daily-time-local";
+    public static final String SETTINGS_MEAL_ON = "settings.meal-on";
+    public static final String SETTINGS_MEAL_OFF = "settings.meal-off";
+    public static final String SETTINGS_MEAL_INTERVAL = "settings.meal-interval";
+    public static final String SETTINGS_BUTTON_TIMEZONE = "settings.button.timezone";
+    public static final String SETTINGS_BUTTON_REMINDERS = "settings.button.reminders";
+    public static final String SETTINGS_BUTTON_DAILY = "settings.button.daily";
+    public static final String SETTINGS_BUTTON_MEAL = "settings.button.meal";
+    public static final String SETTINGS_BUTTON_BACK_TO_SETTINGS = "settings.button.back-to-settings";
+    public static final String SETTINGS_TIMEZONE_SET = "settings.timezone-set";
+
     // ── Рассылки ──────────────────────────────────────────────────
     public static final String REMINDER_MEAL = "reminder.meal";
 }

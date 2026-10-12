@@ -30,7 +30,7 @@ class PdfTextsTest {
     private static final Instant FROM = Instant.parse("2026-10-05T00:00:00Z");
     private static final Instant TO = Instant.parse("2026-10-11T23:59:59Z");
 
-    private final CalorieTextsService texts = new CalorieTextsService(new I18nProperties(), mock(UserSettingsService.class));
+    private final CalorieTexts texts = new CalorieTexts(new I18nProperties(), mock(UserSettingsService.class));
     private final PdfTexts en = new PdfTexts(texts, AppLanguage.EN);
     private final PdfTexts ru = new PdfTexts(texts, AppLanguage.RU);
 

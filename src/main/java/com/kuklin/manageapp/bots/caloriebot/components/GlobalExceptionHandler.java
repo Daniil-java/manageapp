@@ -2,7 +2,7 @@ package com.kuklin.manageapp.bots.caloriebot.components;
 
 import com.kuklin.manageapp.bots.caloriebot.components.services.security.RequestSizeLimitFilter;
 import com.kuklin.manageapp.bots.caloriebot.configurations.AiInputLimitsProperties;
-import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTextsService;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponse;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
@@ -29,7 +29,7 @@ import java.util.Arrays;
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     private final AiInputLimitsProperties aiInputLimits;
-    private final CalorieTextsService texts;
+    private final CalorieTexts texts;
 
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ErrorResponse> handleBadCredentials(BadCredentialsException e, WebRequest request) {

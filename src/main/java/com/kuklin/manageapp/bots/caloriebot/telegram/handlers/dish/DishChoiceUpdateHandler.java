@@ -3,7 +3,7 @@ package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.dish;
 import com.kuklin.manageapp.bots.caloriebot.entities.DishChoiceChatModel;
 import com.kuklin.manageapp.bots.caloriebot.components.services.DishChoiceChatModelService;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
-import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTextsService;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
@@ -19,7 +19,7 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 public class DishChoiceUpdateHandler implements CalorieBotUpdateHandler {
     private final CalorieTelegramBot calorieTelegramBot;
     private final DishChoiceChatModelService dishChoiceChatModelService;
-    private final CalorieTextsService texts;
+    private final CalorieTexts texts;
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
         CallbackQuery callbackQuery = update.getCallbackQuery();

@@ -6,7 +6,7 @@ import java.util.Map;
 
 /**
  * Ошибка для клиента: код + значения для текста. Самого текста здесь нет — он в словарях errors_*:
- * API отдаёт текст из errors_en (GlobalExceptionHandler), бот — на языке пользователя (CalorieTextsService.error).
+ * API отдаёт текст из errors_en (GlobalExceptionHandler), бот — на языке пользователя (CalorieTexts.error).
  */
 @Data
 public class ErrorResponseException extends RuntimeException{

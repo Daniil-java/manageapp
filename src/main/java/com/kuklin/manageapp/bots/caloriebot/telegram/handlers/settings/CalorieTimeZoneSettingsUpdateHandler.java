@@ -1,6 +1,8 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.settings;
 
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserSettingsService;
+import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
@@ -24,6 +26,7 @@ import java.util.List;
 public class CalorieTimeZoneSettingsUpdateHandler implements CalorieSettingsHandler{
     private final CalorieTelegramBot calorieTelegramBot;
     private final UserSettingsService userSettingsService;
+    private final CalorieTexts texts;
     //Команды для коллбэка
     //SET - означает сохранение какого-либо параметра
     private static final String SET_CMD = "SET";
@@ -45,7 +48,7 @@ public class CalorieTimeZoneSettingsUpdateHandler implements CalorieSettingsHand
         if (data.equals(getHandlerListName())) {
             calorieTelegramBot.sendEditMessage(
                     chatId,
-                    getLabel(),
+                    texts.get(telegramUser.getAppUserId(), getLabelKey()),
                     query.getMessage().getMessageId(),
                     getTimeZoneKeyboard(0)
             );
@@ -64,11 +67,11 @@ public class CalorieTimeZoneSettingsUpdateHandler implements CalorieSettingsHand
             //Возращаю сообщение с кнопкой возврата к настройкам
             calorieTelegramBot.sendEditMessage(
                     chatId,
-                    "✅ Таймзона установлена: " + tz,
+                    texts.get(telegramUser.getAppUserId(), BotTextKeys.SETTINGS_TIMEZONE_SET, tz),
                     query.getMessage().getMessageId(),
                     TelegramKeyboard.builder()
                             .row(TelegramKeyboard.button(
-                                    "\uD83D\uDD19 Вернуться к настройкам",
+                                    texts.get(telegramUser.getAppUserId(), BotTextKeys.SETTINGS_BUTTON_BACK_TO_SETTINGS),
                                     Command.CALORIE_SETTINGS.getCommandText()
                             ))
                             .build()
@@ -84,7 +87,7 @@ public class CalorieTimeZoneSettingsUpdateHandler implements CalorieSettingsHand
 
             calorieTelegramBot.sendEditMessage(
                     chatId,
-                    getLabel(),
+                    texts.get(telegramUser.getAppUserId(), getLabelKey()),
                     query.getMessage().getMessageId(),
                     getTimeZoneKeyboard(page)
             );
@@ -164,8 +167,8 @@ public class CalorieTimeZoneSettingsUpdateHandler implements CalorieSettingsHand
         return Command.CALORIE_SETTINGS_TIMEZONE.getCommandText();
     }
     @Override
-    public String getLabel() {
-        return "\uD83C\uDF0EТаймзона";
+    public String getLabelKey() {
+        return BotTextKeys.SETTINGS_BUTTON_TIMEZONE;
     }
 
     private record ZoneItem(String label, String zoneId) {}

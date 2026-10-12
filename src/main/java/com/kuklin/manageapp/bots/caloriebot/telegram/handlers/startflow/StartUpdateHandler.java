@@ -4,7 +4,7 @@ import com.kuklin.manageapp.bots.caloriebot.components.services.UserNutritionPro
 import com.kuklin.manageapp.bots.caloriebot.components.services.UtmService;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
-import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTextsService;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.models.landing.CalculatorStartParam;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.KeyboardCalorieUpdateHandler;
@@ -36,7 +36,7 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
     private final UtmService utmService;
     private final KeyboardCalorieUpdateHandler keyboardCalorieUpdateHandler;
     private final CalculatorProfileUpdateHandler calculatorProfileUpdateHandler;
-    private final CalorieTextsService texts;
+    private final CalorieTexts texts;
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
