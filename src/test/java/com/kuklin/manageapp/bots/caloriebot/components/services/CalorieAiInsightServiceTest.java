@@ -5,7 +5,7 @@ import com.kuklin.manageapp.bots.caloriebot.components.repository.CalorieAiInsig
 import com.kuklin.manageapp.bots.caloriebot.entities.CalorieAiInsight;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserSettings;
 import com.kuklin.manageapp.bots.caloriebot.models.AiInsightType;
-import com.kuklin.manageapp.bots.caloriebot.models.InsightLanguage;
+import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.AccessResult;
@@ -113,15 +113,15 @@ class CalorieAiInsightServiceTest {
     @Test
     void refreshAsksAiForLastSevenDaysInUserZoneAndSaves() {
         when(repository.findByAppUserIdAndType(USER_ID, AiInsightType.WEEKLY_SUMMARY)).thenReturn(Optional.empty());
-        when(reportService.getAiInsightReport(eq(AiInsightType.WEEKLY_SUMMARY), any(), any(), eq(USER_ID), eq(InsightLanguage.EN)))
+        when(reportService.getAiInsightReport(eq(AiInsightType.WEEKLY_SUMMARY), any(), any(), eq(USER_ID), eq(AppLanguage.EN)))
                 .thenReturn(AccessResult.success(SUMMARY_JSON));
 
-        AiInsightDto dto = service.refresh(USER_ID, AiInsightType.WEEKLY_SUMMARY);
+        AiInsightDto dto = service.refresh(USER_ID, AiInsightType.WEEKLY_SUMMARY, AppLanguage.EN);
 
         LocalDate today = LocalDate.now(ZONE);
         ArgumentCaptor<Instant> from = ArgumentCaptor.forClass(Instant.class);
         ArgumentCaptor<Instant> to = ArgumentCaptor.forClass(Instant.class);
-        verify(reportService).getAiInsightReport(eq(AiInsightType.WEEKLY_SUMMARY), from.capture(), to.capture(), eq(USER_ID), eq(InsightLanguage.EN));
+        verify(reportService).getAiInsightReport(eq(AiInsightType.WEEKLY_SUMMARY), from.capture(), to.capture(), eq(USER_ID), eq(AppLanguage.EN));
         assertThat(from.getValue()).isEqualTo(today.minusDays(6).atStartOfDay(ZONE).toInstant());
         assertThat(to.getValue()).isBefore(today.plusDays(1).atStartOfDay(ZONE).toInstant());
         assertThat(to.getValue().atZone(ZONE).toLocalDate()).isEqualTo(today);
@@ -144,19 +144,10 @@ class CalorieAiInsightServiceTest {
         when(repository.findByAppUserIdAndType(USER_ID, AiInsightType.WEEKLY_SUMMARY)).thenReturn(Optional.empty());
         when(reportService.getAiInsightReport(any(), any(), any(), any(), any())).thenReturn(AccessResult.success(SUMMARY_JSON));
 
-        AiInsightDto dto = service.refresh(USER_ID, AiInsightType.WEEKLY_SUMMARY, InsightLanguage.RU);
+        AiInsightDto dto = service.refresh(USER_ID, AiInsightType.WEEKLY_SUMMARY, AppLanguage.RU);
 
-        verify(reportService).getAiInsightReport(eq(AiInsightType.WEEKLY_SUMMARY), any(), any(), eq(USER_ID), eq(InsightLanguage.RU));
+        verify(reportService).getAiInsightReport(eq(AiInsightType.WEEKLY_SUMMARY), any(), any(), eq(USER_ID), eq(AppLanguage.RU));
         assertThat(dto.language()).isEqualTo("ru");
-    }
-
-    @Test
-    void insightLanguageFromCode() {
-        assertThat(InsightLanguage.fromCode("ru")).isEqualTo(InsightLanguage.RU);
-        assertThat(InsightLanguage.fromCode("ru-RU")).isEqualTo(InsightLanguage.RU);
-        assertThat(InsightLanguage.fromCode("EN")).isEqualTo(InsightLanguage.EN);
-        assertThat(InsightLanguage.fromCode(null)).isEqualTo(InsightLanguage.EN);
-        assertThat(InsightLanguage.fromCode("de")).isEqualTo(InsightLanguage.EN);
     }
 
     @Test
@@ -164,7 +155,7 @@ class CalorieAiInsightServiceTest {
         when(repository.findByAppUserIdAndType(USER_ID, AiInsightType.MONTHLY_SUMMARY)).thenReturn(Optional.empty());
         when(reportService.getAiInsightReport(any(), any(), any(), any(), any())).thenReturn(AccessResult.success(SUMMARY_JSON));
 
-        AiInsightDto dto = service.refresh(USER_ID, AiInsightType.MONTHLY_SUMMARY);
+        AiInsightDto dto = service.refresh(USER_ID, AiInsightType.MONTHLY_SUMMARY, AppLanguage.EN);
 
         assertThat(dto.periodFrom()).isEqualTo(LocalDate.now(ZONE).minusDays(29));
     }
@@ -176,7 +167,7 @@ class CalorieAiInsightServiceTest {
         when(repository.findByAppUserIdAndType(USER_ID, AiInsightType.WEEKLY_SUMMARY)).thenReturn(Optional.of(existing));
         when(reportService.getAiInsightReport(any(), any(), any(), any(), any())).thenReturn(AccessResult.success(SUMMARY_JSON));
 
-        service.refresh(USER_ID, AiInsightType.WEEKLY_SUMMARY);
+        service.refresh(USER_ID, AiInsightType.WEEKLY_SUMMARY, AppLanguage.EN);
 
         ArgumentCaptor<CalorieAiInsight> saved = ArgumentCaptor.forClass(CalorieAiInsight.class);
         verify(repository).save(saved.capture());
@@ -191,9 +182,9 @@ class CalorieAiInsightServiceTest {
         when(repository.findByAppUserIdAndType(any(), any())).thenReturn(Optional.empty());
         when(reportService.getAiInsightReport(any(), any(), any(), any(), any())).thenReturn(AccessResult.success(SUMMARY_JSON));
 
-        service.refresh(USER_ID, AiInsightType.WEEKLY_SUMMARY);
+        service.refresh(USER_ID, AiInsightType.WEEKLY_SUMMARY, AppLanguage.EN);
 
-        assertError(() -> service.refresh(USER_ID, AiInsightType.WEEKLY_SUMMARY), ErrorStatus.AI_INSIGHT_TOO_FREQUENT);
+        assertError(() -> service.refresh(USER_ID, AiInsightType.WEEKLY_SUMMARY, AppLanguage.EN), ErrorStatus.AI_INSIGHT_TOO_FREQUENT);
         verify(reportService, times(1)).getAiInsightReport(any(), any(), any(), any(), any());
     }
 
@@ -202,8 +193,8 @@ class CalorieAiInsightServiceTest {
         when(repository.findByAppUserIdAndType(any(), any())).thenReturn(Optional.empty());
         when(reportService.getAiInsightReport(any(), any(), any(), any(), any())).thenReturn(AccessResult.success(SUMMARY_JSON));
 
-        service.refresh(USER_ID, AiInsightType.WEEKLY_SUMMARY);
-        service.refresh(USER_ID, AiInsightType.PATTERNS_WEEK);
+        service.refresh(USER_ID, AiInsightType.WEEKLY_SUMMARY, AppLanguage.EN);
+        service.refresh(USER_ID, AiInsightType.PATTERNS_WEEK, AppLanguage.EN);
 
         verify(reportService, times(2)).getAiInsightReport(any(), any(), any(), any(), any());
     }
@@ -212,8 +203,8 @@ class CalorieAiInsightServiceTest {
     void failedAiCallCountsTowardsCooldown() {
         when(reportService.getAiInsightReport(any(), any(), any(), any(), any())).thenReturn(AccessResult.success(null));
 
-        assertError(() -> service.refresh(USER_ID, AiInsightType.WEEKLY_SUMMARY), ErrorStatus.AI_INSIGHT_FAILED);
-        assertError(() -> service.refresh(USER_ID, AiInsightType.WEEKLY_SUMMARY), ErrorStatus.AI_INSIGHT_TOO_FREQUENT);
+        assertError(() -> service.refresh(USER_ID, AiInsightType.WEEKLY_SUMMARY, AppLanguage.EN), ErrorStatus.AI_INSIGHT_FAILED);
+        assertError(() -> service.refresh(USER_ID, AiInsightType.WEEKLY_SUMMARY, AppLanguage.EN), ErrorStatus.AI_INSIGHT_TOO_FREQUENT);
 
         verify(reportService, times(1)).getAiInsightReport(any(), any(), any(), any(), any());
         verify(repository, never()).save(any());
@@ -224,8 +215,8 @@ class CalorieAiInsightServiceTest {
         when(reportService.getAiInsightReport(any(), any(), any(), any(), any()))
                 .thenThrow(new ErrorResponseException(ErrorStatus.AI_INSIGHT_NOT_ENOUGH_DATA));
 
-        assertError(() -> service.refresh(USER_ID, AiInsightType.WEEKLY_SUMMARY), ErrorStatus.AI_INSIGHT_NOT_ENOUGH_DATA);
-        assertError(() -> service.refresh(USER_ID, AiInsightType.WEEKLY_SUMMARY), ErrorStatus.AI_INSIGHT_NOT_ENOUGH_DATA);
+        assertError(() -> service.refresh(USER_ID, AiInsightType.WEEKLY_SUMMARY, AppLanguage.EN), ErrorStatus.AI_INSIGHT_NOT_ENOUGH_DATA);
+        assertError(() -> service.refresh(USER_ID, AiInsightType.WEEKLY_SUMMARY, AppLanguage.EN), ErrorStatus.AI_INSIGHT_NOT_ENOUGH_DATA);
 
         verify(reportService, times(2)).getAiInsightReport(any(), any(), any(), any(), any());
         verify(repository, never()).save(any());
@@ -243,10 +234,10 @@ class CalorieAiInsightServiceTest {
         });
 
         CompletableFuture<AiInsightDto> first =
-                CompletableFuture.supplyAsync(() -> service.refresh(USER_ID, AiInsightType.WEEKLY_SUMMARY));
+                CompletableFuture.supplyAsync(() -> service.refresh(USER_ID, AiInsightType.WEEKLY_SUMMARY, AppLanguage.EN));
         assertThat(aiStarted.await(5, TimeUnit.SECONDS)).isTrue();
 
-        assertError(() -> service.refresh(USER_ID, AiInsightType.WEEKLY_SUMMARY), ErrorStatus.AI_INSIGHT_TOO_FREQUENT);
+        assertError(() -> service.refresh(USER_ID, AiInsightType.WEEKLY_SUMMARY, AppLanguage.EN), ErrorStatus.AI_INSIGHT_TOO_FREQUENT);
 
         releaseAi.countDown();
         assertThat(first.get(5, TimeUnit.SECONDS).payload().get("headline").asText()).isEqualTo("Solid week");

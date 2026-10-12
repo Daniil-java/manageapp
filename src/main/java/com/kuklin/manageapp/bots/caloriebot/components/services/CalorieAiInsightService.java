@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kuklin.manageapp.bots.caloriebot.components.repository.CalorieAiInsightRepository;
 import com.kuklin.manageapp.bots.caloriebot.entities.CalorieAiInsight;
 import com.kuklin.manageapp.bots.caloriebot.models.AiInsightType;
-import com.kuklin.manageapp.bots.caloriebot.models.InsightLanguage;
+import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.MissingFeatureException;
@@ -71,20 +71,13 @@ public class CalorieAiInsightService {
     }
 
     /**
-     * Генерирует инсайт заново через ИИ, перезаписывает сохранённый и возвращает.
+     * Генерирует инсайт заново через ИИ на языке language, перезаписывает сохранённый (вместе с языком) и возвращает.
      *
      * @throws ErrorResponseException AI_INSIGHT_TOO_FREQUENT — генерация уже идёт или к ИИ обращались меньше минуты назад;
      *                                AI_INSIGHT_NOT_ENOUGH_DATA — мало записей еды (ИИ не вызывается);
      *                                AI_INSIGHT_FAILED — ИИ ответил с ошибкой.
      */
-    public AiInsightDto refresh(Long userId, AiInsightType type) {
-        return refresh(userId, type, InsightLanguage.EN);
-    }
-
-    /**
-     * То же на языке интерфейса: ИИ пишет инсайт на language, язык сохраняется вместе с инсайтом.
-     */
-    public AiInsightDto refresh(Long userId, AiInsightType type, InsightLanguage language) {
+    public AiInsightDto refresh(Long userId, AiInsightType type, AppLanguage language) {
         String key = userId + ":" + type;
         if (!inProgress.add(key)) {
             throw new ErrorResponseException(ErrorStatus.AI_INSIGHT_TOO_FREQUENT);

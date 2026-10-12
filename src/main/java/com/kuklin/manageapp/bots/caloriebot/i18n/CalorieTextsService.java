@@ -4,6 +4,7 @@ import com.ibm.icu.text.MessageFormat;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserSettingsService;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSource;
 import org.springframework.context.NoSuchMessageException;
@@ -27,6 +28,7 @@ import java.util.Map;
  */
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class CalorieTextsService {
     /** Словари: i18n/calorie/<имя>_<код языка>.properties. Новый словарь — сюда же. */
     static final List<String> BUNDLES = List.of(
@@ -34,15 +36,10 @@ public class CalorieTextsService {
             "i18n/calorie/errors"
     );
 
-    private final MessageSource messages;
+    private final I18nProperties properties;
     private final UserSettingsService userSettingsService;
-    private final AppLanguage defaultLanguage;
-
-    public CalorieTextsService(I18nProperties properties, UserSettingsService userSettingsService) {
-        this.userSettingsService = userSettingsService;
-        this.defaultLanguage = properties.getDefaultLanguage();
-        this.messages = buildMessageSource();
-    }
+    // Свой словарь калорийного бота, не общий бин MessageSource — собирается здесь, в конструктор не попадает
+    private final MessageSource messages = buildMessageSource();
 
     /** Текст на языке пользователя приложения (appUserId). */
     public String get(Long appUserId, String key, Object... args) {
@@ -87,9 +84,9 @@ public class CalorieTextsService {
 
     /** Язык пользователя: выбранный в настройках или язык по умолчанию. */
     public AppLanguage languageOf(Long appUserId) {
-        if (appUserId == null) return defaultLanguage;
+        if (appUserId == null) return getDefaultLanguage();
         return AppLanguage.fromCode(userSettingsService.findLanguageCode(appUserId))
-                .orElse(defaultLanguage);
+                .orElseGet(this::getDefaultLanguage);
     }
 
     /** Выбрал ли пользователь язык сам (иначе действует язык по умолчанию). */
@@ -103,7 +100,7 @@ public class CalorieTextsService {
     }
 
     public AppLanguage getDefaultLanguage() {
-        return defaultLanguage;
+        return properties.getDefaultLanguage();
     }
 
     static String format(AppLanguage language, String pattern, Object... args) {
@@ -118,6 +115,7 @@ public class CalorieTextsService {
     /** Шаблон на нужном языке; нет ключа — из словаря по умолчанию; нет и там — null (и ошибка в лог). */
     private Template findTemplate(AppLanguage language, String key) {
         String pattern = findPattern(language, key);
+        AppLanguage defaultLanguage = getDefaultLanguage();
         if (pattern == null && language != defaultLanguage) {
             log.warn("No text '{}' for language {}, using {}", key, language, defaultLanguage);
             language = defaultLanguage;

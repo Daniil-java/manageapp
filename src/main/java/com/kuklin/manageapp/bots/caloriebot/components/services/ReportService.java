@@ -12,7 +12,8 @@ import com.kuklin.manageapp.bots.caloriebot.models.feature.BotFeature;
 import com.kuklin.manageapp.bots.caloriebot.components.RequiresFeature;
 import com.kuklin.manageapp.bots.caloriebot.configurations.AiInputLimitsProperties;
 import com.kuklin.manageapp.bots.caloriebot.models.AiInsightType;
-import com.kuklin.manageapp.bots.caloriebot.models.InsightLanguage;
+import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTextsService;
 import com.kuklin.manageapp.bots.caloriebot.models.airesponse.AiPatternAnalysisResponse;
 import com.kuklin.manageapp.bots.caloriebot.models.airesponse.InsightPayloadRecord;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
@@ -79,6 +80,7 @@ public class ReportService {
     private final OpenAiProviderProcessor openAiProviderProcessor;
     private final TelegramCaloriesBotKeyComponents components;
     private final AiInputLimitsProperties aiInputLimits;
+    private final CalorieTextsService calorieTextsService;
     // Маппер с поддержкой Java 8 Time API (даты блюд в JSON для ИИ)
     private final ObjectMapper mapper = new ObjectMapper()
             .registerModule(new JavaTimeModule())
@@ -144,15 +146,8 @@ public class ReportService {
      * @throws ErrorResponseException AI_INSIGHT_NOT_ENOUGH_DATA — если еду записывали меньше чем в
      *                                {@value #INSIGHT_MIN_DAYS_WITH_DISHES} разных днях. ИИ в этом случае не вызывается.
      */
-    public AccessResult<String> getAiInsightReport(AiInsightType type, Instant from, Instant to, Long userId) {
-        return getAiInsightReport(type, from, to, userId, InsightLanguage.EN);
-    }
-
-    /**
-     * То же на языке интерфейса пользователя: ИИ пишет текст инсайта на language.
-     */
     public AccessResult<String> getAiInsightReport(AiInsightType type, Instant from, Instant to, Long userId,
-                                                   InsightLanguage language) {
+                                                   AppLanguage language) {
         ReportData data = loadReportData(userId, from, to);
 
         long daysWithDishes = data.dishes().stream()
@@ -175,7 +170,7 @@ public class ReportService {
             };
             String periodLabel = "последние " + type.getPeriodDays() + " дней";
 
-            String prompt = AI_PERSONA + String.format(request, periodLabel, language.getPromptName(), jsonContext);
+            String prompt = AI_PERSONA + String.format(request, periodLabel, language.getNativeName(), jsonContext);
             String response = openAiProviderProcessor.fetchJsonResponse(
                     components.getAiKey(),
                     prompt,
@@ -197,7 +192,8 @@ public class ReportService {
      * Получает текстовый анализ за неделю от ИИ.
      */
     private String getWeeklyDeepReport(ReportData data) {
-        String prompt = AI_PERSONA + String.format(WEEK_AI_REQUEST, data.dishes().toString(), data.profile().toString());
+        String prompt = AI_PERSONA + String.format(WEEK_AI_REQUEST,
+                data.dishes().toString(), data.profile().toString(), aiLanguageOf(data.userId()));
         return fetchAiResponse(prompt, "WEEKLY DEEP REPORT");
     }
 
@@ -214,7 +210,7 @@ public class ReportService {
         // Компоновка промпта: Личность ИИ + Инструкция + Данные профиля + Список блюд
         String prompt = AI_PERSONA + String.format(
                 AI_REQUEST_TODAY_ANALYSIS,
-                profile, Dish.toStringList(dishes), userTime.toString()
+                profile, Dish.toStringList(dishes), userTime.toString(), aiLanguageOf(userId)
         );
 
         return AccessResult.success(fetchAiResponse(prompt, "AI DAY REPORT"));
@@ -298,7 +294,8 @@ public class ReportService {
         );
 
         String jsonContext = mapper.writeValueAsString(payload);
-        String response = fetchAiResponse(String.format(AI_REQUEST_PATTERN_ANALYSIS, jsonContext), "Nutrition Report");
+        String response = fetchAiResponse(
+                String.format(AI_REQUEST_PATTERN_ANALYSIS, jsonContext, aiLanguageOf(data.userId())), "Nutrition Report");
 
         // Маппинг JSON-ответа от ИИ обратно в Java-объект
         return mapper.readValue(response, AiPatternAnalysisResponse.class);
@@ -315,7 +312,8 @@ public class ReportService {
         );
 
         // Анализ текстового представления таблицы через ИИ
-        String aiResponse = fetchAiResponse(String.format(AI_REQUEST_PREDICTION, dailyTable.print()), "PERIOD REPORT");
+        String aiResponse = fetchAiResponse(
+                String.format(AI_REQUEST_PREDICTION, dailyTable.print(), aiLanguageOf(data.userId())), "PERIOD REPORT");
 
         return new ReportResponseRecord(dailyTable, aiResponse, "");
     }
@@ -360,6 +358,13 @@ public class ReportService {
     }
 
     // --- УТИЛИТЫ ---
+
+    /**
+     * Язык ответа ИИ в отчётах бота — язык пользователя (user_settings.language или язык по умолчанию).
+     */
+    private String aiLanguageOf(Long userId) {
+        return calorieTextsService.languageOf(userId).getNativeName();
+    }
 
     /**
      * Обертка для запросов к OpenAiProviderProcessor.
