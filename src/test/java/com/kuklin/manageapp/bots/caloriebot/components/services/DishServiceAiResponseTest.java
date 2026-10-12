@@ -134,6 +134,25 @@ class DishServiceAiResponseTest {
         verify(openAi).fetchPhotoResponse(any(), prompt.capture(), anyString(), any());
         assertThat(prompt.getValue())
                 .contains("текста пользователя (\"my lunch\")")
-                .contains("если текста нет или язык не понять — English");
+                .contains("если язык подписи не понять — на языке English")
+                .doesNotContain("Подписи нет");
+    }
+
+    /** Без подписи — прямое указание языка (раньше в промпт попадало «null», и названия выходили русскими). */
+    @Test
+    void photoWithoutCaptionAsksForUserLanguageOnly() {
+        when(openAi.fetchPhotoResponse(any(), anyString(), anyString(), any())).thenReturn("[]");
+
+        service.getDishDtoByPhoto(USER_ID, "data:image/jpeg;base64,AAAA", null);
+
+        ArgumentCaptor<String> prompt = ArgumentCaptor.forClass(String.class);
+        verify(openAi).fetchPhotoResponse(any(), prompt.capture(), anyString(), any());
+        String rule = "Подписи нет, поэтому название — ТОЛЬКО на языке English";
+        assertThat(prompt.getValue())
+                .contains("текста пользователя (\"\")")
+                .doesNotContain("(\"null\")")
+                .doesNotContain("на языке подписи");
+        // В описании поля name и в напоминании в конце
+        assertThat(prompt.getValue().indexOf(rule)).isNotEqualTo(prompt.getValue().lastIndexOf(rule));
     }
 }

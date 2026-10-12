@@ -1,4 +1,18 @@
 ## 0.0.60 (12.10.2026)
+[et-87] — История и аналитика на языке пользователя
+* «Сегодня»: дневник питания, кнопки «Перейти к удалению» / «Назад» / «Закрыть», «ОШИБКА»; дата в заголовке на языке пользователя («12 ОКТЯБРЯ 2026» / «12 OCTOBER 2026»). Шкалы в кнопках — подписи из словаря (macro.label.*: «🔥 К» / «🔥 Cal», …).
+* Дневник перенесён из сущности (Dish.getDishesString / Dish.getInfo удалены) в AnalyticsService.getTodayDiaryText — сущности не нужно знать язык. Русский дневник не изменился (тест).
+* Неделя (ListWeekUpdateHandler): заголовки, строки блюд и дней, итоги, вердикт по белку; в английском «day / days» по числу. Удалены закомментированная старая версия отчёта и неиспользуемый параметр checkMacroBalance.
+* Меню аналитики: «Выберите тип аналитики», кнопки отчётов (ключ подписи — в ReportType.buttonKey), «Закрыть», ошибка данных. История веса (AnalyticsService.getWeightHistoryTextList) — из словаря.
+* Общие тексты: common.button.back, common.error, common.unit.kcal / gram.
+* AnalyticsServiceDishCardTest переименован в AnalyticsServiceTextsTest — теперь проверяет и дневник.
+* Счётчик русских строк в коде: 233 → 201.
+
+[et-87] — Фото без подписи: название блюда на языке пользователя
+* Без подписи в промпт попадало «null» как текст пользователя, а правило «если текста нет — на языке пользователя» стояло в середине длинного русского промпта — модель называла блюда по-русски даже при английском языке.
+* Теперь правило языка собирает DishService: с подписью — «на языке подписи, если не понять — на языке пользователя» (PHOTO_NAME_LANGUAGE_FROM_CAPTION), без подписи — «ТОЛЬКО на языке пользователя, даже у местных блюд» (PHOTO_NAME_LANGUAGE_NO_CAPTION). Правило стоит в описании поля name и ещё раз в конце промпта. Вместо «null» — пустая строка.
+* Тест: без подписи в промпте нет «("null")», правило «Подписи нет…» встречается дважды (DishServiceAiResponseTest).
+
 [et-87] — Блюда на языке пользователя
 * Карточка блюда (AnalyticsService.getInfo) из словаря: название и +ккал, Б/Ж/У (en — P/F/C), вес и число порций, строка калорий от нормы, «Итого за сегодня». Русская карточка не изменилась (AnalyticsServiceDishCardTest). Числа передаются строками — без разделителей разрядов, как раньше.
 * DishKeyboards — кнопки под карточкой на языке пользователя: buildPortionKeyboard, buildFavoritePortionKeyboard («✅ В избранном»), buildNotCountedKeyboard («НЕ УЧИТЫВАЕТСЯ» после удаления). Заменили static-методы DishUpdateHandler.getPortionWeightKeyboard / getPortionKeyboardFavorite и DeleteUpdateHandler.getInlineMessage; две почти одинаковые копии клавиатуры слиты в одну, неиспользуемая getPortionKeyboard удалена. Вызовы — в DishUpdateHandler, CalorieScaleCallbackUpdateHandler, DeleteUpdateHandler, избранном (CalorieFavoriteDishUpdateHandler, CalorieFavoriteDishAddCallbackUpdateHandler) и TodayUpdateHandler.

@@ -14,8 +14,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-/** Карточка блюда (AnalyticsService.getInfo): русская — как до перевода, английская — без русских слов. */
-class AnalyticsServiceDishCardTest {
+/** Тексты AnalyticsService (карточка блюда, дневник «Сегодня»): русские — как до перевода, английские — без русских слов. */
+class AnalyticsServiceTextsTest {
 
     private static final Long RU_USER = 1L;
     private static final Long EN_USER = 2L;
@@ -76,5 +76,40 @@ class AnalyticsServiceDishCardTest {
         assertThat(card).startsWith("🍽️<b><i>Buckwheat</i></b> (+200 kcal)\n<b>P:</b> 17/100g (<b>+7</b>)");
         assertThat(card).contains("<b>Portion weight:</b> 150 g", "500/2000 <b>+200 kcal</b>");
         assertThat(card).doesNotContainPattern("[А-Яа-яЁё]");
+    }
+
+    // ── Дневник «Сегодня» (перенесён из Dish.getDishesString) ──────
+
+    @Test
+    void russianTodayDiaryLooksAsBefore() {
+        assertThat(analytics.getTodayDiaryText(RU_USER, "12 ОКТЯБРЯ 2026")).isEqualTo("""
+                📖 <b>Дневник питания (12 ОКТЯБРЯ 2026)</b>
+
+                🍽 <b>Без названия</b>
+                🔥 Ккал: <b>300</b> 🥩 Б: <b>10 г</b> 🥑 Ж: <b>5 г</b> 🍞 У: <b>30 г</b>
+
+                🍽 <b>Гречка</b>
+                🔥 Ккал: <b>200</b> 🥩 Б: <b>7 г</b> 🥑 Ж: <b>2 г</b> 🍞 У: <b>40 г</b>
+                🍽 Порции: <b>1</b>
+
+
+                ⚡️ <b>ИТОГО:</b>
+                🔥 К: <b>500</b> / 2000 ккал
+                🥩 Б: <b>17</b> / 100 г
+                🥑 Ж: <b>7</b> / 70 г
+                🍞 У: <b>70</b> / 250 г
+                """);
+    }
+
+    @Test
+    void englishTodayDiaryIsTranslated() {
+        dish.setName("Buckwheat");
+        earlier.setName("Toast");
+
+        String diary = analytics.getTodayDiaryText(EN_USER, "12 OCTOBER 2026");
+        assertThat(diary).startsWith("📖 <b>Food diary (12 OCTOBER 2026)</b>");
+        assertThat(diary).contains("🍽 Portions: <b>1</b>", "⚡️ <b>TOTAL:</b>", "🔥 Cal: <b>500</b> / 2000 kcal",
+                "🥩 P: <b>17</b> / 100 g");
+        assertThat(diary).doesNotContainPattern("[А-Яа-яЁё]");
     }
 }

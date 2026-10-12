@@ -3,6 +3,7 @@ package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.history.report;
 import com.kuklin.manageapp.bots.caloriebot.components.services.AiRateLimiter;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.MissingFeatureException;
 import com.kuklin.manageapp.bots.caloriebot.components.services.ReportService;
+import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTextsService;
 import com.kuklin.manageapp.bots.caloriebot.i18n.PdfTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
@@ -42,8 +43,6 @@ public class CalorieReportUpdateHandler implements CalorieBotUpdateHandler {
     private final AiRateLimiter aiRateLimiter;
     private final CalorieTextsService calorieTextsService;
 
-    private static final String MSG_CHOOSE_REPORT = "Выберите тип аналитики";
-    private static final String CLB_DATA_ERROR = "Ошибка данных! Попробуйте повторить операцию позже!";
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
@@ -51,7 +50,9 @@ public class CalorieReportUpdateHandler implements CalorieBotUpdateHandler {
             processCallback(update, telegramUser);
         } else if (update.hasMessage()) {
             Long chatId = update.getMessage().getChatId();
-            calorieTelegramBot.sendReturnedMessage(chatId, MSG_CHOOSE_REPORT, buildReportKeyboard(), null);
+            Long appUserId = telegramUser.getAppUserId();
+            calorieTelegramBot.sendReturnedMessage(chatId,
+                    calorieTextsService.get(appUserId, BotTextKeys.REPORT_CHOOSE), buildReportKeyboard(appUserId), null);
         }
     }
 
@@ -63,7 +64,9 @@ public class CalorieReportUpdateHandler implements CalorieBotUpdateHandler {
 
         // Возврат к основному меню отчетов
         if (data.equals(getHandlerListName())) {
-            calorieTelegramBot.sendEditMessage(chatId, MSG_CHOOSE_REPORT, messageId, buildReportKeyboard());
+            Long appUserId = telegramUser.getAppUserId();
+            calorieTelegramBot.sendEditMessage(chatId,
+                    calorieTextsService.get(appUserId, BotTextKeys.REPORT_CHOOSE), messageId, buildReportKeyboard(appUserId));
             return;
         }
 
@@ -96,7 +99,8 @@ public class CalorieReportUpdateHandler implements CalorieBotUpdateHandler {
 
         } catch (Exception e) {
             log.error("{} Callback error! Data: {}", calorieTelegramBot.getBotUsername(), data, e);
-            calorieTelegramBot.sendReturnedMessage(chatId, CLB_DATA_ERROR);
+            calorieTelegramBot.sendReturnedMessage(chatId,
+                    calorieTextsService.get(telegramUser.getAppUserId(), BotTextKeys.REPORT_DATA_ERROR));
         }
     }
 
@@ -171,14 +175,16 @@ public class CalorieReportUpdateHandler implements CalorieBotUpdateHandler {
     @Getter
     @AllArgsConstructor
     public enum ReportType {
-        DAY("day-report.pdf", PdfTextKeys.CAPTION_DAY, 1l, ChronoUnit.DAYS),
-        WEEK("week-report.pdf", PdfTextKeys.CAPTION_WEEK, 7l, ChronoUnit.DAYS),
-        MONTH("month-report.pdf", PdfTextKeys.CAPTION_MONTH, 30l, ChronoUnit.DAYS),
-        WEIGHT("weight-report.pdf", PdfTextKeys.CAPTION_WEIGHT, null, null);
+        DAY("day-report.pdf", PdfTextKeys.CAPTION_DAY, BotTextKeys.REPORT_BUTTON_DAY, 1l, ChronoUnit.DAYS),
+        WEEK("week-report.pdf", PdfTextKeys.CAPTION_WEEK, BotTextKeys.REPORT_BUTTON_WEEK, 7l, ChronoUnit.DAYS),
+        MONTH("month-report.pdf", PdfTextKeys.CAPTION_MONTH, BotTextKeys.REPORT_BUTTON_MONTH, 30l, ChronoUnit.DAYS),
+        WEIGHT("weight-report.pdf", PdfTextKeys.CAPTION_WEIGHT, BotTextKeys.REPORT_BUTTON_WEIGHT, null, null);
 
         private final String fileName;
         /** Подпись к файлу — ключ словаря pdf_*. */
         private final String captionKey;
+        /** Подпись кнопки в меню аналитики — ключ словаря bot_*. */
+        private final String buttonKey;
         private final Long amount;
         private final ChronoUnit unit;
 
@@ -187,18 +193,16 @@ public class CalorieReportUpdateHandler implements CalorieBotUpdateHandler {
         }
     }
 
-    private InlineKeyboardMarkup buildReportKeyboard() {
+    private InlineKeyboardMarkup buildReportKeyboard(Long appUserId) {
         TelegramKeyboard.TelegramKeyboardBuilder builder = TelegramKeyboard.builder();
         String base = getHandlerListName() + TelegramBot.DEFAULT_DELIMETER;
 
         for (ReportType type : ReportType.values()) {
-            String label = type == ReportType.DAY ? "Дневной" :
-                    type == ReportType.WEEK ? "Недельный" :
-                            type == ReportType.MONTH ? "Месячный" : "Отчет по весу";
-            builder.row(TelegramKeyboard.button(label, base + type.name()));
+            builder.row(TelegramKeyboard.button(calorieTextsService.get(appUserId, type.getButtonKey()), base + type.name()));
         }
 
-        builder.row(TelegramKeyboard.button("Закрыть", Command.CALORIE_CLOSE.getCommandText()));
+        builder.row(TelegramKeyboard.button(
+                calorieTextsService.get(appUserId, BotTextKeys.COMMON_BUTTON_CLOSE), Command.CALORIE_CLOSE.getCommandText()));
         return builder.build();
     }
 

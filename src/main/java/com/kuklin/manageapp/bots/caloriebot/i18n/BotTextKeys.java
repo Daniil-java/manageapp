@@ -78,6 +78,60 @@ public final class BotTextKeys {
     public static final String DISH_SCALE_ERROR = "dish.scale.error";
     public static final String DISH_CHOICE_ERROR = "dish.choice.error";
 
+    // ── Общее ──────────────────────────────────────────────────────
+    public static final String COMMON_BUTTON_BACK = "common.button.back";
+    public static final String COMMON_ERROR = "common.error";
+    public static final String COMMON_UNIT_KCAL = "common.unit.kcal";
+    public static final String COMMON_UNIT_GRAM = "common.unit.gram";
+
+    // ── Подписи КБЖУ ───────────────────────────────────────────────
+    public static final String MACRO_LABEL_CALORIES = "macro.label.calories";
+    public static final String MACRO_LABEL_PROTEINS = "macro.label.proteins";
+    public static final String MACRO_LABEL_FATS = "macro.label.fats";
+    public static final String MACRO_LABEL_CARBS = "macro.label.carbs";
+    public static final String MACRO_LABEL_WATER = "macro.label.water";
+
+    // ── «Сегодня» ──────────────────────────────────────────────────
+    public static final String TODAY_DIARY_TITLE = "today.diary-title";
+    public static final String TODAY_DISH_NO_DATA = "today.dish.no-data";
+    public static final String TODAY_DISH_NO_NAME = "today.dish.no-name";
+    public static final String TODAY_DISH_MACROS = "today.dish.macros";
+    public static final String TODAY_DISH_WEIGHT = "today.dish.weight";
+    public static final String TODAY_DISH_PORTIONS = "today.dish.portions";
+    public static final String TODAY_DISH_AI_CONFIDENCE = "today.dish.ai-confidence";
+    public static final String TODAY_TOTAL_TITLE = "today.total-title";
+    public static final String TODAY_BUTTON_GO_TO_REMOVE = "today.button.go-to-remove";
+
+    // ── Неделя ─────────────────────────────────────────────────────
+    public static final String WEEK_TITLE = "week.title";
+    public static final String WEEK_DISH_MACROS = "week.dish-macros";
+    public static final String WEEK_DAY_TOTAL = "week.day-total";
+    public static final String WEEK_DAY_CALORIES = "week.day-calories";
+    public static final String WEEK_DAY_MACROS = "week.day-macros";
+    public static final String WEEK_SUMMARY_TITLE = "week.summary-title";
+    public static final String WEEK_DISCIPLINE = "week.discipline";
+    public static final String WEEK_AVERAGE = "week.average";
+    public static final String WEEK_BALANCE = "week.balance";
+    public static final String WEEK_VERDICT = "week.verdict";
+    public static final String WEEK_VERDICT_NO_DATA = "week.verdict.no-data";
+    public static final String WEEK_VERDICT_LOW_PROTEIN = "week.verdict.low-protein";
+    public static final String WEEK_VERDICT_HIGH_PROTEIN = "week.verdict.high-protein";
+    public static final String WEEK_VERDICT_BALANCED = "week.verdict.balanced";
+
+    // ── Меню аналитики ─────────────────────────────────────────────
+    public static final String REPORT_CHOOSE = "report.choose";
+    public static final String REPORT_DATA_ERROR = "report.data-error";
+    public static final String REPORT_BUTTON_DAY = "report.button.day";
+    public static final String REPORT_BUTTON_WEEK = "report.button.week";
+    public static final String REPORT_BUTTON_MONTH = "report.button.month";
+    public static final String REPORT_BUTTON_WEIGHT = "report.button.weight";
+
+    // ── История веса ───────────────────────────────────────────────
+    public static final String WEIGHT_HISTORY_EMPTY = "weight.history.empty";
+    public static final String WEIGHT_HISTORY_TITLE = "weight.history.title";
+    public static final String WEIGHT_HISTORY_ENTRY = "weight.history.entry";
+    public static final String WEIGHT_HISTORY_TOTAL = "weight.history.total";
+
     // ── Рассылки ──────────────────────────────────────────────────
     public static final String REMINDER_MEAL = "reminder.meal";
 }

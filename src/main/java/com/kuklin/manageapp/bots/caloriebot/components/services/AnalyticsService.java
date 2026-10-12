@@ -116,6 +116,94 @@ public class AnalyticsService {
         return norm == null ? String.valueOf(eaten) : eaten + "/" + norm;
     }
 
+    /**
+     * Дневник питания за сегодня: блюда и итоги КБЖУ против нормы.
+     * date — заголовок дня, уже на языке пользователя («12 ОКТЯБРЯ 2026»).
+     */
+    public String getTodayDiaryText(Long userId, String date) {
+        AppLanguage language = texts.languageOf(userId);
+        List<Dish> dishes = dishService.getTodayDishes(userId);
+        UserNutritionProfile profile = userNutritionProfileService.getOrCreateProfile(userId);
+
+        StringBuilder sb = new StringBuilder();
+        sb.append(texts.get(language, BotTextKeys.TODAY_DIARY_TITLE, date)).append("\n\n");
+
+        int cal = 0, fats = 0, proteins = 0, carbs = 0;
+
+        for (Dish dish : dishes) {
+            sb.append(getDiaryDishText(dish, language)).append("\n");
+
+            if (dish.getCalories() != null) cal += dish.getCalories();
+            if (dish.getFats() != null) fats += dish.getFats();
+            if (dish.getProteins() != null) proteins += dish.getProteins();
+            if (dish.getCarbohydrates() != null) carbs += dish.getCarbohydrates();
+        }
+
+        sb.append("\n").append(texts.get(language, BotTextKeys.TODAY_TOTAL_TITLE)).append("\n");
+
+        String kcal = texts.get(language, BotTextKeys.COMMON_UNIT_KCAL);
+        String gram = texts.get(language, BotTextKeys.COMMON_UNIT_GRAM);
+        appendTotal(sb, texts.get(language, BotTextKeys.MACRO_LABEL_CALORIES), cal, profile.getCaloriesNormPerDay(), kcal);
+        appendTotal(sb, texts.get(language, BotTextKeys.MACRO_LABEL_PROTEINS), proteins, profile.getProteinsNormGramsPerDay(), gram);
+        appendTotal(sb, texts.get(language, BotTextKeys.MACRO_LABEL_FATS), fats, profile.getFatsNormGramsPerDay(), gram);
+        appendTotal(sb, texts.get(language, BotTextKeys.MACRO_LABEL_CARBS), carbs, profile.getCarbsNormGramsPerDay(), gram);
+
+        return sb.toString();
+    }
+
+    /** Одно блюдо в дневнике: название, КБЖУ, вес или порции, уверенность ИИ. */
+    private String getDiaryDishText(Dish dish, AppLanguage language) {
+        if (dish == null) {
+            return texts.get(language, BotTextKeys.TODAY_DISH_NO_DATA);
+        }
+
+        String icon = dish.getEmojiIcon() != null ? dish.getEmojiIcon() : "🍽";
+
+        StringBuilder sb = new StringBuilder();
+
+        sb.append(icon)
+                .append(" <b>")
+                .append(dish.getName() != null ? dish.getName() : texts.get(language, BotTextKeys.TODAY_DISH_NO_NAME))
+                .append("</b>\n")
+                .append(texts.get(language, BotTextKeys.TODAY_DISH_MACROS,
+                        String.valueOf(nvl(dish.getCalories())), String.valueOf(nvl(dish.getProteins())),
+                        String.valueOf(nvl(dish.getFats())), String.valueOf(nvl(dish.getCarbohydrates()))))
+                .append("\n");
+
+        if (dish.getWeight() != null) {
+            sb.append(texts.get(language, BotTextKeys.TODAY_DISH_WEIGHT, String.valueOf(dish.getWeight()))).append("\n");
+        } else if (dish.getPortions() != null) {
+            sb.append(texts.get(language, BotTextKeys.TODAY_DISH_PORTIONS, String.valueOf(dish.getPortions()))).append("\n");
+        }
+
+        if (dish.getAiConfidence() != null) {
+            sb.append(texts.get(language, BotTextKeys.TODAY_DISH_AI_CONFIDENCE, String.valueOf(dish.getAiConfidence())))
+                    .append("\n");
+        }
+
+        return sb.toString();
+    }
+
+    private static int nvl(Integer value) {
+        return value != null ? value : 0;
+    }
+
+    private static void appendTotal(StringBuilder sb, String label, int total, Integer norm, String unit) {
+        sb.append(label)
+                .append(": <b>")
+                .append(total)
+                .append("</b>");
+
+        if (norm != null) {
+            sb.append(" / ")
+                    .append(norm)
+                    .append(" ")
+                    .append(unit);
+        }
+
+        sb.append("\n");
+    }
+
 
     private String generateSmartBar(int previous, int current, int norm) {
         int totalBars = 10;
@@ -163,12 +251,13 @@ public class AnalyticsService {
         // Получаем список, отсортированный от старых к новым (Asc)
         List<WeightEntry> weightEntries = weightEntryService.getAllWeightHistory(userId);
 
+        AppLanguage language = texts.languageOf(userId);
         if (weightEntries.isEmpty()) {
-            return "⚖️ История веса пока пуста.";
+            return texts.get(language, BotTextKeys.WEIGHT_HISTORY_EMPTY);
         }
 
         StringBuilder sb = new StringBuilder();
-        sb.append("⚖️ <b>ИСТОРИЯ ВЕСА</b>\n");
+        sb.append(texts.get(language, BotTextKeys.WEIGHT_HISTORY_TITLE)).append("\n");
         sb.append("⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n");
 
         for (int i = 0; i < weightEntries.size(); i++) {
@@ -197,10 +286,8 @@ public class AnalyticsService {
                     .format(DateTimeFormatter.ofPattern("HH:mm")) + ")"
                     : "";
 
-            sb.append("• ").append(current.getEntryDate())
-                    .append(time)
-                    .append(": <b>").append(current.getWeight()).append(" кг</b>")
-                    .append(trend).append("\n");
+            sb.append(texts.get(language, BotTextKeys.WEIGHT_HISTORY_ENTRY,
+                    current.getEntryDate() + time, String.valueOf(current.getWeight()), trend)).append("\n");
         }
 
         if (weightEntries.size() > 1) {
@@ -210,8 +297,8 @@ public class AnalyticsService {
 
             sb.append("⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n");
             String progEmoji = totalDiff <= 0 ? "✅" : "⚠️";
-            sb.append(progEmoji).append(" <b>Общий прогресс:</b> ")
-                    .append(totalDiff > 0 ? "+" : "").append(String.format("%.2f", totalDiff)).append(" кг");
+            sb.append(texts.get(language, BotTextKeys.WEIGHT_HISTORY_TOTAL,
+                    progEmoji, (totalDiff > 0 ? "+" : "") + String.format("%.2f", totalDiff)));
         }
 
         return sb.toString();
@@ -229,7 +316,7 @@ public class AnalyticsService {
             int norm = profile.getCaloriesNormPerDay();
             int percent = (int) (((double) total / norm) * 100);
 
-            return "🔥 К: " + generateButtonBar(total, norm, "\uD83D\uDFE7", "⬜") + " " + percent + "%";
+            return texts.get(userId, BotTextKeys.MACRO_LABEL_CALORIES) + ": " + generateButtonBar(total, norm, "\uD83D\uDFE7", "⬜") + " " + percent + "%";
         } catch (Exception e) {
             return "";
         }
@@ -245,7 +332,7 @@ public class AnalyticsService {
             int norm = profile.getProteinsNormGramsPerDay();
             int percent = (int) (((double) total / norm) * 100);
 
-            return "🥩 Б: " + generateButtonBar(total, norm, "🟪", "⬜") + " " + percent + "%";
+            return texts.get(userId, BotTextKeys.MACRO_LABEL_PROTEINS) + ": " + generateButtonBar(total, norm, "🟪", "⬜") + " " + percent + "%";
         } catch (Exception e) {
             return "";
         }
@@ -261,7 +348,7 @@ public class AnalyticsService {
             int norm = profile.getFatsNormGramsPerDay();
             int percent = (int) (((double) total / norm) * 100);
 
-            return "🥑 Ж: " + generateButtonBar(total, norm, "🟨", "⬜") + " " + percent + "%";
+            return texts.get(userId, BotTextKeys.MACRO_LABEL_FATS) + ": " + generateButtonBar(total, norm, "🟨", "⬜") + " " + percent + "%";
         } catch (Exception e) {
             return "";
         }
@@ -277,7 +364,7 @@ public class AnalyticsService {
             int norm = profile.getCarbsNormGramsPerDay();
             int percent = (int) (((double) total / norm) * 100);
 
-            return "🍞 У: " + generateButtonBar(total, norm, "\uD83D\uDFE9", "⬜") + " " + percent + "%";
+            return texts.get(userId, BotTextKeys.MACRO_LABEL_CARBS) + ": " + generateButtonBar(total, norm, "\uD83D\uDFE9", "⬜") + " " + percent + "%";
         } catch (Exception e) {
             return "";
         }
@@ -295,7 +382,7 @@ public class AnalyticsService {
             int percent = (int) (((double) total / norm) * 100);
 
             // Используем круги для визуального отличия воды от еды
-            return "💧 В: " + generateButtonBar(total, norm, "\uD83D\uDFE6", "⬜") + " " + percent + "%";
+            return texts.get(userId, BotTextKeys.MACRO_LABEL_WATER) + ": " + generateButtonBar(total, norm, "\uD83D\uDFE6", "⬜") + " " + percent + "%";
         } catch (Exception e) {
             return "";
         }

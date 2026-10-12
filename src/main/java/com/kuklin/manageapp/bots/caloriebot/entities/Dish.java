@@ -87,43 +87,6 @@ public class Dish {
                 .setUserId(dto.getUserId());
     }
 
-    public static String getInfo(Dish dish) {
-        if (dish == null) {
-            return "❌ Нет данных о блюде";
-        }
-
-        String icon = dish.getEmojiIcon() != null ? dish.getEmojiIcon() : "🍽";
-
-        StringBuilder sb = new StringBuilder();
-
-        sb.append(icon)
-                .append(" <b>")
-                .append(dish.getName() != null ? dish.getName() : "Без названия")
-                .append("</b>\n")
-
-                .append("🔥 Ккал: <b>").append(nvl(dish.getCalories())).append("</b> ")
-                .append("🥩 Б: <b>").append(nvl(dish.getProteins())).append(" г</b> ")
-                .append("🥑 Ж: <b>").append(nvl(dish.getFats())).append(" г</b> ")
-                .append("🍞 У: <b>").append(nvl(dish.getCarbohydrates())).append(" г</b>\n");
-
-        if (dish.getWeight() != null) {
-            sb.append("⚖️ Вес: <b>").append(dish.getWeight()).append(" г</b>\n");
-        } else if (dish.getPortions() != null) {
-            sb.append("🍽 Порции: <b>").append(dish.getPortions()).append("</b>\n");
-        }
-
-        if (dish.getAiConfidence() != null) {
-            sb.append("🤖 Уверенность ИИ: <b>")
-                    .append(dish.getAiConfidence()).append("%</b>\n");
-        }
-
-        return sb.toString();
-    }
-
-    private static int nvl(Integer value) {
-        return value != null ? value : 0;
-    }
-
     /**
      * Смещает КБЖУ на заданный процент.
      * percentDelta: -50, -10, 10, 50 и т.п.
@@ -182,53 +145,6 @@ public class Dish {
         }
 
         return (int) result;
-    }
-
-    public static String getDishesString(List<Dish> dishes, UserNutritionProfile profile, String date) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("📖 <b>Дневник питания ("+ date + ")</b>\n\n");
-
-        int cal = 0, fats = 0, proteins = 0, carbs = 0;
-
-        for (Dish dish : dishes) {
-            sb.append(Dish.getInfo(dish)).append("\n");
-
-            if (dish.getCalories() != null) cal += dish.getCalories();
-            if (dish.getFats() != null) fats += dish.getFats();
-            if (dish.getProteins() != null) proteins += dish.getProteins();
-            if (dish.getCarbohydrates() != null) carbs += dish.getCarbohydrates();
-        }
-
-        sb.append("\n⚡️ <b>ИТОГО:</b>\n");
-
-        appendTotal(sb, "🔥 К", cal, profile.getCaloriesNormPerDay(), "ккал");
-        appendTotal(sb, "🥩 Б", proteins, profile.getProteinsNormGramsPerDay(), "г");
-        appendTotal(sb, "🥑 Ж", fats, profile.getFatsNormGramsPerDay(), "г");
-        appendTotal(sb, "🍞 У", carbs, profile.getCarbsNormGramsPerDay(), "г");
-
-        return sb.toString();
-    }
-
-    private static void appendTotal(
-            StringBuilder sb,
-            String label,
-            int total,
-            Integer norm,
-            String unit
-    ) {
-        sb.append(label)
-                .append(": <b>")
-                .append(total)
-                .append("</b>");
-
-        if (norm != null) {
-            sb.append(" / ")
-                    .append(norm)
-                    .append(" ")
-                    .append(unit);
-        }
-
-        sb.append("\n");
     }
 
     @Override

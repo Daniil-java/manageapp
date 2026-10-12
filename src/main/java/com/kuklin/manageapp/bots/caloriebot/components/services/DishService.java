@@ -38,6 +38,8 @@ import static com.kuklin.manageapp.bots.caloriebot.entities.Dish.scale;
 import static com.kuklin.manageapp.bots.caloriebot.utils.DishCalorieBotPrompts.AI_PHOTO_REQUEST;
 import static com.kuklin.manageapp.bots.caloriebot.utils.DishCalorieBotPrompts.AI_REQUEST;
 import static com.kuklin.manageapp.bots.caloriebot.utils.DishCalorieBotPrompts.AI_VOICE_TRANSCRIPTION_PROMPT;
+import static com.kuklin.manageapp.bots.caloriebot.utils.DishCalorieBotPrompts.PHOTO_NAME_LANGUAGE_FROM_CAPTION;
+import static com.kuklin.manageapp.bots.caloriebot.utils.DishCalorieBotPrompts.PHOTO_NAME_LANGUAGE_NO_CAPTION;
 
 @Service
 @RequiredArgsConstructor
@@ -89,7 +91,10 @@ public class DishService {
     @RequiresFeature(value = BotFeature.DISH_AI_VISION, botIdentifier = BotIdentifier.CALORIE_BOT,
             forgiveEmptyOncePerDay = true)
     public AccessResult<List<Dish>> getDishDtoByPhoto(Long userId, String photoBase64, String message) {
-        String aiPhotoPrompt = String.format(AI_PHOTO_REQUEST, message, aiLanguageOf(userId));
+        boolean hasCaption = message != null && !message.isBlank();
+        String nameLanguageRule = String.format(
+                hasCaption ? PHOTO_NAME_LANGUAGE_FROM_CAPTION : PHOTO_NAME_LANGUAGE_NO_CAPTION, aiLanguageOf(userId));
+        String aiPhotoPrompt = String.format(AI_PHOTO_REQUEST, hasCaption ? message : "", nameLanguageRule);
         String aiResponse = openAiIntegrationService.fetchPhotoResponse(
                 telegramCaloriesBotKeyComponents.getAiKey(),
                 aiPhotoPrompt,

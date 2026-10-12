@@ -2,11 +2,12 @@ package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.history;
 
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserSettingsService;
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
-import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
 import com.kuklin.manageapp.bots.caloriebot.components.services.AnalyticsService;
 import com.kuklin.manageapp.bots.caloriebot.components.services.DishService;
-import com.kuklin.manageapp.bots.caloriebot.components.services.UserNutritionProfileService;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserSettings;
+import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
+import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTextsService;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.dish.DishKeyboards;
@@ -24,7 +25,6 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Locale;
 import java.util.stream.Stream;
 
 /**
@@ -39,19 +39,13 @@ public class TodayUpdateHandler implements CalorieBotUpdateHandler {
     private final DishService dishService;
     private final AnalyticsService analyticsService;
     private final DishKeyboards dishKeyboards;
-    private final UserNutritionProfileService userNutritionProfileService;
+    private final CalorieTextsService texts;
 
     // Константы для формирования callback-данных
     private static final String DELIMITER = TelegramBot.DEFAULT_DELIMETER;
     private static final String REMOVE_CMD = Command.CALORIE_TODAY_LIST.getCommandText() + DELIMITER + "r";
     private static final String GET_DISH_CMD = REMOVE_CMD + DELIMITER;
     private static final String CLOSE_CMD = Command.CALORIE_CLOSE.getCommandText();
-
-    // Текстовые константы для кнопок и сообщений
-    private static final String BTN_BACK = "Назад";
-    private static final String BTN_CLOSE = "Закрыть";
-    private static final String BTN_GO_TO_REMOVE = "Перейти к удалению";
-    private static final String ERROR_MSG = "ОШИБКА";
     private static final String DUMMY_CALLBACK = "temp";
 
     /**
@@ -105,18 +99,20 @@ public class TodayUpdateHandler implements CalorieBotUpdateHandler {
                     null
             );
         } catch (Exception e) {
-            log.error("Ошибка парсинга ID блюда из callback: {}", data, e);
-            calorieTelegramBot.sendReturnedMessage(update.getCallbackQuery().getMessage().getChatId(), ERROR_MSG);
+            log.error("Failed to parse dish ID from callback: {}", data, e);
+            calorieTelegramBot.sendReturnedMessage(update.getCallbackQuery().getMessage().getChatId(),
+                    texts.get(userId, BotTextKeys.COMMON_ERROR));
         }
     }
 
+    /** Сегодняшняя дата пользователя для заголовка дневника: «12 ОКТЯБРЯ 2026» / «12 OCTOBER 2026». */
     private String getUserTime(Long userId) {
         UserSettings userSettings = userSettingsService.getOrCreate(userId);
         LocalDate date = Instant.now().atZone(userSettings.getZoneId()).toLocalDate();
+        AppLanguage language = texts.languageOf(userId);
 
-        DateTimeFormatter formatter =
-                DateTimeFormatter.ofPattern("dd MMMM yyyy", new Locale("ru"));
-        return date.format(formatter).toUpperCase();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd MMMM yyyy", language.getLocale());
+        return date.format(formatter).toUpperCase(language.getLocale());
     }
 
     /**
@@ -130,7 +126,7 @@ public class TodayUpdateHandler implements CalorieBotUpdateHandler {
                 update.getCallbackQuery().getMessage().getChatId(),
                 getTodaySummaryText(userId),
                 update.getCallbackQuery().getMessage().getMessageId(),
-                buildRemoveKeyboard(dishes)
+                buildRemoveKeyboard(dishes, userId)
         );
     }
 
@@ -150,21 +146,19 @@ public class TodayUpdateHandler implements CalorieBotUpdateHandler {
      * Генерирует текстовый отчет по блюдам и КБЖУ профиля пользователя.
      */
     private String getTodaySummaryText(Long userId) {
-        List<Dish> dishes = dishService.getTodayDishes(userId);
-        UserNutritionProfile profile = userNutritionProfileService.getOrCreateProfile(userId);
-        return Dish.getDishesString(dishes, profile, getUserTime(userId));
+        return analyticsService.getTodayDiaryText(userId, getUserTime(userId));
     }
 
     /**
      * Строит клавиатуру, где каждая кнопка — это название блюда для перехода к действиям над ним.
      */
-    private InlineKeyboardMarkup buildRemoveKeyboard(List<Dish> dishes) {
+    private InlineKeyboardMarkup buildRemoveKeyboard(List<Dish> dishes, Long userId) {
         TelegramKeyboard.TelegramKeyboardBuilder builder = TelegramKeyboard.builder();
 
         for (Dish dish : dishes) {
             builder.row(TelegramKeyboard.button(dish.getName(), GET_DISH_CMD + dish.getId()));
         }
-        builder.row(TelegramKeyboard.button(BTN_BACK, getHandlerListName()));
+        builder.row(TelegramKeyboard.button(texts.get(userId, BotTextKeys.COMMON_BUTTON_BACK), getHandlerListName()));
 
         return builder.build();
     }
@@ -185,8 +179,8 @@ public class TodayUpdateHandler implements CalorieBotUpdateHandler {
                 ).filter(bar -> bar != null && !bar.isBlank())
                 .forEach(bar -> builder.row(TelegramKeyboard.button(bar, DUMMY_CALLBACK)));
 
-        builder.row(TelegramKeyboard.button(BTN_GO_TO_REMOVE, REMOVE_CMD));
-        builder.row(TelegramKeyboard.button(BTN_CLOSE, CLOSE_CMD));
+        builder.row(TelegramKeyboard.button(texts.get(userId, BotTextKeys.TODAY_BUTTON_GO_TO_REMOVE), REMOVE_CMD));
+        builder.row(TelegramKeyboard.button(texts.get(userId, BotTextKeys.COMMON_BUTTON_CLOSE), CLOSE_CMD));
 
         return builder.build();
     }
