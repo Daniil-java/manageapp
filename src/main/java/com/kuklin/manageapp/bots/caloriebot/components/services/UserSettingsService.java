@@ -67,6 +67,22 @@ public class UserSettingsService {
         return userSettingsRepository.save(settings);
     }
 
+    /** Код языка из настроек или null, если пользователь язык не выбирал. Настройки не создаёт. */
+    public String findLanguageCode(Long userId) {
+        return userSettingsRepository.findById(userId)
+                .map(UserSettings::getLanguage)
+                .orElse(null);
+    }
+
+    /** Сохраняет код языка; null — сбросить выбор (вернуться к языку по умолчанию). */
+    @Transactional
+    public void setLanguageCode(Long userId, String languageCode) {
+        UserSettings settings = getOrCreate(userId);
+        settings.setLanguage(languageCode);
+        userSettingsRepository.save(settings);
+        log.info("Language for user {} set to {}", userId, languageCode);
+    }
+
     /**
      * Проверяет, существует ли такая таймзона в системе.
      */

@@ -72,6 +72,13 @@ public class UserSettings {
     @Enumerated(EnumType.STRING)
     private UserTheme userTheme;
 
+    /**
+     * Код языка пользователя (ru, en…). null — не выбирал, берётся язык по умолчанию
+     * (calorie.i18n.default-language). Читать через {@link com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTextsService}.
+     */
+    @Column(name = "language")
+    private String language;
+
     // --- Служебные поля ---
     @CreationTimestamp
     @Column(name = "created_at", updatable = false, nullable = false)
