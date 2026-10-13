@@ -1,11 +1,17 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.paymentpart;
 
+import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
+import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
+import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieMenuButtons;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
+import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;
+import com.kuklin.manageapp.common.services.TelegramUserService;
 import com.kuklin.manageapp.payment.components.paymentfacades.CommonPaymentFacade;
 import com.kuklin.manageapp.payment.entities.PricingPlan;
 import com.kuklin.manageapp.payment.handlers.PaymentProviderChoiceUpdateHandler;
@@ -27,36 +33,12 @@ public class PaymentPlanListCalorieUpdateHandler implements CalorieBotUpdateHand
     private final CalorieTelegramBot calorieTelegramBot;
     private final PaymentProviderChoiceUpdateHandler nextHandler;
     private final CommonPaymentFacade commonPaymentFacade;
+    private final CalorieTexts texts;
+    private final CalorieMenuButtons menuButtons;
+    private final TelegramUserService telegramUserService;
 
     private static final String IMAGE_PATH =
             "static/images/caloriescreens/price/tarif.png";
-    private static final String PREMIUM_EXP =
-            """
-                    Premium закончился 👀
-                                
-                    Сейчас у тебя снова лимиты:
-                    • 2 фото-разбора
-                    • 2 AI-консультации
-                    • без полной статистики
-                                
-                    Хочешь без ограничений и с нормальным контролем питания?
-                                
-                    🚀 Безлимитные разборы
-                    🤖 AI без стопов + PDF
-                    📊 Полная статистика  
-                    """;
-    private static final String PLAN_TEXT = """
-            🆓 Базовый режим — «держим форму»:
-            📸 2 фото-разбора в день — чтобы не улететь в туман калорий
-            🧠 2 AI-консультации в день — быстрый чек-ап без занудства
-            🎙️ Текст и голос — без лимитов, говори, не стесняйся
-
-            💎 Premium режим — «врубаем турбо»:
-            🚀 Фото-разборы без ограничений — хоть каждый укус фиксируй
-            🤖 AI-консультации без стопов + PDF с разбором рациона и пищевых привычек
-            📊 Полная статистика и история — видишь не догадки, а реальную картину
-            """;
-
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
@@ -64,31 +46,41 @@ public class PaymentPlanListCalorieUpdateHandler implements CalorieBotUpdateHand
                 ? update.getCallbackQuery().getMessage().getChatId()
                 : update.getMessage().getChatId();
 
-        sendSubListMessage(chatId);
+        sendSubListMessage(chatId, telegramUser.getAppUserId());
     }
 
+    /**
+     * «Premium закончился» — зовёт общий планировщик подписок, у него есть только chatId.
+     * В личном чате chatId = Telegram ID, по нему находим пользователя и его язык.
+     */
     public void sendSubExpiredAdMessage(Long chatId) {
+        TelegramUser telegramUser = telegramUserService
+                .getTelegramUserByTelegramIdAndBotIdentifierOrNull(chatId, BotIdentifier.CALORIE_BOT);
+        AppLanguage language = texts.languageOf(telegramUser == null ? null : telegramUser.getAppUserId());
         calorieTelegramBot.sendReturnedMessage(
                 chatId,
-                PREMIUM_EXP,
-                getSubButton(),
+                texts.get(language, BotTextKeys.PAYMENT_PREMIUM_EXPIRED),
+                getSubButton(language),
                 null
                 );
     }
 
-    private InlineKeyboardMarkup getSubButton() {
+    private InlineKeyboardMarkup getSubButton(AppLanguage language) {
         TelegramKeyboard.TelegramKeyboardBuilder builder = TelegramKeyboard.builder();
 
         builder.row(
-                TelegramKeyboard.button(Command.CALORIE_PAYMENT_PAYLOAD_PLAN.getCommandText(), Command.CALORIE_PAYMENT_PAYLOAD_PLAN.getCommandText())
+                TelegramKeyboard.button(menuButtons.getLabel(CalorieMenuButtons.Button.SUBSCRIPTION, language),
+                        Command.CALORIE_PAYMENT_PAYLOAD_PLAN.getCommandText())
         );
         builder.row(
-                TelegramKeyboard.button("❌Закрыть", Command.CALORIE_CLOSE.getCommandText())
+                TelegramKeyboard.button("❌" + texts.get(language, BotTextKeys.COMMON_BUTTON_CLOSE),
+                        Command.CALORIE_CLOSE.getCommandText())
         );
         return builder.build();
     }
 
-    public void sendSubListMessage(Long chatId) {
+    public void sendSubListMessage(Long chatId, Long appUserId) {
+        AppLanguage language = texts.languageOf(appUserId);
         List<PricingPlan> planList = commonPaymentFacade
                 .getPricingPlans(calorieTelegramBot.getBotIdentifier());
 
@@ -96,7 +88,7 @@ public class PaymentPlanListCalorieUpdateHandler implements CalorieBotUpdateHand
 
         if (photoBytes == null) {
             log.error("Error returning message!");
-            calorieTelegramBot.sendReturnedMessage(chatId, "Ошибка возврата сообщения!");
+            calorieTelegramBot.sendReturnedMessage(chatId, texts.get(language, BotTextKeys.PAYMENT_IMAGE_ERROR));
             return;
         }
 
@@ -104,8 +96,8 @@ public class PaymentPlanListCalorieUpdateHandler implements CalorieBotUpdateHand
                 chatId,
                 photoBytes,
                 "tarif.png",
-                PLAN_TEXT,
-                getKeyboardPlan(planList)
+                texts.get(language, BotTextKeys.PAYMENT_PLANS),
+                getKeyboardPlan(planList, language)
         );
     }
 
@@ -114,14 +106,15 @@ public class PaymentPlanListCalorieUpdateHandler implements CalorieBotUpdateHand
             ClassPathResource resource = new ClassPathResource(IMAGE_PATH);
             return StreamUtils.copyToByteArray(resource.getInputStream());
         } catch (IOException e) {
-            log.error("Не удалось загрузить изображение тарифа: {}", IMAGE_PATH, e);
+            log.error("Failed to load the pricing image: {}", IMAGE_PATH, e);
             return null;
         }
     }
 
     // Формирует inline-клавиатуру с тарифами:
     // каждая кнопка содержит название плана и callback с его id.
-    private InlineKeyboardMarkup getKeyboardPlan(List<PricingPlan> planList) {
+    // Названия тарифов — из БД (pricing_plans.title), они пока на одном языке.
+    private InlineKeyboardMarkup getKeyboardPlan(List<PricingPlan> planList, AppLanguage language) {
         TelegramKeyboard.TelegramKeyboardBuilder builder = TelegramKeyboard.builder();
 
         for (PricingPlan plan : planList) {
@@ -131,10 +124,12 @@ public class PaymentPlanListCalorieUpdateHandler implements CalorieBotUpdateHand
             ));
         }
         builder.row(
-                TelegramKeyboard.button("\uD83D\uDD0DСтатус подписки", Command.PAYMENT_BALANCE.getCommandText())
+                TelegramKeyboard.button(texts.get(language, BotTextKeys.PAYMENT_BUTTON_STATUS),
+                        Command.PAYMENT_BALANCE.getCommandText())
         );
         builder.row(
-                TelegramKeyboard.button("❌Закрыть", Command.CALORIE_CLOSE.getCommandText())
+                TelegramKeyboard.button("❌" + texts.get(language, BotTextKeys.COMMON_BUTTON_CLOSE),
+                        Command.CALORIE_CLOSE.getCommandText())
         );
         return builder.build();
     }

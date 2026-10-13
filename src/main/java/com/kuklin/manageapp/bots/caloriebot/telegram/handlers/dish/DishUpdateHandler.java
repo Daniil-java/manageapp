@@ -111,7 +111,7 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
                 if (photoResult == null) return null; // фото не скачалось — сообщение уже отправлено
                 dishes = photoResult.getOrThrow();
             } catch (MissingFeatureException e) {
-                featureLimitNotifier.sendLimitReached(update.getMessage().getChatId(), e.getRequiredFeature());
+                featureLimitNotifier.sendLimitReached(update.getMessage().getChatId(), userId, e.getRequiredFeature());
                 return null;
             }
             // ИИ не нашёл еду на тарифе с лимитом — объясняем, засчитана ли попытка
@@ -184,7 +184,7 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
     private boolean tryAcquireAi(Long userId, Long chatId) {
         AiRateLimiter.Decision decision = aiRateLimiter.tryAcquire(userId);
         if (!decision.allowed()) {
-            featureLimitNotifier.sendAiRateLimited(chatId, decision);
+            featureLimitNotifier.sendAiRateLimited(chatId, userId, decision);
         }
         return decision.allowed();
     }

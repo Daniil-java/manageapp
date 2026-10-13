@@ -1,6 +1,9 @@
-package com.kuklin.manageapp.bots.caloriebot.i18n;
+package com.kuklin.manageapp.bots.caloriebot.texts;
 
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
+import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
+import com.kuklin.manageapp.bots.caloriebot.i18n.PdfTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.utils.ReportUtils;
 
 import java.time.format.DateTimeFormatter;

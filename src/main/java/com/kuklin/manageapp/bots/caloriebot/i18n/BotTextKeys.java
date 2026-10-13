@@ -244,6 +244,46 @@ public final class BotTextKeys {
     public static final String SETTINGS_BUTTON_BACK_TO_SETTINGS = "settings.button.back-to-settings";
     public static final String SETTINGS_TIMEZONE_SET = "settings.timezone-set";
 
+    // ── Общее ──────────────────────────────────────────────────────
+    public static final String COMMON_BUTTON_YES = "common.button.yes";
+    public static final String COMMON_DATA_ERROR = "common.data-error";
+
+    // ── Лимиты (FeatureLimitNotifier). Название функции — BotFeature.getTextKey() ──
+    public static final String LIMIT_FEATURE = "limit.feature";
+    public static final String LIMIT_FREE_ONLY_SUBSCRIPTION = "limit.free.only-subscription";
+    public static final String LIMIT_FREE_DAILY = "limit.free.daily";
+    public static final String LIMIT_FREE_MONTHLY = "limit.free.monthly";
+    public static final String LIMIT_FREE_LIFETIME = "limit.free.lifetime";
+    public static final String LIMIT_FREE_UNLIMITED = "limit.free.unlimited";
+    public static final String LIMIT_AI_SUBSCRIPTION_HINT = "limit.ai.subscription-hint";
+
+    // ── Избранное ──────────────────────────────────────────────────
+    public static final String FAVORITES_PAGE_TITLE = "favorites.page-title";
+    public static final String FAVORITES_DELETE_PAGE_TITLE = "favorites.delete.page-title";
+    public static final String FAVORITES_EMPTY_HINT = "favorites.empty-hint";
+    public static final String FAVORITES_EMPTY = "favorites.empty";
+    public static final String FAVORITES_ADD_FAILED = "favorites.add-failed";
+    public static final String FAVORITES_SAVED = "favorites.saved";
+    public static final String FAVORITES_SAVE_FAILED = "favorites.save-failed";
+    public static final String FAVORITES_DELETE_CONFIRM = "favorites.delete.confirm";
+    public static final String FAVORITES_BUTTON_DELETE_MODE = "favorites.button.delete-mode";
+    public static final String FAVORITES_BUTTON_BACK_TO_ADD = "favorites.button.back-to-add";
+
+    // ── Вода ───────────────────────────────────────────────────────
+    public static final String WATER_STATUS = "water.status";
+    public static final String WATER_BUTTON_UNDO = "water.button.undo";
+
+    // ── Подписка. Статус — subscription.status.<UserSubscription.Status> ──
+    public static final String PAYMENT_PREMIUM_EXPIRED = "payment.premium-expired";
+    public static final String PAYMENT_PLANS = "payment.plans";
+    public static final String PAYMENT_BUTTON_STATUS = "payment.button.status";
+    public static final String PAYMENT_IMAGE_ERROR = "payment.image-error";
+    public static final String SUBSCRIPTION_NONE = "subscription.none";
+    public static final String SUBSCRIPTION_TITLE = "subscription.title";
+    public static final String SUBSCRIPTION_ENTRY = "subscription.entry";
+    public static final String SUBSCRIPTION_UNKNOWN_PLAN = "subscription.unknown-plan";
+    public static final String SUBSCRIPTION_NO_PERIOD = "subscription.no-period";
+
     // ── Рассылки ──────────────────────────────────────────────────
     public static final String REMINDER_MEAL = "reminder.meal";
 }

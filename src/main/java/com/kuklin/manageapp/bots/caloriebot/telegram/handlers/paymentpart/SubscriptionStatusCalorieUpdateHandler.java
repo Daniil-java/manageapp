@@ -2,6 +2,8 @@ package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.paymentpart;
 
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserSettingsService;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserSettings;
+import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
@@ -30,6 +32,7 @@ public class SubscriptionStatusCalorieUpdateHandler implements CalorieBotUpdateH
     private final UserSubscriptionService userSubscriptionService;
     private final UserSettingsService userSettingsService;
     private final PricingPlanService pricingPlanService;
+    private final CalorieTexts texts;
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
@@ -48,7 +51,7 @@ public class SubscriptionStatusCalorieUpdateHandler implements CalorieBotUpdateH
                 .getActiveAndScheduledSubscriptions(appUserId, BotIdentifier.CALORIE_BOT);
 
         if (subscriptions.isEmpty()) {
-            return "У вас пока нет активных или запланированных подписок.";
+            return texts.get(appUserId, BotTextKeys.SUBSCRIPTION_NONE);
         }
 
         String details = subscriptions.stream()
@@ -58,7 +61,7 @@ public class SubscriptionStatusCalorieUpdateHandler implements CalorieBotUpdateH
                 .map(sub -> getSubscriptionStatusMessage(appUserId, sub))
                 .collect(Collectors.joining("\n\n"));
 
-        return "Статус подписки:\n\n" + details;
+        return texts.get(appUserId, BotTextKeys.SUBSCRIPTION_TITLE) + "\n\n" + details;
     }
 
     public String getSubscriptionStatusMessage(Long appUserId, UserSubscription sub) {
@@ -74,14 +77,15 @@ public class SubscriptionStatusCalorieUpdateHandler implements CalorieBotUpdateH
             name = pricingPlan.getTitle();
 //            description = pricingPlan.getDescription();
         } catch (PricingPlanNotFoundException e) {
-            name = "Неизвестно";
-//            description = "Без описания";
+            name = texts.get(appUserId, BotTextKeys.SUBSCRIPTION_UNKNOWN_PLAN);
         }
         String period = (sub.getStartAt() != null && sub.getEndAt() != null)
                 ? String.format("%s — %s", sub.getStartAt().atZone(zoneId).format(fmt), sub.getEndAt().atZone(zoneId).format(fmt))
-                : "не задан";
+                : texts.get(appUserId, BotTextKeys.SUBSCRIPTION_NO_PERIOD);
 
-        return String.format("Подписка: %s\n📌 Статус: %s\n⏳ Период: %s", name, sub.getStatus().getCommandText(), period);
+        // Статус — по имени: подписи UserSubscription.Status в общем модуле оплаты русские
+        String status = texts.get(appUserId, "subscription.status." + sub.getStatus().name());
+        return texts.get(appUserId, BotTextKeys.SUBSCRIPTION_ENTRY, name, status, period);
     }
 
     @Override

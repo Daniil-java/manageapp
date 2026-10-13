@@ -4,7 +4,10 @@ import com.ibm.icu.text.MessageFormat;
 import com.ibm.icu.text.MessagePattern;
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
+import com.kuklin.manageapp.bots.caloriebot.models.feature.BotFeature;
+import com.kuklin.manageapp.payment.entities.UserSubscription;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.editbuttons.ProfileEditAction;
+import com.kuklin.manageapp.bots.caloriebot.texts.PdfTexts;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorParams;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
 import org.junit.jupiter.api.Test;
@@ -30,12 +33,12 @@ import static org.assertj.core.api.Assertions.assertThat;
  * шаблоны разбираются ICU, и каждая константа из *TextKeys есть в словарях.
  * Плюс тексты категорий блюд и ключи {{pdf.…}} из HTML-шаблонов отчётов.
  */
-class TextBundlesConsistencyTest {
+public class TextBundlesConsistencyTest {
 
     /** Классы с константами ключей. Новый класс ключей — сюда же. */
     private static final List<Class<?>> KEY_CLASSES = List.of(BotTextKeys.class, PdfTextKeys.class);
     /** HTML-шаблоны PDF с текстами {{pdf.…}}. */
-    static final List<String> PDF_TEMPLATES = List.of("templates/report.html", "templates/weeklyreport.html");
+    public static final List<String> PDF_TEMPLATES = List.of("templates/report.html", "templates/weeklyreport.html");
 
     @Test
     void everyLanguageHasSameKeysAsDefault() throws IOException {
@@ -145,6 +148,21 @@ class TextBundlesConsistencyTest {
         assertThat(keys).as("profile texts missing in bot_ru").allMatch(bot::containsKey);
     }
 
+    /** Названия функций для сообщений о лимитах и статусы подписки — ключи тоже из имён enum. */
+    @Test
+    void everyFeatureAndSubscriptionStatusHasText() throws IOException {
+        Properties bot = load("i18n/calorie/bot", AppLanguage.RU);
+        List<String> keys = new ArrayList<>();
+        for (BotFeature feature : BotFeature.values()) {
+            keys.add(feature.getTextKey());
+        }
+        for (UserSubscription.Status status : UserSubscription.Status.values()) {
+            keys.add("subscription.status." + status.name());
+        }
+
+        assertThat(keys).as("feature / subscription texts missing in bot_ru").allMatch(bot::containsKey);
+    }
+
     /** {{pdf.…}} в HTML-шаблонах отчётов подставляется по ключу — опечатка оставила бы в PDF фигурные скобки. */
     @Test
     void everyTemplateKeyExistsInPdfBundle() throws IOException {
@@ -190,7 +208,7 @@ class TextBundlesConsistencyTest {
         return values;
     }
 
-    static String read(String resource) throws IOException {
+    public static String read(String resource) throws IOException {
         try (InputStream in = TextBundlesConsistencyTest.class.getClassLoader().getResourceAsStream(resource)) {
             assertThat(in).as("resource %s", resource).isNotNull();
             return new String(in.readAllBytes(), StandardCharsets.UTF_8);

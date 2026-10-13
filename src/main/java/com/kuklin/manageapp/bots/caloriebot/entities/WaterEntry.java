@@ -24,22 +24,4 @@ public class WaterEntry {
     private Integer amount;
     @CreationTimestamp
     private Instant createdAt;
-
-    public static String getWaterStatusText(Integer currentWaterMl, Integer targetWaterMl) {
-        int totalBlocks = 10; // Длина шкалы
-
-        if (targetWaterMl == null) {
-            targetWaterMl = UserNutritionProfile.DEF_WATER_ML;
-        }
-
-        // Считаем количество закрашенных блоков
-        int filledBlocks = (int) Math.round(((double) currentWaterMl / targetWaterMl) * totalBlocks);
-        // Ограничиваем, чтобы не вышло за пределы 0-10
-        filledBlocks = Math.max(0, Math.min(totalBlocks, filledBlocks));
-
-        String filled = "🟦".repeat(filledBlocks);
-        String empty = "⬜".repeat(totalBlocks - filledBlocks);
-
-        return String.format("💧 [%s%s] %d / %d мл", filled, empty, currentWaterMl, targetWaterMl);
-    }
 }

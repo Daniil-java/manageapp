@@ -14,7 +14,7 @@ import com.kuklin.manageapp.bots.caloriebot.configurations.AiInputLimitsProperti
 import com.kuklin.manageapp.bots.caloriebot.models.AiInsightType;
 import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
-import com.kuklin.manageapp.bots.caloriebot.i18n.PdfTexts;
+import com.kuklin.manageapp.bots.caloriebot.texts.PdfTexts;
 import com.kuklin.manageapp.bots.caloriebot.models.airesponse.AiPatternAnalysisResponse;
 import com.kuklin.manageapp.bots.caloriebot.models.airesponse.InsightPayloadRecord;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;

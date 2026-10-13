@@ -3,6 +3,11 @@ package com.kuklin.manageapp.bots.caloriebot.telegram;
 import com.kuklin.manageapp.bots.caloriebot.components.services.AiRateLimiter;
 import com.kuklin.manageapp.bots.caloriebot.components.services.PlanFeatureService;
 import com.kuklin.manageapp.bots.caloriebot.entities.PlanFeature;
+import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
+import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
+import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorParams;
+import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.BotFeature;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import com.kuklin.manageapp.common.library.tgutils.Command;
@@ -23,50 +28,48 @@ import static com.kuklin.manageapp.bots.caloriebot.components.services.CalorieAc
 public class FeatureLimitNotifier {
     private final CalorieTelegramBot calorieTelegramBot;
     private final PlanFeatureService planFeatureService;
+    private final CalorieTexts texts;
+    private final CalorieMenuButtons menuButtons;
 
-    public void sendLimitReached(Long chatId, BotFeature feature) {
-        calorieTelegramBot.sendReturnedMessage(chatId, buildMessage(feature), getSubscriptionKeyboard(), null);
+    public void sendLimitReached(Long chatId, Long appUserId, BotFeature feature) {
+        AppLanguage language = texts.languageOf(appUserId);
+        calorieTelegramBot.sendReturnedMessage(chatId, buildMessage(feature, language),
+                getSubscriptionKeyboard(language), null);
     }
 
     /**
      * Лимит обращений к ИИ (AiRateLimiter): за минуту — просим подождать,
      * за сутки без подписки — предлагаем подписку (у неё лимит выше).
+     * Тексты — те же, что у ошибок API (errors_*: AI_RATE_LIMIT, AI_DAILY_LIMIT), склонения там уже есть.
      */
-    public void sendAiRateLimited(Long chatId, AiRateLimiter.Decision decision) {
+    public void sendAiRateLimited(Long chatId, Long appUserId, AiRateLimiter.Decision decision) {
+        AppLanguage language = texts.languageOf(appUserId);
         if (decision.reason() == AiRateLimiter.Reason.MINUTE) {
-            calorieTelegramBot.sendReturnedMessage(chatId, String.format(
-                    "⏳ Слишком много запросов подряд. Подождите %d сек. и попробуйте снова.",
-                    decision.retryAfterSeconds()));
+            calorieTelegramBot.sendReturnedMessage(chatId, "⏳ " + texts.get(language,
+                    ErrorStatus.AI_RATE_LIMIT.getTextKey(), ErrorParams.retryAfter(decision.retryAfterSeconds())));
             return;
         }
 
-        String message = String.format(
-                "🔒 Достигнут лимит запросов к ИИ: %d за сутки. Следующий запрос будет доступен через %s.",
-                decision.dailyLimit(), formatWait(decision.retryAfterSeconds()));
+        String message = "🔒 " + texts.get(language, ErrorStatus.AI_DAILY_LIMIT.getTextKey(),
+                ErrorParams.dailyLimit(decision.retryAfterSeconds(), decision.dailyLimit()));
         if (decision.premium()) {
             calorieTelegramBot.sendReturnedMessage(chatId, message);
         } else {
-            calorieTelegramBot.sendReturnedMessage(chatId, message + "\n\nС подпиской лимит выше.",
-                    getSubscriptionKeyboard(), null);
+            calorieTelegramBot.sendReturnedMessage(chatId,
+                    message + "\n\n" + texts.get(language, BotTextKeys.LIMIT_AI_SUBSCRIPTION_HINT),
+                    getSubscriptionKeyboard(language), null);
         }
     }
 
-    /** 125 сек → "3 мин", 7300 сек → "2 ч 2 мин". */
-    private static String formatWait(long seconds) {
-        long minutes = (seconds + 59) / 60;
-        if (minutes < 60) return minutes + " мин";
-        return minutes / 60 + " ч " + minutes % 60 + " мин";
-    }
-
-    private String buildMessage(BotFeature feature) {
-        return "🔒 «" + feature.getDisplayName() + "»: " + describeFreeLimit(feature) + "\n\n"
-                + "Оформите подписку, чтобы пользоваться без ограничений.";
+    private String buildMessage(BotFeature feature, AppLanguage language) {
+        return texts.get(language, BotTextKeys.LIMIT_FEATURE,
+                texts.get(language, feature.getTextKey()), describeFreeLimit(feature, language));
     }
 
     /**
      * Лимит берётся из plan_features, чтобы текст не расходился с реальными настройками тарифа.
      */
-    private String describeFreeLimit(BotFeature feature) {
+    private String describeFreeLimit(BotFeature feature, AppLanguage language) {
         PlanFeature freeFeature = planFeatureService.getFeaturesByPlanCode(FREE_PLAN_CODE, BotIdentifier.CALORIE_BOT)
                 .stream()
                 .filter(pf -> pf.getFeature() == feature)
@@ -74,22 +77,22 @@ public class FeatureLimitNotifier {
                 .orElse(null);
 
         if (freeFeature == null || freeFeature.getLimitValue() == null || freeFeature.getLimitValue() == 0) {
-            return "доступно только по подписке.";
+            return texts.get(language, BotTextKeys.LIMIT_FREE_ONLY_SUBSCRIPTION);
         }
 
-        int limit = freeFeature.getLimitValue();
+        String limit = String.valueOf(freeFeature.getLimitValue());
         return switch (freeFeature.getLimitPeriod()) {
-            case DAILY -> "на бесплатном плане доступно " + limit + " в день. Лимит обновится завтра.";
-            case MONTHLY -> "на бесплатном плане доступно " + limit + " в месяц. Лимит обновится в следующем месяце.";
-            case LIFETIME -> "на бесплатном плане доступно не больше " + limit + ".";
-            case UNLIMITED -> "лимит бесплатного плана достигнут.";
+            case DAILY -> texts.get(language, BotTextKeys.LIMIT_FREE_DAILY, limit);
+            case MONTHLY -> texts.get(language, BotTextKeys.LIMIT_FREE_MONTHLY, limit);
+            case LIFETIME -> texts.get(language, BotTextKeys.LIMIT_FREE_LIFETIME, limit);
+            case UNLIMITED -> texts.get(language, BotTextKeys.LIMIT_FREE_UNLIMITED);
         };
     }
 
-    private InlineKeyboardMarkup getSubscriptionKeyboard() {
+    private InlineKeyboardMarkup getSubscriptionKeyboard(AppLanguage language) {
         return TelegramKeyboard.builder()
                 .row(TelegramKeyboard.button(
-                        Command.CALORIE_PAYMENT_PAYLOAD_PLAN.getCommandText(),
+                        menuButtons.getLabel(CalorieMenuButtons.Button.SUBSCRIPTION, language),
                         Command.CALORIE_PAYMENT_PAYLOAD_PLAN.getCommandText()))
                 .build();
     }

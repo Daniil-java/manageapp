@@ -1,10 +1,14 @@
-package com.kuklin.manageapp.bots.caloriebot.i18n;
+package com.kuklin.manageapp.bots.caloriebot.texts;
 
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserSettingsService;
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfileEntry;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserSettings;
 import com.kuklin.manageapp.bots.caloriebot.entities.WeightEntry;
+import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
+import com.kuklin.manageapp.bots.caloriebot.i18n.I18nProperties;
+import com.kuklin.manageapp.bots.caloriebot.i18n.TextBundlesConsistencyTest;
 import com.kuklin.manageapp.bots.caloriebot.models.airesponse.AiPatternAnalysisResponse;
 import com.kuklin.manageapp.bots.caloriebot.models.airesponse.MacroBalanceDTO;
 import com.kuklin.manageapp.bots.caloriebot.utils.ReportUtils;

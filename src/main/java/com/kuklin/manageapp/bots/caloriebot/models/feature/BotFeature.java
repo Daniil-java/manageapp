@@ -33,7 +33,12 @@ public enum BotFeature {
     DISH_FAVORITE_LIST("Сохранённые блюда");
 
     /**
-     * Название функции для пользователя (сообщения о лимитах, экраны подписки).
+     * Название функции по-русски — для лендинга и API. В боте — getTextKey().
      */
     private final String displayName;
+
+    /** Название функции на языке пользователя — ключ словаря bot_* (сообщения о лимитах в боте). */
+    public String getTextKey() {
+        return "feature." + name();
+    }
 }

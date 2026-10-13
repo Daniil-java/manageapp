@@ -81,7 +81,7 @@ public class CalorieReportUpdateHandler implements CalorieBotUpdateHandler {
             if (reportType != ReportType.WEIGHT) {
                 AiRateLimiter.Decision decision = aiRateLimiter.tryAcquire(telegramUser.getAppUserId());
                 if (!decision.allowed()) {
-                    featureLimitNotifier.sendAiRateLimited(chatId, decision);
+                    featureLimitNotifier.sendAiRateLimited(chatId, telegramUser.getAppUserId(), decision);
                     return;
                 }
             }
@@ -131,7 +131,7 @@ public class CalorieReportUpdateHandler implements CalorieBotUpdateHandler {
             String aiReport = reportService.getDayAiReport(appUserId).getOrThrow();
             calorieTelegramBot.sendReturnedMessage(chatId, aiReport);
         } catch (MissingFeatureException e) {
-            featureLimitNotifier.sendLimitReached(chatId, e.getRequiredFeature());
+            featureLimitNotifier.sendLimitReached(chatId, appUserId, e.getRequiredFeature());
         }
     }
 
@@ -145,7 +145,7 @@ public class CalorieReportUpdateHandler implements CalorieBotUpdateHandler {
             ).getOrThrow();
             sendPdfOrError(chatId, appUserId, report, ReportType.WEEK);
         } catch (MissingFeatureException e) {
-            featureLimitNotifier.sendLimitReached(chatId, e.getRequiredFeature());
+            featureLimitNotifier.sendLimitReached(chatId, appUserId, e.getRequiredFeature());
         }
 
     }
@@ -160,7 +160,7 @@ public class CalorieReportUpdateHandler implements CalorieBotUpdateHandler {
             ).getOrThrow();
             sendPdfOrError(chatId, appUserId, report, type);
         } catch (MissingFeatureException e) {
-            featureLimitNotifier.sendLimitReached(chatId, e.getRequiredFeature());
+            featureLimitNotifier.sendLimitReached(chatId, appUserId, e.getRequiredFeature());
         }
     }
 

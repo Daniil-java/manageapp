@@ -3,6 +3,7 @@ package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.favorites;
 import com.kuklin.manageapp.bots.caloriebot.components.services.DishService;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserFavoriteDishService;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserFavoriteDish;
+import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
@@ -31,8 +32,6 @@ public class CalorieFavoriteDishAddCallbackUpdateHandler implements CalorieBotUp
     private final CalorieTexts texts;
     private final DishKeyboards dishKeyboards;
 
-    private static final String SAVED_MSG = "⭐ Добавил блюдо в список сохранённых.";
-    private static final String ERROR_MSG = "Не получилось сохранить блюдо. Попробуйте ещё раз.";
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
@@ -55,17 +54,17 @@ public class CalorieFavoriteDishAddCallbackUpdateHandler implements CalorieBotUp
             return;
         } catch (Exception e) {
             log.error("Favorite dish save failed! appUserId {}, dishId {}", telegramUser.getAppUserId(), dishId, e);
-            calorieTelegramBot.sendReturnedMessage(chatId, ERROR_MSG);
+            calorieTelegramBot.sendReturnedMessage(chatId, texts.get(telegramUser.getAppUserId(), BotTextKeys.FAVORITES_SAVE_FAILED));
             return;
         }
 
         // Аспект @RequiresFeature возвращает denied, если лимит DISH_FAVORITE_LIST исчерпан
         if (!result.isAllowed()) {
-            featureLimitNotifier.sendLimitReached(chatId, result.deniedFeature());
+            featureLimitNotifier.sendLimitReached(chatId, telegramUser.getAppUserId(), result.deniedFeature());
             return;
         }
 
-        calorieTelegramBot.sendReturnedMessage(chatId, SAVED_MSG);
+        calorieTelegramBot.sendReturnedMessage(chatId, texts.get(telegramUser.getAppUserId(), BotTextKeys.FAVORITES_SAVED));
 
         calorieTelegramBot.sendEditMessage(
                 chatId,
@@ -78,7 +77,7 @@ public class CalorieFavoriteDishAddCallbackUpdateHandler implements CalorieBotUp
     private String toUserMessage(Long appUserId, ErrorResponseException e) {
         return switch (e.getErrorStatus()) {
             case FAVORITE_DISH_ALREADY_EXISTS, DISH_NOT_FOUND -> texts.error(appUserId, e);
-            default -> ERROR_MSG;
+            default -> texts.get(appUserId, BotTextKeys.FAVORITES_SAVE_FAILED);
         };
     }
 

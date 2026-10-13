@@ -5,6 +5,9 @@ import com.kuklin.manageapp.bots.caloriebot.components.services.UserNutritionPro
 import com.kuklin.manageapp.bots.caloriebot.components.services.WaterEntryService;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
 import com.kuklin.manageapp.bots.caloriebot.entities.WaterEntry;
+import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
+import com.kuklin.manageapp.bots.caloriebot.texts.WaterTexts;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
@@ -30,6 +33,8 @@ public class CalorieWaterUpdateHandler implements CalorieBotUpdateHandler {
     private final AnalyticsService analyticsService;
     private final WaterEntryService waterEntryService;
     private final UserNutritionProfileService userNutritionProfileService;
+    private final WaterTexts waterTexts;
+    private final CalorieTexts texts;
 
     private static final Command CMD = Command.CALORIE_WATER;
     // Отменить последнюю отметку за сегодня
@@ -96,11 +101,12 @@ public class CalorieWaterUpdateHandler implements CalorieBotUpdateHandler {
         InlineKeyboardMarkup markup = buildNumericKeyboard(
                 currentWater, 0,
                 -500, -100, 100, 500,
-                last == null ? null : last.getAmount()
+                last == null ? null : last.getAmount(),
+                telegramUser.getAppUserId()
         );
 
-        String statusText = WaterEntry.getWaterStatusText(
-                currentWater, profile.getWaterTargetMlPerDay());
+        String statusText = waterTexts.buildWaterStatusText(
+                currentWater, profile.getWaterTargetMlPerDay(), telegramUser.getAppUserId());
 
         // 2. Выбор метода отправки (новое сообщение или редактирование старого)
         if (messageId != null) {
@@ -134,11 +140,12 @@ public class CalorieWaterUpdateHandler implements CalorieBotUpdateHandler {
         }
     }
 
-    public static InlineKeyboardMarkup buildNumericKeyboard(
+    private InlineKeyboardMarkup buildNumericKeyboard(
             Integer currentWater, //Изменяемое число внутри счетчика
             Integer min,
             Integer bigNeg, Integer neg, Integer pos, Integer bigPos,
-            Integer lastAmount // последняя отметка за сегодня — для кнопки «Отменить», null — кнопки нет
+            Integer lastAmount, // последняя отметка за сегодня — для кнопки «Отменить», null — кнопки нет
+            Long appUserId
     ) {
 
         String callbackBase = CMD.getCommandText()
@@ -163,11 +170,11 @@ public class CalorieWaterUpdateHandler implements CalorieBotUpdateHandler {
         if (lastAmount != null) {
             String sign = lastAmount > 0 ? "+" : "";
             row0.add(TelegramKeyboard.button(
-                    "↩️ Отменить " + sign + lastAmount + " мл",
+                    texts.get(appUserId, BotTextKeys.WATER_BUTTON_UNDO, sign + lastAmount),
                     callbackBase + UNDO_CMD));
         }
 
-        row2.add(TelegramKeyboard.button("Закрыть", Command.CALORIE_CLOSE.getCommandText()));
+        row2.add(TelegramKeyboard.button(texts.get(appUserId, BotTextKeys.COMMON_BUTTON_CLOSE), Command.CALORIE_CLOSE.getCommandText()));
 
 //        <handlecmd><action><set|adj><value>
 

@@ -4,7 +4,7 @@ import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfileEntry;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserSettings;
 import com.kuklin.manageapp.bots.caloriebot.entities.WeightEntry;
-import com.kuklin.manageapp.bots.caloriebot.i18n.PdfTexts;
+import com.kuklin.manageapp.bots.caloriebot.texts.PdfTexts;
 import tech.tablesaw.api.StringColumn;
 import tech.tablesaw.api.Table;
 

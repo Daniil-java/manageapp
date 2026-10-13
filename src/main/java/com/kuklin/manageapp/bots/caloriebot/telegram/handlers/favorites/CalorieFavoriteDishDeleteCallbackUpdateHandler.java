@@ -2,6 +2,8 @@ package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.favorites;
 
 import com.kuklin.manageapp.bots.caloriebot.entities.UserFavoriteDish;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserFavoriteDishService;
+import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
@@ -23,9 +25,9 @@ import java.util.List;
 public class CalorieFavoriteDishDeleteCallbackUpdateHandler implements CalorieBotUpdateHandler {
     private final CalorieTelegramBot calorieTelegramBot;
     private final UserFavoriteDishService userFavoriteDishService;
+    private final CalorieTexts texts;
     private static final Integer PAGE_SIZE = 5;
 
-    private static final String EXTRACT_DATA_ERROR = "Ошибка данных!";
     private static final String DEL_CMD = "DEL";
     private static final String PAGE_CMD = "PAGE";
     private static final String CONFIRM_CMD = "CONFIRM";
@@ -38,9 +40,9 @@ public class CalorieFavoriteDishDeleteCallbackUpdateHandler implements CalorieBo
         }
     }
 
-    private String buildListTitle(int total, int page) {
+    private String buildListTitle(int total, int page, Long appUserId) {
         int totalPages = (int) Math.ceil(total / (double) PAGE_SIZE);
-        return "Мои сохранённые блюда (стр. " + (page + 1) + "/" + totalPages + "). \nВыбери блюдо, которое надо удалить:";
+        return texts.get(appUserId, BotTextKeys.FAVORITES_DELETE_PAGE_TITLE, String.valueOf(page + 1), String.valueOf(totalPages));
     }
 
     /**
@@ -52,7 +54,7 @@ public class CalorieFavoriteDishDeleteCallbackUpdateHandler implements CalorieBo
         CallbackQuery callback = update.getCallbackQuery();
         String data = callback.getData();
 
-        String action = extractCommandOrNull(data, callback.getMessage().getChatId());
+        String action = extractCommandOrNull(data, callback.getMessage().getChatId(), telegramUser.getAppUserId());
         if (action == null) return;
 
         if (PAGE_CMD.equals(action)) {
@@ -66,7 +68,7 @@ public class CalorieFavoriteDishDeleteCallbackUpdateHandler implements CalorieBo
 
     private void handlePageCommand(TelegramUser telegramUser, CallbackQuery query) {
         // перелистывание
-        Integer page = extractPageOrNull(query.getData(), query.getMessage().getChatId());
+        Integer page = extractPageOrNull(query.getData(), query.getMessage().getChatId(), telegramUser.getAppUserId());
         if (page == null) return;
         Long chatId = query.getMessage().getChatId();
 
@@ -76,15 +78,15 @@ public class CalorieFavoriteDishDeleteCallbackUpdateHandler implements CalorieBo
         if (favorites == null || favorites.isEmpty()) {
             calorieTelegramBot.sendEditMessage(
                     chatId,
-                    "Список сохранённых блюд пуст.",
+                    texts.get(telegramUser.getAppUserId(), BotTextKeys.FAVORITES_EMPTY),
                     query.getMessage().getMessageId(),
                     null
             );
             return;
         }
 
-        InlineKeyboardMarkup keyboard = buildFavoritesKeyboard(favorites, page);
-        String text = buildListTitle(favorites.size(), page);
+        InlineKeyboardMarkup keyboard = buildFavoritesKeyboard(favorites, page, telegramUser.getAppUserId());
+        String text = buildListTitle(favorites.size(), page, telegramUser.getAppUserId());
 
         calorieTelegramBot.sendEditMessage(
                 chatId,
@@ -97,42 +99,42 @@ public class CalorieFavoriteDishDeleteCallbackUpdateHandler implements CalorieBo
     private void handleConfirmCommand(TelegramUser telegramUser, CallbackQuery query) {
         Long chatId = query.getMessage().getChatId();
 
-        Integer page = extractPageOrNull(query.getData(), chatId);
-        Long favoriteId = extractFavoriteIdOrNull(query.getData(), chatId);
+        Integer page = extractPageOrNull(query.getData(), chatId, telegramUser.getAppUserId());
+        Long favoriteId = extractFavoriteIdOrNull(query.getData(), chatId, telegramUser.getAppUserId());
         if (page == null || favoriteId == null) return;
 
         UserFavoriteDish userFavoriteDish = userFavoriteDishService.getUserFavoriteDishByIdOrNull(favoriteId);
         calorieTelegramBot.sendEditMessage(
                 chatId,
-                buildConfirmMessage(userFavoriteDish),
+                buildConfirmMessage(userFavoriteDish, telegramUser.getAppUserId()),
                 query.getMessage().getMessageId(),
-                buildConfirmKeyboard(page, favoriteId)
+                buildConfirmKeyboard(page, favoriteId, telegramUser.getAppUserId())
         );
     }
 
-    private String buildConfirmMessage(UserFavoriteDish userFavoriteDish) {
+    private String buildConfirmMessage(UserFavoriteDish userFavoriteDish, Long appUserId) {
         StringBuilder sb = new StringBuilder();
 
-        sb.append("⚠️ Вы уверены, что хотите удалить это блюдо?").append("\n");
+        sb.append(texts.get(appUserId, BotTextKeys.FAVORITES_DELETE_CONFIRM)).append("\n");
         String emoji = userFavoriteDish.getEmojiIcon() == null ? "" : userFavoriteDish.getEmojiIcon();
         sb.append(emoji).append(userFavoriteDish.getName());
         return sb.toString();
     }
 
-    private InlineKeyboardMarkup buildConfirmKeyboard(int page, Long favoriteId) {
+    private InlineKeyboardMarkup buildConfirmKeyboard(int page, Long favoriteId, Long appUserId) {
         TelegramKeyboard.TelegramKeyboardBuilder builder = TelegramKeyboard.builder();
 
         // Да — реально удалить
         return builder.row(
                 TelegramKeyboard.button(
-                        "✅ Да",
+                        texts.get(appUserId, BotTextKeys.COMMON_BUTTON_YES),
                         Command.CALORIE_FAVORITE_DELETE.getCommandText()
                                 + TelegramBot.DEFAULT_DELIMETER + DEL_CMD
                                 + TelegramBot.DEFAULT_DELIMETER + page
                                 + TelegramBot.DEFAULT_DELIMETER + favoriteId
                 ),
                 TelegramKeyboard.button(
-                        "❌ Нет",
+                        "❌ " + texts.get(appUserId, BotTextKeys.COMMON_BUTTON_NO),
                         Command.CALORIE_FAVORITE_DELETE.getCommandText()
                                 + TelegramBot.DEFAULT_DELIMETER + PAGE_CMD
                                 + TelegramBot.DEFAULT_DELIMETER + page
@@ -145,8 +147,8 @@ public class CalorieFavoriteDishDeleteCallbackUpdateHandler implements CalorieBo
         String data = query.getData();
         Long chatId = query.getMessage().getChatId();
 
-        Integer page = extractPageOrNull(data, chatId);
-        Long favoriteId = extractFavoriteIdOrNull(data, chatId);
+        Integer page = extractPageOrNull(data, chatId, telegramUser.getAppUserId());
+        Long favoriteId = extractFavoriteIdOrNull(data, chatId, telegramUser.getAppUserId());
         if (page == null || favoriteId == null) return;
 
         userFavoriteDishService.deleteFavorite(
@@ -161,15 +163,15 @@ public class CalorieFavoriteDishDeleteCallbackUpdateHandler implements CalorieBo
         if (favorites == null || favorites.isEmpty()) {
             calorieTelegramBot.sendEditMessage(
                     chatId,
-                    "Список сохранённых блюд пуст.",
+                    texts.get(telegramUser.getAppUserId(), BotTextKeys.FAVORITES_EMPTY),
                     query.getMessage().getMessageId(),
                     null
             );
             return;
         }
 
-        InlineKeyboardMarkup keyboard = buildFavoritesKeyboard(favorites, page);
-        String text = buildListTitle(favorites.size(), page);
+        InlineKeyboardMarkup keyboard = buildFavoritesKeyboard(favorites, page, telegramUser.getAppUserId());
+        String text = buildListTitle(favorites.size(), page, telegramUser.getAppUserId());
 
         calorieTelegramBot.sendEditMessage(
                 chatId,
@@ -182,7 +184,7 @@ public class CalorieFavoriteDishDeleteCallbackUpdateHandler implements CalorieBo
     /**
      * Клавиатура списка избранных блюд с листалкой.
      */
-    private InlineKeyboardMarkup buildFavoritesKeyboard(List<UserFavoriteDish> favorites, int page) {
+    private InlineKeyboardMarkup buildFavoritesKeyboard(List<UserFavoriteDish> favorites, int page, Long appUserId) {
         int total = favorites.size();
         if (total == 0) {
             return TelegramKeyboard.builder().build();
@@ -235,13 +237,13 @@ public class CalorieFavoriteDishDeleteCallbackUpdateHandler implements CalorieBo
         //Кнопка для возврата в режим выбора
         builder.row(
                 TelegramKeyboard.button(
-                        "\uD83D\uDD01 Вернуться к добавлению",
+                        texts.get(appUserId, BotTextKeys.FAVORITES_BUTTON_BACK_TO_ADD),
                         Command.CALORIE_FAVORITE.getCommandText()
                                 + TelegramBot.DEFAULT_DELIMETER + PAGE_CMD
                                 + TelegramBot.DEFAULT_DELIMETER + page
                 ));
         builder.row(
-                TelegramKeyboard.button("❌ Закрыть", CLOSE_CMD)
+                TelegramKeyboard.button("❌ " + texts.get(appUserId, BotTextKeys.COMMON_BUTTON_CLOSE), CLOSE_CMD)
         );
 
         return builder.build();
@@ -252,40 +254,40 @@ public class CalorieFavoriteDishDeleteCallbackUpdateHandler implements CalorieBo
         return Command.CALORIE_FAVORITE_DELETE.getCommandText();
     }
 
-    private String extractCommandOrNull(String data, Long chatId) {
+    private String extractCommandOrNull(String data, Long chatId, Long appUserId) {
         try {
             String[] parts = data.split(TelegramBot.DEFAULT_DELIMETER);
             return parts[1];
         } catch (Exception e) {
             calorieTelegramBot.sendReturnedMessage(
                     chatId,
-                    EXTRACT_DATA_ERROR
+                    texts.get(appUserId, BotTextKeys.COMMON_DATA_ERROR)
             );
             return null;
         }
     }
 
-    private Integer extractPageOrNull(String data, Long chatId) {
+    private Integer extractPageOrNull(String data, Long chatId, Long appUserId) {
         try {
             String[] parts = data.split(TelegramBot.DEFAULT_DELIMETER);
             return Integer.parseInt(parts[2]);
         } catch (Exception e) {
             calorieTelegramBot.sendReturnedMessage(
                     chatId,
-                    EXTRACT_DATA_ERROR
+                    texts.get(appUserId, BotTextKeys.COMMON_DATA_ERROR)
             );
             return null;
         }
     }
 
-    private Long extractFavoriteIdOrNull(String data, Long chatId) {
+    private Long extractFavoriteIdOrNull(String data, Long chatId, Long appUserId) {
         try {
             String[] parts = data.split(TelegramBot.DEFAULT_DELIMETER);
             return Long.parseLong(parts[3]);
         } catch (Exception e) {
             calorieTelegramBot.sendReturnedMessage(
                     chatId,
-                    EXTRACT_DATA_ERROR
+                    texts.get(appUserId, BotTextKeys.COMMON_DATA_ERROR)
             );
             return null;
         }

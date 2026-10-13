@@ -1,7 +1,7 @@
 package com.kuklin.manageapp.bots.caloriebot.models.airesponse;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.kuklin.manageapp.bots.caloriebot.i18n.PdfTexts;
+import com.kuklin.manageapp.bots.caloriebot.texts.PdfTexts;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

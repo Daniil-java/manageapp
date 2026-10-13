@@ -42,7 +42,7 @@ public class TelegramCalorieBotFacade extends TelegramFacade {
 
         UpdateHandler updateHandler = processInputUpdate(update);
         if (updateHandler == null) {
-            log.error("Не удалось найти подходящий хендлер. Ответа не будет");
+            log.error("No suitable handler found, no reply will be sent");
         } else {
             updateHandler.handle(update, telegramUser);
         }

@@ -2,7 +2,6 @@ package com.kuklin.manageapp.bots.caloriebot.components.services;
 
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
-import com.kuklin.manageapp.bots.caloriebot.entities.WaterEntry;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import lombok.RequiredArgsConstructor;
@@ -27,17 +26,6 @@ public class AnalyticsService {
      */
     public Integer getTodayWaterMl(Long userId) {
         return waterEntryService.getTodayTotal(userId);
-    }
-
-    /**
-     * Формирует текстовый статус по потреблению воды (текущее vs цель).
-     */
-    public String getWaterStatusText(Long userId) {
-        UserNutritionProfile profile = userNutritionProfileService.getOrCreateProfile(userId);
-        Integer current = getTodayWaterMl(userId);
-        Integer targetWaterMl = profile.getWaterTargetMlPerDay();
-
-        return WaterEntry.getWaterStatusText(current, targetWaterMl);
     }
 
     /**

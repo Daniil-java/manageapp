@@ -1,4 +1,17 @@
 ## 0.0.60 (12.10.2026)
+[et-87] — Подписка, лимиты, избранное и вода на языке пользователя
+* Лимиты (FeatureLimitNotifier): сообщения о лимите функции, название функции — BotFeature.getTextKey() → feature.* (getDisplayName остался для лендинга и API). Лимиты ИИ — те же тексты, что у ошибок API (errors_*: AI_RATE_LIMIT, AI_DAILY_LIMIT, склонения уже там); формулировки чуть другие: «Слишком много запросов к ИИ. Попробуйте через 30 секунд». sendLimitReached / sendAiRateLimited теперь принимают appUserId. Кнопка подписки — подпись из CalorieMenuButtons.
+* Избранное: список и листалка, режим удаления, подтверждение «Да / Нет», «Ошибка данных!», сохранено / не сохранено.
+* Вода: строка «💧 [шкала] 500 / 2000 мл» → WaterTexts (WaterEntry.getWaterStatusText удалён; неиспользуемый AnalyticsService.getWaterStatusText тоже), кнопка «↩️ Отменить +250 мл», «Закрыть». buildNumericKeyboard воды больше не static.
+* Подписка: «Premium закончился», описание тарифов, «Статус подписки», статусы (subscription.status.* по имени UserSubscription.Status — сам enum в общем модуле оплаты, его подписи русские). «Premium закончился» зовёт общий планировщик только с chatId — язык берётся у пользователя, найденного по Telegram ID. Названия тарифов — из БД (pricing_plans.title), пока на одном языке.
+* Лог фасада «нет подходящего обработчика» — по-английски.
+* Тесты: у каждой функции и статуса подписки есть текст (TextBundlesConsistencyTest), WaterTextsTest.
+* Счётчик русских строк в коде: 87 → 28 — остались только privacy и terms.
+
+[et-87] — Пакет texts: недельный отчёт и PDF
+* PdfTexts переехал из i18n в texts (это record на один отчёт, от AbstractBotTexts не наследуется); тест — тоже в texts.
+* Недельный отчёт собирается в WeekTexts (было — ListWeekUpdateHandler.getWeeklyAnalytics); тест WeekTextsTest, в т. ч. «1 day / 2 days».
+
 [et-87] — Пакет texts: сборка текстов бота отдельно от логики
 * CalorieTextsService переименован в CalorieTexts (остался в i18n); тест — CalorieTextsTest. Поля calorieTextsService → calorieTexts.
 * Новый пакет caloriebot/texts. AbstractBotTexts — общий родитель: доступ к словарю, getWithUnit («175 см» / «нет данных»), getDurationText («3 ч» / «2 мин» / «90 сек» — раньше две отдельные копии в DishUpdateHandler и настройках).
