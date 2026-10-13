@@ -1,5 +1,7 @@
 package com.kuklin.manageapp.bots.caloriebot.components.services;
 
+import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.entities.PlanFeature;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserFeatureUsage;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.BotFeature;
@@ -32,6 +34,7 @@ public class CalorieAccessService {
     private final TelegramUserService telegramUserService;
     private final PlanFeatureService planFeatureService;
     private final UserFeatureUsageService userFeatureUsageService;
+    private final CalorieTexts texts;
     /** Код тарифа по умолчанию, если у пользователя нет активной подписки */
     public static final String FREE_PLAN_CODE = "FREE";
 
@@ -103,6 +106,7 @@ public class CalorieAccessService {
      * Тариф определяется один раз, а не для каждой фичи.
      */
     public List<FeatureLimitDto> getAllLimits(Long appUserId) {
+        AppLanguage language = texts.languageOf(appUserId);
         Map<BotFeature, PlanFeature> planFeatures = planFeatureService
                 .getFeaturesByUserIdAndBotIdentifier(appUserId, BotIdentifier.CALORIE_BOT)
                 .stream()
@@ -113,7 +117,7 @@ public class CalorieAccessService {
                     PlanFeature planFeature = planFeatures.get(feature);
                     return new FeatureLimitDto(
                             feature,
-                            feature.getDisplayName(),
+                            texts.get(language, feature.getTextKey()),
                             isUnlimited(planFeature) ? -1 : (planFeature == null ? 0 : planFeature.getLimitValue()),
                             getRemaining(appUserId, feature, planFeature),
                             planFeature == null ? null : planFeature.getLimitPeriod()

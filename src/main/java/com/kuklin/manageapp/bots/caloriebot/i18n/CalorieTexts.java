@@ -34,6 +34,7 @@ public class CalorieTexts {
     static final List<String> BUNDLES = List.of(
             "i18n/calorie/bot",
             "i18n/calorie/errors",
+            "i18n/calorie/landing",
             "i18n/calorie/pdf",
             "i18n/calorie/plans"
     );

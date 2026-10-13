@@ -2,6 +2,7 @@ package com.kuklin.manageapp.bots.caloriebot.components.controller;
 
 import com.kuklin.manageapp.bots.caloriebot.components.services.CalorieLandingService;
 import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
+import com.kuklin.manageapp.bots.caloriebot.texts.LandingTexts;
 import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -30,13 +31,17 @@ public class TelegramWebAppController {
     private static final Duration LANDING_ACCESS_TTL = Duration.ofDays(30);
 
     private final CalorieLandingService calorieLandingService;
+    private final LandingTexts landingTexts;
 
     /**
      * Лендинг. На zefir.fit он же открывается по корню — см. WebController.
      * Если задан calorie.landing.access-key — только по ссылке ?key=..., дальше по cookie; без ключа — 404.
+     * Язык — как у privacy и terms: ?lang=ru|en, иначе по Accept-Language (getPageLanguage).
      */
     @GetMapping
     public String showLanding(@RequestParam(name = "key", required = false) String key,
+                              @RequestParam(name = "lang", required = false) String lang,
+                              @RequestHeader(name = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage,
                               @CookieValue(name = LANDING_ACCESS_COOKIE, required = false) String cookieKey,
                               HttpServletResponse response,
                               Model model) {
@@ -57,7 +62,14 @@ public class TelegramWebAppController {
             response.setHeader("X-Robots-Tag", "noindex, nofollow");
         }
 
-        model.addAttribute("page", calorieLandingService.getLandingPage());
+        AppLanguage language = getPageLanguage(lang, acceptLanguage);
+        // Без ?lang= язык зависит от заголовка — кэши не должны отдавать одну версию всем
+        response.addHeader(HttpHeaders.VARY, HttpHeaders.ACCEPT_LANGUAGE);
+        model.addAttribute("page", calorieLandingService.getLandingPage(language));
+        model.addAttribute("lang", language.getCode());
+        model.addAttribute("languages", AppLanguage.values());
+        model.addAttribute("t", landingTexts.getPageTexts(language));
+        model.addAttribute("js", landingTexts.getScriptTexts(language));
         return "calorielanding";
     }
 
@@ -88,20 +100,20 @@ public class TelegramWebAppController {
     @GetMapping("/privacy")
     public String showPrivacyPolicy(@RequestParam(name = "lang", required = false) String lang,
                                     @RequestHeader(name = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
-        return "calorieprivacy_" + getLegalPageLanguage(lang, acceptLanguage).getCode();
+        return "calorieprivacy_" + getPageLanguage(lang, acceptLanguage).getCode();
     }
 
     @GetMapping("/terms")
     public String showTerms(@RequestParam(name = "lang", required = false) String lang,
                             @RequestHeader(name = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
-        return "calorieterms_" + getLegalPageLanguage(lang, acceptLanguage).getCode();
+        return "calorieterms_" + getPageLanguage(lang, acceptLanguage).getCode();
     }
 
     /**
      * ?lang= → первый язык из Accept-Language, который у нас есть → русский, если заголовка нет.
      * Заголовок есть, но ни одного нашего языка в нём — английский.
      */
-    static AppLanguage getLegalPageLanguage(String lang, String acceptLanguage) {
+    static AppLanguage getPageLanguage(String lang, String acceptLanguage) {
         Optional<AppLanguage> fromParam = AppLanguage.fromCode(lang);
         if (fromParam.isPresent()) return fromParam.get();
         if (acceptLanguage == null || acceptLanguage.isBlank()) return AppLanguage.RU;

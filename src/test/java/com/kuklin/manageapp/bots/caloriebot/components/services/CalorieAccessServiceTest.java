@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.bots.caloriebot.components.services;
 
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.entities.PlanFeature;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.BotFeature;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.FeatureLimitPeriod;
@@ -31,7 +32,8 @@ class CalorieAccessServiceTest {
     void setUp() {
         planFeatureService = mock(PlanFeatureService.class);
         usageService = mock(UserFeatureUsageService.class);
-        service = new CalorieAccessService(mock(TelegramUserService.class), planFeatureService, usageService);
+        service = new CalorieAccessService(mock(TelegramUserService.class), planFeatureService, usageService,
+                mock(CalorieTexts.class));
     }
 
     private void plan(FeatureLimitPeriod period, Integer limit) {

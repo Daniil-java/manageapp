@@ -1,16 +1,18 @@
 <!DOCTYPE html>
-<html lang="ru" xmlns:th="http://www.thymeleaf.org">
+<!-- Тексты — словарь i18n/calorie/landing_<язык>.properties (LandingTexts): ${t['hero.title']} в разметке, T["kcal"] в скрипте -->
+<html lang="ru" th:lang="${lang}" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Zefir — счётчик калорий по фото в Telegram</title>
-    <meta name="description"
-          content="Сфотографируй еду — Zefir посчитает калории и БЖУ, покажет остаток на день и разберёт рацион. Бот и мини-приложение в Telegram, без установки.">
+    <title th:text="${t['meta.title']}">Zefir — счётчик калорий по фото в Telegram</title>
+    <meta name="description" th:content="${t['meta.description']}">
     <meta property="og:type" content="website">
-    <meta property="og:title" content="Zefir — счётчик калорий по фото в Telegram">
-    <meta property="og:description"
-          content="Фото, текст или голос — и ты знаешь КБЖУ. Остаток на день, отчёты и ИИ-разбор рациона.">
-    <meta property="og:url" content="https://zefir.fit/">
+    <meta property="og:title" th:content="${t['meta.title']}">
+    <meta property="og:description" th:content="${t['meta.og-description']}">
+    <meta property="og:url" th:content="|https://zefir.fit/?lang=${lang}|">
+    <meta property="og:locale" th:content="${lang == 'ru'} ? 'ru_RU' : 'en_US'">
+    <link rel="alternate" th:each="l : ${languages}" th:attr="hreflang=${l.code}" th:href="|https://zefir.fit/?lang=${l.code}|">
+    <link rel="alternate" hreflang="x-default" href="https://zefir.fit/">
     <meta name="theme-color" content="#FDFBF7">
     <link rel="icon" type="image/svg+xml" href="/calorie/landing/zefirka.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -162,6 +164,10 @@
         .nav-links a.link { color: var(--text-muted); text-decoration: none; font-weight: 700; }
         .nav-links a.link:hover { color: var(--text); }
         @media (max-width: 860px) { .nav-links a.link { display: none; } }
+        /* Переключатель языка — виден и на телефоне, где ссылки на разделы скрыты */
+        .nav-links a.lang { color: var(--text-muted); text-decoration: none; font-weight: 800; font-size: 15px; }
+        .nav-links a.lang:hover { color: var(--text); }
+        @media (max-width: 860px) { .nav-links { gap: 16px; } }
 
         /* ---------- Секции ---------- */
         section { padding: 88px 0; position: relative; }
@@ -614,6 +620,7 @@
             .hl path, .trend .line { stroke-dashoffset: 0; }
         }
     </style>
+    </style>
 </head>
 <body>
 
@@ -644,6 +651,7 @@
     <symbol id="i-drop" viewBox="0 0 24 24"><path d="M12 3s6 6.6 6 11a6 6 0 0 1-12 0c0-4.4 6-11 6-11Z" fill="#6FA8DC"/><path d="M9.5 14.5a2.5 2.5 0 0 0 2.5 2.5" stroke="#fff" stroke-width="1.6" fill="none" stroke-linecap="round"/></symbol>
 </svg>
 
+
 <header>
     <div class="wrap nav">
         <a class="brand" href="#top" aria-label="Zefir">
@@ -651,13 +659,15 @@
             Zefir
         </a>
         <nav class="nav-links">
-            <a class="link" href="#demo">Демо</a>
-            <a class="link" href="#calc">Моя норма</a>
-            <a class="link" href="#features">Возможности</a>
-            <a class="link" href="#pricing">Тарифы</a>
-            <a class="link" href="#faq">Вопросы</a>
+            <a class="link" href="#demo" th:text="${t['nav.demo']}">Демо</a>
+            <a class="link" href="#calc" th:text="${t['nav.calc']}">Моя норма</a>
+            <a class="link" href="#features" th:text="${t['nav.features']}">Возможности</a>
+            <a class="link" href="#pricing" th:text="${t['nav.pricing']}">Тарифы</a>
+            <a class="link" href="#faq" th:text="${t['nav.faq']}">Вопросы</a>
+            <a class="lang" th:each="l : ${languages}" th:unless="${l.code == lang}"
+               th:href="|?lang=${l.code}|" th:attr="hreflang=${l.code},lang=${l.code}" th:text="${l.nativeName}">English</a>
             <a class="btn btn-primary btn-small" th:href="${page.botUrl}" target="_blank" rel="noopener">
-                <svg><use href="#tg"/></svg>Открыть
+                <svg><use href="#tg"/></svg><span th:text="${t['nav.open']}">Открыть</span>
             </a>
         </nav>
     </div>
@@ -669,37 +679,36 @@
     <section class="hero">
         <div class="wrap hero-grid">
             <div>
-                <span class="pill">🍡 Бот и мини-приложение в Telegram</span>
-                <h1>Считай калории по&nbsp;фото <span class="hl">за&nbsp;секунды<svg viewBox="0 0 300 14" preserveAspectRatio="none"><path d="M3 9 C 60 2, 120 13, 180 6 S 270 4, 297 8"/></svg></span></h1>
-                <p class="lead">
-                    Сфотографируй тарелку, напиши или надиктуй, что съел. Zefir посчитает калории и БЖУ,
-                    покажет, сколько осталось на день, и подскажет, что поправить в рационе.
+                <span class="pill" th:text="${t['hero.pill']}">🍡 Бот и мини-приложение в Telegram</span>
+                <h1><th:block th:utext="${t['hero.title']}">Считай калории по&nbsp;фото</th:block> <span class="hl"><th:block th:utext="${t['hero.title-highlight']}">за&nbsp;секунды</th:block><svg viewBox="0 0 300 14" preserveAspectRatio="none"><path d="M3 9 C 60 2, 120 13, 180 6 S 270 4, 297 8"/></svg></span></h1>
+                <p class="lead" th:text="${t['hero.lead']}">
+                    Сфотографируй тарелку, напиши или надиктуй, что съел.
                 </p>
                 <div class="hero-cta">
                     <a class="btn btn-primary" th:href="${page.botUrl}" target="_blank" rel="noopener">
-                        <svg><use href="#tg"/></svg>Начать бесплатно
+                        <svg><use href="#tg"/></svg><span th:text="${t['hero.cta-start']}">Начать бесплатно</span>
                     </a>
-                    <a class="btn btn-ghost" href="#calc">Посчитать мою норму</a>
+                    <a class="btn btn-ghost" href="#calc" th:text="${t['hero.cta-calc']}">Посчитать мою норму</a>
                 </div>
                 <div class="hero-ways">
-                    <span class="way"><span class="ico"><svg><use href="#i-camera"/></svg></span>Фото</span>
-                    <span class="way"><span class="ico"><svg><use href="#i-mic"/></svg></span>Голос</span>
-                    <span class="way"><span class="ico"><svg><use href="#i-pencil"/></svg></span>Текст</span>
-                    <span class="way">✨ ИИ-разбор рациона</span>
+                    <span class="way"><span class="ico"><svg><use href="#i-camera"/></svg></span><th:block th:text="${t['common.photo']}">Фото</th:block></span>
+                    <span class="way"><span class="ico"><svg><use href="#i-mic"/></svg></span><th:block th:text="${t['common.voice']}">Голос</th:block></span>
+                    <span class="way"><span class="ico"><svg><use href="#i-pencil"/></svg></span><th:block th:text="${t['common.text']}">Текст</th:block></span>
+                    <span class="way" th:text="${t['hero.way-ai']}">✨ ИИ-разбор рациона</span>
                 </div>
             </div>
 
             <div class="hero-stage">
-                <div class="float f1"><span class="emo">📸</span><div>Распознано<small>Сырники со сметаной · 480 ккал</small></div></div>
-                <div class="float f2"><span class="emo">🎯</span><div>Осталось 640 ккал<small>до дневной нормы</small></div></div>
-                <div class="float f3"><span class="emo">🧠</span><div>Белка маловато<small>добавь творог на ужин</small></div></div>
+                <div class="float f1"><span class="emo">📸</span><div><th:block th:text="${t['hero.float-recognized']}">Распознано</th:block><small th:text="${t['hero.float-recognized-sub']}">Сырники со сметаной · 480 ккал</small></div></div>
+                <div class="float f2"><span class="emo">🎯</span><div><th:block th:text="${t['hero.float-left']}">Осталось 640 ккал</th:block><small th:text="${t['hero.float-left-sub']}">до дневной нормы</small></div></div>
+                <div class="float f3"><span class="emo">🧠</span><div><th:block th:text="${t['hero.float-protein']}">Белка маловато</th:block><small th:text="${t['hero.float-protein-sub']}">добавь творог на ужин</small></div></div>
 
-                <div class="phone" aria-label="Мини-приложение Zefir">
+                <div class="phone" th:attr="aria-label=${t['hero.phone-label']}">
                     <div class="app-head">
                         <div class="app-ava"><svg><use href="#zef"/></svg></div>
                         <div>
-                            <div class="app-hello">Привет!</div>
-                            <div class="app-date" id="today">Сегодня</div>
+                            <div class="app-hello" th:text="${t['hero.hello']}">Привет!</div>
+                            <div class="app-date" id="today" th:text="${t['common.today']}">Сегодня</div>
                         </div>
                         <div class="app-streak">🔥 12</div>
                     </div>
@@ -715,13 +724,13 @@
                     <div class="card water">
                         <div class="water-ico"><svg><use href="#i-drop"/></svg></div>
                         <div class="water-body">
-                            <div class="water-title">Вода <span id="heroWaterTxt">1250 / 2000 мл</span></div>
+                            <div class="water-title"><th:block th:text="${t['common.water']}">Вода</th:block> <span id="heroWaterTxt"></span></div>
                             <div class="bar"><div class="fill" id="heroWaterFill"></div></div>
                         </div>
                         <button class="water-btn" id="heroWaterBtn" type="button">+ 250</button>
                     </div>
 
-                    <div class="logs-title">Сегодня</div>
+                    <div class="logs-title" th:text="${t['common.today']}">Сегодня</div>
                     <div id="heroLogs"></div>
 
                     <div class="tabbar">
@@ -740,24 +749,24 @@
     <section id="demo">
         <div class="wrap">
             <div class="sec-head reveal">
-                <span class="eyebrow">Попробуй прямо здесь</span>
-                <h2>Выбери блюдо — посмотри, что вернёт Zefir</h2>
-                <p>Так выглядит результат после фото: калории, БЖУ, вес порции и уверенность ИИ.</p>
+                <span class="eyebrow" th:text="${t['demo.eyebrow']}">Попробуй прямо здесь</span>
+                <h2 th:text="${t['demo.title']}">Выбери блюдо — посмотри, что вернёт Zefir</h2>
+                <p th:text="${t['demo.lead']}">Так выглядит результат после фото.</p>
             </div>
             <div class="demo reveal">
                 <div class="card demo-pick">
-                    <h3>Что на тарелке?</h3>
-                    <p class="muted">Нажми на блюдо — как будто отправил его фото боту.</p>
+                    <h3 th:text="${t['demo.pick-title']}">Что на тарелке?</h3>
+                    <p class="muted" th:text="${t['demo.pick-hint']}">Нажми на блюдо — как будто отправил его фото боту.</p>
                     <div class="dishes" id="dishes"></div>
-                    <div class="demo-note">💡 <span>Здесь — заготовленные примеры. В боте блюдо распознаёт ИИ по твоему фото, тексту или голосу.</span></div>
+                    <div class="demo-note">💡 <span th:text="${t['demo.note']}">Здесь — заготовленные примеры.</span></div>
                 </div>
                 <div class="demo-panel">
                     <div class="card result" id="result">
                         <div class="placeholder">
                             <div>
                                 <div class="mascot-box"><svg><use href="#zef"/></svg></div>
-                                <b>Zefir ждёт твоё блюдо</b>
-                                <div class="muted">Выбери что-нибудь слева 👈</div>
+                                <b th:text="${t['demo.waiting']}">Zefir ждёт твоё блюдо</b>
+                                <div class="muted" th:text="${t['demo.waiting-hint']}">Выбери что-нибудь слева 👈</div>
                             </div>
                         </div>
                     </div>
@@ -767,8 +776,8 @@
                             <circle class="prog" id="miniProg" cx="50" cy="50" r="42" fill="none" stroke-width="10" stroke-linecap="round"/>
                         </svg>
                         <div style="min-width:0">
-                            <div class="muted" style="font-weight:700;font-size:14px">Дневник демо-дня · норма 1900 ккал</div>
-                            <b id="miniTxt">Пока пусто</b>
+                            <div class="muted" style="font-weight:700;font-size:14px" th:text="${t['demo.day-title']}">Дневник демо-дня · норма 1900 ккал</div>
+                            <b id="miniTxt" th:text="${t['demo.day-empty']}">Пока пусто</b>
                             <div class="mini-list" id="miniList"></div>
                         </div>
                     </div>
@@ -781,38 +790,38 @@
     <section id="calc">
         <div class="wrap">
             <div class="sec-head reveal">
-                <span class="eyebrow">Твоя норма</span>
-                <h2>Сколько тебе нужно есть?</h2>
-                <p>Считаем так же, как бот: формула Миффлина — Сан-Жеора, поправка на активность и цель.</p>
+                <span class="eyebrow" th:text="${t['calc.eyebrow']}">Твоя норма</span>
+                <h2 th:text="${t['calc.title']}">Сколько тебе нужно есть?</h2>
+                <p th:text="${t['calc.lead']}">Считаем так же, как бот.</p>
             </div>
             <div class="calc reveal">
                 <div class="card calc-form">
                     <div>
-                        <div class="field-lbl">Пол</div>
+                        <div class="field-lbl" th:text="${t['calc.sex']}">Пол</div>
                         <div class="segmented two" data-name="sex">
-                            <button type="button" data-v="F" class="on">Женский</button>
-                            <button type="button" data-v="M">Мужской</button>
+                            <button type="button" data-v="F" class="on" th:text="${t['calc.sex-female']}">Женский</button>
+                            <button type="button" data-v="M" th:text="${t['calc.sex-male']}">Мужской</button>
                         </div>
                     </div>
                     <div class="sliders">
-                        <div><div class="field-lbl">Возраст <output id="ageOut">28</output></div><input type="range" id="age" min="14" max="80" value="28"></div>
-                        <div><div class="field-lbl">Рост, см <output id="heightOut">168</output></div><input type="range" id="height" min="140" max="210" value="168"></div>
-                        <div><div class="field-lbl">Вес, кг <output id="weightOut">65</output></div><input type="range" id="weight" min="40" max="160" value="65"></div>
+                        <div><div class="field-lbl"><th:block th:text="${t['calc.age']}">Возраст</th:block> <output id="ageOut">28</output></div><input type="range" id="age" min="14" max="80" value="28"></div>
+                        <div><div class="field-lbl"><th:block th:text="${t['calc.height']}">Рост, см</th:block> <output id="heightOut">168</output></div><input type="range" id="height" min="140" max="210" value="168"></div>
+                        <div><div class="field-lbl"><th:block th:text="${t['calc.weight']}">Вес, кг</th:block> <output id="weightOut">65</output></div><input type="range" id="weight" min="40" max="160" value="65"></div>
                     </div>
                     <div>
-                        <div class="field-lbl">Активность</div>
+                        <div class="field-lbl" th:text="${t['calc.activity']}">Активность</div>
                         <div class="segmented three" data-name="activity">
-                            <button type="button" data-v="LOW">Низкая</button>
-                            <button type="button" data-v="MEDIUM" class="on">Средняя</button>
-                            <button type="button" data-v="HIGH">Высокая</button>
+                            <button type="button" data-v="LOW" th:text="${t['calc.activity-low']}">Низкая</button>
+                            <button type="button" data-v="MEDIUM" class="on" th:text="${t['calc.activity-medium']}">Средняя</button>
+                            <button type="button" data-v="HIGH" th:text="${t['calc.activity-high']}">Высокая</button>
                         </div>
                     </div>
                     <div>
-                        <div class="field-lbl">Цель</div>
+                        <div class="field-lbl" th:text="${t['calc.goal']}">Цель</div>
                         <div class="segmented three" data-name="goal">
-                            <button type="button" data-v="LOSE" class="on">Похудеть</button>
-                            <button type="button" data-v="MAINTAIN">Держать вес</button>
-                            <button type="button" data-v="GAIN">Набрать</button>
+                            <button type="button" data-v="LOSE" class="on" th:text="${t['calc.goal-lose']}">Похудеть</button>
+                            <button type="button" data-v="MAINTAIN" th:text="${t['calc.goal-maintain']}">Держать вес</button>
+                            <button type="button" data-v="GAIN" th:text="${t['calc.goal-gain']}">Набрать</button>
                         </div>
                     </div>
                 </div>
@@ -822,14 +831,14 @@
                             <circle class="track" cx="100" cy="100" r="88" fill="none" stroke-width="14"/>
                             <circle class="prog" id="calcProg" cx="100" cy="100" r="88" fill="none" stroke-width="14" stroke-linecap="round"/>
                         </svg>
-                        <div class="ring-center"><div><div class="ring-val" id="calcKcal">0</div><div class="ring-target">ккал в день</div></div></div>
+                        <div class="ring-center"><div><div class="ring-val" id="calcKcal">0</div><div class="ring-target" th:text="${t['calc.kcal-per-day']}">ккал в день</div></div></div>
                     </div>
                     <div class="macros" id="calcMacros"></div>
-                    <div class="calc-water"><svg><use href="#i-drop"/></svg><span>Вода: <span id="calcWater">0</span> мл в день</span></div>
+                    <div class="calc-water"><svg><use href="#i-drop"/></svg><span th:utext="${t['calc.water']}">Вода: <span id="calcWater">0</span> мл в день</span></div>
                     <a class="btn btn-primary btn-block" id="calcStart" th:href="${page.botUrl}" target="_blank" rel="noopener">
-                        <svg><use href="#tg"/></svg>Вести дневник с этой нормой
+                        <svg><use href="#tg"/></svg><span th:text="${t['calc.start']}">Вести дневник с этой нормой</span>
                     </a>
-                    <p class="calc-note">Ориентир, а не медицинская рекомендация. В боте норму можно поправить вручную.</p>
+                    <p class="calc-note" th:text="${t['calc.note']}">Ориентир, а не медицинская рекомендация.</p>
                 </div>
             </div>
         </div>
@@ -839,20 +848,20 @@
     <section id="features">
         <div class="wrap">
             <div class="sec-head reveal">
-                <span class="eyebrow">Возможности</span>
-                <h2>Дневник питания, который ведётся сам</h2>
-                <p>Всё это уже работает — в боте и в мини-приложении.</p>
+                <span class="eyebrow" th:text="${t['features.eyebrow']}">Возможности</span>
+                <h2 th:text="${t['features.title']}">Дневник питания, который ведётся сам</h2>
+                <p th:text="${t['features.lead']}">Всё это уже работает — в боте и в мини-приложении.</p>
             </div>
 
             <div class="bento">
                 <div class="card tile span-2 reveal">
-                    <h3>Три способа добавить еду</h3>
-                    <p>Как удобнее прямо сейчас — без поиска по базе продуктов.</p>
+                    <h3 th:text="${t['features.add-title']}">Три способа добавить еду</h3>
+                    <p th:text="${t['features.add-lead']}">Как удобнее прямо сейчас — без поиска по базе продуктов.</p>
                     <div class="demo-area">
                         <div class="add-menu">
-                            <div class="add-item"><span class="ico"><svg><use href="#i-camera"/></svg></span><div>Фото<small>сфоткай тарелку</small></div></div>
-                            <div class="add-item"><span class="ico"><svg><use href="#i-mic"/></svg></span><div>Голос<small>до 2 минут</small></div></div>
-                            <div class="add-item"><span class="ico"><svg><use href="#i-pencil"/></svg></span><div>Текст<small>как пишешь другу</small></div></div>
+                            <div class="add-item"><span class="ico"><svg><use href="#i-camera"/></svg></span><div><th:block th:text="${t['common.photo']}">Фото</th:block><small th:text="${t['features.add-photo-hint']}">сфоткай тарелку</small></div></div>
+                            <div class="add-item"><span class="ico"><svg><use href="#i-mic"/></svg></span><div><th:block th:text="${t['common.voice']}">Голос</th:block><small th:text="${t['features.add-voice-hint']}">до 2 минут</small></div></div>
+                            <div class="add-item"><span class="ico"><svg><use href="#i-pencil"/></svg></span><div><th:block th:text="${t['common.text']}">Текст</th:block><small th:text="${t['features.add-text-hint']}">как пишешь другу</small></div></div>
                         </div>
                         <div class="typing" id="typing"></div>
                     </div>
@@ -860,46 +869,46 @@
 
                 <div class="card tile span-4 wide-md reveal">
                     <div class="ai-head">
-                        <h3>ИИ-саммари недели и месяца</h3>
+                        <h3 th:text="${t['features.ai-title']}">ИИ-саммари недели и месяца</h3>
                         <div class="seg-mini" id="aiSeg">
-                            <button type="button" class="on" data-v="week">Неделя</button>
-                            <button type="button" data-v="month">Месяц</button>
+                            <button type="button" class="on" data-v="week" th:text="${t['features.ai-week']}">Неделя</button>
+                            <button type="button" data-v="month" th:text="${t['features.ai-month']}">Месяц</button>
                         </div>
                     </div>
-                    <p>Zefir смотрит на твой рацион целиком и объясняет простыми словами, что получается и что поправить.</p>
+                    <p th:text="${t['features.ai-lead']}">Zefir смотрит на твой рацион целиком.</p>
                     <div class="demo-area" id="aiBody"></div>
                 </div>
 
                 <div class="card tile span-3 reveal">
-                    <h3>Калории за неделю</h3>
-                    <p>Видно, где перебор, а где недобор относительно нормы.</p>
+                    <h3 th:text="${t['features.trend-title']}">Калории за неделю</h3>
+                    <p th:text="${t['features.trend-lead']}">Видно, где перебор, а где недобор относительно нормы.</p>
                     <div class="demo-area trend" id="trend"></div>
                 </div>
 
                 <div class="card tile span-3 reveal">
-                    <h3>Шаблоны поведения</h3>
-                    <p>Привычки, которые сложно заметить самому.</p>
+                    <h3 th:text="${t['features.patterns-title']}">Шаблоны поведения</h3>
+                    <p th:text="${t['features.patterns-lead']}">Привычки, которые сложно заметить самому.</p>
                     <div class="demo-area">
-                        <div class="pattern"><span class="emoji">🌙</span>Поздние ужины после 22:00<span class="days"><i class="hit"></i><i></i><i class="hit"></i><i class="hit"></i><i></i><i class="hit"></i><i></i></span></div>
-                        <div class="pattern"><span class="emoji">🍰</span>Сладкое вечером<span class="days"><i></i><i class="hit"></i><i></i><i class="hit"></i><i></i><i class="hit"></i><i class="hit"></i></span></div>
-                        <div class="pattern"><span class="emoji">🥚</span>Белок на завтрак<span class="days"><i class="hit"></i><i class="hit"></i><i class="hit"></i><i></i><i class="hit"></i><i class="hit"></i><i class="hit"></i></span></div>
+                        <div class="pattern"><span class="emoji">🌙</span><th:block th:text="${t['features.pattern-late']}">Поздние ужины после 22:00</th:block><span class="days"><i class="hit"></i><i></i><i class="hit"></i><i class="hit"></i><i></i><i class="hit"></i><i></i></span></div>
+                        <div class="pattern"><span class="emoji">🍰</span><th:block th:text="${t['features.pattern-sweet']}">Сладкое вечером</th:block><span class="days"><i></i><i class="hit"></i><i></i><i class="hit"></i><i></i><i class="hit"></i><i class="hit"></i></span></div>
+                        <div class="pattern"><span class="emoji">🥚</span><th:block th:text="${t['features.pattern-protein']}">Белок на завтрак</th:block><span class="days"><i class="hit"></i><i class="hit"></i><i class="hit"></i><i></i><i class="hit"></i><i class="hit"></i><i class="hit"></i></span></div>
                     </div>
                 </div>
 
                 <div class="card tile span-2 reveal">
-                    <h3>Вода</h3>
-                    <p>Норма считается от веса и активности. Нажми на стакан.</p>
+                    <h3 th:text="${t['common.water']}">Вода</h3>
+                    <p th:text="${t['features.water-lead']}">Норма считается от веса и активности. Нажми на стакан.</p>
                     <div class="demo-area glass-row">
-                        <div class="glass" id="glass" role="button" tabindex="0" aria-label="Добавить 250 мл"><div class="liquid" id="liquid"></div></div>
-                        <div class="glass-info"><b id="glassTxt">750 мл</b><span class="muted">из 2000 мл</span></div>
+                        <div class="glass" id="glass" role="button" tabindex="0" th:attr="aria-label=${t['features.water-add']}"><div class="liquid" id="liquid"></div></div>
+                        <div class="glass-info"><b id="glassTxt"></b><span class="muted" th:text="${t['features.water-of']}">из 2000 мл</span></div>
                     </div>
                 </div>
 
                 <div class="card tile span-2 reveal">
-                    <h3>История веса</h3>
-                    <p>Вес отмечается в пару касаний, тренд — на графике.</p>
+                    <h3 th:text="${t['features.weight-title']}">История веса</h3>
+                    <p th:text="${t['features.weight-lead']}">Вес отмечается в пару касаний, тренд — на графике.</p>
                     <div class="demo-area">
-                        <div class="weight-num"><b>82,7 кг</b><span class="delta">−1,3 кг за месяц</span></div>
+                        <div class="weight-num"><b th:text="${t['features.weight-value']}">82,7 кг</b><span class="delta" th:text="${t['features.weight-delta']}">−1,3 кг за месяц</span></div>
                         <svg class="spark" viewBox="0 0 300 70" preserveAspectRatio="none">
                             <path class="a" d="M0 12 C 30 10, 50 22, 75 20 S 120 30, 150 34 S 200 40, 225 48 S 270 52, 300 58 L 300 70 L 0 70 Z"/>
                             <path class="l" d="M0 12 C 30 10, 50 22, 75 20 S 120 30, 150 34 S 200 40, 225 48 S 270 52, 300 58"/>
@@ -908,8 +917,8 @@
                 </div>
 
                 <div class="card tile span-2 reveal">
-                    <h3>PDF-отчёты</h3>
-                    <p>Неделя или месяц с аналитикой — показать тренеру или врачу.</p>
+                    <h3 th:text="${t['features.pdf-title']}">PDF-отчёты</h3>
+                    <p th:text="${t['features.pdf-lead']}">Неделя или месяц с аналитикой — показать тренеру или врачу.</p>
                     <div class="demo-area">
                         <div class="pdf-stack">
                             <div class="page"><div class="ln" style="width:70%"></div><div class="ln"></div><div class="bars"><i style="height:40%"></i><i style="height:70%"></i><i style="height:55%"></i><i style="height:90%"></i></div></div>
@@ -921,26 +930,26 @@
                 </div>
 
                 <div class="card tile span-2 reveal">
-                    <h3>Напоминания и итоги дня</h3>
-                    <p>Напомнит поесть и пришлёт итог дня — в твоём часовом поясе.</p>
+                    <h3 th:text="${t['features.reminders-title']}">Напоминания и итоги дня</h3>
+                    <p th:text="${t['features.reminders-lead']}">Напомнит поесть и пришлёт итог дня — в твоём часовом поясе.</p>
                     <div class="demo-area">
                         <div class="notif">
                             <div class="app-ava"><svg><use href="#zef"/></svg></div>
-                            <div><b>Zefir</b><span>Итог дня: 1 780 из 1 900 ккал. Отличный день! 🎉</span></div>
+                            <div><b>Zefir</b><span th:text="${t['features.reminders-notification']}">Итог дня: 1 780 из 1 900 ккал. Отличный день! 🎉</span></div>
                             <time>21:00</time>
                         </div>
                     </div>
                 </div>
 
                 <div class="card tile span-2 reveal">
-                    <h3>Избранные блюда</h3>
-                    <p>То, что ешь часто, — в дневник в одно касание.</p>
+                    <h3 th:text="${t['features.favorites-title']}">Избранные блюда</h3>
+                    <p th:text="${t['features.favorites-lead']}">То, что ешь часто, — в дневник в одно касание.</p>
                     <div class="demo-area" id="favs"></div>
                 </div>
 
                 <div class="card tile span-2 reveal">
-                    <h3>Варианты от разных моделей</h3>
-                    <p>Не согласен с оценкой? Выбери вариант другой ИИ-модели.</p>
+                    <h3 th:text="${t['features.variants-title']}">Варианты от разных моделей</h3>
+                    <p th:text="${t['features.variants-lead']}">Не согласен с оценкой? Выбери вариант другой ИИ-модели.</p>
                     <div class="demo-area variants" id="variants"></div>
                 </div>
             </div>
@@ -951,22 +960,22 @@
     <section id="bot">
         <div class="wrap tg-wrap">
             <div class="tg-text reveal">
-                <span class="eyebrow">А это — сам бот</span>
-                <h2>Всё прямо в чате Telegram</h2>
-                <p>Ничего не нужно скачивать: отправил фото — получил разбор. Кнопки под сообщением правят порцию, и итог дня сразу пересчитывается.</p>
+                <span class="eyebrow" th:text="${t['bot.eyebrow']}">А это — сам бот</span>
+                <h2 th:text="${t['bot.title']}">Всё прямо в чате Telegram</h2>
+                <p th:text="${t['bot.lead']}">Ничего не нужно скачивать: отправил фото — получил разбор.</p>
                 <ul class="tg-list">
-                    <li><span>⚖️</span>Вес порции ±10% и количество порций</li>
-                    <li><span>⭐</span>Сохранить блюдо в избранное</li>
-                    <li><span>📊</span>Полоска прогресса за день после каждого блюда</li>
+                    <li><span>⚖️</span><th:block th:text="${t['bot.point-portion']}">Вес порции ±10% и количество порций</th:block></li>
+                    <li><span>⭐</span><th:block th:text="${t['bot.point-favorite']}">Сохранить блюдо в избранное</th:block></li>
+                    <li><span>📊</span><th:block th:text="${t['bot.point-progress']}">Полоска прогресса за день после каждого блюда</th:block></li>
                 </ul>
                 <a class="btn btn-primary" th:href="${page.botUrl}" target="_blank" rel="noopener">
-                    <svg><use href="#tg"/></svg>Написать боту
+                    <svg><use href="#tg"/></svg><span th:text="${t['bot.cta']}">Написать боту</span>
                 </a>
             </div>
             <div class="tg reveal" id="tg">
                 <div class="tg-top">
                     <div class="app-ava"><svg><use href="#zef"/></svg></div>
-                    <div><b>Zefir</b><small>бот</small></div>
+                    <div><b>Zefir</b><small th:text="${t['bot.label']}">бот</small></div>
                 </div>
                 <div class="tg-body" id="tgBody"></div>
             </div>
@@ -977,24 +986,24 @@
     <section id="pricing">
         <div class="wrap">
             <div class="sec-head reveal">
-                <span class="eyebrow">Тарифы</span>
-                <h2>Основное — бесплатно</h2>
-                <p>Premium снимает дневные лимиты и открывает PDF-отчёты.</p>
+                <span class="eyebrow" th:text="${t['pricing.eyebrow']}">Тарифы</span>
+                <h2 th:text="${t['pricing.title']}">Основное — бесплатно</h2>
+                <p th:text="${t['pricing.lead']}">Premium снимает дневные лимиты и открывает PDF-отчёты.</p>
             </div>
 
             <div class="plans reveal">
                 <div class="card plan plan-free">
-                    <h3>Бесплатно</h3>
+                    <h3 th:text="${t['pricing.free']}">Бесплатно</h3>
                     <div class="price">0 ⭐</div>
-                    <div class="period">навсегда</div>
+                    <div class="period" th:text="${t['pricing.free-period']}">навсегда</div>
                     <ul class="points">
-                        <li><span class="pt-icon">📸</span><span>Фото-разборы и ИИ-разбор дня с дневным лимитом</span></li>
-                        <li><span class="pt-icon">📒</span><span>Дневник, вода и вес</span></li>
+                        <li><span class="pt-icon">📸</span><span th:text="${t['pricing.free-point-photo']}">Фото-разборы и ИИ-разбор дня с дневным лимитом</span></li>
+                        <li><span class="pt-icon">📒</span><span th:text="${t['pricing.free-point-diary']}">Дневник, вода и вес</span></li>
                     </ul>
-                    <a class="btn btn-ghost btn-block" th:href="${page.botUrl}" target="_blank" rel="noopener">Начать</a>
+                    <a class="btn btn-ghost btn-block" th:href="${page.botUrl}" target="_blank" rel="noopener" th:text="${t['pricing.free-cta']}">Начать</a>
                 </div>
                 <div class="card plan" th:each="plan : ${page.plans}" th:classappend="${plan.saving != null} ? 'featured'">
-                    <span class="badge" th:if="${plan.saving != null}" th:text="|Выгода ${plan.saving}%|">Выгода</span>
+                    <span class="badge" th:if="${plan.saving != null}" th:text="${#strings.replace(t['pricing.saving'], '{0}', '' + plan.saving)}">Выгода</span>
                     <h3 th:text="${plan.title}">Premium</h3>
                     <div class="price" th:text="${plan.price}">150 ⭐</div>
                     <div class="period" th:text="${plan.duration}">1 месяц</div>
@@ -1004,7 +1013,7 @@
                             <span th:text="${point.text}">Доступ ко всем функциям</span>
                         </li>
                     </ul>
-                    <a class="btn btn-primary btn-block" th:href="${page.botUrl}" target="_blank" rel="noopener">Оформить</a>
+                    <a class="btn btn-primary btn-block" th:href="${page.botUrl}" target="_blank" rel="noopener" th:text="${t['pricing.cta']}">Оформить</a>
                 </div>
             </div>
 
@@ -1012,8 +1021,8 @@
                 <table>
                     <thead>
                     <tr>
-                        <th>Что входит</th>
-                        <th>Бесплатно</th>
+                        <th th:text="${t['pricing.table-feature']}">Что входит</th>
+                        <th th:text="${t['pricing.free']}">Бесплатно</th>
                         <th class="col-premium" th:if="${!page.plans.isEmpty()}">Premium</th>
                     </tr>
                     </thead>
@@ -1026,7 +1035,7 @@
                     </tbody>
                 </table>
             </div>
-            <p class="pay-note">Оплата — Telegram Stars прямо в боте: кнопка «💳 Подписка» на клавиатуре бота.</p>
+            <p class="pay-note" th:text="${t['pricing.pay-note']}">Оплата — Telegram Stars прямо в боте.</p>
         </div>
     </section>
 
@@ -1034,41 +1043,13 @@
     <section id="faq">
         <div class="wrap">
             <div class="sec-head reveal">
-                <span class="eyebrow">Вопросы</span>
-                <h2>Частые вопросы</h2>
+                <span class="eyebrow" th:text="${t['faq.eyebrow']}">Вопросы</span>
+                <h2 th:text="${t['faq.title']}">Частые вопросы</h2>
             </div>
             <div class="faq reveal">
-                <details>
-                    <summary>Нужно что-то устанавливать?</summary>
-                    <p>Нет. Zefir работает внутри Telegram: открываешь бота, нажимаешь «Старт» — и можно отправлять еду.
-                        Мини-приложение открывается кнопкой в самом боте.</p>
-                </details>
-                <details>
-                    <summary>Насколько точно ИИ считает калории?</summary>
-                    <p>Для обычных блюд оценка близка к тому, что дают таблицы калорийности. Вес порции по фото —
-                        приблизительный, поэтому его легко поправить кнопками ±10% или текстом. Чем понятнее фото
-                        и подпись («2 яйца, жарил на масле»), тем точнее результат.</p>
-                </details>
-                <details>
-                    <summary>Чем Premium отличается от бесплатной версии?</summary>
-                    <p>В бесплатной версии фото-разборы и ИИ-разбор дня ограничены несколькими в день, а избранное —
-                        несколькими блюдами. Premium снимает эти лимиты и открывает PDF-отчёты за неделю и месяц.
-                        Точные цифры — в таблице тарифов.</p>
-                </details>
-                <details>
-                    <summary>Как оплатить подписку?</summary>
-                    <p>В боте нажми «💳 Подписка» и выбери тариф. Оплата идёт через Telegram Stars — звёзды
-                        можно купить прямо в Telegram.</p>
-                </details>
-                <details>
-                    <summary>Как считается моя норма?</summary>
-                    <p>По формуле Миффлина — Сан-Жеора с поправкой на активность и цель — как в калькуляторе выше.
-                        Белок — от веса, жиры — около 25% калорий, остальное — углеводы. Норму можно задать и вручную.</p>
-                </details>
-                <details>
-                    <summary>Что с моими данными?</summary>
-                    <p>Какие данные хранятся и зачем, описано в
-                        <a href="/calorie/privacy">политике конфиденциальности</a>.</p>
+                <details th:each="q : ${ {'install', 'accuracy', 'premium', 'pay', 'norm', 'data'} }">
+                    <summary th:text="${t['faq.' + q + '-q']}">Вопрос</summary>
+                    <p th:utext="${t['faq.' + q + '-a']}">Ответ</p>
                 </details>
             </div>
         </div>
@@ -1090,10 +1071,10 @@
                     <circle cx="150" cy="130" r="9" fill="#F3D1D1"/>
                     <path d="M 85 136 Q 100 152 115 136" fill="none" stroke="#C8A4A9" stroke-width="5" stroke-linecap="round"/>
                 </svg>
-                <h2>Зефирка уже ждёт в Telegram</h2>
-                <p>Открой бота, отправь фото завтрака — и узнай, сколько в нём калорий.</p>
+                <h2 th:text="${t['final.title']}">Зефирка уже ждёт в Telegram</h2>
+                <p th:text="${t['final.lead']}">Открой бота, отправь фото завтрака — и узнай, сколько в нём калорий.</p>
                 <a class="btn" th:href="${page.botUrl}" target="_blank" rel="noopener">
-                    <svg><use href="#tg"/></svg>Открыть @calorydairy_bot
+                    <svg><use href="#tg"/></svg><span th:text="${t['final.cta']}">Открыть @calorydairy_bot</span>
                 </a>
             </div>
         </div>
@@ -1104,19 +1085,23 @@
     <div class="wrap foot">
         <a class="brand" href="#top"><span class="brand-ico"><svg><use href="#zef"/></svg></span>Zefir</a>
         <nav>
-            <a href="/calorie/privacy">Политика конфиденциальности</a>
-            <a href="/calorie/terms">Пользовательское соглашение</a>
-            <a href="https://t.me/zephyr_ai" target="_blank" rel="noopener">Канал @zephyr_ai</a>
+            <a th:href="|/calorie/privacy?lang=${lang}|" th:text="${t['footer.privacy']}">Политика конфиденциальности</a>
+            <a th:href="|/calorie/terms?lang=${lang}|" th:text="${t['footer.terms']}">Пользовательское соглашение</a>
+            <a href="https://t.me/zephyr_ai" target="_blank" rel="noopener" th:text="${t['footer.channel']}">Канал @zephyr_ai</a>
         </nav>
     </div>
 </footer>
 
-<script>
+<script th:inline="javascript">
 (function () {
     "use strict";
+    // Тексты скрипта — landing.js.* из словаря языка страницы; {n} подставляет fill()
+    var T = /*[[${js}]]*/ {};
+    var LOCALE = /*[[${lang}]]*/ "ru";
     var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     var NS = "http://www.w3.org/2000/svg";
-    var fmt = function (n) { return Math.round(n).toLocaleString("ru-RU"); };
+    var fmt = function (n) { return Math.round(n).toLocaleString(LOCALE); };
+    var fill = function (text, n) { return text.replace("{n}", n); };
 
     function svgEl(tag, attrs) {
         var el = document.createElementNS(NS, tag);
@@ -1142,7 +1127,7 @@
     function macroHtml(label, val, target, type) {
         var pct = target > 0 ? Math.min(100, val / target * 100) : 0;
         return '<div class="macro"><div class="label">' + label + '</div>' +
-            '<div class="nums"><b>' + fmt(val) + ' г</b> / ' + fmt(target) + ' г</div>' +
+            '<div class="nums"><b>' + fmt(val) + ' ' + T["g"] + '</b> / ' + fmt(target) + ' ' + T["g"] + '</div>' +
             '<div class="bar"><div class="fill ' + type + '" data-w="' + pct + '"></div></div></div>';
     }
 
@@ -1153,15 +1138,15 @@
     }
 
     // ---------- Дата в шапке телефона ----------
-    var d = new Date().toLocaleDateString("ru-RU", { weekday: "long", day: "numeric", month: "long" });
+    var d = new Date().toLocaleDateString(LOCALE, { weekday: "long", day: "numeric", month: "long" });
     document.getElementById("today").textContent = d.charAt(0).toUpperCase() + d.slice(1);
 
     // ---------- Кольцо из приёмов пищи (как DailyGoalCard) ----------
     var heroMeals = [
-        { emo: "🥞", name: "Сырники со сметаной", time: "08:40", kcal: 480, p: 24, c: 44, f: 22 },
-        { emo: "🍲", name: "Борщ и хлеб", time: "13:15", kcal: 390, p: 14, c: 46, f: 15 },
-        { emo: "🍎", name: "Яблоко и орехи", time: "16:30", kcal: 210, p: 5, c: 22, f: 12 },
-        { emo: "🐟", name: "Лосось с овощами", time: "19:20", kcal: 480, p: 34, c: 18, f: 28 }
+        { emo: "🥞", name: T["meal-syrniki"], time: "08:40", kcal: 480, p: 24, c: 44, f: 22 },
+        { emo: "🍲", name: T["meal-borsch-bread"], time: "13:15", kcal: 390, p: 14, c: 46, f: 15 },
+        { emo: "🍎", name: T["meal-apple-nuts"], time: "16:30", kcal: 210, p: 5, c: 22, f: 12 },
+        { emo: "🐟", name: T["meal-salmon"], time: "19:20", kcal: 480, p: 34, c: 18, f: 28 }
     ];
     var HERO_TARGET = 2200, HERO_P = 130, HERO_C = 250, HERO_F = 70;
     var ring = document.getElementById("heroRing");
@@ -1189,24 +1174,25 @@
     function showTotal() {
         segs.forEach(function (s) { s.classList.remove("hover"); });
         ringCenter.innerHTML = '<div><div class="ring-val" id="heroVal">' + fmt(total) + '</div>' +
-            '<div class="ring-target">/ ' + fmt(HERO_TARGET) + ' ккал</div></div>';
+            '<div class="ring-target">/ ' + fmt(HERO_TARGET) + ' ' + T["kcal"] + '</div></div>';
     }
     function showMeal(i) {
         segs.forEach(function (s, j) { s.classList.toggle("hover", i === j); });
         var m = heroMeals[i];
         ringCenter.innerHTML = '<div><div class="ring-meal">' + m.emo + ' ' + m.name + '</div>' +
-            '<div class="ring-meal-kcal">' + m.kcal + ' <span>ккал</span></div></div>';
+            '<div class="ring-meal-kcal">' + m.kcal + ' <span>' + T["kcal"] + '</span></div></div>';
     }
-    ringCenter.innerHTML = '<div><div class="ring-val" id="heroVal">0</div><div class="ring-target">/ ' + fmt(HERO_TARGET) + ' ккал</div></div>';
+    ringCenter.innerHTML = '<div><div class="ring-val" id="heroVal">0</div><div class="ring-target">/ ' + fmt(HERO_TARGET) + ' ' + T["kcal"] + '</div></div>';
 
     var sum = function (k) { return heroMeals.reduce(function (s, m) { return s + m[k]; }, 0); };
     var heroMacros = document.getElementById("heroMacros");
-    heroMacros.innerHTML = macroHtml("Белки", sum("p"), HERO_P, "p") + macroHtml("Углеводы", sum("c"), HERO_C, "c") + macroHtml("Жиры", sum("f"), HERO_F, "f");
+    heroMacros.innerHTML = macroHtml(T["protein"], sum("p"), HERO_P, "p") + macroHtml(T["carbs"], sum("c"), HERO_C, "c") + macroHtml(T["fat"], sum("f"), HERO_F, "f");
 
     document.getElementById("heroLogs").innerHTML = heroMeals.slice(0, 3).map(function (m) {
         return '<div class="card log"><div class="log-ico">' + m.emo + '</div><div class="log-body">' +
-            '<div class="log-name">' + m.name + '</div><div class="log-sub">' + m.time + ' · Б ' + m.p + ' · Ж ' + m.f + ' · У ' + m.c + '</div></div>' +
-            '<div class="log-kcal">' + m.kcal + ' ккал</div></div>';
+            '<div class="log-name">' + m.name + '</div><div class="log-sub">' + m.time + ' · ' + T["protein-short"] + ' ' + m.p +
+            ' · ' + T["fat-short"] + ' ' + m.f + ' · ' + T["carbs-short"] + ' ' + m.c + '</div></div>' +
+            '<div class="log-kcal">' + m.kcal + ' ' + T["kcal"] + '</div></div>';
     }).join("");
 
     setTimeout(function () {
@@ -1219,23 +1205,25 @@
     // Вода в телефоне
     var heroWater = 1250;
     function renderHeroWater() {
-        document.getElementById("heroWaterTxt").textContent = fmt(heroWater) + " / 2 000 мл";
+        document.getElementById("heroWaterTxt").textContent = fmt(heroWater) + " / " + fmt(2000) + " " + T["ml"];
         document.getElementById("heroWaterFill").style.width = Math.min(100, heroWater / 2000 * 100) + "%";
     }
     document.getElementById("heroWaterBtn").addEventListener("click", function () {
         heroWater = heroWater >= 2000 ? 250 : heroWater + 250;
-        renderHeroWater();
-    });
+        // Подпись сразу, полоска дорастает с задержкой — как кольцо
+    document.getElementById("heroWaterTxt").textContent = fmt(heroWater) + " / " + fmt(2000) + " " + T["ml"];
     setTimeout(renderHeroWater, 400);
+    });
+    renderHeroWater();
 
     // ---------- Демо распознавания ----------
     var DEMO_DISHES = [
-        { emo: "🥣", name: "Овсянка с бананом", w: 260, kcal: 320, p: 10, f: 7, c: 55, conf: 94 },
-        { emo: "🥗", name: "Цезарь с курицей", w: 280, kcal: 410, p: 28, f: 24, c: 18, conf: 91 },
-        { emo: "🍝", name: "Паста карбонара", w: 320, kcal: 640, p: 25, f: 28, c: 70, conf: 88 },
-        { emo: "🥞", name: "Сырники со сметаной", w: 220, kcal: 480, p: 24, f: 22, c: 44, conf: 90 },
-        { emo: "🍔", name: "Бургер и картошка фри", w: 380, kcal: 890, p: 32, f: 45, c: 88, conf: 86 },
-        { emo: "🍲", name: "Борщ со сметаной", w: 350, kcal: 260, p: 9, f: 12, c: 28, conf: 92 }
+        { emo: "🥣", name: T["dish-oatmeal"], w: 260, kcal: 320, p: 10, f: 7, c: 55, conf: 94 },
+        { emo: "🥗", name: T["dish-caesar"], w: 280, kcal: 410, p: 28, f: 24, c: 18, conf: 91 },
+        { emo: "🍝", name: T["dish-carbonara"], w: 320, kcal: 640, p: 25, f: 28, c: 70, conf: 88 },
+        { emo: "🥞", name: T["meal-syrniki"], w: 220, kcal: 480, p: 24, f: 22, c: 44, conf: 90 },
+        { emo: "🍔", name: T["dish-burger"], w: 380, kcal: 890, p: 32, f: 45, c: 88, conf: 86 },
+        { emo: "🍲", name: T["dish-borsch"], w: 350, kcal: 260, p: 9, f: 12, c: 28, conf: 92 }
     ];
     var DEMO_TARGET = 1900;
     var dishesEl = document.getElementById("dishes");
@@ -1244,7 +1232,7 @@
 
     dishesEl.innerHTML = DEMO_DISHES.map(function (dish, i) {
         return '<button type="button" class="dish-btn" data-i="' + i + '"><span class="emo">' + dish.emo + '</span><span>' +
-            dish.name + '<small>отправить фото</small></span></button>';
+            dish.name + '<small>' + T["send-photo"] + '</small></span></button>';
     }).join("");
 
     dishesEl.addEventListener("click", function (e) {
@@ -1259,7 +1247,7 @@
         current = dish; scale = 1; portions = 1;
         resultEl.innerHTML = '<div class="analyzing" role="status"><div style="width:100%">' +
             '<div class="mascot-box"><svg><use href="#zef"/></svg></div>' +
-            '<b>Zefir анализирует блюдо…</b>' +
+            '<b>' + T["analyzing"] + '</b>' +
             '<div class="skel" style="width:70%;margin-top:14px"></div><div class="skel" style="width:50%"></div><div class="skel" style="width:60%"></div></div></div>';
         demoTimer = setTimeout(renderDish, reduceMotion ? 0 : 1300);
     }
@@ -1270,17 +1258,17 @@
         var dish = current;
         resultEl.innerHTML = '<div class="dish-card">' +
             '<div class="dish-top"><div class="dish-photo">' + dish.emo + '</div><div>' +
-            '<div class="dish-name">' + dish.name + '</div><span class="conf">🤖 Уверенность ИИ ' + dish.conf + '%</span></div></div>' +
-            '<div class="kcal-big"><b id="dKcal">' + fmt(dish.kcal) + '</b><span>ккал · <span id="dW">' + dish.w + '</span> г</span></div>' +
+            '<div class="dish-name">' + dish.name + '</div><span class="conf">' + fill(T["confidence"], dish.conf) + '</span></div></div>' +
+            '<div class="kcal-big"><b id="dKcal">' + fmt(dish.kcal) + '</b><span>' + T["kcal"] + ' · <span id="dW">' + dish.w + '</span> ' + T["g"] + '</span></div>' +
             '<div class="chips">' +
-            '<div class="chip"><b id="dP">' + dish.p + '</b><span>белки, г</span></div>' +
-            '<div class="chip"><b id="dF">' + dish.f + '</b><span>жиры, г</span></div>' +
-            '<div class="chip"><b id="dC">' + dish.c + '</b><span>углеводы, г</span></div></div>' +
-            '<div class="portion"><span class="lbl">Порция</span>' +
+            '<div class="chip"><b id="dP">' + dish.p + '</b><span>' + T["protein-g"] + '</span></div>' +
+            '<div class="chip"><b id="dF">' + dish.f + '</b><span>' + T["fat-g"] + '</span></div>' +
+            '<div class="chip"><b id="dC">' + dish.c + '</b><span>' + T["carbs-g"] + '</span></div></div>' +
+            '<div class="portion"><span class="lbl">' + T["portion"] + '</span>' +
             '<button type="button" class="stepper" data-a="minus">−10%</button>' +
             '<button type="button" class="stepper" data-a="plus">+10%</button>' +
-            '<button type="button" class="stepper" data-a="portion">Порций: <span id="dPortions">1</span> +</button></div>' +
-            '<button type="button" class="btn btn-primary btn-block add-btn" id="addDay">Добавить в дневник</button></div>';
+            '<button type="button" class="stepper" data-a="portion">' + T["portions"] + ' <span id="dPortions">1</span> +</button></div>' +
+            '<button type="button" class="btn btn-primary btn-block add-btn" id="addDay">' + T["add-to-day"] + '</button></div>';
     }
 
     resultEl.addEventListener("click", function (e) {
@@ -1311,13 +1299,13 @@
         miniProg.classList.toggle("over", eaten > DEMO_TARGET);
         var left = DEMO_TARGET - eaten;
         document.getElementById("miniTxt").textContent = left >= 0
-            ? "Осталось " + fmt(left) + " ккал"
-            : "Перебор на " + fmt(-left) + " ккал";
+            ? fill(T["left"], fmt(left))
+            : fill(T["over"], fmt(-left));
         document.getElementById("miniList").innerHTML = dayItems.map(function (it) {
             return "<span>" + it.emo + " " + it.kcal + "</span>";
         }).join("");
         var btn = document.getElementById("addDay");
-        btn.textContent = "Добавлено ✓";
+        btn.textContent = T["added"];
         btn.disabled = true;
     }
 
@@ -1362,10 +1350,13 @@
         calcProg.style.strokeDashoffset = CC * (1 - Math.min(1, kcal / 4000));
         var macros = document.getElementById("calcMacros");
         var total = p * 4 + f * 9 + c * 4 || 1;
-        macros.innerHTML =
-            '<div class="macro"><div class="label">Белки</div><div class="nums"><b>' + p + ' г</b></div><div class="bar"><div class="fill p" style="width:' + (p * 4 / total * 100) + '%"></div></div></div>' +
-            '<div class="macro"><div class="label">Жиры</div><div class="nums"><b>' + f + ' г</b></div><div class="bar"><div class="fill f" style="width:' + (f * 9 / total * 100) + '%"></div></div></div>' +
-            '<div class="macro"><div class="label">Углеводы</div><div class="nums"><b>' + c + ' г</b></div><div class="bar"><div class="fill c" style="width:' + (c * 4 / total * 100) + '%"></div></div></div>';
+        var macro = function (label, grams, type, share) {
+            return '<div class="macro"><div class="label">' + label + '</div><div class="nums"><b>' + grams + ' ' + T["g"] + '</b></div>' +
+                '<div class="bar"><div class="fill ' + type + '" style="width:' + share + '%"></div></div></div>';
+        };
+        macros.innerHTML = macro(T["protein"], p, "p", p * 4 / total * 100) +
+            macro(T["fat"], f, "f", f * 9 / total * 100) +
+            macro(T["carbs"], c, "c", c * 4 / total * 100);
         document.getElementById("calcWater").textContent = fmt(water);
         updateCalcStart(age, height, weight);
     }
@@ -1383,7 +1374,7 @@
     }
 
     // ---------- Бенто: печатающийся текст ----------
-    var phrases = ["гречка с котлетой, 250 г", "капучино и круассан", "2 яйца, жарил на масле", "салат с тунцом и хлеб"];
+    var phrases = [T["typing-1"], T["typing-2"], T["typing-3"], T["typing-4"]];
     var typingEl = document.getElementById("typing");
     var pi = 0, ci = 0, deleting = false;
     function typeTick() {
@@ -1403,14 +1394,14 @@
     // ---------- Бенто: ИИ-саммари ----------
     var AI = {
         week: {
-            headline: "Неделя ровная: в норму попал 5 дней из 7",
-            bullets: [ ["🎯", "Средние калории — 1 840 при норме 1 900"], ["🥩", "Белка в среднем 96 г — на 20% меньше нормы"], ["🌙", "Ужины тяжелее обеда в 4 днях из 7"] ],
-            tip: "Перенеси часть ужина на обед и добавь творог или яйца на завтрак — белок подтянется."
+            headline: T["ai-week-headline"],
+            bullets: [ ["🎯", T["ai-week-1"]], ["🥩", T["ai-week-2"]], ["🌙", T["ai-week-3"]] ],
+            tip: T["ai-week-tip"]
         },
         month: {
-            headline: "За месяц −1,3 кг — темп комфортный",
-            bullets: [ ["📉", "Вес снижается на 0,3 кг в неделю"], ["🍰", "Сладкое — 12 дней из 30, чаще по выходным"], ["💧", "Воды в среднем 1,4 л из 2 л"] ],
-            tip: "Держи текущий дефицит — он работает. Добавь стакан воды к каждому приёму пищи."
+            headline: T["ai-month-headline"],
+            bullets: [ ["📉", T["ai-month-1"]], ["🍰", T["ai-month-2"]], ["💧", T["ai-month-3"]] ],
+            tip: T["ai-month-tip"]
         }
     };
     var aiBody = document.getElementById("aiBody");
@@ -1420,7 +1411,7 @@
             a.bullets.map(function (b, i) {
                 return '<li style="animation-delay:' + (i * 80) + 'ms"><span class="emoji">' + b[0] + '</span>' + b[1] + '</li>';
             }).join("") + '</ul>' +
-            '<div class="tip"><span class="emoji">💡</span><div><div class="tip-lbl">Совет</div>' + a.tip + '</div></div>';
+            '<div class="tip"><span class="emoji">💡</span><div><div class="tip-lbl">' + T["tip"] + '</div>' + a.tip + '</div></div>';
     }
     document.getElementById("aiSeg").addEventListener("click", function (e) {
         var b = e.target.closest("button");
@@ -1432,7 +1423,9 @@
 
     // ---------- Бенто: график недели (как WeeklyTrendCard) ----------
     (function () {
-        var data = [ ["Пн", 1720], ["Вт", 2050], ["Ср", 1880], ["Чт", 1640], ["Пт", 2310], ["Сб", 1960], ["Вс", 1790] ];
+        // Дни недели на языке страницы: 1 января 2024 — понедельник
+        var weekday = function (i) { return new Date(2024, 0, 1 + i).toLocaleDateString(LOCALE, { weekday: "short" }); };
+        var data = [1720, 2050, 1880, 1640, 2310, 1960, 1790].map(function (kcal, i) { return [weekday(i), kcal]; });
         var goal = 1900, W = 320, H = 150, pl = 36, pt = 18, w = W - pl - 8, h = H - pt - 26, max = 2500;
         var pts = data.map(function (dd, i) { return { x: pl + i / (data.length - 1) * w, y: pt + h - dd[1] / max * h }; });
         var line = "M " + pts[0].x + " " + pts[0].y;
@@ -1452,7 +1445,7 @@
         });
         s += '<line class="goal-line" x1="' + pl + '" y1="' + gy + '" x2="' + (pl + w) + '" y2="' + gy + '"/>' +
             '<line x1="' + (pl + w - 92) + '" y1="4" x2="' + (pl + w - 74) + '" y2="4" class="goal-line"/>' +
-            '<text x="' + (pl + w) + '" y="8" text-anchor="end" font-size="10" font-weight="800" fill="var(--success)">норма ' + goal + '</text>' +
+            '<text x="' + (pl + w) + '" y="8" text-anchor="end" font-size="10" font-weight="800" fill="var(--success)">' + fill(T["norm"], goal) + '</text>' +
             '<path class="area" d="' + area + '"/><path class="line" d="' + line + '"/>';
         pts.forEach(function (p, j) {
             s += '<circle class="dot" cx="' + p.x + '" cy="' + p.y + '" r="4"/>' +
@@ -1465,7 +1458,7 @@
     var glassMl = 750;
     function renderGlass() {
         document.getElementById("liquid").style.height = Math.min(100, glassMl / 2000 * 100) + "%";
-        document.getElementById("glassTxt").textContent = fmt(glassMl) + " мл";
+        document.getElementById("glassTxt").textContent = fmt(glassMl) + " " + T["ml"];
     }
     function addGlass() { glassMl = glassMl >= 2000 ? 250 : glassMl + 250; renderGlass(); }
     var glass = document.getElementById("glass");
@@ -1474,10 +1467,10 @@
     renderGlass();
 
     // ---------- Бенто: избранное ----------
-    var favs = [ ["Овсянка с бананом", 320], ["Капучино 300 мл", 140], ["Курица с рисом", 520] ];
+    var favs = [ [T["dish-oatmeal"], 320], [T["fav-cappuccino"], 140], [T["fav-chicken-rice"], 520] ];
     var favsEl = document.getElementById("favs");
     favsEl.innerHTML = favs.map(function (f) {
-        return '<div class="fav"><span class="star">★</span>' + f[0] + '<span class="k">' + f[1] + '</span><button type="button" aria-label="Добавить">+</button></div>';
+        return '<div class="fav"><span class="star">★</span>' + f[0] + '<span class="k">' + f[1] + '</span><button type="button" aria-label="' + T["add"] + '">+</button></div>';
     }).join("");
     favsEl.addEventListener("click", function (e) {
         var b = e.target.closest("button");
@@ -1487,7 +1480,7 @@
     });
 
     // ---------- Бенто: варианты моделей ----------
-    var variants = [ ["Плов с курицей", "модель A", 610], ["Рис с курицей и морковью", "модель B", 540] ];
+    var variants = [ [T["variant-pilaf"], T["model"] + " A", 610], [T["variant-rice"], T["model"] + " B", 540] ];
     var varEl = document.getElementById("variants");
     varEl.innerHTML = variants.map(function (v, i) {
         return '<button type="button" class="variant' + (i === 0 ? " on" : "") + '"><span>🍛</span><span>' + v[0] + '<br><small>' + v[1] + '</small></span><span class="k">' + v[2] + '</span></button>';
@@ -1500,7 +1493,7 @@
 
     // ---------- Чат бота: сообщения в формате DishUpdateHandler ----------
     var tgBody = document.getElementById("tgBody");
-    var tgDish = { emo: "🥑", name: "Авокадо-тост (2 ломтика)", w: 125, kcal: 271, p: 13, f: 14, c: 24, portions: 1 };
+    var tgDish = { emo: "🥑", name: T["tg-dish"], w: 125, kcal: 271, p: 13, f: 14, c: 24, portions: 1 };
     var TG_DAY = { kcal: 1490, p: 80, f: 40, c: 150 }, TG_NORM = { kcal: 1931, p: 120, f: 53, c: 230 };
     var tgScale = 1;
 
@@ -1510,10 +1503,12 @@
         var eaten = TG_DAY.kcal + kcal, pct = Math.round(eaten / TG_NORM.kcal * 100), add = Math.round(kcal / TG_NORM.kcal * 100);
         var filled = Math.min(10, Math.round(pct / 10)), sq = "";
         for (var i = 0; i < 10; i++) sq += '<i class="' + (i < filled ? (pct > 100 ? "over" : "ok") : "") + '"></i>';
-        return '<div class="tg-dish"><span class="it">' + tgDish.emo + ' ' + tgDish.name + '</span> (+' + kcal + ' ккал)<br>' +
-            '<b>Б:</b> ' + (TG_DAY.p + p) + '/' + TG_NORM.p + 'г (<b>+' + p + '</b>) | <b>Ж:</b> ' + (TG_DAY.f + f) + '/' + TG_NORM.f + 'г (<b>+' + f + '</b>) | <b>У:</b> ' + (TG_DAY.c + c) + '/' + TG_NORM.c + 'г (<b>+' + c + '</b>)<br>' +
-            '<b>Вес порции:</b> ' + Math.round(tgDish.w * tgScale) + ' г<br><b>Количество порций:</b> ' + tgDish.portions + '<br><br>' +
-            eaten + '/' + TG_NORM.kcal + ' <b>+' + kcal + ' ккал</b> (+' + add + '%)<br>' +
+        return '<div class="tg-dish"><span class="it">' + tgDish.emo + ' ' + tgDish.name + '</span> (+' + kcal + ' ' + T["kcal"] + ')<br>' +
+            '<b>' + T["protein-short"] + ':</b> ' + (TG_DAY.p + p) + '/' + TG_NORM.p + T["g"] + ' (<b>+' + p + '</b>) | ' +
+            '<b>' + T["fat-short"] + ':</b> ' + (TG_DAY.f + f) + '/' + TG_NORM.f + T["g"] + ' (<b>+' + f + '</b>) | ' +
+            '<b>' + T["carbs-short"] + ':</b> ' + (TG_DAY.c + c) + '/' + TG_NORM.c + T["g"] + ' (<b>+' + c + '</b>)<br>' +
+            '<b>' + T["tg-portion-weight"] + '</b> ' + Math.round(tgDish.w * tgScale) + ' ' + T["g"] + '<br><b>' + T["tg-portion-count"] + '</b> ' + tgDish.portions + '<br><br>' +
+            eaten + '/' + TG_NORM.kcal + ' <b>+' + kcal + ' ' + T["kcal"] + '</b> (+' + add + '%)<br>' +
             '<span class="sq">' + sq + '</span>' + (pct > 100 ? "🔥 " : "") + '<b>' + pct + '%</b></div>' +
             '<span class="time">12:47</span>';
     }
@@ -1543,10 +1538,10 @@
             var kb = document.createElement("div");
             kb.className = "tg-kb";
             kb.innerHTML =
-                '<div class="row r3"><button type="button" class="lbl">Вес порции:</button><button type="button" data-a="-">-10%</button><button type="button" data-a="+">+10%</button></div>' +
-                '<div class="row r2"><button type="button" class="lbl">Порций:</button><button type="button" data-a="p">➕</button></div>' +
-                '<div class="row"><button type="button" data-a="fav">⭐ Сохранить блюдо</button></div>' +
-                '<div class="row"><button type="button" data-a="del">Удалить из дневника</button></div>';
+                '<div class="row r3"><button type="button" class="lbl">' + T["tg-portion-weight"] + '</button><button type="button" data-a="-">-10%</button><button type="button" data-a="+">+10%</button></div>' +
+                '<div class="row r2"><button type="button" class="lbl">' + T["portions"] + '</button><button type="button" data-a="p">➕</button></div>' +
+                '<div class="row"><button type="button" data-a="fav">' + T["tg-save"] + '</button></div>' +
+                '<div class="row"><button type="button" data-a="del">' + T["tg-delete"] + '</button></div>';
             tgBody.appendChild(kb);
             requestAnimationFrame(function () { reply.classList.add("show"); kb.classList.add("show"); });
             kb.addEventListener("click", onTgButton);
@@ -1563,7 +1558,7 @@
         if (a === "fav" || a === "del") {
             var note = document.createElement("div");
             note.className = "msg";
-            note.innerHTML = (a === "fav" ? "⭐ Блюдо сохранено в избранное" : "🗑 Блюдо удалено из дневника") + '<span class="time">12:48</span>';
+            note.innerHTML = (a === "fav" ? T["tg-saved"] : T["tg-deleted"]) + '<span class="time">12:48</span>';
             tgBody.appendChild(note);
             requestAnimationFrame(function () { note.classList.add("show"); });
             setTimeout(function () { note.classList.remove("show"); setTimeout(function () { note.remove(); }, 400); }, 2200);

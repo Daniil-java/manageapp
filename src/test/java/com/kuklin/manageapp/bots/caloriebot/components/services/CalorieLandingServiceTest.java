@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.bots.caloriebot.components.services;
 
+import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.i18n.I18nProperties;
 import com.kuklin.manageapp.bots.caloriebot.texts.PlanTexts;
@@ -36,8 +37,8 @@ class CalorieLandingServiceTest {
         AiRateLimitProperties aiLimits = new AiRateLimitProperties();
         aiLimits.setPerDay(100);
         aiLimits.setPerDayPremium(300);
-        service = new CalorieLandingService(pricingPlanService, planFeatureService, aiLimits,
-                new PlanTexts(new CalorieTexts(new I18nProperties(), mock(UserSettingsService.class))));
+        CalorieTexts texts = new CalorieTexts(new I18nProperties(), mock(UserSettingsService.class));
+        service = new CalorieLandingService(pricingPlanService, planFeatureService, aiLimits, new PlanTexts(texts), texts);
     }
 
     private static PricingPlan plan(String code, int days, int price, Currency currency) {
@@ -60,7 +61,7 @@ class CalorieLandingServiceTest {
                 plan("THREE", 90, 350, Currency.XTR),
                 plan("MONTH", 30, 150, Currency.XTR)));
 
-        var page = service.getLandingPage();
+        var page = service.getLandingPage(AppLanguage.RU);
 
         assertThat(page.plans()).extracting(CalorieLandingService.PlanCard::title).containsExactly("MONTH", "THREE");
         assertThat(page.plans().get(0).saving()).isNull();
@@ -95,7 +96,7 @@ class CalorieLandingServiceTest {
         when(pricingPlanService.getAllPlansByBotIdentifierAndPlanStatusAvailable(BOT))
                 .thenReturn(List.of(pack, noDuration));
 
-        assertThat(service.getLandingPage().plans()).isEmpty();
+        assertThat(service.getLandingPage(AppLanguage.RU).plans()).isEmpty();
     }
 
     @Test
@@ -109,30 +110,62 @@ class CalorieLandingServiceTest {
         when(planFeatureService.getFeaturesByPlanCode("MONTH", BOT)).thenReturn(List.of(
                 feature(BotFeature.DISH_AI_VISION, FeatureLimitPeriod.UNLIMITED, -1)));
 
-        var rows = service.getLandingPage().features();
+        var rows = service.getLandingPage(AppLanguage.RU).features();
 
         assertThat(rows.get(0).free()).isEqualTo("до 100 в сутки");
         assertThat(rows.get(0).premium()).isEqualTo("до 300 в сутки");
         assertThat(rows).anySatisfy(row -> {
-            assertThat(row.name()).isEqualTo(BotFeature.DISH_AI_VISION.getDisplayName());
+            assertThat(row.name()).isEqualTo("Распознавание блюд по фото");
             assertThat(row.free()).isEqualTo("2 в день");
             assertThat(row.premium()).isEqualTo("Без лимита");
         });
         assertThat(rows).anySatisfy(row -> {
-            assertThat(row.name()).isEqualTo(BotFeature.REPORT_PDF_WEEK.getDisplayName());
+            assertThat(row.name()).isEqualTo("Недельный PDF-отчёт");
             assertThat(row.free()).isEqualTo("—");
             assertThat(row.premium()).isEqualTo("—");
         });
         assertThat(rows).anySatisfy(row -> {
-            assertThat(row.name()).isEqualTo(BotFeature.DISH_FAVORITE_LIST.getDisplayName());
+            assertThat(row.name()).isEqualTo("Сохранённые блюда");
             assertThat(row.free()).isEqualTo("до 5");
         });
     }
 
     @Test
+    void englishPageHasEnglishLimitsAndDurations() {
+        when(pricingPlanService.getAllPlansByBotIdentifierAndPlanStatusAvailable(BOT)).thenReturn(List.of(
+                plan("MONTH", 30, 150, Currency.XTR),
+                plan("THREE", 90, 350, Currency.XTR),
+                plan("WEEK_AND_HALF", 45, 100, Currency.RUB)));
+        when(planFeatureService.getFeaturesByPlanCode("FREE", BOT)).thenReturn(List.of(
+                feature(BotFeature.DISH_AI_VISION, FeatureLimitPeriod.DAILY, 2)));
+
+        var page = service.getLandingPage(AppLanguage.EN);
+
+        assertThat(page.plans()).extracting(CalorieLandingService.PlanCard::duration)
+                .containsExactly("1 month", "45 days", "3 months");
+        assertThat(page.features().get(0).name()).isEqualTo("AI requests: photo, text, voice, reports");
+        assertThat(page.features().get(0).free()).isEqualTo("up to 100 a day");
+        assertThat(page.features()).anySatisfy(row -> {
+            assertThat(row.name()).isEqualTo("Dish recognition from photos");
+            assertThat(row.free()).isEqualTo("2 a day");
+            assertThat(row.premium()).isEqualTo("—");
+        });
+    }
+
+    @Test
+    void russianDurationsUsePlurals() {
+        assertThat(service.describeDuration(30, AppLanguage.RU)).isEqualTo("1 месяц");
+        assertThat(service.describeDuration(90, AppLanguage.RU)).isEqualTo("3 месяца");
+        assertThat(service.describeDuration(180, AppLanguage.RU)).isEqualTo("6 месяцев");
+        assertThat(service.describeDuration(2, AppLanguage.RU)).isEqualTo("2 дня");
+        assertThat(service.describeDuration(45, AppLanguage.RU)).isEqualTo("45 дней");
+    }
+
+    @Test
     void rublesFormattedFromKopecks() {
-        assertThat(CalorieLandingService.formatPrice(19900, Currency.RUB)).isEqualTo("199 ₽");
-        assertThat(CalorieLandingService.formatPrice(19950, Currency.RUB)).isEqualTo("199,5 ₽");
+        assertThat(CalorieLandingService.formatPrice(19900, Currency.RUB, AppLanguage.RU)).isEqualTo("199 ₽");
+        assertThat(CalorieLandingService.formatPrice(19950, Currency.RUB, AppLanguage.RU)).isEqualTo("199,5 ₽");
+        assertThat(CalorieLandingService.formatPrice(19950, Currency.RUB, AppLanguage.EN)).isEqualTo("199.5 ₽");
     }
 
     @Test
@@ -157,9 +190,9 @@ class CalorieLandingServiceTest {
 
     @Test
     void botUrlGetsStartCodeOnlyWhenConfigured() {
-        assertThat(service.getLandingPage().botUrl()).isEqualTo("https://t.me/calorydairy_bot");
+        assertThat(service.getLandingPage(AppLanguage.RU).botUrl()).isEqualTo("https://t.me/calorydairy_bot");
 
         ReflectionTestUtils.setField(service, "startCode", "landing");
-        assertThat(service.getLandingPage().botUrl()).isEqualTo("https://t.me/calorydairy_bot?start=landing");
+        assertThat(service.getLandingPage(AppLanguage.RU).botUrl()).isEqualTo("https://t.me/calorydairy_bot?start=landing");
     }
 }

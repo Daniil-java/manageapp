@@ -38,7 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class TextBundlesConsistencyTest {
 
     /** Классы с константами ключей. Новый класс ключей — сюда же. */
-    private static final List<Class<?>> KEY_CLASSES = List.of(BotTextKeys.class, PdfTextKeys.class);
+    private static final List<Class<?>> KEY_CLASSES = List.of(BotTextKeys.class, PdfTextKeys.class, LandingTextKeys.class);
     /** HTML-шаблоны PDF с текстами {{pdf.…}}. */
     public static final List<String> PDF_TEMPLATES = List.of("templates/report.html", "templates/weeklyreport.html");
 

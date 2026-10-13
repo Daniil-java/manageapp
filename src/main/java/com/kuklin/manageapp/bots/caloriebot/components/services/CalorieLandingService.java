@@ -2,6 +2,8 @@ package com.kuklin.manageapp.bots.caloriebot.components.services;
 
 import com.kuklin.manageapp.bots.caloriebot.configurations.AiRateLimitProperties;
 import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
+import com.kuklin.manageapp.bots.caloriebot.i18n.LandingTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.entities.PlanFeature;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.BotFeature;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.FeatureLimitPeriod;
@@ -36,10 +38,7 @@ import static com.kuklin.manageapp.bots.caloriebot.components.services.CalorieAc
 @RequiredArgsConstructor
 public class CalorieLandingService {
     private static final BotIdentifier BOT = BotIdentifier.CALORIE_BOT;
-    // Лендинг пока только на русском (задача «Лендинг, privacy, terms на нескольких языках»)
-    private static final AppLanguage LANDING_LANGUAGE = AppLanguage.RU;
     private static final String NOT_AVAILABLE = "—";
-    private static final String UNLIMITED = "Без лимита";
     /** Эмодзи в начале пункта: символы, модификаторы цвета кожи, вариационный селектор, ZWJ, keycap. */
     private static final Pattern LEADING_ICON =
             Pattern.compile("^([\\p{So}\\p{Sk}\\x{FE0F}\\x{200D}\\x{20E3}]+)\\s*(.*)$");
@@ -49,6 +48,7 @@ public class CalorieLandingService {
     private final PlanFeatureService planFeatureService;
     private final AiRateLimitProperties aiRateLimitProperties;
     private final PlanTexts planTexts;
+    private final CalorieTexts texts;
 
     /** Код UTM-ссылки (/calorie/utm-form) для кнопок «Открыть в Telegram». Пусто — ссылка без метки. */
     @Value("${calorie.landing.start-code:}")
@@ -73,7 +73,8 @@ public class CalorieLandingService {
                 presentedKey.getBytes(StandardCharsets.UTF_8));
     }
 
-    public LandingPage getLandingPage() {
+    /** Данные лендинга на языке страницы: тарифы, таблица лимитов, ссылка на бота. */
+    public LandingPage getLandingPage(AppLanguage language) {
         List<PricingPlan> plans = pricingPlanService.getAllPlansByBotIdentifierAndPlanStatusAvailable(BOT).stream()
                 .filter(plan -> plan.getPayloadType() == PricingPlan.PricingPlanType.SUBSCRIPTION)
                 .filter(plan -> plan.getDurationDays() != null && plan.getDurationDays() > 0)
@@ -89,17 +90,17 @@ public class CalorieLandingService {
 
         List<FeatureRow> features = new ArrayList<>();
         features.add(new FeatureRow(
-                "Запросы к ИИ: фото, текст, голос, отчёты",
-                "до " + aiRateLimitProperties.getPerDay() + " в сутки",
-                "до " + aiRateLimitProperties.getPerDayPremium() + " в сутки"));
+                texts.get(language, LandingTextKeys.LIMIT_AI_REQUESTS),
+                texts.get(language, LandingTextKeys.LIMIT_AI_PER_DAY, aiRateLimitProperties.getPerDay()),
+                texts.get(language, LandingTextKeys.LIMIT_AI_PER_DAY, aiRateLimitProperties.getPerDayPremium())));
         for (BotFeature feature : BotFeature.values()) {
             features.add(new FeatureRow(
-                    feature.getDisplayName(),
-                    describeLimit(free.get(feature)),
-                    describeLimit(premium.get(feature))));
+                    texts.get(language, feature.getTextKey()),
+                    describeLimit(free.get(feature), language),
+                    describeLimit(premium.get(feature), language)));
         }
 
-        return new LandingPage(toPlanCards(plans), features, botUrl());
+        return new LandingPage(toPlanCards(plans, language), features, botUrl());
     }
 
     private Map<BotFeature, PlanFeature> featuresByPlan(String planCode) {
@@ -109,38 +110,38 @@ public class CalorieLandingService {
         return result;
     }
 
-    static String describeLimit(PlanFeature planFeature) {
+    String describeLimit(PlanFeature planFeature, AppLanguage language) {
         if (planFeature == null) {
             return NOT_AVAILABLE;
         }
         Integer limit = planFeature.getLimitValue();
         if (planFeature.getLimitPeriod() == FeatureLimitPeriod.UNLIMITED || limit == null || limit <= -1) {
-            return UNLIMITED;
+            return texts.get(language, LandingTextKeys.LIMIT_UNLIMITED);
         }
         if (limit == 0) {
             return NOT_AVAILABLE;
         }
-        return switch (planFeature.getLimitPeriod()) {
-            case DAILY -> limit + " в день";
-            case MONTHLY -> limit + " в месяц";
-            case LIFETIME, UNLIMITED -> "до " + limit;
-        };
+        return texts.get(language, switch (planFeature.getLimitPeriod()) {
+            case DAILY -> LandingTextKeys.LIMIT_DAILY;
+            case MONTHLY -> LandingTextKeys.LIMIT_MONTHLY;
+            case LIFETIME, UNLIMITED -> LandingTextKeys.LIMIT_LIFETIME;
+        }, limit);
     }
 
     /**
      * Карточки тарифов. Выгода считается к самому короткому плану в той же валюте:
      * 3 месяца за 350 ⭐ против 3 × 150 ⭐ — «выгода 22%».
      */
-    private List<PlanCard> toPlanCards(List<PricingPlan> plans) {
+    private List<PlanCard> toPlanCards(List<PricingPlan> plans, AppLanguage language) {
         Map<Currency, PricingPlan> shortestByCurrency = new EnumMap<>(Currency.class);
         plans.forEach(plan -> shortestByCurrency.putIfAbsent(plan.getCurrency(), plan));
 
         return plans.stream()
                 .map(plan -> new PlanCard(
-                        planTexts.getTitle(plan, LANDING_LANGUAGE),
-                        toPoints(planTexts.getDescription(plan, LANDING_LANGUAGE)),
-                        formatPrice(plan.getPriceMinor(), plan.getCurrency()),
-                        describeDuration(plan.getDurationDays()),
+                        planTexts.getTitle(plan, language),
+                        toPoints(planTexts.getDescription(plan, language)),
+                        formatPrice(plan.getPriceMinor(), plan.getCurrency(), language),
+                        describeDuration(plan.getDurationDays(), language),
                         savingPercent(plan, shortestByCurrency.get(plan.getCurrency()))))
                 .toList();
     }
@@ -166,22 +167,24 @@ public class CalorieLandingService {
                 .toList();
     }
 
-    static String formatPrice(Integer priceMinor, Currency currency) {
+    static String formatPrice(Integer priceMinor, Currency currency, AppLanguage language) {
         if (currency == Currency.XTR) {
             // У Telegram Stars нет дробных единиц: price_minor — это и есть количество звёзд
             return priceMinor + " ⭐";
         }
         BigDecimal rubles = BigDecimal.valueOf(priceMinor).movePointLeft(2).stripTrailingZeros();
-        return rubles.toPlainString().replace('.', ',') + " ₽";
+        String amount = rubles.toPlainString();
+        // Дробная часть — через запятую по-русски, через точку по-английски
+        return (language == AppLanguage.RU ? amount.replace('.', ',') : amount) + " ₽";
     }
 
-    static String describeDuration(int days) {
-        if (days % 30 == 0) {
-            int months = days / 30;
-            return months == 1 ? "1 месяц" : months + (months < 5 ? " месяца" : " месяцев");
-        }
-        return days + " дней";
+    /** «1 месяц», «3 месяца», «45 дней» — месяцы, если делится на 30. */
+    String describeDuration(int days, AppLanguage language) {
+        return days % 30 == 0
+                ? texts.get(language, LandingTextKeys.PLAN_DURATION_MONTHS, days / 30)
+                : texts.get(language, LandingTextKeys.PLAN_DURATION_DAYS, days);
     }
+
 
     static Integer savingPercent(PricingPlan plan, PricingPlan base) {
         if (base == null || plan == base || base.getPriceMinor() == null || plan.getPriceMinor() == null) {

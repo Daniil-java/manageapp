@@ -1,3 +1,13 @@
+## 0.0.63 (13.10.2026)
+[et-90] — Лендинг на русском и английском
+* Язык лендинга — как у privacy и terms: ?lang=ru|en, иначе первый наш язык из Accept-Language; нет заголовка — ru, нет нашего языка — en (TelegramWebAppController.getPageLanguage, бывший getLegalPageLanguage). Ответ с Vary: Accept-Language. zefir.fit/?lang=en работает и по корню (WebController пересылает с параметрами).
+* Словарь i18n/calorie/landing_ru/en (в CalorieTexts.BUNDLES — тест сверяет ключи и подстановки между языками). texts/LandingTexts отдаёт его шаблону картой: ${t['hero.title']} в разметке, T["kcal"] в скрипте (landing.js.*). Тексты страницы — как есть, без ICU: можно HTML, {n} подставляет скрипт.
+* Шаблон calorielanding.html — один на все языки: все тексты разметки и демо (блюда, ИИ-саммари, чат бота, калькулятор) из словаря; числа и даты — toLocaleString языка страницы, дни недели на графике — через Intl. <html lang>, og:locale, hreflang ru/en/x-default, переключатель языка в шапке (виден и на телефоне), ссылки на privacy/terms с ?lang=.
+* CalorieLandingService.getLandingPage(language): названия и описания тарифов, лимиты («до 100 в сутки» / "up to 100 a day"), срок с правильным склонением (было «2 дней»), цена в рублях — запятая по-русски, точка по-английски. Ключи — i18n/LandingTextKeys.
+* BotFeature.displayName (русские названия) убран: лендинг и GET /calorie/profile/limits/all (FeatureLimitDto.displayName) берут feature.<FEATURE> из словаря bot_* на языке страницы / пользователя.
+* Канал @zephyr_ai в подвале остался и в английской версии — решение по нему отдельной задачей.
+* Тесты: LandingTextsTest (все ключи шаблона есть в обоих словарях), CalorieLandingTemplateTest (шаблон рендерится на обоих языках, в английском нет кириллицы), CalorieLandingServiceTest (английские лимиты и сроки, склонения), TextBundlesConsistencyTest — LandingTextKeys.
+
 ## 0.0.62 (13.10.2026)
 [et-89] — Выбор языка: в /start, в настройках бота и в миниаппке
 * /start: кто ещё не выбирал язык, сначала видит вопрос «На каком языке будем общаться?» — абзац на каждом языке (bot_*: language.choose-prompt) и кнопки 🇷🇺 Русский / 🇬🇧 English; язык Telegram (language_code) — первым. После выбора вопрос превращается в «🇬🇧 English — great, let's go! 🚀», дальше обычное приветствие на выбранном языке (StartLanguageUpdateHandler, колбэк /startlang <код>).
