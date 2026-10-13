@@ -1,5 +1,9 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.privacyterms;
 
+import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
+import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
+import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieSiteLinks;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
@@ -8,43 +12,26 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
+/**
+ * /privacy — сюда же ведёт кнопка «Политика конфиденциальности» в профиле бота, если в BotFather не задана ссылка.
+ * Сам текст — на сайте (calorieprivacy_<язык>.html), в чат только короткое сообщение со ссылкой.
+ */
 @Component
 @RequiredArgsConstructor
 public class PrivacyCalorieUpdateHandler implements CalorieBotUpdateHandler {
     private final CalorieTelegramBot calorieTelegramBot;
-    public static final String PRIVACY = """
-            Политика конфиденциальности
-                        
-            Настоящая Политика описывает, как настоящий Бот (далее — Бот) обрабатывает информацию при его использовании в мессенджере Telegram.
-                        
-            Сбор информации
-            Бот обрабатывает следующие типы данных:
-                        
-            Технические данные: идентификатор пользователя Telegram (User ID), имя пользователя (username).
-                        
-            Данные профиля: информация, добровольно указанная пользователем (рост, вес, пол, возраст, цели и уровень активности).
-                        
-            Пользовательский контент: фотографии, текстовые и голосовые сообщения, отправляемые Боту для анализа состава питания.
-                        
-            Цели и хранение
-            Данные используются для обеспечения работы функций Бота. Обработка и хранение данных осуществляются на защищенных серверах, обеспечивающих конфиденциальность и безопасность технической инфраструктуры проекта.
-                        
-            Передача третьим лицам
-            Для обработки медиафайлов и текстов Бот может использовать сторонние API (включая OpenAI). Передаваемые данные используются исключительно для генерации ответа алгоритмами ИИ.
-                        
-            Использование данных для ИИ
-            Владелец оставляет за собой право использовать анонимизированный контент (фото блюд без изображений людей) для улучшения точности алгоритмов и обучения моделей в будущем.
-                        
-            Удаление данных
-            Вы можете прекратить использование Бота и запросить удаление своих данных, обратившись в поддержку через встроенную команду /support.
-                        
-            Последнее обновление: Март 2026.
-            """;
+    private final CalorieTexts texts;
+
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
+        AppLanguage language = texts.languageOf(telegramUser.getAppUserId());
         calorieTelegramBot.sendReturnedMessage(
                 update.getMessage().getChatId(),
-                PRIVACY
+                texts.get(language, BotTextKeys.LEGAL_PRIVACY_TEXT),
+                LegalLinkKeyboards.buildLinkKeyboard(
+                        texts.get(language, BotTextKeys.LEGAL_BUTTON_OPEN),
+                        CalorieSiteLinks.buildPrivacyUrl(language)),
+                null
         );
     }
 

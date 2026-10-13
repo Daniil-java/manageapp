@@ -1,6 +1,7 @@
 package com.kuklin.manageapp.bots.caloriebot.components.controller;
 
 import com.kuklin.manageapp.bots.caloriebot.components.services.CalorieLandingService;
+import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -11,11 +12,14 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Duration;
+import java.util.Locale;
+import java.util.Optional;
 
 @Controller
 @RequestMapping("/calorie")
@@ -77,13 +81,38 @@ public class TelegramWebAppController {
         return "calorieutmcreate";
     }
 
+    /**
+     * Политика конфиденциальности. Ссылку на неё ставим в BotFather (кнопка в профиле бота) — открывается всем.
+     * Язык: ?lang=ru|en (так ссылаются бот и страницы друг на друга), иначе по Accept-Language.
+     */
     @GetMapping("/privacy")
-    public String showPrivacyPolicy() {
-        return "calorieprivacy";
+    public String showPrivacyPolicy(@RequestParam(name = "lang", required = false) String lang,
+                                    @RequestHeader(name = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
+        return "calorieprivacy_" + getLegalPageLanguage(lang, acceptLanguage).getCode();
     }
 
     @GetMapping("/terms")
-    public String showTerms() {
-        return  "calorieterms";
+    public String showTerms(@RequestParam(name = "lang", required = false) String lang,
+                            @RequestHeader(name = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
+        return "calorieterms_" + getLegalPageLanguage(lang, acceptLanguage).getCode();
+    }
+
+    /**
+     * ?lang= → первый язык из Accept-Language, который у нас есть → русский, если заголовка нет.
+     * Заголовок есть, но ни одного нашего языка в нём — английский.
+     */
+    static AppLanguage getLegalPageLanguage(String lang, String acceptLanguage) {
+        Optional<AppLanguage> fromParam = AppLanguage.fromCode(lang);
+        if (fromParam.isPresent()) return fromParam.get();
+        if (acceptLanguage == null || acceptLanguage.isBlank()) return AppLanguage.RU;
+        try {
+            return Locale.LanguageRange.parse(acceptLanguage).stream()
+                    .map(range -> AppLanguage.fromCode(range.getRange()))
+                    .flatMap(Optional::stream)
+                    .findFirst()
+                    .orElse(AppLanguage.EN);
+        } catch (IllegalArgumentException e) {
+            return AppLanguage.RU; // кривой заголовок
+        }
     }
 }

@@ -25,19 +25,24 @@ public class DomainUrlFilter extends OncePerRequestFilter {
     private final Map<String, DomainRules> rulesByDomain = Map.of(
         "zefir.fit", new DomainRules(
             List.of("/", "/calorie/**", "/auth/**"),
-            List.of()
+            List.of(),
+            null
         ),
+        // Страницы калорийного бота переехали на zefir.fit. Старые ссылки (сообщения в чатах, BotFather)
+        // ведут на kuklin.dev/calorie/... — GET-запросы перенаправляем туда же на zefir.fit
         "kuklin.dev", new DomainRules(
             List.of("/**"),
-            List.of("/calorie/**")),
+            List.of("/calorie/**"),
+            "https://zefir.fit"),
         "manageapp-production.up.railway.app", new DomainRules(
             List.of("/nicotine/**"),
-            List.of())
+            List.of(),
+            null)
     );
 
     // Только для локальной разработки: пускать запросы на localhost/127.0.0.1 ко всем путям.
     // Host приходит от клиента, поэтому на проде флаг должен оставаться выключенным.
-    private static final DomainRules LOCAL_RULES = new DomainRules(List.of("/**"), List.of());
+    private static final DomainRules LOCAL_RULES = new DomainRules(List.of("/**"), List.of(), null);
 
     @Value("${security.domain-filter.allow-localhost:false}")
     private boolean allowLocalhost;
@@ -61,6 +66,14 @@ public class DomainUrlFilter extends OncePerRequestFilter {
 
         boolean excluded = rules.excludedPaths().stream()
                                 .anyMatch(pattern -> pathMatcher.match(pattern, path));
+
+        if (excluded && rules.redirectExcludedTo() != null && "GET".equals(request.getMethod())) {
+            String query = request.getQueryString();
+            String target = rules.redirectExcludedTo() + path + (query == null ? "" : "?" + query);
+            log.info("[DOMAIN_URL_FILTER] Host {}, path {}, redirect to {}", host, path, target);
+            response.sendRedirect(target);
+            return;
+        }
 
         if (excluded) {
             log.info("[DOMAIN_URL_FILTER] Host {}, path {}, excluded", host, path);
@@ -111,8 +124,13 @@ public class DomainUrlFilter extends OncePerRequestFilter {
         return host.equals(domain) || host.endsWith("." + domain);
     }
 
+    /**
+     * @param redirectExcludedTo куда перенаправлять GET на исключённые пути (тот же путь на другом домене);
+     *                           null — исключённые пути отдают 404
+     */
     private record DomainRules(
         List<String> allowedPaths,
-        List<String> excludedPaths) { }
+        List<String> excludedPaths,
+        String redirectExcludedTo) { }
 }
 

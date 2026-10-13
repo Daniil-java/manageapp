@@ -7,6 +7,7 @@ import com.kuklin.manageapp.bots.caloriebot.components.services.UtmService;
 import com.kuklin.manageapp.bots.caloriebot.entities.utm.UtmLink;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
+import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieSiteLinks;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgutils.Command;
@@ -36,7 +37,7 @@ public class UtmCalorieUpdateHandler implements CalorieBotUpdateHandler {
     private final CalorieTexts texts;
 
     // Константы конфигурации
-    private static final String WEB_APP_URL = "https://kuklin.dev/calorie/utm-form";
+    private static final String WEB_APP_URL = CalorieSiteLinks.UTM_FORM_URL;
     private static final Set<Long> ADMIN_IDS = Set.of(425120436L, 420478432L);
 
     @Override

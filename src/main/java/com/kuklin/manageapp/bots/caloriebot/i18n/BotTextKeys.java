@@ -42,6 +42,11 @@ public final class BotTextKeys {
     public static final String SUPPORT_TEXT = "support.text";
     public static final String SUPPORT_BUTTON = "support.button";
 
+    // ── /privacy, /terms: сами тексты — на сайте ───────────────────
+    public static final String LEGAL_PRIVACY_TEXT = "legal.privacy.text";
+    public static final String LEGAL_TERMS_TEXT = "legal.terms.text";
+    public static final String LEGAL_BUTTON_OPEN = "legal.button.open";
+
     // ── Реферальная программа и UTM-ссылки ─────────────────────────
     public static final String REFERRAL_TEXT = "referral.text";
     public static final String REFERRAL_SHARE_TEXT = "referral.share-text";

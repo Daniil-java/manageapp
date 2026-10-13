@@ -3,9 +3,11 @@ package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.startflow;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserNutritionProfileService;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UtmService;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
+import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.models.landing.CalculatorStartParam;
+import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieSiteLinks;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.KeyboardCalorieUpdateHandler;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
@@ -41,10 +43,12 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
         Long appUserId = telegramUser.getAppUserId();
+        AppLanguage language = texts.languageOf(appUserId);
         keyboardCalorieUpdateHandler.updateKeyboard(update.getMessage().getChatId(), appUserId);
         calorieTelegramBot.sendReturnedMessage(
                 update.getMessage().getChatId(),
-                texts.get(appUserId, BotTextKeys.START_WELCOME),
+                texts.get(language, BotTextKeys.START_WELCOME,
+                        CalorieSiteLinks.buildPrivacyUrl(language), CalorieSiteLinks.buildTermsUrl(language)),
                 getStartFlowKeyboard(appUserId),
                 null
         );
