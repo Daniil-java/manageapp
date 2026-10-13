@@ -1,5 +1,7 @@
 package com.kuklin.manageapp.payment.handlers;
 
+import com.kuklin.manageapp.payment.components.texts.PaymentText;
+import com.kuklin.manageapp.payment.components.texts.PaymentTextResolver;
 import com.kuklin.manageapp.payment.entities.Payment;
 import com.kuklin.manageapp.payment.entities.PricingPlan;
 import com.kuklin.manageapp.payment.models.common.Currency;
@@ -30,14 +32,7 @@ public class PaymentProviderChoiceUpdateHandler implements PaymentUpdateHandler 
     private final TelegramBotRegistry telegramBotRegistry;
     private final PaymentPayUpdateHandler nextHandler;
     private final CommonPaymentFacade commonPaymentFacade;
-    private static final String PROVIDER_TEXT =
-            """
-                    Выберите один из способов оплаты:
-                    """;
-    private static final String PLAN_LIST_ERROR_MSG =
-            """
-                    Ошибка! Не получилось найти список тарифов!
-                    """;
+    private final PaymentTextResolver textResolver;
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
@@ -57,14 +52,16 @@ public class PaymentProviderChoiceUpdateHandler implements PaymentUpdateHandler 
                 telegramBotRegistry.get(telegramUser.getBotIdentifier())
                         .sendEditMessage(
                                 chatId,
-                                PROVIDER_TEXT,
+                                textResolver.getText(telegramUser.getBotIdentifier(), PaymentText.PROVIDER_CHOICE,
+                                        telegramUser.getAppUserId()),
                                 update.getCallbackQuery().getMessage().getMessageId(),
-                                getKeyboardProvider(planId)
+                                getKeyboardProvider(planId, telegramUser)
                         );
             }
         } catch (PricingPlanNotFoundException e) {
             telegramBotRegistry.get(telegramUser.getBotIdentifier())
-                    .sendReturnedMessage(chatId, PLAN_LIST_ERROR_MSG);
+                    .sendReturnedMessage(chatId, textResolver.getText(telegramUser.getBotIdentifier(),
+                            PaymentText.PLAN_LIST_NOT_FOUND, telegramUser.getAppUserId()));
         }
     }
 
@@ -75,13 +72,13 @@ public class PaymentProviderChoiceUpdateHandler implements PaymentUpdateHandler 
 
     // Формирует inline-клавиатуру со списком провайдеров,
     // исключая STARS (звёзды обрабатываются автоматически без выбора).
-    private InlineKeyboardMarkup getKeyboardProvider(String planId) {
+    private InlineKeyboardMarkup getKeyboardProvider(String planId, TelegramUser telegramUser) {
         TelegramKeyboard.TelegramKeyboardBuilder builder = TelegramKeyboard.builder();
 
         for (Payment.Provider provider : Payment.Provider.values()) {
             if (provider.equals(Payment.Provider.STARS)) continue;
             builder.row(TelegramKeyboard.button(
-                    provider.getTitle(),
+                    textResolver.getProviderTitle(telegramUser.getBotIdentifier(), provider, telegramUser.getAppUserId()),
                     generateCallBackData(planId, provider.name())
             ));
         }

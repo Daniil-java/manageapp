@@ -4,6 +4,8 @@ import com.kuklin.manageapp.common.components.TelegramBotRegistry;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.Command;
+import com.kuklin.manageapp.payment.components.texts.PaymentText;
+import com.kuklin.manageapp.payment.components.texts.PaymentTextResolver;
 import com.kuklin.manageapp.payment.handlers.PaymentUpdateHandler;
 import com.kuklin.manageapp.payment.models.StarsRefundClient;
 import com.kuklin.manageapp.payment.services.PaymentService;
@@ -18,6 +20,7 @@ import org.telegram.telegrambots.meta.api.objects.Update;
 public class RefundStartUpdateHandler implements PaymentUpdateHandler {
     private final PaymentService paymentService;
     private final TelegramBotRegistry telegramBotRegistry;
+    private final PaymentTextResolver textResolver;
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
@@ -32,7 +35,8 @@ public class RefundStartUpdateHandler implements PaymentUpdateHandler {
             } else {
                 telegramBot.sendReturnedMessage(
                         update.getMessage().getChatId(),
-                        "Платеж не соответствует условиям возврата!"
+                        textResolver.getText(telegramUser.getBotIdentifier(),
+                                PaymentText.REFUND_NOT_ALLOWED, telegramUser.getAppUserId())
                 );
             }
         } catch (Exception e) {

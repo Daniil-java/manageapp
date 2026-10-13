@@ -1,10 +1,14 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram;
 
 import com.kuklin.manageapp.bots.caloriebot.configurations.TelegramCaloriesBotKeyComponents;
+import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.paymentpart.PaymentPlanListCalorieUpdateHandler;
+import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import com.kuklin.manageapp.common.services.AsyncService;
+import com.kuklin.manageapp.common.services.TelegramUserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
@@ -12,6 +16,7 @@ import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.objects.User;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 @Component
@@ -26,9 +31,24 @@ public class CalorieTelegramBot extends TelegramBot {
     @Autowired
     @Lazy
     private PaymentPlanListCalorieUpdateHandler paymentPlanListCalorieUpdateHandler;
+    @Autowired
+    @Lazy
+    private TelegramUserService telegramUserService;
+    @Autowired
+    @Lazy
+    private CalorieTexts texts;
 
     public CalorieTelegramBot(TelegramCaloriesBotKeyComponents telegramCaloriesBotKeyComponents) {
         super(telegramCaloriesBotKeyComponents.getKey());
+    }
+
+    @Override
+    protected String getAlreadyInProcessText(Update update) {
+        User user = getUserFromUpdate(update);
+        TelegramUser telegramUser = user == null ? null
+                : telegramUserService.getTelegramUserByTelegramIdAndBotIdentifierOrNull(user.getId(), BOT_IDENTIFIER);
+        return texts.get(texts.languageOf(telegramUser == null ? null : telegramUser.getAppUserId()),
+                BotTextKeys.COMMON_ALREADY_IN_PROCESS);
     }
 
     @Override

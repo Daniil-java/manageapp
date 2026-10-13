@@ -1,5 +1,7 @@
 package com.kuklin.manageapp.payment.handlers;
 
+import com.kuklin.manageapp.payment.components.texts.PaymentText;
+import com.kuklin.manageapp.payment.components.texts.PaymentTextResolver;
 import com.kuklin.manageapp.payment.entities.PricingPlan;
 import com.kuklin.manageapp.common.components.TelegramBotRegistry;
 import com.kuklin.manageapp.common.entities.TelegramUser;
@@ -27,10 +29,7 @@ public class PaymentPlanListUpdateHandler implements PaymentUpdateHandler {
     private final TelegramBotRegistry telegramBotRegistry;
     private final PaymentProviderChoiceUpdateHandler nextHandler;
     private final CommonPaymentFacade commonPaymentFacade;
-    private static final String PLAN_TEXT =
-            """
-                    Выберите один из планов:
-                    """;
+    private final PaymentTextResolver textResolver;
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
@@ -44,20 +43,21 @@ public class PaymentPlanListUpdateHandler implements PaymentUpdateHandler {
         telegramBotRegistry.get(telegramUser.getBotIdentifier())
                 .sendReturnedMessage(
                         chatId,
-                        PLAN_TEXT,
-                        getKeyboardPlan(planList),
+                        textResolver.getText(telegramUser.getBotIdentifier(), PaymentText.PLAN_LIST_TITLE,
+                                telegramUser.getAppUserId()),
+                        getKeyboardPlan(planList, telegramUser.getAppUserId()),
                         null
                 );
     }
 
     // Формирует inline-клавиатуру с тарифами:
     // каждая кнопка содержит название плана и callback с его id.
-    private InlineKeyboardMarkup getKeyboardPlan(List<PricingPlan> planList) {
+    private InlineKeyboardMarkup getKeyboardPlan(List<PricingPlan> planList, Long appUserId) {
         TelegramKeyboard.TelegramKeyboardBuilder builder = TelegramKeyboard.builder();
 
         for (PricingPlan plan : planList) {
             builder.row(TelegramKeyboard.button(
-                    plan.getTitle(),
+                    textResolver.getPlanTitle(plan, appUserId),
                     nextHandler.getHandlerListName() + TelegramBot.DEFAULT_DELIMETER + plan.getId()
             ));
         }

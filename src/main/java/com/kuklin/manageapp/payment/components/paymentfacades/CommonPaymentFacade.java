@@ -3,6 +3,7 @@ package com.kuklin.manageapp.payment.components.paymentfacades;
 import com.kuklin.manageapp.common.library.tgmodels.CreateInvoiceLinkWithTelegramSubscription;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.payment.components.texts.PaymentTextResolver;
 import com.kuklin.manageapp.payment.components.providerprocessors.PaymentUrlProviderFactory;
 import com.kuklin.manageapp.payment.components.providerprocessors.ProviderResult;
 import com.kuklin.manageapp.payment.components.providerprocessors.SendInvoiceBuilder;
@@ -38,6 +39,7 @@ public class CommonPaymentFacade implements PaymentFacade {
     private final GenerationBalanceService generationBalanceService;
     private final GenerationBalanceOperationService generationBalanceOperationService;
     private final PaymentUrlProviderFactory paymentUrlProviderFactory;
+    private final PaymentTextResolver textResolver;
 
     // === Тарифы ===
 
@@ -108,8 +110,8 @@ public class CommonPaymentFacade implements PaymentFacade {
         if (isTelegramSubscription) {
             CreateInvoiceLinkWithTelegramSubscription subscriptionLink =
                     TelegramBot.buildCreateInvoiceLink(
-                            plan.getTitle(),
-                            plan.getDescription(),
+                            textResolver.getPlanTitle(plan, appUserId),
+                            textResolver.getPlanInvoiceDescription(plan, appUserId),
                             payment.getTelegramInvoicePayload(),
                             plan.getPriceMinor(),
                             plan.getCurrency()

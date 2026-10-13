@@ -1,3 +1,20 @@
+## 0.0.61 (13.10.2026)
+[et-88] — Тарифы и модуль оплаты на языке пользователя
+* Словарь i18n/calorie/plans_ru/en: plan.<code_for_order_id>.title / .description для FREE_TRIAL, CALORIE_SUB_30_XTR, CALORIE_PREMIUM_MONTH, _THREE_MONTH, _NINE_MONTH. Нет ключа — title / description из БД (pricing_plans), миграций нет. Как добавить тариф — ops/pricing-plans.md.
+* texts/PlanTexts — название и описание тарифа на языке; CalorieTexts.findOrNull — текст или null без ошибки в лог.
+* Модуль оплаты (payment/components/texts): PaymentText — сообщения пользователю с русским текстом по умолчанию; PaymentBotTexts — переводы, реализует бот; PaymentTextResolver — переводы бота или тексты по умолчанию (тестовый платёжный бот остаётся на русском). Через него: счёт в Telegram (название, описание, подпись цены — на языке плательщика), выбор тарифа и способа оплаты, ошибки оплаты, ответ на pre_checkout_query, успешная оплата, отказ в возврате, сообщения планировщика подписок.
+* Калорийный бот: texts/PaymentModuleTexts (payment.text.<PaymentText>, payment.provider.<Provider> в bot_*); «Подписка началась» — со строкой подписки как в «Статусе подписки», период в часовом поясе пользователя (было UTC).
+* Строка подписки вынесена из SubscriptionStatusCalorieUpdateHandler в texts/SubscriptionTexts (статус, /start, планировщик).
+* Исправлено: планировщик и на начало подписки звал sendSubExpiredMessage — калорийный бот после «Действие подписки началось!» присылал «Premium закончился 👀». Теперь начало — обычное сообщение, sendSubExpiredMessage только на окончание.
+* Бот: кнопки тарифов в «💳 Подписке», название в «Статусе подписки».
+* Миниаппка: GET /calorie/payment/plans отдаёт PricingPlanDto (поля как у PricingPlan, которые читает фронт) вместо сущности; ?lang=ru|en, без него — язык пользователя. POST /calorie/payment/create — тоже ?lang= для счёта. GET /subscription-status: statusMessage — из словаря, а не русская подпись enum.
+* Лендинг — тексты тарифов из словаря, пока ru.
+* BotTextKeys.buildSubscriptionStatusKey / buildPaymentTextKey / buildPaymentProviderKey — ключи из имён enum.
+* Описание в счёте Telegram — только первая строка описания тарифа (PlanTexts.getInvoiceDescription, PaymentBotTexts.getPlanInvoiceDescription): переносы строк счёт не показывает, пункты сливались в одну строку. Полное описание — в списке тарифов, миниаппке, на лендинге.
+* «Предыдущее сообщение обрабатывается…» (TelegramBot.notifyAlreadyInProcess) — текст в TelegramBot.getAlreadyInProcessText, калорийный бот переопределяет: common.already-in-process на языке пользователя.
+* Не переведено: CommonPaymentFacade.getBalanceSubscriptionString — только тестовый платёжный бот (в калорийном PAYMENT_BALANCE — свой обработчик).
+* Тесты: PlanTextsTest (ключи, запасной текст из БД, лимиты счёта Telegram: название ≤ 32, описание ≤ 255), PaymentTextResolverTest, SubscriptionScheduleProcessorTest; TextBundlesConsistencyTest — тексты у всех PaymentText и Payment.Provider.
+
 ## 0.0.60 (12.10.2026)
 [et-87] — Privacy и terms на двух языках, ссылки бота на zefir.fit
 * Страницы calorieprivacy_ru/en и calorieterms_ru/en (вместо calorieprivacy / calorieterms). Язык — ?lang=ru|en, иначе первый наш язык из Accept-Language; нет заголовка — ru, нет нашего языка — en. Переключатель языка и hreflang на страницах; в en — пометка, что при расхождении действует русская версия.

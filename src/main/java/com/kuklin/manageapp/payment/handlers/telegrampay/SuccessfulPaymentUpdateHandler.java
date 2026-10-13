@@ -1,5 +1,7 @@
 package com.kuklin.manageapp.payment.handlers.telegrampay;
 
+import com.kuklin.manageapp.payment.components.texts.PaymentText;
+import com.kuklin.manageapp.payment.components.texts.PaymentTextResolver;
 import com.kuklin.manageapp.payment.entities.Payment;
 import com.kuklin.manageapp.payment.handlers.AdminPaymentUpdateHandler;
 import com.kuklin.manageapp.payment.services.exceptions.PricingPlanNotFoundException;
@@ -33,18 +35,7 @@ public class SuccessfulPaymentUpdateHandler implements PaymentUpdateHandler {
     private final TelegramBotRegistry telegramBotRegistry;
     private final CommonPaymentFacade commonPaymentFacade;
     private final AdminPaymentUpdateHandler adminPaymentUpdateHandler;
-    private static final String SUCCESS_MSG = """
-            Успешная оплата!
-            """;
-    private static final String PLAN_ERROR_MSG = """
-            Не удалось найти платежный план!
-            """;
-    private static final String VALIDATION_ERROR_MSG = """
-            Ошибка валидации платежный данных
-            """;
-    private static final String PAYMENT_ERROR_MSG = """
-            Ошибка платежа! Обратитесь к администратору!
-            """;
+    private final PaymentTextResolver textResolver;
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
@@ -58,11 +49,11 @@ public class SuccessfulPaymentUpdateHandler implements PaymentUpdateHandler {
                 Payment payment = commonPaymentFacade.handleSuccessfulPayment(success, telegramUser.getAppUserId());
                 if (payment == null) {
                     telegramBot.sendReturnedMessage(
-                            chatId, PAYMENT_ERROR_MSG);
+                            chatId, getText(telegramUser, PaymentText.PAYMENT_ERROR));
                     return;
                 }
                 telegramBot.sendReturnedMessage(
-                        chatId, SUCCESS_MSG);
+                        chatId, getText(telegramUser, PaymentText.PAYMENT_SUCCESS));
 
                 //Подменяем сообщение, чтобы вызвать нужный хендлер
                 update.getMessage().setText(Command.PAYMENT_BALANCE.getCommandText());
@@ -76,13 +67,17 @@ public class SuccessfulPaymentUpdateHandler implements PaymentUpdateHandler {
                 //Уведомление админа
                 adminPaymentUpdateHandler.sendPaymentMessageToAdmin(payment);
             } catch (PaymentValidationDataException e) {
-                telegramBot.sendReturnedMessage(chatId, VALIDATION_ERROR_MSG);
+                telegramBot.sendReturnedMessage(chatId, getText(telegramUser, PaymentText.PAYMENT_VALIDATION_ERROR));
             } catch (PricingPlanNotFoundException e) {
-                telegramBot.sendReturnedMessage(chatId, PLAN_ERROR_MSG);
+                telegramBot.sendReturnedMessage(chatId, getText(telegramUser, PaymentText.PLAN_NOT_FOUND));
             } catch (PaymentException e) {
-                telegramBot.sendReturnedMessage(chatId, PAYMENT_ERROR_MSG);
+                telegramBot.sendReturnedMessage(chatId, getText(telegramUser, PaymentText.PAYMENT_ERROR));
             }
         }
+    }
+
+    private String getText(TelegramUser telegramUser, PaymentText text) {
+        return textResolver.getText(telegramUser.getBotIdentifier(), text, telegramUser.getAppUserId());
     }
 
     @Override

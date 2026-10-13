@@ -34,7 +34,8 @@ public class CalorieTexts {
     static final List<String> BUNDLES = List.of(
             "i18n/calorie/bot",
             "i18n/calorie/errors",
-            "i18n/calorie/pdf"
+            "i18n/calorie/pdf",
+            "i18n/calorie/plans"
     );
 
     private final I18nProperties properties;
@@ -51,6 +52,19 @@ public class CalorieTexts {
     public String get(AppLanguage language, String key, Object... args) {
         Template template = findTemplate(language, key);
         return template == null ? key : format(template.language(), template.pattern(), args);
+    }
+
+    /**
+     * Текст на заданном языке или null, если ключа нет ни в словаре языка, ни в словаре по умолчанию.
+     * Для ключей, которых может не быть (тарифы из БД), — без ошибки в лог: вызывающий берёт свой запасной текст.
+     */
+    public String findOrNull(AppLanguage language, String key, Object... args) {
+        String pattern = findPattern(language, key);
+        if (pattern == null) {
+            language = getDefaultLanguage();
+            pattern = findPattern(language, key);
+        }
+        return pattern == null ? null : format(language, pattern, args);
     }
 
     /** Текст с именованными подстановками ({max}, {waitMinutes}) на языке пользователя. */

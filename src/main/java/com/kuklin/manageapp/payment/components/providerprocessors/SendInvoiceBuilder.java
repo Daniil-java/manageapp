@@ -1,6 +1,8 @@
 package com.kuklin.manageapp.payment.components.providerprocessors;
 
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
+import com.kuklin.manageapp.payment.components.texts.PaymentText;
+import com.kuklin.manageapp.payment.components.texts.PaymentTextResolver;
 import com.kuklin.manageapp.payment.entities.Payment;
 import com.kuklin.manageapp.payment.entities.PricingPlan;
 import com.kuklin.manageapp.payment.models.common.Currency;
@@ -21,6 +23,8 @@ public class SendInvoiceBuilder {
     // Библиотека не допускает null/пустую строку, поэтому кладём фиктивный токен.
     private final static String TOKEN_DUMMY = "xtr_dummy";
 
+    private final PaymentTextResolver textResolver;
+
     public SendInvoice build(Payment.Provider provider,
                              Payment payment,
                              PricingPlan plan,
@@ -37,14 +41,14 @@ public class SendInvoiceBuilder {
 
         return TelegramBot.buildInvoiceOrNull(
                 chatId,
-                plan.getTitle(),
-                plan.getDescription(),
+                textResolver.getPlanTitle(plan, payment.getAppUserId()),
+                textResolver.getPlanInvoiceDescription(plan, payment.getAppUserId()),
                 payment.getTelegramInvoicePayload(),
                 providerToken,
                 price,
                 plan.getCurrency(),
                 provider,
-                "Оплата"
+                textResolver.getText(plan.getBotIdentifier(), PaymentText.INVOICE_PRICE_LABEL, payment.getAppUserId())
         );
     }
 }

@@ -5,6 +5,7 @@ import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieMenuButtons;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
+import com.kuklin.manageapp.bots.caloriebot.texts.PlanTexts;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
@@ -36,6 +37,7 @@ public class PaymentPlanListCalorieUpdateHandler implements CalorieBotUpdateHand
     private final CalorieTexts texts;
     private final CalorieMenuButtons menuButtons;
     private final TelegramUserService telegramUserService;
+    private final PlanTexts planTexts;
 
     private static final String IMAGE_PATH =
             "static/images/caloriescreens/price/tarif.png";
@@ -113,13 +115,13 @@ public class PaymentPlanListCalorieUpdateHandler implements CalorieBotUpdateHand
 
     // Формирует inline-клавиатуру с тарифами:
     // каждая кнопка содержит название плана и callback с его id.
-    // Названия тарифов — из БД (pricing_plans.title), они пока на одном языке.
+    // Названия тарифов — PlanTexts: словарь plans_*, нет ключа — pricing_plans.title.
     private InlineKeyboardMarkup getKeyboardPlan(List<PricingPlan> planList, AppLanguage language) {
         TelegramKeyboard.TelegramKeyboardBuilder builder = TelegramKeyboard.builder();
 
         for (PricingPlan plan : planList) {
             builder.row(TelegramKeyboard.button(
-                    plan.getTitle(),
+                    planTexts.getTitle(plan, language),
                     nextHandler.getHandlerListName() + TelegramBot.DEFAULT_DELIMETER + plan.getId()
             ));
         }

@@ -5,6 +5,8 @@ import com.ibm.icu.text.MessagePattern;
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.BotFeature;
+import com.kuklin.manageapp.payment.components.texts.PaymentText;
+import com.kuklin.manageapp.payment.entities.Payment;
 import com.kuklin.manageapp.payment.entities.UserSubscription;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.editbuttons.ProfileEditAction;
 import com.kuklin.manageapp.bots.caloriebot.texts.PdfTexts;
@@ -157,10 +159,25 @@ public class TextBundlesConsistencyTest {
             keys.add(feature.getTextKey());
         }
         for (UserSubscription.Status status : UserSubscription.Status.values()) {
-            keys.add("subscription.status." + status.name());
+            keys.add(BotTextKeys.buildSubscriptionStatusKey(status));
         }
 
         assertThat(keys).as("feature / subscription texts missing in bot_ru").allMatch(bot::containsKey);
+    }
+
+    /** Тексты общего модуля оплаты (PaymentModuleTexts) — ключи из имён PaymentText и Payment.Provider. */
+    @Test
+    void everyPaymentTextAndProviderHasText() throws IOException {
+        Properties bot = load("i18n/calorie/bot", AppLanguage.RU);
+        List<String> keys = new ArrayList<>();
+        for (PaymentText text : PaymentText.values()) {
+            keys.add(BotTextKeys.buildPaymentTextKey(text));
+        }
+        for (Payment.Provider provider : Payment.Provider.values()) {
+            keys.add(BotTextKeys.buildPaymentProviderKey(provider));
+        }
+
+        assertThat(keys).as("payment module texts missing in bot_ru").allMatch(bot::containsKey);
     }
 
     /** {{pdf.…}} в HTML-шаблонах отчётов подставляется по ключу — опечатка оставила бы в PDF фигурные скобки. */

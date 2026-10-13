@@ -1,5 +1,11 @@
 package com.kuklin.manageapp.bots.caloriebot.components.services;
 
+import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
+import com.kuklin.manageapp.bots.caloriebot.i18n.I18nProperties;
+import com.kuklin.manageapp.bots.caloriebot.texts.PaymentModuleTexts;
+import com.kuklin.manageapp.bots.caloriebot.texts.PlanTexts;
+import com.kuklin.manageapp.bots.caloriebot.texts.SubscriptionTexts;
 import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.PaymentResponse;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
@@ -47,8 +53,10 @@ class CaloriePaymentServiceTest {
         bot = mock(CalorieTelegramBot.class);
         telegramUserService = mock(TelegramUserService.class);
         identityService = mock(UserAuthIdentityService.class);
+        CalorieTexts texts = new CalorieTexts(new I18nProperties(), mock(UserSettingsService.class));
         service = new CaloriePaymentService(mock(CommonPaymentFacade.class), paymentService, pricingPlanService,
-                bot, mock(UserSubscriptionService.class), telegramUserService, identityService);
+                bot, mock(UserSubscriptionService.class), telegramUserService, identityService, new PlanTexts(texts),
+                new PaymentModuleTexts(texts, new PlanTexts(texts), mock(SubscriptionTexts.class)), texts);
         when(telegramUserService.findByAppUserIdAndBotIdentifier(USER_ID, BotIdentifier.CALORIE_BOT))
                 .thenReturn(Optional.empty());
     }
@@ -70,7 +78,7 @@ class CaloriePaymentServiceTest {
     void accountWithoutTelegramCannotPay() {
         when(identityService.hasTelegram(USER_ID)).thenReturn(false);
 
-        assertThatThrownBy(() -> service.createPaymentLink(USER_ID, PLAN_ID))
+        assertThatThrownBy(() -> service.createPaymentLink(USER_ID, PLAN_ID, AppLanguage.RU))
                 .isInstanceOfSatisfying(ErrorResponseException.class,
                         e -> assertThat(e.getErrorStatus()).isEqualTo(ErrorStatus.PAYMENT_TELEGRAM_REQUIRED));
         verifyNoInteractions(paymentService);
@@ -87,7 +95,7 @@ class CaloriePaymentServiceTest {
                 .thenReturn(payment(150));
         when(bot.execute(any(CreateInvoiceLink.class))).thenReturn("https://t.me/$abc");
 
-        assertThat(service.createPaymentLink(USER_ID, PLAN_ID).getPaymentUrl()).isEqualTo("https://t.me/$abc");
+        assertThat(service.createPaymentLink(USER_ID, PLAN_ID, AppLanguage.RU).getPaymentUrl()).isEqualTo("https://t.me/$abc");
     }
 
     @Test
@@ -96,14 +104,14 @@ class CaloriePaymentServiceTest {
         when(pricingPlanService.getPricingPlanById(PLAN_ID))
                 .thenReturn(plan(30, 150).setBotIdentifier(BotIdentifier.ASSISTANT_BOT));
 
-        assertThatThrownBy(() -> service.createPaymentLink(USER_ID, PLAN_ID))
+        assertThatThrownBy(() -> service.createPaymentLink(USER_ID, PLAN_ID, AppLanguage.RU))
                 .isInstanceOfSatisfying(ErrorResponseException.class,
                         e -> assertThat(e.getErrorStatus()).isEqualTo(ErrorStatus.PRICING_PLAN_NOT_AVAILABLE));
 
         when(pricingPlanService.getPricingPlanById(PLAN_ID))
                 .thenReturn(plan(30, 150).setPlanStatus(PricingPlan.PlanStatus.DISABLED));
 
-        assertThatThrownBy(() -> service.createPaymentLink(USER_ID, PLAN_ID))
+        assertThatThrownBy(() -> service.createPaymentLink(USER_ID, PLAN_ID, AppLanguage.RU))
                 .isInstanceOfSatisfying(ErrorResponseException.class,
                         e -> assertThat(e.getErrorStatus()).isEqualTo(ErrorStatus.PRICING_PLAN_NOT_AVAILABLE));
         verifyNoInteractions(paymentService);
@@ -118,7 +126,7 @@ class CaloriePaymentServiceTest {
                 .thenReturn(payment(350));
         when(bot.execute(any(CreateInvoiceLink.class))).thenReturn("https://t.me/$abc");
 
-        PaymentResponse response = service.createPaymentLink(USER_ID, PLAN_ID);
+        PaymentResponse response = service.createPaymentLink(USER_ID, PLAN_ID, AppLanguage.RU);
 
         ArgumentCaptor<CreateInvoiceLink> captor = ArgumentCaptor.forClass(CreateInvoiceLink.class);
         verify(bot).execute(captor.capture());

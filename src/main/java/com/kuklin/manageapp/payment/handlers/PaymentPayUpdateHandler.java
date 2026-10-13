@@ -4,6 +4,8 @@ import com.kuklin.manageapp.common.components.TelegramBotRegistry;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.Command;
+import com.kuklin.manageapp.payment.components.texts.PaymentText;
+import com.kuklin.manageapp.payment.components.texts.PaymentTextResolver;
 import com.kuklin.manageapp.payment.components.paymentfacades.CommonPaymentFacade;
 import com.kuklin.manageapp.payment.entities.Payment;
 import com.kuklin.manageapp.payment.models.PlanPaymentResult;
@@ -34,23 +36,7 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 public class PaymentPayUpdateHandler implements PaymentUpdateHandler {
     private final TelegramBotRegistry telegramBotRegistry;
     private final CommonPaymentFacade commonPaymentFacade;
-    private static final String PLAN_ERROR_MSG = """
-                        Не получилось найти тарифный план!
-            """;
-    private static final String DATA_EXTRACT_ERROR_MSG = """
-                        Бот не смог извлечь данные о платежном формате!
-            """;
-    private static final String TELEGRAM_ERROR_MSG = """
-                        Ошибка! Не получилось отправить форму оплаты! Попробуйте заново
-            """;
-
-    private static final String SUBSCRIPTION_PAY_TITLE = "💳 Оформить подписку";
-    private static final String SUBSCRIPTION_MSG_TEXT = """
-        ⭐ *Подписка на Telegram Stars*
-        
-        Для активации автопродляемой подписки нажмите на кнопку ниже. 
-        Оплата произойдет через ваш баланс звезд.
-        """;
+    private final PaymentTextResolver textResolver;
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
@@ -61,15 +47,13 @@ public class PaymentPayUpdateHandler implements PaymentUpdateHandler {
         //Извлечение данных о выбранном тарифном плане
         Payment.Provider provider = extractProvider(callbackQuery.getData());
         if (provider == null) {
-            telegramBotRegistry.get(telegramUser.getBotIdentifier())
-                    .sendReturnedMessage(chatId, DATA_EXTRACT_ERROR_MSG);
+            telegramBot.sendReturnedMessage(chatId, getText(telegramUser, PaymentText.PAYMENT_DATA_ERROR));
             return;
         }
 
         Long pricingPlanId = extractPricingPlanId(callbackQuery.getData());
         if (pricingPlanId == null) {
-            telegramBotRegistry.get(telegramUser.getBotIdentifier())
-                    .sendReturnedMessage(chatId, PLAN_ERROR_MSG);
+            telegramBot.sendReturnedMessage(chatId, getText(telegramUser, PaymentText.PLAN_NOT_FOUND));
             return;
         }
 
@@ -90,8 +74,8 @@ public class PaymentPayUpdateHandler implements PaymentUpdateHandler {
                     String url = telegramBot.execute(result.createInvoiceLink());
                     telegramBot.sendReturnedMessage(
                             chatId,
-                            SUBSCRIPTION_MSG_TEXT,
-                            createSubscriptionKeyboard(url),
+                            getText(telegramUser, PaymentText.TELEGRAM_SUBSCRIPTION_TEXT),
+                            createSubscriptionKeyboard(url, getText(telegramUser, PaymentText.TELEGRAM_SUBSCRIPTION_BUTTON)),
                             null
                     );
                 }
@@ -105,19 +89,23 @@ public class PaymentPayUpdateHandler implements PaymentUpdateHandler {
             );
 
         } catch (PricingPlanNotFoundException e) {
-            telegramBot.sendReturnedMessage(chatId, PLAN_ERROR_MSG);
+            telegramBot.sendReturnedMessage(chatId, getText(telegramUser, PaymentText.PLAN_NOT_FOUND));
         } catch (TelegramApiException e) {
             log.error("Telegram execute error! ", e);
-            telegramBot.sendReturnedMessage(chatId, TELEGRAM_ERROR_MSG);
+            telegramBot.sendReturnedMessage(chatId, getText(telegramUser, PaymentText.INVOICE_SEND_ERROR));
         } catch (PaymentNotFoundException e) {
             log.error("Payment not found error!");
         }
     }
 
-    private InlineKeyboardMarkup createSubscriptionKeyboard(String url) {
+    private String getText(TelegramUser telegramUser, PaymentText text) {
+        return textResolver.getText(telegramUser.getBotIdentifier(), text, telegramUser.getAppUserId());
+    }
+
+    private InlineKeyboardMarkup createSubscriptionKeyboard(String url, String buttonText) {
         org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton payButton =
                 new org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton();
-        payButton.setText(SUBSCRIPTION_PAY_TITLE);
+        payButton.setText(buttonText);
         payButton.setUrl(url);
 
         org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup markup =

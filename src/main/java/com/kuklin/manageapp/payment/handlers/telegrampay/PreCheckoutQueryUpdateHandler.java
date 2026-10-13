@@ -1,5 +1,7 @@
 package com.kuklin.manageapp.payment.handlers.telegrampay;
 
+import com.kuklin.manageapp.payment.components.texts.PaymentText;
+import com.kuklin.manageapp.payment.components.texts.PaymentTextResolver;
 import com.kuklin.manageapp.payment.handlers.PaymentUpdateHandler;
 import com.kuklin.manageapp.common.components.TelegramBotRegistry;
 import com.kuklin.manageapp.common.entities.TelegramUser;
@@ -25,6 +27,7 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 public class PreCheckoutQueryUpdateHandler implements PaymentUpdateHandler {
     private final TelegramBotRegistry telegramBotRegistry;
     private final CommonPaymentFacade commonPaymentFacade;
+    private final PaymentTextResolver textResolver;
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
@@ -37,7 +40,8 @@ public class PreCheckoutQueryUpdateHandler implements PaymentUpdateHandler {
         if (!commonPaymentFacade.checkPreCheckoutQuery(query, telegramUser.getAppUserId())) {
             //Ответ о неудаче
             answer.setOk(false);
-            answer.setErrorMessage("Ошибка данных платежа");
+            answer.setErrorMessage(textResolver.getText(telegramUser.getBotIdentifier(),
+                    PaymentText.PRE_CHECKOUT_ERROR, telegramUser.getAppUserId()));
             answer.setPreCheckoutQueryId(query.getId());
             try {
                 telegramBot.execute(answer);

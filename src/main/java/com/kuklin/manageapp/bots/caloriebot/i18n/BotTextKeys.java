@@ -1,11 +1,30 @@
 package com.kuklin.manageapp.bots.caloriebot.i18n;
 
+import com.kuklin.manageapp.payment.components.texts.PaymentText;
+import com.kuklin.manageapp.payment.entities.Payment;
+import com.kuklin.manageapp.payment.entities.UserSubscription;
+
 /**
  * Ключи текстов бота — словари i18n/calorie/bot_<code>.properties.
  * В коде передаём только эти константы, не строки: опечатку в ключе поймает TextBundlesConsistencyTest.
  */
 public final class BotTextKeys {
     private BotTextKeys() {
+    }
+
+    /** Подпись статуса подписки: subscription.status.ACTIVE… (подписи в самом enum модуля оплаты русские). */
+    public static String buildSubscriptionStatusKey(UserSubscription.Status status) {
+        return "subscription.status." + status.name();
+    }
+
+    /** Сообщение модуля оплаты: payment.text.PRE_CHECKOUT_ERROR… (PaymentModuleTexts). */
+    public static String buildPaymentTextKey(PaymentText text) {
+        return "payment.text." + text.name();
+    }
+
+    /** Способ оплаты на кнопке выбора: payment.provider.YOOKASSA… */
+    public static String buildPaymentProviderKey(Payment.Provider provider) {
+        return "payment.provider." + provider.name();
     }
 
     // ── /lang (только для разработчиков) ───────────────────────────
@@ -30,6 +49,7 @@ public final class BotTextKeys {
     public static final String COMMON_BUTTON_CLOSE = "common.button.close";
     public static final String COMMON_BUTTON_NEXT = "common.button.next";
     public static final String COMMON_BUTTON_INSTRUCTION = "common.button.instruction";
+    public static final String COMMON_ALREADY_IN_PROCESS = "common.already-in-process";
 
     // ── Онбординг: /start, знакомство, FAQ, /menu, /keyboard, /support ──
     public static final String START_WELCOME = "start.welcome";
@@ -283,6 +303,7 @@ public final class BotTextKeys {
     public static final String PAYMENT_PLANS = "payment.plans";
     public static final String PAYMENT_BUTTON_STATUS = "payment.button.status";
     public static final String PAYMENT_IMAGE_ERROR = "payment.image-error";
+    public static final String PAYMENT_SUBSCRIPTION_STARTED = "payment.subscription-started";
     public static final String SUBSCRIPTION_NONE = "subscription.none";
     public static final String SUBSCRIPTION_TITLE = "subscription.title";
     public static final String SUBSCRIPTION_ENTRY = "subscription.entry";

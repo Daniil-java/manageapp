@@ -1,5 +1,8 @@
 package com.kuklin.manageapp.bots.caloriebot.components.services;
 
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
+import com.kuklin.manageapp.bots.caloriebot.i18n.I18nProperties;
+import com.kuklin.manageapp.bots.caloriebot.texts.PlanTexts;
 import com.kuklin.manageapp.bots.caloriebot.configurations.AiRateLimitProperties;
 import com.kuklin.manageapp.bots.caloriebot.entities.PlanFeature;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.BotFeature;
@@ -33,7 +36,8 @@ class CalorieLandingServiceTest {
         AiRateLimitProperties aiLimits = new AiRateLimitProperties();
         aiLimits.setPerDay(100);
         aiLimits.setPerDayPremium(300);
-        service = new CalorieLandingService(pricingPlanService, planFeatureService, aiLimits);
+        service = new CalorieLandingService(pricingPlanService, planFeatureService, aiLimits,
+                new PlanTexts(new CalorieTexts(new I18nProperties(), mock(UserSettingsService.class))));
     }
 
     private static PricingPlan plan(String code, int days, int price, Currency currency) {

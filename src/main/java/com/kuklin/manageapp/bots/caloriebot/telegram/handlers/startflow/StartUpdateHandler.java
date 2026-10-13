@@ -13,7 +13,7 @@ import com.kuklin.manageapp.bots.caloriebot.telegram.KeyboardCalorieUpdateHandle
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.CalculatorProfileUpdateHandler;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.CalorieNutritionProfileUpdateHandler;
-import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.paymentpart.SubscriptionStatusCalorieUpdateHandler;
+import com.kuklin.manageapp.bots.caloriebot.texts.SubscriptionTexts;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
@@ -32,7 +32,7 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
 
     private final UserSubscriptionService userSubscriptionService;
     private final CalorieTelegramBot calorieTelegramBot;
-    private final SubscriptionStatusCalorieUpdateHandler subscriptionStatusCalorieUpdateHandler;
+    private final SubscriptionTexts subscriptionTexts;
     private final UserNutritionProfileService userNutritionProfileService;
     private final CalorieNutritionProfileUpdateHandler calorieNutritionProfileUpdateHandler;
     private final UtmService utmService;
@@ -63,7 +63,7 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
                         telegramUser.getAppUserId(), BotIdentifier.CALORIE_BOT);
         //Если null - значит пробный период уже был у пользователя
         if (userSubscription != null) {
-            String text = subscriptionStatusCalorieUpdateHandler.getSubscriptionStatusMessage(
+            String text = subscriptionTexts.buildSubscriptionEntryText(
                     telegramUser.getAppUserId(),
                     userSubscription
             );

@@ -1,9 +1,11 @@
 package com.kuklin.manageapp.bots.caloriebot.components.services;
 
 import com.kuklin.manageapp.bots.caloriebot.configurations.AiRateLimitProperties;
+import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import com.kuklin.manageapp.bots.caloriebot.entities.PlanFeature;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.BotFeature;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.FeatureLimitPeriod;
+import com.kuklin.manageapp.bots.caloriebot.texts.PlanTexts;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import com.kuklin.manageapp.payment.entities.PricingPlan;
 import com.kuklin.manageapp.payment.models.common.Currency;
@@ -34,6 +36,8 @@ import static com.kuklin.manageapp.bots.caloriebot.components.services.CalorieAc
 @RequiredArgsConstructor
 public class CalorieLandingService {
     private static final BotIdentifier BOT = BotIdentifier.CALORIE_BOT;
+    // Лендинг пока только на русском (задача «Лендинг, privacy, terms на нескольких языках»)
+    private static final AppLanguage LANDING_LANGUAGE = AppLanguage.RU;
     private static final String NOT_AVAILABLE = "—";
     private static final String UNLIMITED = "Без лимита";
     /** Эмодзи в начале пункта: символы, модификаторы цвета кожи, вариационный селектор, ZWJ, keycap. */
@@ -44,6 +48,7 @@ public class CalorieLandingService {
     private final PricingPlanService pricingPlanService;
     private final PlanFeatureService planFeatureService;
     private final AiRateLimitProperties aiRateLimitProperties;
+    private final PlanTexts planTexts;
 
     /** Код UTM-ссылки (/calorie/utm-form) для кнопок «Открыть в Telegram». Пусто — ссылка без метки. */
     @Value("${calorie.landing.start-code:}")
@@ -132,8 +137,8 @@ public class CalorieLandingService {
 
         return plans.stream()
                 .map(plan -> new PlanCard(
-                        plan.getTitle(),
-                        toPoints(plan.getDescription()),
+                        planTexts.getTitle(plan, LANDING_LANGUAGE),
+                        toPoints(planTexts.getDescription(plan, LANDING_LANGUAGE)),
                         formatPrice(plan.getPriceMinor(), plan.getCurrency()),
                         describeDuration(plan.getDurationDays()),
                         savingPercent(plan, shortestByCurrency.get(plan.getCurrency()))))
