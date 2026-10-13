@@ -306,6 +306,24 @@ public class UserNutritionProfileService {
      * и как подсказка «по формуле» в ручном режиме.
      */
     private static int calcFormulaCalories(UserNutritionProfile profile) {
+        // --- Goal (дефицит / профицит) ---
+        return (int) Math.round(calcMaintenanceCalories(profile) * profile.getGoal().getCoef());
+    }
+
+    /**
+     * Расход энергии по формуле (Mifflin–St Jeor × активность), без поправки на цель,
+     * или null, если в профиле не хватает данных. В PDF-отчёте сравнивается с реальным расходом.
+     */
+    public static Integer calcFormulaMaintenanceCaloriesOrNull(UserNutritionProfile profile) {
+        if (profile == null || profile.getSex() == null || profile.getAgeYears() == null
+                || profile.getHeightCm() == null || profile.getCurrentWeightKg() == null
+                || profile.getActivityLevel() == null) {
+            return null;
+        }
+        return (int) Math.round(calcMaintenanceCalories(profile));
+    }
+
+    private static double calcMaintenanceCalories(UserNutritionProfile profile) {
         double weight = profile.getCurrentWeightKg().doubleValue();
 
         // --- BMR (Mifflin–St Jeor) ---
@@ -320,11 +338,8 @@ public class UserNutritionProfileService {
             bmrCalories -= 161;
         }
 
-        // --- Activity & goal (дефицит / профицит) ---
-        bmrCalories *= profile.getActivityLevel().getCoef();
-        bmrCalories *= profile.getGoal().getCoef();
-
-        return (int) Math.round(bmrCalories);
+        // --- Activity ---
+        return bmrCalories * profile.getActivityLevel().getCoef();
     }
 
     /** Норма воды по формуле (вес × мл/кг для активности) или null, если нет веса или активности. */

@@ -35,7 +35,7 @@ import static org.mockito.Mockito.when;
 
 /**
  * {@link ReportService#getAiInsightReport} — генерация ИИ-инсайтов для страницы Insights;
- * отчёты бота (день, недельный и месячный PDF) — промпт на языке пользователя.
+ * дневной отчёт бота — промпт на языке пользователя. PDF-отчёты — {@link ReportServicePdfTest}.
  */
 class ReportServiceAiInsightTest {
 
@@ -81,7 +81,7 @@ class ReportServiceAiInsightTest {
         CalorieTexts texts = new CalorieTexts(new I18nProperties(), settingsService);
 
         service = new ReportService(dishService, profileService, entryService, settingsService,
-                weightService, ai, components, aiInputLimits, texts);
+                weightService, mock(WaterEntryService.class), ai, components, aiInputLimits, texts);
     }
 
     @Test
@@ -189,28 +189,6 @@ class ReportServiceAiInsightTest {
         assertThat(textPrompts()).singleElement().asString()
                 .contains("ЯЗЫК ОТВЕТА: English.")
                 .contains("Язык ответа: English — от первого до последнего слова");
-    }
-
-    @Test
-    void weeklyPdfAsksAiInUserLanguage() {
-        givenDishes(dish("2026-10-02T02:00:00Z"));
-        when(ai.fetchResponse(anyString(), anyString(), any(), anyString(), any())).thenReturn("ok");
-
-        service.buildWeeklyDeepPdfReportOrNull(FROM, TO, USER_ID);
-
-        assertThat(textPrompts()).singleElement().asString().contains("ЯЗЫК ОТВЕТА: English.");
-    }
-
-    @Test
-    void monthlyPdfAsksAiInUserLanguage() {
-        givenDishes(dish("2026-10-02T02:00:00Z"));
-        when(ai.fetchResponse(anyString(), anyString(), any(), anyString(), any())).thenReturn("{}");
-
-        service.buildPdfReportOrNull(FROM, TO, USER_ID);
-
-        // Прогноз веса и разбор привычек — оба на языке пользователя
-        assertThat(textPrompts()).hasSize(2)
-                .allSatisfy(prompt -> assertThat(prompt).contains(": English."));
     }
 
     // ── Helpers ────────────────────────────────────────────

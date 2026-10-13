@@ -1,6 +1,5 @@
 package com.kuklin.manageapp.bots.caloriebot.components.services;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -14,61 +13,95 @@ import com.kuklin.manageapp.bots.caloriebot.configurations.AiInputLimitsProperti
 import com.kuklin.manageapp.bots.caloriebot.models.AiInsightType;
 import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
+import com.kuklin.manageapp.bots.caloriebot.i18n.PdfTextKeys;
+import com.kuklin.manageapp.bots.caloriebot.models.airesponse.ReportAiPayloadRecord;
+import com.kuklin.manageapp.bots.caloriebot.models.airesponse.ReportAiResponse;
+import com.kuklin.manageapp.bots.caloriebot.models.report.ReportKind;
+import com.kuklin.manageapp.bots.caloriebot.models.report.ReportSource;
+import com.kuklin.manageapp.bots.caloriebot.models.report.ReportStats;
 import com.kuklin.manageapp.bots.caloriebot.texts.PdfTexts;
-import com.kuklin.manageapp.bots.caloriebot.models.airesponse.AiPatternAnalysisResponse;
 import com.kuklin.manageapp.bots.caloriebot.models.airesponse.InsightPayloadRecord;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
-import com.kuklin.manageapp.bots.caloriebot.models.airesponse.NutritionAnalysisPayloadRecord;
-import com.kuklin.manageapp.bots.caloriebot.models.report.ReportContext;
-import com.kuklin.manageapp.bots.caloriebot.models.report.ReportResponseRecord;
-import com.kuklin.manageapp.bots.caloriebot.utils.ReportUtils;
+import com.kuklin.manageapp.bots.caloriebot.utils.ReportHtml;
+import com.kuklin.manageapp.bots.caloriebot.utils.ReportStatsCalculator;
 import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.openhtmltopdf.extend.FSStream;
+import com.openhtmltopdf.outputdevice.helper.BaseRendererBuilder;
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
+import com.openhtmltopdf.svgsupport.BatikSVGDrawer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
-import tech.tablesaw.api.Table;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
-// Статические импорты для улучшения читаемости (утилиты рендеринга и ИИ-промпты)
+// Статические импорты для улучшения читаемости (ИИ-промпты)
 import static com.kuklin.manageapp.bots.caloriebot.utils.ReportCalorieBotPrompts.*;
-import static com.kuklin.manageapp.bots.caloriebot.utils.ReportUtils.escapeHtml;
-import static com.kuklin.manageapp.bots.caloriebot.utils.ReportUtils.tableToHtml;
 
 /**
  * Сервис для формирования аналитической отчетности.
- * Объединяет данные из БД, глубокий анализ от ИИ и рендерит итоговый PDF-документ.
+ * Считает метрики по данным из БД, просит ИИ объяснить их и рендерит итоговый PDF-документ.
  */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class ReportService {
 
-    // --- Ресурсные константы для генерации документов ---
+    // --- Ресурсы для генерации PDF ---
     private static final String REPORT_TEMPLATE_PATH = "templates/report.html";
-    private static final String FONT_PATH = "/fonts/DejaVuSans.ttf";
-    private static final String FONT_FAMILY = "DejaVu Sans";
+    private static final String MASCOT_PATH = "static/calorie/landing/zefirka.svg";
     private static final String IMAGES_BASE_URL = "/static/images";
-    private static final String WEEKLY_REPORT_TEMPLATE_PATH = "templates/weeklyreport.html";
+    private static final String CLASSPATH_PROTOCOL = "classpath";
 
-    // --- Плейсхолдеры для замены данных в HTML-шаблоне ---
-    private static final String VAR_AI_TEXT = "{{PERIOD_AI_TEXT}}";
-    private static final String VAR_DAILY_TABLE = "{{DAILY_TABLE}}";
-    private static final String VAR_WEEKLY_TABLE = "{{WEEKLY_TABLE}}";
-    private static final String VAR_NUTRITION_ANALYSIS = "{{NUTRITION_ANALYSIS}}";
-    private static final String VAR_WEIGHT_TABLE = "{{WEIGHT_TABLE}}";
-    private static final String VAR_CATEGORY_CHART = "{{CATEGORY_CHART}}";
-    private static final String VAR_TIMING_CHART = "{{TIMING_CHART}}";
+    /**
+     * Шрифты PDF. Nunito — как в мини-приложении (для SVG-графиков он же подключён в шаблоне через @font-face).
+     * Noto Emoji (монохромные эмодзи: цветные рендерер не умеет) и DejaVu Sans (стрелки и символы,
+     * которых нет в Nunito) — запасные: подставляются для недостающих символов.
+     */
+    private static final List<ReportFont> FONTS = List.of(
+            new ReportFont("/fonts/Nunito-Regular.ttf", "Nunito", 400, false),
+            new ReportFont("/fonts/Nunito-Bold.ttf", "Nunito", 700, false),
+            new ReportFont("/fonts/Nunito-ExtraBold.ttf", "Nunito", 800, false),
+            new ReportFont("/fonts/Nunito-Black.ttf", "Nunito", 900, false),
+            new ReportFont("/fonts/NotoEmoji-Regular.ttf", "Noto Emoji", 400, true),
+            new ReportFont("/fonts/DejaVuSans.ttf", "DejaVu Sans", 400, true)
+    );
+
+    // --- Плейсхолдеры данных в HTML-шаблоне ---
+    private static final String VAR_TITLE = "{{TITLE}}";
+    private static final String VAR_MASCOT = "{{MASCOT}}";
+    private static final String VAR_FOOTER_TEXT = "{{FOOTER_TEXT}}";
+    private static final String VAR_COVER = "{{COVER}}";
+    private static final String VAR_EMPTY = "{{EMPTY}}";
+    private static final String VAR_CALENDAR = "{{CALENDAR}}";
+    private static final String VAR_CALORIES = "{{CALORIES}}";
+    private static final String VAR_WEIGHT = "{{WEIGHT}}";
+    private static final String VAR_ENERGY = "{{ENERGY}}";
+    private static final String VAR_MACROS = "{{MACROS}}";
+    private static final String VAR_RHYTHM = "{{RHYTHM}}";
+    private static final String VAR_TOP = "{{TOP}}";
+    private static final String VAR_PATTERNS = "{{PATTERNS}}";
+    private static final String VAR_SWAPS = "{{SWAPS}}";
+    private static final String VAR_CATEGORIES = "{{CATEGORIES}}";
+    private static final String VAR_WATER = "{{WATER}}";
+    private static final String VAR_DAILY = "{{DAILY}}";
+    private static final String VAR_DISHES = "{{DISHES}}";
+    private static final String VAR_QUALITY = "{{QUALITY}}";
+
+    private static final String EMOJI_VARIATION = "️";
 
     // Минимум разных дней с записями еды, чтобы инсайт имел смысл
     private static final int INSIGHT_MIN_DAYS_WITH_DISHES = 3;
@@ -78,6 +111,7 @@ public class ReportService {
     private final UserNutritionProfileEntryService userNutritionProfileEntryService;
     private final UserSettingsService userSettingsService;
     private final WeightEntryService weightEntryService;
+    private final WaterEntryService waterEntryService;
     private final OpenAiProviderProcessor openAiProviderProcessor;
     private final TelegramCaloriesBotKeyComponents components;
     private final AiInputLimitsProperties aiInputLimits;
@@ -87,60 +121,49 @@ public class ReportService {
             .registerModule(new JavaTimeModule())
             .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
-    /**
-     * Все данные пользователя за период, загруженные одним заходом.
-     * Передаётся во все шаги построения отчёта, чтобы не ходить в БД повторно.
-     * texts — тексты PDF и язык ответа ИИ: язык пользователя из настроек.
-     */
-    private record ReportData(
-            Long userId,
-            Instant from,
-            Instant to,
-            List<Dish> dishes,
-            List<UserNutritionProfileEntry> targets,
-            List<WeightEntry> weights,
-            UserNutritionProfile profile,
-            UserSettings settings,
-            PdfTexts texts
-    ) {
-        ZoneId zoneId() {
-            return settings.getZoneId();
+    /** Ресурс приложения по адресу classpath:/путь из HTML-шаблона. */
+    private record ClasspathStream(String url) implements FSStream {
+        @Override
+        public InputStream getStream() {
+            return ReportService.class.getResourceAsStream(url.substring(CLASSPATH_PROTOCOL.length() + 1));
         }
+
+        @Override
+        public Reader getReader() {
+            InputStream stream = getStream();
+            return stream != null ? new InputStreamReader(stream, StandardCharsets.UTF_8) : null;
+        }
+    }
+
+    /** Шрифт PDF; fallback — подставляется только для символов, которых нет в основном шрифте. */
+    private record ReportFont(String path, String family, int weight, boolean fallback) {
+    }
+
+    /**
+     * Данные пользователя за период для ИИ-инсайтов, загруженные одним заходом.
+     */
+    private record InsightData(List<Dish> dishes,
+                               List<WeightEntry> weights,
+                               UserNutritionProfile profile,
+                               ZoneId zoneId) {
     }
 
     // --- ПУБЛИЧНОЕ API ---
 
     /**
-     * Формирует глубокий недельный PDF-отчет с детализацией по каждому блюду.
+     * PDF-отчёт за последние 7 дней: обложка с главными цифрами, графики, разбор ИИ и блюда по дням.
      */
     @RequiresFeature(value = BotFeature.REPORT_PDF_WEEK, botIdentifier = BotIdentifier.CALORIE_BOT)
-    public AccessResult<byte[]> buildWeeklyDeepPdfReportOrNull(Instant from, Instant to, Long userId) {
-        try {
-            String template = loadTemplateOrNull(WEEKLY_REPORT_TEMPLATE_PATH);
-            if (template == null) return AccessResult.success(null);
+    public AccessResult<byte[]> buildWeeklyPdfReportOrNull(Long userId) {
+        return AccessResult.success(buildPdfReportOrNull(ReportKind.WEEK, Instant.now(), userId));
+    }
 
-            ReportData data = loadReportData(userId, from, to);
-            String aiAnalysis = getWeeklyDeepReport(data);
-
-            Table dishesTable = ReportUtils.buildDetailedDishTable(data.dishes(), data.targets(), data.zoneId(), data.texts());
-            String dishesTableHtml = ReportUtils.tableToHtml(dishesTable);
-
-            // Генерируем оба графика для глубокого отчета
-            String categoryChartHtml = ReportUtils.buildCategoryBarChartHtml(data.dishes(), data.texts());
-            String timingChartHtml = ReportUtils.buildHourlyCaloriesChartHtml(data.dishes(), data.zoneId(), data.texts());
-
-            // Сначала тексты шаблона, потом данные: {{pdf.…}} в ответе ИИ подставляться не должны
-            String html = data.texts().localizeTemplate(template)
-                    .replace("{{AI_ANALYSIS}}", escapeHtml(aiAnalysis))
-                    .replace("{{DISHES_TABLE}}", dishesTableHtml)
-                    .replace("{{CATEGORY_CHART}}", categoryChartHtml)
-                    .replace("{{TIMING_CHART}}", timingChartHtml);
-
-            return AccessResult.success(renderPdfOrNull(html));
-        } catch (Exception e) {
-            log.error("Failed to build Weekly Deep PDF for user {}", userId, e);
-            return AccessResult.success(null);
-        }
+    /**
+     * PDF-отчёт за последние 30 дней: то же, что недельный, плюс календарь соблюдения нормы.
+     */
+    @RequiresFeature(value = BotFeature.REPORT_PDF_MONTH, botIdentifier = BotIdentifier.CALORIE_BOT)
+    public AccessResult<byte[]> buildMonthlyPdfReportOrNull(Long userId) {
+        return AccessResult.success(buildPdfReportOrNull(ReportKind.MONTH, Instant.now(), userId));
     }
 
     /**
@@ -152,7 +175,7 @@ public class ReportService {
      */
     public AccessResult<String> getAiInsightReport(AiInsightType type, Instant from, Instant to, Long userId,
                                                    AppLanguage language) {
-        ReportData data = loadReportData(userId, from, to);
+        InsightData data = loadInsightData(userId, from, to);
 
         long daysWithDishes = data.dishes().stream()
                 .filter(d -> d.getCreated() != null)
@@ -193,15 +216,6 @@ public class ReportService {
     }
 
     /**
-     * Получает текстовый анализ за неделю от ИИ.
-     */
-    private String getWeeklyDeepReport(ReportData data) {
-        String prompt = AI_PERSONA + String.format(WEEK_AI_REQUEST,
-                data.dishes().toString(), data.profile().toString(), data.texts().language().getNativeName());
-        return fetchAiResponse(prompt, "WEEKLY DEEP REPORT");
-    }
-
-    /**
      * Формирует текстовый ИИ-анализ питания пользователя за текущие сутки.
      */
     @RequiresFeature(value = BotFeature.REPORT_DAY, botIdentifier = BotIdentifier.CALORIE_BOT)
@@ -214,147 +228,137 @@ public class ReportService {
         // Компоновка промпта: Личность ИИ + Инструкция + Данные профиля + Список блюд
         String prompt = AI_PERSONA + String.format(
                 AI_REQUEST_TODAY_ANALYSIS,
-                profile, Dish.toStringList(dishes), userTime.toString(), aiLanguageOf(userId)
+                profile, Dish.toStringList(dishes), userTime.toString(), calorieTexts.languageOf(userId).getNativeName()
         );
 
         return AccessResult.success(fetchAiResponse(prompt, "AI DAY REPORT"));
     }
 
+    // --- PDF-ОТЧЁТ ---
+
     /**
-     * Точка входа для генерации комплексного PDF отчета.
-     * Координирует сбор данных, работу ИИ и финальный рендеринг.
+     * Собирает PDF за последние kind.getDays() дней по таймзоне пользователя, включая сегодняшний.
+     * ИИ не ответил — отчёт всё равно собирается, без блоков ИИ. null — не получилось отрендерить.
      */
-    @RequiresFeature(value = BotFeature.REPORT_PDF_MONTH, botIdentifier = BotIdentifier.CALORIE_BOT)
-    public AccessResult<byte[]> buildPdfReportOrNull(Instant from, Instant to, Long userId) {
+    byte[] buildPdfReportOrNull(ReportKind kind, Instant now, Long userId) {
         try {
-            // 1. Сбор контекста (все данные и ответы ИИ в одном объекте)
-            ReportData data = loadReportData(userId, from, to);
-            ReportContext context = gatherReportContext(data);
-            // 2. Заполнение HTML-шаблона текстами на языке пользователя и данными
-            String filledHtml = fillTemplateOrNull(context, data.texts());
-            if (filledHtml == null) return AccessResult.success(null);
-            // 3. Конвертация HTML в PDF байты
-            return AccessResult.success(renderPdfOrNull(filledHtml));
+            ReportSource source = loadReportSource(kind, now, userId);
+            ReportStats stats = ReportStatsCalculator.buildStats(source);
+            PdfTexts texts = new PdfTexts(calorieTexts, calorieTexts.languageOf(userId));
+            ReportAiResponse ai = stats.hasFood() ? fetchReportAiOrEmpty(stats, source, texts) : ReportAiResponse.empty();
+
+            String html = fillTemplateOrNull(source, stats, ai, texts, now);
+            return html != null ? renderPdfOrNull(html) : null;
         } catch (Exception e) {
-            log.error("Failed to build PDF report for user {}", userId, e);
-            return AccessResult.success(null);
+            log.error("Failed to build {} PDF report for user {}", kind, userId, e);
+            return null;
         }
     }
 
-    // --- ЛОГИКА СБОРА ДАННЫХ (GATHERING) ---
+    private ReportSource loadReportSource(ReportKind kind, Instant now, Long userId) {
+        ZoneId zone = userSettingsService.getOrCreate(userId).getZoneId();
+        LocalDate endDate = LocalDate.ofInstant(now, zone);
+        LocalDate startDate = endDate.minusDays(kind.getDays() - 1);
+        Instant from = startDate.atStartOfDay(zone).toInstant();
+        Instant previousFrom = startDate.minusDays(kind.getDays()).atStartOfDay(zone).toInstant();
 
-    /**
-     * Загружает из БД все данные пользователя за период — один раз на весь отчёт.
-     */
-    private ReportData loadReportData(Long userId, Instant from, Instant to) {
-        return new ReportData(
-                userId, from, to,
-                dishService.getAllDishedByUserIdAndPeriod(userId, from, to),
+        return new ReportSource(
+                kind,
+                startDate,
+                endDate,
+                zone,
+                dishService.getAllDishedByUserIdAndPeriod(userId, from, now),
+                dishService.getAllDishedByUserIdAndPeriod(userId, previousFrom, from.minusMillis(1)),
                 userNutritionProfileEntryService.getAllByUserId(userId),
                 weightEntryService.getAllWeightHistory(userId),
-                userNutritionProfileService.getOrCreateProfile(userId),
-                userSettingsService.getOrCreate(userId),
-                new PdfTexts(calorieTexts, calorieTexts.languageOf(userId))
+                waterEntryService.getAllWaterEntryByPeriod(userId, startDate, endDate),
+                userNutritionProfileService.getOrCreateProfile(userId)
         );
     }
 
     /**
-     * Агрегирует данные и ответы ИИ для подготовки отчета.
+     * Просит ИИ объяснить посчитанные метрики: главная фраза, шаблоны поведения, замены.
+     * Ошибка ИИ не ломает отчёт — блоки ИИ просто не показываются.
      */
-    private ReportContext gatherReportContext(ReportData data) throws JsonProcessingException {
-        ReportResponseRecord periodAnalysis = getPeriodReport(data);
-        AiPatternAnalysisResponse patternAnalysis = getNutritionReportByPeriod(data);
-
-        Table weeklyTable = ReportUtils.buildPeriodReportPerWeek(
-                data.dishes(), data.weights(), data.settings(), data.from(), data.to(), data.texts()
-        );
-        Table weightTable = ReportUtils.buildWeightHistoryTable(
-                data.weights(), data.from(), data.to(), data.zoneId(), data.texts()
-        );
-
-        // Генерируем HTML диаграммы
-        String categoryChartHtml = ReportUtils.buildCategoryBarChartHtml(data.dishes(), data.texts());
-        String timingChartHtml = ReportUtils.buildHourlyCaloriesChartHtml(data.dishes(), data.zoneId(), data.texts());
-
-        return new ReportContext(
-                periodAnalysis.text(),
-                periodAnalysis.table(),
-                weeklyTable,
-                weightTable,
-                patternAnalysis,
-                categoryChartHtml,
-                timingChartHtml
-        );
+    private ReportAiResponse fetchReportAiOrEmpty(ReportStats stats, ReportSource source, PdfTexts texts) {
+        try {
+            var payload = ReportAiPayloadRecord.of(stats, source.profile(), source.dishes(), source.zoneId());
+            String prompt = AI_PERSONA + String.format(AI_REQUEST_REPORT,
+                    source.kind().getDays(), texts.language().getNativeName(), mapper.writeValueAsString(payload));
+            String response = openAiProviderProcessor.fetchJsonResponse(
+                    components.getAiKey(),
+                    prompt,
+                    BotIdentifier.CALORIE_BOT,
+                    "PDF REPORT " + source.kind(),
+                    MetricsAiInteractionRecord.AiMessageType.TEXT
+            );
+            ReportAiResponse ai = response != null ? mapper.readValue(response, ReportAiResponse.class) : null;
+            return ai != null ? ai : ReportAiResponse.empty();
+        } catch (Exception e) {
+            log.error("AI part of {} PDF report failed", source.kind(), e);
+            return ReportAiResponse.empty();
+        }
     }
 
     /**
-     * Запрашивает у ИИ детальный разбор пищевых привычек.
-     * Отправляет данные в формате JSON для точного анализа.
+     * Наполняет HTML-шаблон: сначала тексты словаря {{pdf.…}}, потом данные — {{pdf.…}} в ответе ИИ подставляться не должны.
      */
-    private AiPatternAnalysisResponse getNutritionReportByPeriod(ReportData data) throws JsonProcessingException {
-        // Подготовка объекта-пейлоада для сериализации в JSON
-        var payload = new NutritionAnalysisPayloadRecord(
-                data.dishes(),
-                data.profile(),
-                data.settings().getTimezoneId()
-        );
+    private String fillTemplateOrNull(ReportSource source, ReportStats stats, ReportAiResponse ai, PdfTexts texts, Instant now) {
+        String template = loadResourceOrNull(REPORT_TEMPLATE_PATH);
+        String mascot = loadResourceOrNull(MASCOT_PATH);
+        if (template == null || mascot == null) return null;
 
-        String jsonContext = mapper.writeValueAsString(payload);
-        String response = fetchAiResponse(
-                String.format(AI_REQUEST_PATTERN_ANALYSIS, jsonContext, data.texts().language().getNativeName()), "Nutrition Report");
+        boolean month = source.kind() == ReportKind.MONTH;
+        String footer = texts.get(PdfTextKeys.FOOTER,
+                texts.formatDate(stats.startDate(), PdfTextKeys.DATE_DAY), texts.formatDate(stats.endDate(), PdfTextKeys.DATE));
 
-        // Маппинг JSON-ответа от ИИ обратно в Java-объект
-        return mapper.readValue(response, AiPatternAnalysisResponse.class);
-    }
-
-    /**
-     * Формирует отчет за период на основе ежедневных записей.
-     * Отправляет таблицу данных в ИИ для получения текстовых выводов.
-     */
-    private ReportResponseRecord getPeriodReport(ReportData data) {
-        // Построение таблицы "День | Вес | Калории | Дефицит"
-        Table dailyTable = ReportUtils.buildPeriodReportPerDay(
-                data.dishes(), data.targets(), data.weights(), data.settings(), data.from(), data.to(), data.texts()
-        );
-
-        // Анализ текстового представления таблицы через ИИ
-        String aiResponse = fetchAiResponse(
-                String.format(AI_REQUEST_PREDICTION, dailyTable.print(), data.texts().language().getNativeName()), "PERIOD REPORT");
-
-        return new ReportResponseRecord(dailyTable, aiResponse, "");
-    }
-
-    // --- РЕНДЕРИНГ И ШАБЛОНЫ ---
-
-    /**
-     * Наполняет HTML шаблон данными из контекста отчета.
-     */
-    private String fillTemplateOrNull(ReportContext ctx, PdfTexts texts) {
-        String template = loadTemplateOrNull(REPORT_TEMPLATE_PATH);
-        if (template == null) return null;
-
-        // Сначала тексты шаблона, потом данные: {{pdf.…}} в ответе ИИ подставляться не должны
+        // U+FE0F (вариант эмодзи после ⚖️, 🗓️) — у монохромного шрифта нет такого символа, остался бы пустой квадрат
         return texts.localizeTemplate(template)
-                .replace(VAR_AI_TEXT, escapeHtml(ctx.aiSummary()))
-                .replace(VAR_DAILY_TABLE, tableToHtml(ctx.dailyTable()))
-                .replace(VAR_WEEKLY_TABLE, tableToHtml(ctx.weeklyTable()))
-                .replace(VAR_WEIGHT_TABLE, tableToHtml(ctx.weightTable()))
-                .replace(VAR_NUTRITION_ANALYSIS, ctx.patternAnalysis().toHtml(texts))
-                .replace(VAR_CATEGORY_CHART, ctx.categoryChartHtml())
-                .replace(VAR_TIMING_CHART, ctx.timingChartHtml());
+                .replace(VAR_TITLE, ReportHtml.escapeHtml(texts.get(source.kind().getTitleKey())))
+                .replace(VAR_MASCOT, sizeSvg(mascot, 14, 13))
+                .replace(VAR_FOOTER_TEXT, ReportHtml.escapeHtml(footer))
+                .replace(VAR_COVER, ReportHtml.buildCover(stats, ai, source.profile(), texts, sizeSvg(mascot, 66, 62),
+                        ZonedDateTime.ofInstant(now, source.zoneId())))
+                .replace(VAR_EMPTY, ReportHtml.buildEmpty(stats, texts))
+                .replace(VAR_CALENDAR, month ? ReportHtml.buildCalendar(stats, texts) : "")
+                .replace(VAR_CALORIES, ReportHtml.buildCaloriesSection(stats, texts))
+                .replace(VAR_WEIGHT, ReportHtml.buildWeightSection(stats, texts))
+                .replace(VAR_ENERGY, ReportHtml.buildEnergySection(stats, texts))
+                .replace(VAR_MACROS, ReportHtml.buildMacrosSection(stats, texts))
+                .replace(VAR_RHYTHM, ReportHtml.buildRhythmSection(stats, texts))
+                .replace(VAR_TOP, ReportHtml.buildTopSection(stats, texts))
+                .replace(VAR_PATTERNS, ReportHtml.buildPatternsSection(ai, texts))
+                .replace(VAR_SWAPS, ReportHtml.buildSwapsSection(ai, texts))
+                .replace(VAR_CATEGORIES, ReportHtml.buildCategoriesSection(stats, texts))
+                .replace(VAR_WATER, ReportHtml.buildWaterSection(stats, texts))
+                .replace(VAR_DAILY, ReportHtml.buildDailySection(stats, texts))
+                .replace(VAR_DISHES, month ? "" : ReportHtml.buildDishesSection(source.dishes(), source.zoneId(), texts))
+                .replace(VAR_QUALITY, ReportHtml.buildQualitySection(stats, texts))
+                .replace(EMOJI_VARIATION, "");
+    }
+
+    /** Размер inline-SVG маскота: у файла есть только viewBox. */
+    private static String sizeSvg(String svg, int width, int height) {
+        return svg.replace("<svg ", "<svg width=\"" + width + "\" height=\"" + height + "\" ");
     }
 
     /**
-     * Преобразует HTML-код в PDF файл с использованием шрифтов, поддерживающих кириллицу.
+     * Рендерит XHTML в PDF: SVG-графики через Batik, шрифты из ресурсов.
      */
     private byte[] renderPdfOrNull(String html) {
         try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
             PdfRendererBuilder builder = new PdfRendererBuilder();
-            String baseUrl = getClass().getResource(IMAGES_BASE_URL).toString();
-
-            builder.withHtmlContent(html, baseUrl);
-            // Подключение шрифта DejaVu для корректного отображения русского языка
-            builder.useFont(() -> getClass().getResourceAsStream(FONT_PATH), FONT_FAMILY);
+            builder.useSVGDrawer(new BatikSVGDrawer());
+            builder.withHtmlContent(html, getClass().getResource(IMAGES_BASE_URL).toString());
+            // classpath:/fonts/… в @font-face шаблона — шрифты для текста SVG-графиков (их Batik берёт только оттуда)
+            builder.useProtocolsStreamImplementation(ClasspathStream::new, CLASSPATH_PROTOCOL);
+            for (ReportFont font : FONTS) {
+                Set<BaseRendererBuilder.FSFontUseCase> useCases = font.fallback()
+                        ? EnumSet.of(BaseRendererBuilder.FSFontUseCase.DOCUMENT, BaseRendererBuilder.FSFontUseCase.FALLBACK_FINAL)
+                        : EnumSet.of(BaseRendererBuilder.FSFontUseCase.DOCUMENT);
+                builder.useFont(() -> getClass().getResourceAsStream(font.path()), font.family(), font.weight(),
+                        BaseRendererBuilder.FontStyle.NORMAL, true, useCases);
+            }
             builder.toStream(os);
             builder.run();
 
@@ -367,11 +371,13 @@ public class ReportService {
 
     // --- УТИЛИТЫ ---
 
-    /**
-     * Язык ответа ИИ в отчётах бота — язык пользователя (user_settings.language или язык по умолчанию).
-     */
-    private String aiLanguageOf(Long userId) {
-        return calorieTexts.languageOf(userId).getNativeName();
+    private InsightData loadInsightData(Long userId, Instant from, Instant to) {
+        return new InsightData(
+                dishService.getAllDishedByUserIdAndPeriod(userId, from, to),
+                weightEntryService.getAllWeightHistory(userId),
+                userNutritionProfileService.getOrCreateProfile(userId),
+                userSettingsService.getOrCreate(userId).getZoneId()
+        );
     }
 
     /**
@@ -388,13 +394,13 @@ public class ReportService {
     }
 
     /**
-     * Загружает файл шаблона из папки ресурсов.
+     * Загружает текстовый файл из ресурсов.
      */
-    private String loadTemplateOrNull(String path) {
+    private String loadResourceOrNull(String path) {
         try (InputStream is = getClass().getClassLoader().getResourceAsStream(path)) {
             return is != null ? new String(is.readAllBytes(), StandardCharsets.UTF_8) : null;
         } catch (Exception e) {
-            log.error("Template loading failed: {}", path, e);
+            log.error("Resource loading failed: {}", path, e);
             return null;
         }
     }

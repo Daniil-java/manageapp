@@ -168,6 +168,13 @@
 			<version>1.0.10</version>
 		</dependency>
 
+		<!-- Inline SVG в PDF-отчётах (графики калорийного бота) — рендер через Batik -->
+		<dependency>
+			<groupId>com.openhtmltopdf</groupId>
+			<artifactId>openhtmltopdf-svg-support</artifactId>
+			<version>1.0.10</version>
+		</dependency>
+
 		<!-- Swagger UI и OpenAPI 3 -->
 		<dependency>
 			<groupId>org.springdoc</groupId>

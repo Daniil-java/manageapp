@@ -24,8 +24,6 @@ import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 
 /**
  * Обработчик команд формирования отчетов по калориям.
@@ -91,8 +89,7 @@ public class CalorieReportUpdateHandler implements CalorieBotUpdateHandler {
             executeWithAwait(chatId, telegramUser.getAppUserId(), () -> {
                 switch (reportType) {
                     case DAY -> handleDayReport(chatId, telegramUser.getAppUserId());
-                    case WEEK -> handleWeeklyDeepReport(chatId, telegramUser.getAppUserId());
-                    case MONTH -> handleStandardPdfReport(chatId, telegramUser.getAppUserId(), reportType);
+                    case WEEK, MONTH -> handlePdfReport(chatId, telegramUser.getAppUserId(), reportType);
                     case WEIGHT -> calorieWeightHistoryUpdateHandler.handle(update, telegramUser);
                 }
             });
@@ -135,28 +132,11 @@ public class CalorieReportUpdateHandler implements CalorieBotUpdateHandler {
         }
     }
 
-    private void handleWeeklyDeepReport(Long chatId, Long appUserId) {
+    private void handlePdfReport(Long chatId, Long appUserId, ReportType type) {
         try {
-            Instant now = Instant.now();
-            byte[] report = reportService.buildWeeklyDeepPdfReportOrNull(
-                    ReportType.WEEK.getFrom(now),
-                    now,
-                    appUserId
-            ).getOrThrow();
-            sendPdfOrError(chatId, appUserId, report, ReportType.WEEK);
-        } catch (MissingFeatureException e) {
-            featureLimitNotifier.sendLimitReached(chatId, appUserId, e.getRequiredFeature());
-        }
-
-    }
-
-    private void handleStandardPdfReport(Long chatId, Long appUserId, ReportType type) {
-        try {
-            Instant now = Instant.now();
-            byte[] report = reportService.buildPdfReportOrNull(
-                    type.getFrom(now),
-                    now,
-                    appUserId
+            byte[] report = (type == ReportType.WEEK
+                    ? reportService.buildWeeklyPdfReportOrNull(appUserId)
+                    : reportService.buildMonthlyPdfReportOrNull(appUserId)
             ).getOrThrow();
             sendPdfOrError(chatId, appUserId, report, type);
         } catch (MissingFeatureException e) {
@@ -175,22 +155,16 @@ public class CalorieReportUpdateHandler implements CalorieBotUpdateHandler {
     @Getter
     @AllArgsConstructor
     public enum ReportType {
-        DAY("day-report.pdf", PdfTextKeys.CAPTION_DAY, BotTextKeys.REPORT_BUTTON_DAY, 1l, ChronoUnit.DAYS),
-        WEEK("week-report.pdf", PdfTextKeys.CAPTION_WEEK, BotTextKeys.REPORT_BUTTON_WEEK, 7l, ChronoUnit.DAYS),
-        MONTH("month-report.pdf", PdfTextKeys.CAPTION_MONTH, BotTextKeys.REPORT_BUTTON_MONTH, 30l, ChronoUnit.DAYS),
-        WEIGHT("weight-report.pdf", PdfTextKeys.CAPTION_WEIGHT, BotTextKeys.REPORT_BUTTON_WEIGHT, null, null);
+        DAY("day-report.pdf", PdfTextKeys.CAPTION_DAY, BotTextKeys.REPORT_BUTTON_DAY),
+        WEEK("week-report.pdf", PdfTextKeys.CAPTION_WEEK, BotTextKeys.REPORT_BUTTON_WEEK),
+        MONTH("month-report.pdf", PdfTextKeys.CAPTION_MONTH, BotTextKeys.REPORT_BUTTON_MONTH),
+        WEIGHT("weight-report.pdf", PdfTextKeys.CAPTION_WEIGHT, BotTextKeys.REPORT_BUTTON_WEIGHT);
 
         private final String fileName;
         /** Подпись к файлу — ключ словаря pdf_*. */
         private final String captionKey;
         /** Подпись кнопки в меню аналитики — ключ словаря bot_*. */
         private final String buttonKey;
-        private final Long amount;
-        private final ChronoUnit unit;
-
-        public Instant getFrom(Instant now) {
-            return now.minus(amount, unit);
-        }
     }
 
     private InlineKeyboardMarkup buildReportKeyboard(Long appUserId) {
