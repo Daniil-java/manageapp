@@ -1,0 +1,490 @@
+## 0.0.60 (12.10.2026)
+[et-87] — Privacy и terms на двух языках, ссылки бота на zefir.fit
+* Страницы calorieprivacy_ru/en и calorieterms_ru/en (вместо calorieprivacy / calorieterms). Язык — ?lang=ru|en, иначе первый наш язык из Accept-Language; нет заголовка — ru, нет нашего языка — en. Переключатель языка и hreflang на страницах; в en — пометка, что при расхождении действует русская версия.
+* Тексты обновлены: Zefir = бот + мини-приложение + сайт; какие данные храним (фото и голос — нет, пароль — BCrypt-хеш, IP — только в памяти для лимитов), OpenAI, ЮKassa и Telegram Stars, хостинг; бесплатный план и лимиты, подписка без автопродления, правила использования. Дата — 13 октября 2026.
+* /privacy и /terms в боте: короткое сообщение и кнопка-ссылка на страницу на языке пользователя (раньше — весь текст в чат). Счётчик русских строк в коде бота: 28 → 0.
+* Ссылки бота — через CalorieSiteLinks на zefir.fit: privacy и terms в /start (в словаре теперь {0} и {1}), инструкция (кнопка в /welcome и знакомстве), UTM-форма. Раньше вели на kuklin.dev/calorie/..., а там DomainUrlFilter отдаёт 404 — кнопки и ссылки не открывались.
+* DomainUrlFilter: GET на kuklin.dev/calorie/** перенаправляется на тот же путь на zefir.fit (старые ссылки в чатах и BotFather). Остальные методы — по-прежнему 404.
+* Тесты: TelegramWebAppControllerTest (выбор языка), DomainUrlFilterTest.
+* HardcodedTextsCountTest → NoHardcodedTextsTest: счётчик дошёл до 0, теперь тест требует, чтобы русского текста в коде бота не было вовсе. Проверяет telegram и texts (остальной caloriebot — Swagger, промпты ИИ, валидация DTO — нет).
+
+[et-87] — Подписка, лимиты, избранное и вода на языке пользователя
+* Лимиты (FeatureLimitNotifier): сообщения о лимите функции, название функции — BotFeature.getTextKey() → feature.* (getDisplayName остался для лендинга и API). Лимиты ИИ — те же тексты, что у ошибок API (errors_*: AI_RATE_LIMIT, AI_DAILY_LIMIT, склонения уже там); формулировки чуть другие: «Слишком много запросов к ИИ. Попробуйте через 30 секунд». sendLimitReached / sendAiRateLimited теперь принимают appUserId. Кнопка подписки — подпись из CalorieMenuButtons.
+* Избранное: список и листалка, режим удаления, подтверждение «Да / Нет», «Ошибка данных!», сохранено / не сохранено.
+* Вода: строка «💧 [шкала] 500 / 2000 мл» → WaterTexts (WaterEntry.getWaterStatusText удалён; неиспользуемый AnalyticsService.getWaterStatusText тоже), кнопка «↩️ Отменить +250 мл», «Закрыть». buildNumericKeyboard воды больше не static.
+* Подписка: «Premium закончился», описание тарифов, «Статус подписки», статусы (subscription.status.* по имени UserSubscription.Status — сам enum в общем модуле оплаты, его подписи русские). «Premium закончился» зовёт общий планировщик только с chatId — язык берётся у пользователя, найденного по Telegram ID. Названия тарифов — из БД (pricing_plans.title), пока на одном языке.
+* Лог фасада «нет подходящего обработчика» — по-английски.
+* Тесты: у каждой функции и статуса подписки есть текст (TextBundlesConsistencyTest), WaterTextsTest.
+* Счётчик русских строк в коде: 87 → 28 — остались только privacy и terms.
+
+[et-87] — Пакет texts: недельный отчёт и PDF
+* PdfTexts переехал из i18n в texts (это record на один отчёт, от AbstractBotTexts не наследуется); тест — тоже в texts.
+* Недельный отчёт собирается в WeekTexts (было — ListWeekUpdateHandler.getWeeklyAnalytics); тест WeekTextsTest, в т. ч. «1 day / 2 days».
+
+[et-87] — Пакет texts: сборка текстов бота отдельно от логики
+* CalorieTextsService переименован в CalorieTexts (остался в i18n); тест — CalorieTextsTest. Поля calorieTextsService → calorieTexts.
+* Новый пакет caloriebot/texts. AbstractBotTexts — общий родитель: доступ к словарю, getWithUnit («175 см» / «нет данных»), getDurationText («3 ч» / «2 мин» / «90 сек» — раньше две отдельные копии в DishUpdateHandler и настройках).
+* NutritionProfileTexts переехал сюда. DishTexts — карточка блюда (было AnalyticsService.getInfo → buildDishCardText), дневник «Сегодня» (getTodayDiaryText → buildTodayDiaryText), «голосовое слишком длинное». WeightTexts — история веса (getWeightHistoryTextList → buildWeightHistoryText; таймзона читается один раз, а не на каждый замер). SettingsTexts — экран настроек и тексты напоминаний: раньше итоги дня и напоминания о еде собирались дважды — в CalorieSettingsUpdateHandler и CalorieRemindersSettingsHandler.
+* В AnalyticsService остались подсчёты за сегодня и шкалы в кнопках «Сегодня».
+* Тесты: DishTextsTest (бывший AnalyticsServiceTextsTest, + длительность голосового), SettingsTextsTest (русский экран настроек как раньше), NutritionProfileTextsTest — в пакете texts.
+
+[et-87] — Профиль и настройки на языке пользователя
+* Профиль питания: экран профиля, «Изменить профиль» / «Заполнить профиль», меню редактирования (подписи действий, «Автопересчёт» / «Без пересчёта», «Вернуться»), выбор пола / активности / цели / диеты, счётчики возраста, роста, веса, нормы калорий и воды с пояснениями, «Сохранить», «Некорректные данные!».
+* Текст профиля перенесён из сущности (UserNutritionProfile.toTelegramView удалён; неиспользуемый toTelegramDiffView тоже) в NutritionProfileTexts — язык берётся у владельца профиля. Русский профиль не изменился (NutritionProfileTextsTest), кроме возраста: теперь «21 год», «23 года» вместо «21 лет».
+* Пол, активность, цель, диета: русские label убраны из enum, вместо них getTextKey() → profile.sex.* / profile.activity.* / profile.goal.* / profile.diet.* в bot_*. У NormMode подпись не использовалась — убрана. ProfileEditAction: подписи и форматы «Ваш вес: %s кг» → ключи getTextKey / getValueKey / getChooseKey. KeyboardTemplates получает подписи готовыми (labelOf, valueLabel, saveLabel); getTitle() у полей-перечислений больше не нужен — заголовок по getChooseKey.
+* Сервис текстов в базовых классах полей (AbstractEnum/Numeric/DecimalProfileEditFieldHandler) — @Autowired-полем, чтобы не менять конструкторы наследников. Удалён неиспользуемый AbstractProfileEditFieldHandler.
+* Пересчёт норм: вопросы и строки «было → станет», кнопки. При ошибке валидации пользователю — «Некорректные данные!» вместо текста исключения (он русский и для логов).
+* Калькулятор с лендинга: все сообщения, данные с сайта (возраст склоняется), норма на день, кнопки.
+* Настройки: экран настроек (UserSettings.toPrettyText удалён → SettingsTexts), кнопки разделов (CalorieSettingsHandler.getLabel → getLabelKey), таймзона, напоминания (итоги дня, напоминания о еде, ВКЛ / ВЫКЛ, «⬅ Назад», «💾 Сохранить»).
+* Тест: у каждого значения пола / активности / цели / диеты и каждого действия редактирования есть тексты (TextBundlesConsistencyTest).
+* Счётчик русских строк в коде: 201 → 87.
+
+[et-87] — История и аналитика на языке пользователя
+* «Сегодня»: дневник питания, кнопки «Перейти к удалению» / «Назад» / «Закрыть», «ОШИБКА»; дата в заголовке на языке пользователя («12 ОКТЯБРЯ 2026» / «12 OCTOBER 2026»). Шкалы в кнопках — подписи из словаря (macro.label.*: «🔥 К» / «🔥 Cal», …).
+* Дневник перенесён из сущности (Dish.getDishesString / Dish.getInfo удалены) в AnalyticsService.getTodayDiaryText — сущности не нужно знать язык. Русский дневник не изменился (тест).
+* Неделя (ListWeekUpdateHandler): заголовки, строки блюд и дней, итоги, вердикт по белку; в английском «day / days» по числу. Удалены закомментированная старая версия отчёта и неиспользуемый параметр checkMacroBalance.
+* Меню аналитики: «Выберите тип аналитики», кнопки отчётов (ключ подписи — в ReportType.buttonKey), «Закрыть», ошибка данных. История веса (AnalyticsService.getWeightHistoryTextList) — из словаря.
+* Общие тексты: common.button.back, common.error, common.unit.kcal / gram.
+* AnalyticsServiceDishCardTest переименован в AnalyticsServiceTextsTest — теперь проверяет и дневник.
+* Счётчик русских строк в коде: 233 → 201.
+
+[et-87] — Фото без подписи: название блюда на языке пользователя
+* Без подписи в промпт попадало «null» как текст пользователя, а правило «если текста нет — на языке пользователя» стояло в середине длинного русского промпта — модель называла блюда по-русски даже при английском языке.
+* Теперь правило языка собирает DishService: с подписью — «на языке подписи, если не понять — на языке пользователя» (PHOTO_NAME_LANGUAGE_FROM_CAPTION), без подписи — «ТОЛЬКО на языке пользователя, даже у местных блюд» (PHOTO_NAME_LANGUAGE_NO_CAPTION). Правило стоит в описании поля name и ещё раз в конце промпта. Вместо «null» — пустая строка.
+* Тест: без подписи в промпте нет «("null")», правило «Подписи нет…» встречается дважды (DishServiceAiResponseTest).
+
+[et-87] — Блюда на языке пользователя
+* Карточка блюда (AnalyticsService.getInfo) из словаря: название и +ккал, Б/Ж/У (en — P/F/C), вес и число порций, строка калорий от нормы, «Итого за сегодня». Русская карточка не изменилась (AnalyticsServiceDishCardTest). Числа передаются строками — без разделителей разрядов, как раньше.
+* DishKeyboards — кнопки под карточкой на языке пользователя: buildPortionKeyboard, buildFavoritePortionKeyboard («✅ В избранном»), buildNotCountedKeyboard («НЕ УЧИТЫВАЕТСЯ» после удаления). Заменили static-методы DishUpdateHandler.getPortionWeightKeyboard / getPortionKeyboardFavorite и DeleteUpdateHandler.getInlineMessage; две почти одинаковые копии клавиатуры слиты в одну, неиспользуемая getPortionKeyboard удалена. Вызовы — в DishUpdateHandler, CalorieScaleCallbackUpdateHandler, DeleteUpdateHandler, избранном (CalorieFavoriteDishUpdateHandler, CalorieFavoriteDishAddCallbackUpdateHandler) и TodayUpdateHandler.
+* Сообщения распознавания: «Это не съедобно!», «сообщение не поддерживается», ошибка голосового, голосовое слишком длинное, фото без еды (засчитано / не засчитано), ошибка провайдера; ошибки изменения порции (Scale) и выбора модели (Choice).
+* AiInputValidator.voiceMaxDurationText («2 мин» по-русски) заменён на getVoiceMaxDuration(): текст «2 мин» / «2 min» собирает бот из common.duration.*.
+* Удалены неиспользуемые тексты DishUpdateHandler: SUB_MESSAGE, ERROR_LIMIT_MSG, PHOTO_ERROR_MESSAGE (последний был только в закомментированном коде), PORTION_WEIGHT_CMD.
+* Счётчик русских строк в коде: 261 → 233.
+
+[et-87] — Онбординг на языке пользователя
+* Тексты в bot_ru|en: приветствие /start, знакомство после «Далее» и шаг «Заполни профиль» (StartFlow), FAQ, /menu, «Клавиатура обновлена», /support, реферальная программа и кнопка «Переслать другу», создание UTM-ссылки (админы). Общие подписи кнопок — common.button.close / next / instruction.
+* В английском приветствии канал ЗЕФИР оставлен (с пометкой «in Russian»), «(или ссылка на канал)» убрано; что делать с каналом для en — задача в бэклоге. Ссылки на privacy и terms пока на русские страницы.
+* /support: Telegram ID передаётся строкой — числом ICU напечатал бы его с разделителями разрядов. Исправлено «включите следующие информацию» → «следующую».
+* Счётчик русских строк в коде: 303 → 261.
+
+[et-87] — Кнопки меню на языке пользователя
+* CalorieMenuButtons: 9 кнопок главного меню, у каждой ключ подписи в bot_* (button.*) и команда. buildKeyboard(appUserId) — нижняя клавиатура, buildInlineMenu(appUserId) — кнопки под сообщением /menu (подпись переведена, в callbackData прежний текст команды), findCommand(text) — команда по подписи на любом языке.
+* Фасад сначала ищет нажатую кнопку через findCommand, дальше — прежняя логика. Command.java и UpdateHandler не менялись.
+* Русские подписи = старые тексты команд, сами тексты команд тоже узнаются — клавиатуры, оставшиеся в чатах, работают. Одна подпись у двух разных кнопок — бот не стартует.
+* Убраны две копии клавиатуры (KeyboardCalorieUpdateHandler.getCommandKeyboard, StartUpdateHandler.getCommandKeyboard). Клавиатура на языке пользователя в /start, /keyboard, /menu, ответах на блюдо, недельном отчёте и рассылке админа (у каждого получателя своя).
+* Тесты: CalorieMenuButtonsTest; HardcodedTextsCountTest — счётчик строк кода с русским текстом в telegram/** (сейчас 303), число может только уменьшаться.
+
+## 0.0.59 (12.10.2026)
+[et-86] — PDF-отчёты и напоминания на языке пользователя
+* Новый словарь i18n/calorie/pdf_ru|en, ключи — PdfTextKeys. PdfTexts — тексты одного отчёта (язык пользователя выбран один раз): get(key), category(…), форматы дат, localizeTemplate(html).
+* Шаблоны templates/weeklyreport.html и report.html: все тексты — {{pdf.…}} (заголовки, подписи, дисклеймеры, «Страница N из M» в подвале), <html lang="{{LANG}}">. Тексты подставляются до данных — {{pdf.…}} в ответе ИИ не подставится. Заодно исправлены «каллорий» и «по категориями».
+* ReportUtils: колонки и названия таблиц, заголовки диаграмм, категории — из словаря; даты по языку (ru 05.10.2026 / en Oct 5, 2026; неделя — «Oct 5 – Oct 11» вместо 2026-10-05). Таблица блюд сортирует копию, а не переданный список (с неизменяемым списком падала).
+* AiPatternAnalysisResponse.toHtml(texts): заголовки разбора на языке пользователя; текст ИИ экранируется — «<» в ответе ломал разметку PDF.
+* Категории блюд: русские названия убраны из Dish.FoodCategory, теперь getTextKey() → dish.category.<CODE> в bot_*. Без категории на диаграмме — «Прочее» / «Other».
+* Бот: подпись к PDF, «Готовлю отчёт...» и «Не получилось сформировать отчёт» — из словаря (CalorieReportUpdateHandler). Кнопки меню отчётов — в следующем пункте (бот).
+* Напоминание о еде (MealReminderSchedulerProcessor) — из словаря, ключ reminder.meal; по-русски без рода: «Давно не было записей о еде».
+* Тесты: у каждой категории есть текст, каждый {{pdf.…}} из шаблонов есть в словаре (TextBundlesConsistencyTest); английский PDF — шаблоны, таблицы, диаграммы, разбор ИИ — без кириллицы и без {{pdf.…}}, текст ИИ экранирован (PdfTextsTest); напоминание на языке пользователя (CalorieRemindersInactiveUsersTest).
+
+[et-86] — ИИ отвечает на языке пользователя
+* Отчёт за день в боте, текст ИИ в недельном PDF, прогноз и разбор привычек в месячном PDF — на языке пользователя (CalorieTextsService.languageOf: user_settings.language → язык по умолчанию ru). В промптах строка «Язык ответа: …» (AppLanguage.nativeName); подписи и заголовки разделов ИИ тоже переводит. Сами промпты по-прежнему русские. У всех, кроме разработчиков с /lang, язык ru — ответы прежние.
+* Распознавание еды (текст, голос, фото): название блюда — на языке описания или подписи; если их нет или язык не понять — на языке пользователя. Бренды не переводятся. Раньше без подписи к фото название было всегда русским. Название — с заглавной буквы и без веса («гречка 100гр» → «Гречка», 100 г — в weightGrams); объём — только у фасованного («Coca-Cola 0.5L»).
+* Отчёт за день: язык ответа и в начале, и в конце задания, названия частей переводятся — раньше модель по русской инструкции писала вперемешку (заголовки по-русски, новость по-английски).
+* InsightLanguage убран, вместо него AppLanguage. Инсайты миниаппки: ?lang= как раньше; без параметра или с неизвестным — язык пользователя из настроек (раньше en). Фронт параметр передаёт всегда.
+* Убраны перегрузки без языка: ReportService.getAiInsightReport(…, userId), CalorieAiInsightService.refresh(userId, type).
+* Аргументы String.format в промптах — по номерам (%1$s), список аргументов — в javadoc каждого промпта.
+* Тесты: язык пользователя в промптах дня, недели, месяца, распознавания по тексту и по фото (ReportServiceAiInsightTest, DishServiceAiResponseTest).
+
+[et-86] — Тексты ошибок из словарей, значения ошибок в params
+* Ошибка — только код и значения: new ErrorResponseException(ErrorStatus.X, ErrorParams.max(20)). Английских фраз в коде больше нет — ни в throw, ни в ErrorStatus (там остался только HTTP-статус). Поле clientMessage и конструктор с текстом убраны; getMessage() для логов — «AI_DAILY_LIMIT {dailyLimit=100, …}».
+* Словари i18n/calorie/errors_ru|en.properties — тексты всех 34 кодов, ключ error.<код> (ErrorStatus.getTextKey()). Склонения по числу: «4 096 символов», «через 1 час 2 минуты».
+* ErrorParams — единственное место с именами параметров (MAX, MAX_SIZE_MB, MAX_DURATION_MINUTES, FORMATS, DAILY_LIMIT, RETRY_AFTER_SECONDS, WAIT_HOURS, WAIT_MINUTES) и методы, которые их собирают: max, maxSize, maxSizeAndDuration, formats, retryAfter, dailyLimit. Значения передаются в AiInputValidator, AiRateLimiter, DishService (DISH_DAILY_LIMIT), RequestSizeLimitFilter, AuthRateLimiter.
+* API: в ответе ошибки новое поле params ({"max": 4096}) — фронт может показать точный лимит на своём языке. message — текст из errors_en одной строкой (CalorieTextsService.errorForApi, вызывают GlobalExceptionHandler и RequestSizeLimitFilter). Формулировки английских message немного поменялись («per day» вместо «per 24 hours», «1 hour 2 minutes» вместо «1 h 2 min»), у PHOTO_NOT_RECOGNIZED_* и DISH_SAVE_FAILED в начале эмодзи; errorCode прежние.
+* CalorieTextsService: error(userId, exception) и error(userId, ErrorStatus) — текст ошибки на языке пользователя; get(…, Map) — именованные подстановки.
+* Бот: «уже в сохранённых», «блюдо не найдено» (CalorieFavoriteDishAddCallbackUpdateHandler) и «не получилось сохранить блюдо» (DishUpdateHandler) — из словаря; по-русски тексты прежние.
+* Убраны помощники английских фраз: formatWait (AiRateLimiter, AuthRateLimiter), formatSize, formatDuration (AiInputValidator), tooLargeMessage (RequestSizeLimitFilter).
+* Тесты: у каждого ErrorStatus есть текст; в errors_* только подстановки из ErrorParams и все они используются; настоящие ошибки валидатора и фильтра переводятся без «{…}»; message для API — английский в одну строку. Подстановки в шаблонах ищет ICU (MessagePattern), а не регулярка. Тесты валидатора и лимитеров проверяют params вместо английских фраз.
+
+[et-86] — Основа для нескольких языков (выбор языка пользователям пока не открыт)
+* Язык пользователя — user_settings.language (миграция 0.0.57, changeset 60): код ru / en, NULL — не выбирал, действует язык по умолчанию.
+* AppLanguage (RU, EN) — список языков: код, Locale, название на самом языке. Новый язык — строка в enum + словари.
+* CalorieTextsService — тексты на языке пользователя: get(userId, KEY, args) / get(language, KEY, args). Язык: выбранный в настройках → calorie.i18n.default-language (ru). Нет ключа в словаре языка — из словаря по умолчанию, нет и там — сам ключ и ошибка в лог. Шаблоны — ICU MessageFormat (склонения по числу; зависимость icu4j). Свой MessageSource, не общий бин помидор-бота.
+* Ключи — только константами (BotTextKeys), словари i18n/calorie/bot_ru|en.properties.
+* /lang — только для разработчиков (calorie.i18n.dev-telegram-ids, CALORIE_I18N_DEV_IDS): /lang — текущий язык, /lang en — переключить, /lang reset — сбросить. Остальным бот на команду не отвечает.
+* Конфиг calorie.i18n: default-language: ru, dev-telegram-ids.
+* Тесты: во всех языках одинаковые ключи и подстановки, шаблоны разбираются ICU, у каждой константы ключа есть текст; выбор языка, запасной язык, склонения (CalorieTextsServiceTest, TextBundlesConsistencyTest).
+
+## 0.0.58 (09.10.2026)
+[et-84] — Отчёты и напоминания только активным пользователям
+* Вечерний отчёт (DailySummarySchedulerProcessor) — только если за день отчёта записано хотя бы одно блюдо. Раньше уходил всем, кто не заблокировал бота, с вызовом ИИ даже на пустой день: 08.10 — 98 отчётов в 21:00 МСК при десятке остальных обращений к ИИ за сутки. Пустой день отмечается обработанным (dailyLastReminder), чтобы блюдо в 23:40 не дало «вечерний» отчёт в полночь.
+* Напоминание о еде (MealReminderSchedulerProcessor): не шлётся, если блюдо записано за последний интервал (раньше «Ты давно не ел» приходило и сразу после еды — интервал считался только от прошлого напоминания), и тем, кто не записывал еду 7 дней.
+* DishService.getLastDishTimeOrNull / DishRepository.findLastCreatedByUserId — время последнего блюда одним запросом.
+* Тест: CalorieRemindersInactiveUsersTest.
+
+## 0.0.57 (09.10.2026)
+[et-83] — ИИ-инсайты на языке интерфейса миниаппки (под фронт et-12)
+* POST /calorie/reports/insights/{type}/refresh?lang=ru|en — ИИ пишет инсайт на этом языке (раньше всегда English, константа INSIGHT_LANGUAGE убрана). Нет параметра или неизвестный язык — en.
+* InsightLanguage (EN, RU): код для фронта/БД и название языка для промпта. Новый язык интерфейса — строка в enum.
+* Миграция 0.0.55, changeset 58: calorie_ai_insight.language (VARCHAR(8)), NULL — старые инсайты на английском. AiInsightDto.language — фронт помечает инсайт на другом языке устаревшим.
+* Старые сигнатуры ReportService.getAiInsightReport(…) и CalorieAiInsightService.refresh(…) без языка — английский. Тесты: язык доходит до ИИ и сохраняется, разбор кода языка.
+
+## 0.0.56 (07.10.2026)
+[et-82] — Голос: расшифровка gpt-4o-mini-transcribe с подсказкой про еду; вечерний отчёт выключается флагом
+* Fix: короткие голосовые («кофе», «кофе, банан») whisper-1 расшифровывал не на том языке — «Question. Question.», «Curte a sua banana.», японский, украинский; ИИ не находил еду. Язык Whisper угадывал сам, подсказки не было.
+* Расшифровка для всех ботов — gpt-4o-mini-transcribe вместо whisper-1 (OpenAiProviderProcessor.TRANSCRIPTION_MODEL): точнее на коротких фразах и с акцентом, дешевле.
+* Подсказка про еду (DishCalorieBotPrompts.AI_VOICE_TRANSCRIPTION_PROMPT, примеры на русском и английском, язык не задаёт) — только калорийный бот: голос из миниаппки (/dishes/voice) и голосовые в боте. Новые перегрузки fetchAudioResponse(…, prompt, …) и TelegramService.convertVoiceToTextOrNull(…, prompt); без prompt — как раньше, другие боты (календарь) не затронуты.
+* Вечерний отчёт за день (DailySummarySchedulerProcessor) выключается флагом calorie.daily-summary.enabled / CALORIE_DAILY_SUMMARY_ENABLED (по умолчанию true — на проде без изменений). Локально — false, иначе каждый вечер ИИ-отчёт уходит всем пользователям локальной базы.
+
+[et-82] — Сбой сохранения блюд больше не выдаётся за «на фото нет еды»
+* Fix: DishService.getDishListByAiResponseOrNull ловил любые исключения, включая ошибку saveDishes (БД), и возвращал null. Для фото FeatureAccessAspect считал это пустым ответом ИИ: первый раз за день прощал, дальше списывал попытку, пользователь видел «не удалось найти еду», в логах — ничего.
+* Теперь null — только «ИИ не нашёл еду / ответ не разобрать» (toDishesOrNull: битый JSON, кривые данные, isDish=false). Сбой сохранения логируется и бросает 503 DISH_SAVE_FAILED — аспект возвращает попытку, API отвечает «не удалось сохранить, попытка не засчитана».
+* Бот (DishUpdateHandler): на DISH_SAVE_FAILED — «Не получилось сохранить блюдо, попытка не засчитана» вместо «Это не съедобно!». Касается фото, текста и голоса.
+* Если ИИ вернул только не-блюда, saveDishes больше не вызывается (раньше сохранялся пустой список и сдвигалось время последнего напоминания о еде).
+* Юнит-тест DishServiceAiResponseTest.
+
+## 0.0.55 (07.10.2026)
+[et-81] — Оплата звёздами из миниаппки
+* Fix: POST /calorie/payment/create выставлял счёт через CreateInvoiceLinkWithTelegramSubscription — для любого тарифа подпись «Подписка 30 дней» и задуманный период автосписания 30 дней (тариф на 90 дней списывал бы цену каждые 30). Теперь разовый счёт, как в боте (SendInvoiceBuilder): TelegramBot.buildOneTimeInvoiceLink, подпись «Оплата», сумма — Payment.starsAmount.
+* /payment/create только для аккаунтов с Telegram (identity TELEGRAM или профиль в боте) — иначе 403 PAYMENT_TELEGRAM_REQUIRED. Счёт подтверждает бот по Telegram-аккаунту плательщика; аккаунт с одним email оплатить не смог бы, а звёзды списались бы не тому.
+* /payment/create принимает только тарифы калорийного бота, AVAILABLE, в звёздах — иначе 400 PRICING_PLAN_NOT_AVAILABLE (раньше можно было выставить счёт по любому planId, в том числе чужого бота или отключённому).
+* UserAuthIdentityService.hasTelegram.
+* Решено: оплаты только разовые. Код подписки Telegram с автосписанием (CreateInvoiceLinkWithTelegramSubscription, buildCreateInvoiceLink, CommonPaymentFacade, PaymentService.processTelegramSubs, TELEGRAM_SUBSCRIPTION_URL) помечен ⚠️-комментариями: период только 30 дней, поле subscriptionPeriod не доходит до Telegram в telegrambots 6.9, продление вживую не проверено.
+* Юнит-тест CaloriePaymentServiceTest.
+
+## 0.0.54 (07.10.2026)
+[et-79] — Лендинг: «Вести дневник с этой нормой» заполняет профиль в боте
+* Кнопка калькулятора на лендинге ведёт в бота с данными формы: ?start=p_<пол>_<возраст>_<рост>_<вес>_<активность>_<цель>[_<utm>] (например p_F_28_168_65_M_L_partner_ab12cd34). Telegram пропускает в start до 64 символов [A-Za-z0-9_-] — коды однобуквенные, UTM-код лендинга (calorie.landing.start-code) дописывается в хвост, если влезает. Без JS кнопка ведёт просто в бота.
+* CalculatorStartParam — разбор параметра /start: без префикса p_ — весь параметр UTM-код, как раньше; всё после седьмой части — UTM-код (может содержать «_»). Значения проверяются на границы UserNutritionProfile; битые данные отбрасываются, UTM из хвоста всё равно засчитывается.
+* StartUpdateHandler: processUtm заменён на processStartParam — UTM-клик + данные калькулятора. Порядок сообщений: приветствие → профиль из калькулятора → пробный период.
+* CalculatorProfileUpdateHandler: пустой профиль — заполняется сразу, бот показывает норму, БЖУ и воду; совпадает с калькулятором — просто норма; отличается — «Обновить профиль этими данными?» с нормой с сайта и текущей (своя норма калорий — предупреждение, что заменится расчётной), кнопки «✅ Обновить» / «Оставить как есть» (/calcapply p_… | skip, Command.CALORIE_PROFILE_FROM_CALCULATOR).
+* UserNutritionProfileService.applyCalculator: параметры из калькулятора, normMode AUTO, профиль COMPLETED, пересчёт нормы; новый вес — запись в журнал веса. Режим воды не трогается.
+* Юнит-тесты CalculatorStartParamTest, UserNutritionProfileServiceWeightTest (applyCalculator).
+
+[et-79] — Онбординг бота
+* Fix: «Далее» под приветствием заменял его текстом онбординга без кнопок (пропадали ссылки на политику и соглашение) и отправлял тот же текст ещё раз — два одинаковых сообщения. Теперь у приветствия снимаются только кнопки, онбординг — один раз.
+* «Шаг 1. Заполни профиль» — отдельным сообщением и только если профиль не заполнен (пришедшим с лендинга с данными калькулятора не показывается). Раньше текст «нажми кнопку» был всегда, а кнопки при заполненном профиле не было.
+* Кнопка «Заполнить профиль» сразу запускает анкету (/profiledialogue), а не экран «Мой профиль» с ещё одной такой же кнопкой. Анкета редактирует сообщение «Шаг 1» — инструкция выше остаётся.
+* Fix: /menu по кнопке перезаписывал сообщение с кнопкой его же текстом без форматирования (пропадали жирный и ссылки, «<» в тексте ломал отправку) — теперь снимаются только кнопки.
+
+[et-79] — Лендинг: карточки тарифов
+* Описание тарифа из БД (pricing_plans.description) — пунктами по строкам: эмодзи слева, текст рядом, по левому краю (CalorieLandingService.toPoints, PlanCard.points вместо description). Раньше HTML склеивал строки, смайлики и текст съезжали. Маркеры «-», «•» в начале строки отбрасываются, строка без эмодзи — просто текст.
+* Бесплатная карточка — тоже пунктами (📸 фото-разборы и ИИ-разбор дня, 📒 дневник, вода и вес).
+* Юнит-тест CalorieLandingServiceTest (toPoints).
+
+## 0.0.53 (06.10.2026)
+[et-78] — Избранное: быстрый набор в миниаппке
+* Блюдо из избранного можно закрепить в быстром наборе меню «+» миниаппки — до 4 (UserFavoriteDish.MAX_QUICK_ADD). Свободные места миниаппка добивает последними использованными.
+* Миграция 0.0.54, changeset 57: колонка user_favorite_dishes.quick_add_position (1..4, NULL — не закреплено).
+* PUT /calorie/favorites/{id}/quick-add?pinned=true|false — закрепить (встаёт последним) или открепить (остальные сдвигаются без дыр). Пятое — 409 QUICK_ADD_FULL, чужое/несуществующее — 404 FAVORITE_DISH_NOT_FOUND. Ответ — весь список избранного в новом порядке.
+* GET /calorie/favorites: сначала закреплённые по месту, потом остальные по последнему использованию (как раньше). DTO отдаёт quickAddPosition.
+* Юнит-тест UserFavoriteDishServiceQuickAddTest.
+
+[et-78] — Вес блюда от ИИ, длинные названия, вес и порции при ручном вводе
+* Fix: вес блюда от ИИ терялся — промпт просит поле weightGrams, а DishDto ждал weight; подставлялась 1 г. Теперь @JsonAlias("weightGrams"), а если ИИ прислал только вес порции — общий вес = portionWeight × portions (DishDto.checkValuesNotNull).
+* Название блюда при ручном вводе — до 200 символов (было 100): ИИ называет блюда подробно, до ~160 символов, и такое название нельзя было сохранить после правки.
+* POST /calorie/dishes (ручной ввод): необязательные weight (1–5000 г) и portions (1–20); вес порции считается из них. Без них — по-прежнему 1.
+
+## 0.0.52 (06.10.2026)
+[et-77] — Вода: отмена отметки и удаление из истории
+* DELETE /calorie/water/last — отменить последнюю отметку за сегодня (по таймзоне пользователя), ответ — итог за сегодня. Вчерашние отметки так не удалить: они уже в итогах дня, их удаляют из истории. Если сегодня отметок нет — ничего не удаляется.
+* DELETE /calorie/water/{id} — удалить отметку из истории (только свою).
+* WaterEntryService: removeLastEntry (не использовался и удалил бы последнюю отметку даже со вчера) заменён на removeLastTodayEntryOrNull; getLastTodayEntryOrNull, deleteEntry. WaterEntryRepository: findTopByUserIdAndEntryDateOrderByCreatedAtDescIdDesc, deleteByIdAndUserId.
+* Бот, экран воды: кнопка «↩️ Отменить +250 мл» — убирает последнюю отметку за сегодня, на кнопке видно, какую. Кнопки −500/−100 показывались, даже если итог уходил в минус (проверка сравнивала не то значение) — теперь только если итог останется ≥ 0.
+
+[et-77] — Норма калорий: по формуле или своя
+* Режим нормы в профиле — UserNutritionProfile.normMode (миграция 0.0.53, колонка norm_mode, по умолчанию AUTO). AUTO — калории по формуле, пересчёт при любой правке профиля и новом весе. MANUAL — калории задал пользователь, правка веса/активности/цели их не меняет.
+* Миграция 0.0.53, changeset 55: у существующих профилей с посчитанной нормой — MANUAL, чтобы их норма не начала вдруг меняться от веса. Профили без нормы и новые — AUTO.
+* Своя норма калорий — любое целое ≥ 0 (CALORIES_NORM_MIN = 0, MAX = Integer.MAX_VALUE); отрицательная — 400. Углеводы не уходят в минус, если белок от веса больше всей нормы.
+* В MANUAL БЖУ считаются от ручных калорий по тем же правилам: белок от веса × цель, жиры 25%, углеводы — остаток; без веса/цели — белки 30% калорий. Вода от режима калорий не зависит (см. «Норма воды» ниже). Раньше ручная норма в боте оставляла БЖУ от старой нормы, а любая правка профиля молча затирала её формулой.
+* recalcTargets разделён: calcFormulaCalories (формула) + расчёт БЖУ/воды от калорий. calcFormulaCaloriesOrNull — подсказка «по формуле» для ручного режима. checkTargetCalculateParams учитывает режим (MANUAL — достаточно нормы калорий).
+* API: PUT /calorie/profile принимает normMode. MANUAL + caloriesNormPerDay — своя норма (отрицательная — 400 USER_NUTRITION_PROFILE_VALIDATION_EXCEPTION, InvalidCaloriesNormException); MANUAL без калорий — текущее число становится ручным; AUTO — пересчёт по формуле, присланные калории игнорируются (как раньше). GET отдаёт normMode.
+* Бот: кнопка «Норма калорий» включает ручной режим и пересчитывает БЖУ от нового числа; в окне ввода — «по формуле: N ккал» и пояснение. В профиле у калорий пометка «✍️ вручную» и строка о режиме.
+* Бот: вместо «Пересчитать нормы» — пара кнопок «Автопересчёт» / «Без пересчёта», текущий режим отмечен ✅ (CalorieNutritionProfileRecalculate, /recalculate AUTO | AUTO_YES | MANUAL). Включение автопересчёта при своей норме сначала спрашивает в том же сообщении: «КБЖУ будут пересчитаны по формуле», было → станет по калориям и БЖУ, «Да, пересчитать» / «Нет»; после ответа возвращается сообщение редактирования профиля. «Без пересчёта» — без вопроса, числа не меняются (switchToManualNorm). Старые сообщения с «/recalculate» без действия — как «Автопересчёт».
+* Бот: кнопки шагов −500/−100 в числовых полях профиля показывались, даже если шаг уводил ниже минимума (KeyboardTemplates.buildNumericKeyboard сравнивал не то значение); сравнение в long — без переполнения у границ int.
+* Бот: правка возраста и роста снова пересчитывает норму (пересчёт в AbstractNumericProfileEditFieldHandler был закомментирован — иначе «Норма калорий» затирала бы сама себя). Своя норма калорий и воды при пересчёте сохраняется — по режиму.
+* Юнит-тест UserNutritionProfileServiceNormModeTest.
+
+[et-77] — Норма воды: по формуле или своя
+* Режим воды — UserNutritionProfile.waterMode, отдельно от normMode: можно свои калории и воду по весу, и наоборот. AUTO — вода = вес × мл/кг для активности (30/33/35), пересчитывается с профилем; MANUAL — своё число, пересчёт его не трогает. Раньше своя вода жила до первой правки веса/активности/цели или «Автопересчёта».
+* Миграция 0.0.53, changeset 56: колонка water_mode (по умолчанию AUTO). MANUAL — тем, у кого вода не совпадает с формулой (а без веса/активности — с 2000 мл по умолчанию): значит, правили руками.
+* Своя норма воды — любое целое ≥ 0 (WATER_NORM_MIN/MAX), отрицательная — 400 (InvalidWaterNormException).
+* UserNutritionProfileService: calcFormulaWaterOrNull — формула воды (и для recalcTargets, и как подсказка); switchToAutoWater — вода по формуле, даже если для калорий профиль ещё не заполнен (нужны только вес и активность). updateWaterNorms/updateWaterTarget ставят MANUAL, updateCaloriesNorms — normMode MANUAL, чтобы следующий пересчёт не затёр их.
+* API: PUT /calorie/profile принимает waterMode. MANUAL + waterTargetMlPerDay — своя вода; AUTO — присланная вода игнорируется, если есть вес и активность. GET отдаёт waterMode.
+* Бот, экран «Норма воды»: сохранение включает свою воду; в тексте «(вручную) / (по формуле)», «По формуле: N мл» и пояснение. При своей воде под счётчиком кнопка «↺ По формуле» → то же сообщение спрашивает «Вернуть норму воды по формуле?» с «было → станет», «Да, по формуле» / «Нет» (/recalculate WATER_AUTO | WATER_AUTO_YES). «Да» — сообщение редактирования профиля, «Нет» — обратно на экран воды. В профиле у воды пометка «✍️ вручную».
+* AbstractNumericProfileEditFieldHandler: вместо recalculatesNorm() — хук extraRow(profile) для доп. кнопок под счётчиком; пересчёт после сохранения поля — всегда (своя вода теперь защищена режимом).
+
+[et-77] — Журнал веса и вес в профиле синхронизированы
+* Журнал веса — источник правды, вес в профиле = последнее взвешивание. Раньше PUT /weight писал только в журнал: вес в профиле и норма КБЖУ/воды оставались старыми.
+* PUT /calorie/weight — UserNutritionProfileService.logWeight: запись в журнал + текущий вес профиля + пересчёт нормы (если профиль заполнен; иначе вес просто сохраняется). Недопустимый вес (вне UserNutritionProfile.WEIGHT_MIN…MAX) — 400 USER_NUTRITION_PROFILE_VALIDATION_EXCEPTION, в журнал не пишется.
+* DELETE /calorie/weight/{id} — UserNutritionProfileService.deleteWeightEntry: если удалили последнее взвешивание, вес профиля откатывается к предыдущему и норма пересчитывается. Пустой журнал профиль не трогает.
+* PUT /calorie/profile с новым весом добавляет запись в журнал (как правка веса в профиле бота). Тот же вес или без веса — запись не добавляется.
+* Бот: правка веса в профиле уже писала в журнал и пересчитывала норму (CurrentWeightProfileEditFieldHandler) — без изменений.
+* WeightEntryRepository.findFirstByUserIdOrderByEntryDateDescCreatedAtDescIdDesc — последнее взвешивание.
+* Юнит-тест UserNutritionProfileServiceWeightTest.
+
+## 0.0.51 (05.10.2026)
+[et-76] — Лендинг zefir.fit
+* GET /calorie — лендинг (шаблон calorielanding.html) в стиле мини-аппа (токены и компоненты zef-fe, маскот-зефирка): живой «телефон» с кольцом калорий по приёмам пищи, демо распознавания на примерах, калькулятор нормы (та же формула, что UserNutritionProfileService.recalcTargets), бенто с компонентами мини-аппа, копия чата бота с рабочими кнопками порций, тарифы, FAQ. Без скриншотов и внешних скриптов, светлая и тёмная тема.
+* Статика лендинга — static/calorie/landing/ (на zefir.fit DomainUrlFilter не пускает /images/**), путь в permitAll. На zefir.fit он же открывается по корню: WebController отдаёт forward:/calorie по Host, на kuklin.dev в корне по-прежнему личная страница. DomainUrlFilter пускает «/» на zefir.fit, /calorie — в permitAll.
+* Тарифы и лимиты — из БД при рендере (CalorieLandingService): подписки в статусе AVAILABLE из pricing_plans, лимиты FREE и первого платного плана из plan_features, лимиты ИИ в сутки — из calorie.ai-rate-limit. Цены в Stars и рублях, выгода — к самому короткому плану той же валюты.
+* Кнопки ведут на t.me/calorydairy_bot; если задан calorie.landing.start-code (CALORIE_LANDING_START_CODE) — с ?start=<код> для UTM-статистики (ссылку создать в /calorie/utm-form).
+* Закрытый доступ: если задан calorie.landing.access-key (CALORIE_LANDING_ACCESS_KEY), лендинг открывается только по ссылке ?key=<значение> (https://zefir.fit/?key=...), дальше 30 дней по httpOnly-cookie zefir_landing; без ключа — 404, пока закрыт — X-Robots-Tag: noindex. Пусто — лендинг открыт всем.
+* Добавлен юнит-тест CalorieLandingServiceTest.
+
+## 0.0.50 (05.10.2026)
+[et-75] — Вызовы ИИ вне транзакций
+* Транзакция больше не открыта, пока ждём ответ ИИ (10–30 с, таймаут Feign — до 120 с): она держала соединение с БД, а квоты (REQUIRES_NEW) брали второе — 10 параллельных фото / отчётов могли выбрать пул Hikari и подвесить все запросы к БД.
+* DishService: с processPhotoAndGetListDto, getDishDtoByPhoto, getDishDtoByDescriptionOrNull, getDishByDescriptionOrNull снят @Transactional; блюда после ответа ИИ сохраняет короткий @Transactional saveDishes. CalorieReportUpdateHandler: снят @Transactional с класса (транзакция шла на ИИ, рендер PDF и отправку в Telegram). Pomidoro TaskService.generateSubtasks* — то же.
+* MetricsAiLogService.incrementForProvider: атомарный upsert (INSERT ... ON CONFLICT (date) DO UPDATE ... + 1) в REQUIRES_NEW. Раньше — чтение-изменение-запись в транзакции вызывающего: инкременты терялись, а в месячном отчёте блокировка общей строки за день держалась до конца отчёта и тормозила ИИ во всех ботах. getTodayLog больше не создаёт строку.
+* spring.jpa.open-in-view: false — HTTP-запрос не держит соединение с БД, пока ждёт ИИ.
+
+[et-75] — Инсайты и блюда без ИИ: потолки
+* В промпт инсайтов уходят не больше 1000 последних блюд за период (calorie.ai-input.insight-max-dishes, ~50 токенов на блюдо): ручными блюдами промпт больше не раздуть. Блюда без времени отбрасываются первыми, порядок для ИИ — по времени, как раньше.
+* Суточный лимит на блюда без ИИ — 1000 за последние 24 часа (calorie.dish-limits.per-day, DishLimitsProperties); считаются все блюда пользователя. API: POST /calorie/dishes и добавление из избранного — 429 DISH_DAILY_LIMIT; бот (избранное) — «Не удалось добавить блюдо». DishRepository.countByUserIdAndCreatedAfter.
+* Отдельную паузу на пользователя для инсайтов не вводили: их и так ограничивает AiRateLimiter (10 в минуту, 100 в сутки), а пауза мешала бы переключать Week / Month.
+
+[et-75] — Вход на сайт: только Telegram, лимиты на /auth/*
+* Регистрация и вход по email + паролю выключены флагом auth.email-password.enabled (AUTH_EMAIL_PASSWORD_ENABLED, по умолчанию false): без подтверждения email аккаунты можно плодить скриптом, а лимиты на ИИ — пользовательские. /auth/register и /auth/login отвечают 403 EMAIL_AUTH_DISABLED. Код не удалён — включается одной переменной окружения. Подтверждение email — в бэклоге.
+* AuthRateLimiter — лимиты по IP (application.yaml, auth.rate-limit): регистрация 5 в час, вход по паролю 20 за 10 минут, вход через Telegram 20 за 10 минут. Неверные пароли на один email — 10 за 15 минут с любых IP (несуществующий email считается так же, чтобы не раскрывать, есть ли он); удачный вход обнуляет счётчик. При превышении — 429 AUTH_RATE_LIMIT, в message — через сколько повторить. Окна скользящие, счётчики в памяти.
+* ClientIpResolver: IP клиента из X-Real-IP (Railway перезаписывает его настоящим IP), если там адрес инфраструктуры — первый внешний из X-Forwarded-For. Заголовкам верим, только если запрос пришёл от прокси (100.x — edge Railway, а также локальные / внутренние адреса). Глобальный server.forward-headers-strategy не включали — он меняет и схему / хост запроса (DomainUrlFilter, редиректы).
+* Добавлены юнит-тесты AuthRateLimiterTest, ClientIpResolverTest, AuthServiceTest.
+
+[et-75] — Квоты фич: атомарное списание и «бесплатная промашка» для фото
+* FeatureAccessAspect списывает попытку до вызова метода, а не после: CalorieAccessService.tryConsume → UPDATE ... SET used_count = used_count + 1 WHERE used_count < limit (UserFeatureUsageRepository.tryIncrementUsage). Раньше проверка (hasAccess) и списание шли раздельно, и пачка параллельных запросов проходила сверх лимита. Списание — в отдельной транзакции (REQUIRES_NEW): фиксируется сразу и не держит блокировку строки на время вызова ИИ. hasAccess удалён.
+* Попытка возвращается (refundUsage), если метод бросил исключение или вернул пустой результат — для отчётов (REPORT_DAY, REPORT_PDF_WEEK, REPORT_PDF_MONTH) и избранного всё как раньше: не получил результат — не списали.
+* Фото (DISH_AI_VISION, @RequiresFeature(forgiveEmptyOncePerDay = true)): пустой ответ ИИ — это «на фото нет еды», токены потрачены. Раньше такие фото квоту не тратили — мусорными фото её можно было обходить бесконечно. Теперь первый такой раз за день попытку возвращаем и предупреждаем, следующие — списываем. Технические ошибки (OpenAI недоступен) — попытку возвращаем всегда. Безлимитный тариф не затронут: счётчик не ведётся, предупреждений нет.
+* Миграция 0.0.52.sql — колонка user_feature_usage.last_grace_local_date (день в таймзоне пользователя, когда промашку уже простили). Отметка ставится атомарно — из параллельных мусорных фото прощается только одно.
+* AccessResult.emptyResultCharge (NONE / FORGIVEN / CHARGED) — что стало с попыткой при пустом результате.
+* API POST /calorie/dishes/photo: вместо пустого списка — 422 PHOTO_NOT_RECOGNIZED_NOT_COUNTED или PHOTO_NOT_RECOGNIZED_COUNTED (на безлимите — пустой список, как раньше). Бот: сообщение «не удалось найти еду на фото» с пометкой, засчитана ли попытка; заодно при ошибке скачивания фото больше не приходит второе сообщение «Это не съедобно!».
+* UserFeatureUsageService.decrementUsage (удаление из избранного) — атомарный UPDATE вместо чтения-изменения-записи.
+* Добавлены юнит-тесты FeatureAccessAspectTest, CalorieAccessServiceTest.
+
+[et-75] — Защита ИИ-токенов: лимиты размера и формата ввода
+* Все лимиты — в одном месте: application.yaml, блок calorie.ai-input (AiInputLimitsProperties). Текст 4096 символов (как сообщение Telegram), подпись к фото 1024, фото 5 МБ, голос 3 МБ (≈2 мин), голос в боте ≤ 2 мин, тело любого запроса 8 МБ.
+* AiInputValidator проверяет ввод до вызова ИИ: POST /calorie/dishes/text, /photo, /voice. Формат фото определяется по содержимому (jpeg, png, webp, gif), а не захардкожен как image/jpeg; HEIC отклоняется. Формат голоса — белый список (ogg, webm, mp4, m4a, mp3, wav), принимается и расширение, и MIME (audio/webm;codecs=opus).
+* Голос из API теперь уходит в Whisper с реальным форматом (раньше всегда audio.ogg — webm/mp4 могли не распознаться). Новая перегрузка OpenAiProviderProcessor.fetchAudioResponse с fileName и contentType.
+* Бот: голосовое длиннее лимита отклоняется до скачивания и вызова ИИ — с сообщением пользователю.
+* RequestSizeLimitFilter: 413 по Content-Length сразу; тело без Content-Length (chunked) обрывается при чтении. Стоит после CorsFilter — ответ приходит с CORS-заголовками.
+* AiRateLimiter — сколько раз пользователь может обращаться к ИИ: не больше 10 за 60 секунд и 100 за 24 часа (300 с подпиской). Настройки — application.yaml, calorie.ai-rate-limit. Окна скользящие, считаются попытки (неудачный вызов ИИ тоже). Одно действие — одно обращение: голос (расшифровка + анализ) считается за одно. Подписка проверяется в БД только после 100-го обращения. Счётчики в памяти (один экземпляр бэка), раз в час неактивные пользователи удаляются.
+* Где считается: API — /calorie/dishes/text, /photo, /voice (после проверки ввода), POST /calorie/reports/insights/{type}/refresh; бот — текст, фото, голос (DishUpdateHandler), отчёты день / неделя / месяц (CalorieReportUpdateHandler). Ежедневная сводка от планировщика не считается.
+* API при превышении — 429 AI_RATE_LIMIT (минутный) или AI_DAILY_LIMIT (суточный), в message — через сколько повторить. Бот — сообщение через FeatureLimitNotifier.sendAiRateLimited; при суточном лимите без подписки — кнопка подписки.
+* Новые ErrorStatus: TEXT_TOO_LONG, PHOTO_COMMENT_TOO_LONG (400), IMAGE_TOO_LARGE, AUDIO_TOO_LARGE, REQUEST_TOO_LARGE (413), UNSUPPORTED_IMAGE_FORMAT, UNSUPPORTED_AUDIO_FORMAT (415), INVALID_FILE (400). В message — конкретный лимит (ErrorResponseException.clientMessage).
+
+## 0.0.49 (02.10.2026)
+[et-74] — ИИ-инсайты для страницы Insights: саммари и шаблоны поведения
+* Добавлены эндпоинты: GET /calorie/reports/insights — последние инсайты всех типов одним запросом; GET /calorie/reports/insights/{type} — один инсайт (204, если ещё не генерировался); POST /calorie/reports/insights/{type}/refresh — сгенерировать заново через ИИ (10–30 с). GET ИИ не вызывает.
+* Типы (AiInsightType): WEEKLY_SUMMARY, MONTHLY_SUMMARY, PATTERNS_WEEK, PATTERNS_MONTH — саммари и шаблоны поведения за последние 7 / 30 дней в таймзоне пользователя. Ответ (AiInsightDto) содержит период, время генерации, флаг stale (недельный устаревает со следующего дня, месячный — через 7 дней) и payload — JSON-ответ ИИ объектом.
+* Миграция 0.0.51.sql — таблица calorie_ai_insight (payload в jsonb), одна запись на пользователя и тип (уникальный индекс): при обновлении запись перезаписывается.
+* Новые промпты AI_REQUEST_INSIGHT_SUMMARY и AI_REQUEST_INSIGHT_PATTERNS: строгий JSON с эмодзи у каждого пункта, у шаблонов — sentiment (positive / neutral / negative). Язык ответа — English (интерфейс сайта и миниаппки).
+* В ИИ уходит компактный InsightPayloadRecord: профиль и цели КБЖУ, блюда только с нужными полями и временем приёма пищи уже в таймзоне пользователя, последние 20 взвешиваний (для прогноза веса). Служебные поля сущностей (id, userId, aiConfidence) не отправляются.
+* JSON-режим OpenAI: OpenAiChatCompletionRequest.makeJsonRequest (response_format: json_object) и OpenAiProviderProcessor.fetchJsonResponse. Используется только инсайтами, остальные запросы к ИИ не изменились.
+* Ограничения обновления: не чаще раза в минуту на тип (учитываются и неудачные вызовы ИИ), параллельная генерация того же типа отклоняется. Если еду записывали меньше чем в 3 разных днях — ИИ не вызывается. Новые ErrorStatus: AI_INSIGHT_TOO_FREQUENT (429), AI_INSIGHT_NOT_ENOUGH_DATA (422), AI_INSIGHT_FAILED (503).
+* Функция пока бесплатная — без @RequiresFeature.
+* ReportService: данные отчёта (блюда, цели, вес, профиль, настройки) загружаются из БД один раз на отчёт — раньше месячный PDF грузил блюда и вес по 3 раза, настройки 4 раза. Удалён неиспользуемый buildWeeklyTable, ObjectMapper настраивается один раз.
+* Исправлено в промпте AI_REQUEST_PATTERN_ANALYSIS: поле блюда называлось weightGrams, а в данных оно weight.
+* Таймаут чтения Feign снижен с ~16 минут до 120 секунд — зависший запрос к ИИ больше не держит поток. Касается всех Feign-клиентов.
+* DomainUrlFilter: флаг security.domain-filter.allow-localhost (DOMAIN_FILTER_ALLOW_LOCALHOST) пускает запросы на localhost / 127.0.0.1 — для локальной разработки. По умолчанию выключен; на проде не включать: Host задаёт клиент (см. et-71).
+* Добавлены юнит-тесты CalorieAiInsightServiceTest, ReportServiceAiInsightTest, InsightPayloadRecordTest, OpenAiChatCompletionRequestTest.
+
+## 0.0.48 (30.09.2026)
+[et-73] — Вход на сайте через Telegram, закрытое тестирование сайта
+* Добавлен эндпоинт POST /auth/telegram — меняет данные Telegram Login Widget на тот же JWT, что выдаёт /auth/login. Тело запроса — объект user из виджета как есть; подпись проверяется токеном CALORY_BOT_TOKEN.
+* Первый вход через виджет создаёт только AppUser и запись в user_auth_identities (провайдер TELEGRAM). TelegramUser не создаётся — человек мог ни разу не открывать бота, и в рассылки и статистику бота он попадать не должен.
+* Добавлены UserAuthIdentityService и UserAuthIdentityRepository — единое место, где telegramId сопоставляется с AppUser. Им пользуются вход на сайте, боты и фильтр мини-аппы, поэтому сайт, бот и мини-аппа работают с одним аккаунтом.
+* TelegramUserService.createOrGetUserByTelegram: для человека, впервые пришедшего в бота, аккаунт ищется сначала по другим ботам, затем по identity (вход на сайте) — дубль AppUser не создаётся. Новым пользователям ботов сразу создаётся Telegram-identity. Сценарий «уже пользовался этим ботом» не изменён.
+* TelegramAuthFilter ищет AppUser через identity, а не только через telegram_users — пользователь, зарегистрированный на сайте, не получает 401 в мини-аппе.
+* Исправлено: не проверялся срок годности auth_date — однажды перехваченные данные Telegram действовали бессрочно. Теперь initData мини-аппы и данные виджета старше 24 часов отклоняются (401). Сроки настраиваются: telegram.auth.init-data-max-age и telegram.auth.widget-max-age.
+* Добавлено закрытое тестирование сайта (SiteAccessService): /auth/login, /auth/register и /auth/telegram выдают JWT только email и telegramId из списков SITE_ALLOWED_EMAILS / SITE_ALLOWED_TELEGRAM_IDS, остальные получают 403 SITE_ACCESS_DENIED. По умолчанию доступ закрыт; SITE_ACCESS_RESTRICTED=false открывает сайт для всех. Мини-аппу не затрагивает.
+* Миграция 0.0.50.sql — дозаполнение Telegram-identity для пользователей ботов, появившихся после первого наполнения таблицы.
+* Добавлены юнит-тесты TelegramAuthServiceTest и SiteAccessServiceTest.
+* Исправлено: API бота курения (/nicotine/**) после et-71 требовал авторизацию и отвечал 401 — путь не попал в список открытых. Снова доступен без авторизации (личный инструмент, логинов нет).
+* Исправлено: при первом заходе нового пользователя параллельные запросы одновременно создавали настройки, и один из них падал с 500 (duplicate key user_settings_pkey). UserSettingsService.getOrCreate создаёт настройки в отдельной транзакции и при гонке читает уже созданные.
+* Исправлено: GET /calorie/reports/dashboard падал с 500 (NullPointerException) у пользователя без рассчитанных норм БЖУ — например, зарегистрированного на сайте и не прошедшего анкету в боте. fatsTarget и carbsTarget в DailyProgressDto теперь могут быть null, как caloriesTarget и proteinsTarget.
+* Удалён тестовый TestController (/calorie/test, /test), путь /calorie/test убран из открытых в SecurityConfig.
+
+## 0.0.47 (28.09.2026)
+[et-72] — Сообщения о лимитах и лимиты для миниаппки
+* Добавлен FeatureLimitNotifier — единое сообщение об исчерпанном лимите бесплатного плана с кнопкой «💳ПОДПИСКА» вместо «Доступ ограничен!». Лимит и период берутся из plan_features, поэтому текст не расходится с настройками тарифа. Используется для фото блюд, ИИ-разбора дня, недельного и периодного PDF-отчётов и избранного.
+* В BotFeature добавлено поле displayName — название функции для пользователя.
+* Исправлено добавление в избранное из бота: при исчерпанном лимите бот писал «⭐ Добавил блюдо», хотя блюдо не сохранялось (результат AccessResult сравнивался с null). Теперь приходит сообщение о лимите, а дубль названия, удалённое блюдо и прочие ошибки дают понятный ответ вместо необработанного исключения. Клавиатура меняется только после успешного сохранения.
+* Добавлен эндпоинт GET /calorie/profile/limits/all — лимит, остаток и период по всем функциям текущего тарифа одним запросом (-1 — без ограничений). Тариф пользователя определяется один раз (PlanFeatureService.getFeaturesByUserIdAndBotIdentifier).
+* Добавлен эндпоинт POST /calorie/dishes — ручное добавление блюда без ИИ (ManualDishRequest). Валидация: название 1–100 символов, калории 0–5000, БЖУ 0–500 г; категория по умолчанию UNKNOWN.
+
+## 0.0.46 (18.09.2026)
+[et-71] — Авторизация на сайте, роли и синхронизация с Telegram
+* Реализована регистрация и вход по email+паролю (AuthController, AuthService, JwtService) — пароли хранятся через BCrypt, выдаётся JWT-токен.
+* Добавлена ролевая модель: сущность Role, таблицы roles/app_user_roles (0.0.48.sql), сервис RoleService, дев-эндпоинты выдачи/отзыва ролей (DevAuthController).
+* Тестовые web-страницы (дашборд, логин, регистрация, auth-виджеты в static/auth и Thymeleaf-шаблонах) закрыты в SecurityConfig под ROLE_ADMIN вместо публичного доступа.
+* TelegramAuthFilter теперь подгружает реальные роли AppUser'а из БД вместо пустого списка — доступ больше не зависит от способа входа (email или Telegram), права одинаковы для одного и того же аккаунта.
+* Заложена структура под мультипровайдерную идентификацию (EMAIL/TELEGRAM/GOOGLE/APPLE) — сущность UserAuthIdentity и таблица user_auth_identities (0.0.49.sql), с преднаполнением из существующих app_users и telegram_users; сервисный слой пока не реализован.
+* Исправлен DomainUrlFilter: убрана NPE (возвращён request.getServerName() вместо клиентского заголовка Host) и убраны правила localhost/127.0.0.1, открывавшие все пути в обход домена.
+* Исправлена регрессия в UserFavoriteDishService.saveFromDish — при отсутствующем/чужом блюде и дубле названия снова возвращаются понятные ошибки (DISH_NOT_FOUND, FAVORITE_DISH_ALREADY_EXISTS) вместо 200 OK с пустым телом.
+* Добавлены зависимости spring-boot-starter-security и jjwt в pom.xml.
+    
+## 0.0.45 (26.06.2026)
+[et-70] — Миграция на app_user_id и развитие отчетности
+* Осуществлен полный переход с использования telegram_id на внутренний app_user_id для идентификации пользователей во всех сервисах.
+* Перенос выполнен для платежной части приложение и common-части и caloriebot
+* Применены миграционные SQL-скрипты 0.0.44–0.0.47.sql для перестроения связей в базе данных.
+
+## 0.0.20 (06.05.2026)
+[et-69] — REST API, инфраструктура безопасности
+* Реализована система аутентификации для Telegram Web App на основе проверки initData через кастомный фильтр TelegramAuthFilter.
+* Настроена конфигурация Spring Security.
+* Разработан полный набор REST-контроллеров для управления данными пользователя.
+* Разработан глобальный обработчик исключений (GlobalExceptionHandler) для стандартизации ответов об ошибках API и обработки некорректных HTTP-методов.
+
+## 0.0.19
+[et-67] - Reddit parser & AI pipeline
+* Парсинг сабреддитов (Jsoup)
+* Дедупликация постов (reddit_id)
+* AI фильтрация (NEW → APPROVED / REJECTED)
+* Обработка контента (APPROVED → PROCESSED / FAILED)
+* Шедулеры (каждые 8 часов)
+* Обработка ошибок и retry
+
+## 0.0.18 (01.04.2026)
+[et-66] - Автопостинг и ИИ-генератор контента
+* Создан модуль для автоматической генерации и публикации постов в Telegram-канал
+* Реализована генерация текста постов на основе научных статей с помощью ИИ с адаптацией под HTML-разметку Telegram
+* Добавлена автоматическая генерация изображений для постов через ИИ по заранее составленному промпту
+* Разработан обработчик входящих .txt и .pdf документов для автоматического извлечения текста из присланных файлов.
+* Создана система расписания для автоматического распределения утвержденных постов по доступным временным слотам
+* Внедрена пошаговая система модерации контента через inline-клавиатуры с функциями одобрения, отклонения, перегенерации и отложенного постинга
+* Настроен планировщик задач, который каждые 10 минут проверяет очередь и отправляет готовые посты в канал
+* Установлено ограничение доступа к боту, позволяющее взаимодействовать с ним только заранее определенному списку администраторов
+
+## 0.0.17 (16.03.2026)
+[et-65] - refactoring & error messages
+* Исправлены уведомления об ошибках
+
+## 0.0.16 (13.03.2026)
+[et-64] - start-flow
+* Изменен start-flow
+* Добавлены Privacy policy & Terms
+* Добавлены команды /support & /keyboard
+
+## 0.0.15 (10.03.2026)
+[et-63] - utm
+* Добавлены utm-ссылки
+
+## 0.0.14 (10.02.2026)
+[et-62] - Рефакторинг
+* Изменил сущность юзера. Добавил колонку со статусом боту пользователя (блокирован/неблокирован)
+* Изменение содержания ошибок. Добавление источника ошибки
+* Добавлен таймаут между сообщениями
+* Исправлен промпт при анализе блюда
+
+## 0.0.13 (10.02.2026)
+[et-61] - Рефакторинг
+* Сделал сообщения для админа о подписке и оплате
+* Фикс промпта
+* Сделал проверку на налл, в возвращаемом дто
+* Изменил численную клавиатуру 
+
+## 0.0.12 (04.02.2026)
+[et-60] - Пробный период
+* Ввел пробный период
+
+## 0.0.11 (02.02.2026)
+[et-59] - Меню в кнопках и статус подписки
+* Теперь есть вариант использовать меню, при помощи кнопки /menu
+* Можно посмотреть статус своей подписки, в кнопке 💳ПОДПИСКА
+
+## 0.0.10 (30.01.2026)
+[et-57] - Система ограничений функций, при разных тарифных планах
+* Создал Enum BotFeature — перечислил все платные функции бота (отчеты, AI-распознавание фото, избранное), чтобы ими можно было управлять централизованно.
+* Создал сущность PlanFeature — таблицу-справочник, где для каждого тарифа (FREE, Premium) прописано, сколько раз можно использовать ту или иную функцию.
+* Создал сущность UserFeatureUsage — таблицу-счетчик, которая запоминает, сколько попыток конкретный юзер уже потратил сегодня или за месяц.
+* Написал аннотацию @RequiresFeature — теперь достаточно добавить одну строчку над методом, чтобы включить проверку прав и лимитов.
+* Разработал FeatureAccessAspect — «умный» перехватчик, который сам проверяет лимиты до запуска функции и списывает попытку только в случае успеха (если бот выдал результат, а не ошибку).
+* Создал UserFeatureUsageService — мозг системы, который умеет обнулять счетчики в полночь по часовому поясу пользователя и защищает от «читерства» со сменой времени.
+* Создал CalorieAccessService — связующее звено, которое проверяет, какой у юзера сейчас план и разрешен ли ему доступ к конкретной кнопке.
+* Написал скрипт миграции 0.0.31.sql — создал все таблицы, настроил уникальные индексы для защиты от дублей и сразу заполнил базу правилами для бесплатного и платных тарифов.
+* Добавил новые тарифы в БД — прописал цены в Telegram Stars для подписок на 1 и 3 месяца.
+* Внедрил уникальный индекс на подписки — теперь база на физическом уровне не даст выдать пользователю две активные подписки одновременно, исключая путаницу в платежах.
+
+## 0.0.9 (19.01.2026)
+[et-56] - Рефакторинг и удаление блюд
+* Изменил промпт на ожидание нескольких блюд
+* Соответственно изменил сервис (DishService) и хендлер
+* Создал возможность удаления блюд из дневника, в новом формате
+* Добавил FAQ 
+
+## 0.0.8 (13.01.2026)
+[et-54] - ИИ-Отчеты
+* Создал сервис для создания отчетов ReportService
+* Создал хендлер для выдачи отчетов
+* Продумал структуру 3-х отчетов (дневной, недельный, месячный)
+* Создал html-файлы для шаблонов-отчетов
+* Добавил диаграмму распределения каллорий по времени суток
+* Добавил диаграмму распределения каллорий по категориям еды
+* Изменил шедулер ежедневного отчета
+* Добавил иммитацию загрузки отчета
+* Добавил микро-отчет веса в основную клавиатуру
+* Добавил многопоточность для генерации отчетов
+
+## 0.0.7 (26.12.2025)
+[et-53] - Рефакторинг
+* Исправил напоминания и добавил тихие часы
+* Поправил настройку таймзоны
+* При отправке фото в ИИ, также отправляется и текст из сообщения
+
+## 0.0.6 (25.12.2025)
+[et-52] - Хранение изменений целей пользователя
+* Создание новой сущности UserNutritionProfileEntry
+* Создание логики хранения (UserNutritionProfileEntryService)
+* Обновление алгоритмов связных классов (UserNutritionProfileService)
+* Обновлена формула рассчета КБЖУ
+* Оповещение пользователей (AdminMessageSenderUpdateHandler)
+
+## 0.0.5 (24.12.2025)
+[et-51]  - Рефакторинг избранных блюд
+* Обновлен интерфейс избранных блюд
+* Кнопка потверждения удаления
+
+## 0.0.4 (24.12.2025)
+[et-50]  - Рефакторинг сущности блюда и его обработчиков
+* Обновлена сущность Dish & FavoriteDish. 
+* * Добавлены количественные параметры блюда (порции, вес порции, общий вес) и категоризация блюд
+* * Соответстенно обновлены промпты
+* * Обновлены тексовки сообщений и клавиатуры
+* Добавлена логика изменения веса одной порции блюда — корректно пересчитываются вес порции, общий вес и КБЖУ пропорционально изменению
+* Реализован корректный перерасчёт КБЖУ и общего веса при изменении количества порций
+* Добавлена защита от некорректных значений порций (null, ≤ 0) на уровне сервиса
+
+## 0.0.3 (23.12.2025)
+[et-49]  - Напоминания
+* Обновлена БД. Добавлена сущность UserSettings для хранения персональных предпочтений
+* Реализована поддержка часовых поясов:
+* * Выбор и сохранение локальной таймзоны пользователя (Pagination UI)
+* * Автоматическая коррекция времени отправки уведомлений с учетом UTC-сдвига
+* Добавлены умные напоминания о еде:
+* * Мониторинг интервала бездействия
+* * Автоматический сброс таймера при записи приема пищи в дневник
+* Реализованы ежедневные итоги (Daily Summary):
+* * Настройка часа отправки вечернего отчета
+* * Рассылка итоговой статистики КБЖУ точно по локальному времени пользователя
+* Scheduler для отправки ежедневных итогов и напоминаний о еде
+
+## 0.0.2 (18.12.2025)
+[et-48]  - Аналитика и экспорт данных
+* Обновлена БД. Добавлены сущность для учета воды и веса
+* Добавлен учет потребления воды
+* Добавлен учет и история веса
+* Реализован AnalyticsService для отрисовки текстовой инфографики
+* Добавлены визуальные прогресс-бары (AnalyticsService)
+* Улучшены отчеты:
+* * Детальный отчет по блюду с вкладом в дневную норму.
+* * Еженедельный отчет питания с итогами и вердиктом по БЖУ
+* * История веса с разницей между замерами
+
+
+## 0.0.1 (16.12.2025)
+[et-47]  - Профиль питания пользователя
+* Реализация сущности UserNutritionProfile, его сервиса и репозитория
+* Настройка алгоритма подсчета целевых КБЖУ (UserNutritionProfileService)
+* Создание классов-исключений для UserNutritionProfileService
+* Создание обработчика команды профиля пользователя
+* Реализация сценария заполнения нового профиля
+* Реализация сценария изменения отдельных полей
+* Реализация шаблон клавиатуры-енам и клавиатуры-счетчика
