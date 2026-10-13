@@ -6,11 +6,14 @@ import com.kuklin.manageapp.bots.caloriebot.components.repository.DishRepository
 import com.kuklin.manageapp.bots.caloriebot.configurations.DishLimitsProperties;
 import com.kuklin.manageapp.bots.caloriebot.configurations.TelegramCaloriesBotKeyComponents;
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
+import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTextsService;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
 import com.kuklin.manageapp.common.services.TelegramUserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.dao.DataAccessResourceFailureException;
 
@@ -31,6 +34,7 @@ import static org.mockito.Mockito.when;
 /**
  * Разбор ответа ИИ: «нет еды / кривой ответ» → null, сбой сохранения → DISH_SAVE_FAILED,
  * чтобы FeatureAccessAspect вернул попытку, а не засчитал её как «на фото нет еды».
+ * Промпт — с текстом пользователя и его языком (на нём названия блюд, если по тексту язык не понять).
  */
 @SuppressWarnings("unchecked")
 class DishServiceAiResponseTest {
@@ -50,12 +54,14 @@ class DishServiceAiResponseTest {
         self = mock(DishService.class);
         ObjectProvider<DishService> selfProvider = mock(ObjectProvider.class);
         when(selfProvider.getObject()).thenReturn(self);
+        CalorieTextsService texts = mock(CalorieTextsService.class);
+        when(texts.languageOf(USER_ID)).thenReturn(AppLanguage.EN);
 
         service = new DishService(mock(DishRepository.class), openAi,
                 mock(TelegramCaloriesBotKeyComponents.class), new ObjectMapper(),
                 mock(UserSettingsService.class), mock(CalorieAccessService.class),
                 mock(TelegramUserService.class), selfProvider, mock(AiInputValidator.class),
-                mock(AiRateLimiter.class), mock(DishLimitsProperties.class));
+                mock(AiRateLimiter.class), mock(DishLimitsProperties.class), texts);
     }
 
     private void aiAnswers(String json) {
@@ -101,5 +107,33 @@ class DishServiceAiResponseTest {
 
         assertThat(service.getDishByDescriptionOrNull(USER_ID, "стол")).isNull();
         verify(self, never()).saveDishes(anyLong(), anyList());
+    }
+
+    // ── Язык названий блюд ─────────────────────────────────
+
+    @Test
+    void descriptionPromptCarriesTextAndUserLanguage() {
+        aiAnswers("[]");
+
+        service.getDishByDescriptionOrNull(USER_ID, "chicken breast 200g");
+
+        ArgumentCaptor<String> prompt = ArgumentCaptor.forClass(String.class);
+        verify(openAi).fetchResponse(any(), prompt.capture(), any(), anyString(), any());
+        assertThat(prompt.getValue())
+                .contains("Описание: chicken breast 200g")
+                .contains("если язык не понять — English");
+    }
+
+    @Test
+    void photoPromptCarriesCaptionAndUserLanguage() {
+        when(openAi.fetchPhotoResponse(any(), anyString(), anyString(), any())).thenReturn("[]");
+
+        service.getDishDtoByPhoto(USER_ID, "data:image/jpeg;base64,AAAA", "my lunch");
+
+        ArgumentCaptor<String> prompt = ArgumentCaptor.forClass(String.class);
+        verify(openAi).fetchPhotoResponse(any(), prompt.capture(), anyString(), any());
+        assertThat(prompt.getValue())
+                .contains("текста пользователя (\"my lunch\")")
+                .contains("если текста нет или язык не понять — English");
     }
 }

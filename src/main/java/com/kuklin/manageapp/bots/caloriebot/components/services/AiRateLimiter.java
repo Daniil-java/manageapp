@@ -1,6 +1,7 @@
 package com.kuklin.manageapp.bots.caloriebot.components.services;
 
 import com.kuklin.manageapp.bots.caloriebot.configurations.AiRateLimitProperties;
+import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorParams;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
@@ -129,11 +130,10 @@ public class AiRateLimiter {
 
         if (decision.reason() == Reason.MINUTE) {
             throw new ErrorResponseException(ErrorStatus.AI_RATE_LIMIT,
-                    String.format("Too many AI requests. Try again in %d seconds.", decision.retryAfterSeconds()));
+                    ErrorParams.retryAfter(decision.retryAfterSeconds()));
         }
         throw new ErrorResponseException(ErrorStatus.AI_DAILY_LIMIT,
-                String.format("Daily AI limit reached (%d per 24 hours). Try again in %s.",
-                        decision.dailyLimit(), formatWait(decision.retryAfterSeconds())));
+                ErrorParams.dailyLimit(decision.retryAfterSeconds(), decision.dailyLimit()));
     }
 
     /**
@@ -184,12 +184,5 @@ public class AiRateLimiter {
             result = it.next();
         }
         return result;
-    }
-
-    /** 125 → "3 min", 7300 → "2 h 2 min". */
-    private static String formatWait(long seconds) {
-        long minutes = (seconds + 59) / 60;
-        if (minutes < 60) return minutes + " min";
-        return minutes / 60 + " h " + minutes % 60 + " min";
     }
 }

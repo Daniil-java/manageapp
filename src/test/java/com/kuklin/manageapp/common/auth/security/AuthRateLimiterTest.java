@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.common.auth.security;
 
+import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorParams;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
 import com.kuklin.manageapp.common.configurations.AuthProperties;
@@ -53,7 +54,7 @@ class AuthRateLimiterTest {
                 .satisfies(e -> {
                     ErrorResponseException ex = (ErrorResponseException) e;
                     assertThat(ex.getErrorStatus()).isEqualTo(ErrorStatus.AUTH_RATE_LIMIT);
-                    assertThat(ex.getClientMessage()).isEqualTo("Too many attempts. Try again in 1 h 0 min.");
+                    assertThat(ex.getParams()).containsEntry(ErrorParams.WAIT_HOURS, 1L).containsEntry(ErrorParams.WAIT_MINUTES, 0L);
                 });
 
         // Другой IP и другое действие — свои счётчики
@@ -69,7 +70,9 @@ class AuthRateLimiterTest {
         }
         // Первая попытка была 200 секунд назад — выпадет из 10-минутного окна через 400 секунд
         assertThatThrownBy(() -> limiter.acquireIpOrThrow(AuthRateLimiter.Action.LOGIN, IP))
-                .hasMessage("Too many attempts. Try again in 7 min.");
+                .satisfies(e -> assertThat(((ErrorResponseException) e).getParams())
+                        .containsEntry(ErrorParams.RETRY_AFTER_SECONDS, 400L)
+                        .containsEntry(ErrorParams.WAIT_MINUTES, 7L));
 
         clock.advance(Duration.ofSeconds(400));
         assertThatCode(() -> limiter.acquireIpOrThrow(AuthRateLimiter.Action.LOGIN, IP)).doesNotThrowAnyException();

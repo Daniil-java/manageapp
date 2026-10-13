@@ -1,7 +1,10 @@
 package com.kuklin.manageapp.bots.caloriebot.components.services.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.kuklin.manageapp.bots.caloriebot.components.services.UserSettingsService;
 import com.kuklin.manageapp.bots.caloriebot.configurations.AiInputLimitsProperties;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTextsService;
+import com.kuklin.manageapp.bots.caloriebot.i18n.I18nProperties;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletRequest;
 import org.junit.jupiter.api.BeforeEach;
@@ -15,6 +18,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
 
 class RequestSizeLimitFilterTest {
 
@@ -24,7 +28,8 @@ class RequestSizeLimitFilterTest {
     void setUp() {
         AiInputLimitsProperties limits = new AiInputLimitsProperties();
         limits.setRequestMaxSize(DataSize.ofBytes(10));
-        filter = new RequestSizeLimitFilter(limits, new ObjectMapper());
+        CalorieTextsService texts = new CalorieTextsService(new I18nProperties(), mock(UserSettingsService.class));
+        filter = new RequestSizeLimitFilter(limits, new ObjectMapper(), texts);
     }
 
     @Test
@@ -47,6 +52,7 @@ class RequestSizeLimitFilterTest {
         assertThat(passed.get()).isNull();
         assertThat(response.getStatus()).isEqualTo(413);
         assertThat(response.getContentAsString()).contains("REQUEST_TOO_LARGE");
+        assertThat(response.getContentAsString()).contains("Maximum is 0 MB");
     }
 
     @Test

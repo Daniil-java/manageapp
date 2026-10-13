@@ -50,7 +50,7 @@ public class CalorieAiInsight {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
-    /** Язык текста инсайта ("en", "ru" — InsightLanguage.code); null — до миграции 0.0.55, английский. */
+    /** Язык текста инсайта ("en", "ru" — AppLanguage.code); null — до миграции 0.0.55, английский. */
     @Column(name = "language", length = 8)
     private String language;
 }

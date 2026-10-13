@@ -124,6 +124,11 @@ calorie:
   # локально CALORIE_DAILY_SUMMARY_ENABLED=false — иначе тратит ИИ на всех пользователей локальной базы.
   daily-summary:
     enabled: ${CALORIE_DAILY_SUMMARY_ENABLED:true}
+  # Языки (CalorieTextsService, словари i18n/calorie/*). Выбор языка пользователям пока не открыт:
+  # переключаться (/lang en, /lang reset) могут только Telegram id из dev-telegram-ids.
+  i18n:
+    default-language: ru                                   # язык тех, кто не выбирал, и запасной словарь
+    dev-telegram-ids: ${CALORIE_I18N_DEV_IDS:425120436}    # через запятую
   # Лендинг zefir.fit: код UTM-ссылки (создаётся в /calorie/utm-form) для кнопок «Открыть в Telegram».
   # Пусто — ссылка на бота без метки.
   landing:

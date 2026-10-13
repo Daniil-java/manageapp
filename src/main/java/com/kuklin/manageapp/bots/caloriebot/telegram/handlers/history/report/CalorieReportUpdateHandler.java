@@ -3,6 +3,8 @@ package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.history.report;
 import com.kuklin.manageapp.bots.caloriebot.components.services.AiRateLimiter;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.MissingFeatureException;
 import com.kuklin.manageapp.bots.caloriebot.components.services.ReportService;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTextsService;
+import com.kuklin.manageapp.bots.caloriebot.i18n.PdfTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.FeatureLimitNotifier;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
@@ -38,11 +40,10 @@ public class CalorieReportUpdateHandler implements CalorieBotUpdateHandler {
     private final CalorieWeightHistoryUpdateHandler calorieWeightHistoryUpdateHandler;
     private final FeatureLimitNotifier featureLimitNotifier;
     private final AiRateLimiter aiRateLimiter;
+    private final CalorieTextsService calorieTextsService;
 
     private static final String MSG_CHOOSE_REPORT = "Выберите тип аналитики";
     private static final String CLB_DATA_ERROR = "Ошибка данных! Попробуйте повторить операцию позже!";
-    private static final String DOC_ERROR = "Не получилось сгенерировать отчет! Попробуйте еще раз";
-    private static final String AWAIT_MSG = "Генерирую документ...";
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
@@ -84,7 +85,7 @@ public class CalorieReportUpdateHandler implements CalorieBotUpdateHandler {
 
             calorieTelegramBot.sendChatActionTyping(chatId);
             // Обертка с индикацией загрузки
-            executeWithAwait(chatId, () -> {
+            executeWithAwait(chatId, telegramUser.getAppUserId(), () -> {
                 switch (reportType) {
                     case DAY -> handleDayReport(chatId, telegramUser.getAppUserId());
                     case WEEK -> handleWeeklyDeepReport(chatId, telegramUser.getAppUserId());
@@ -103,10 +104,10 @@ public class CalorieReportUpdateHandler implements CalorieBotUpdateHandler {
      * Выполняет действие (action), предварительно отправив сообщение об ожидании.
      * После выполнения (успешного или нет) удаляет сообщение об ожидании.
      */
-    private void executeWithAwait(Long chatId, Runnable action) {
+    private void executeWithAwait(Long chatId, Long appUserId, Runnable action) {
         Integer awaitMsgId = null;
         try {
-            Message message = calorieTelegramBot.sendReturnedMessage(chatId, AWAIT_MSG);
+            Message message = calorieTelegramBot.sendReturnedMessage(chatId, calorieTextsService.get(appUserId, PdfTextKeys.GENERATING));
             if (message != null) {
                 awaitMsgId = message.getMessageId();
             }
@@ -138,7 +139,7 @@ public class CalorieReportUpdateHandler implements CalorieBotUpdateHandler {
                     now,
                     appUserId
             ).getOrThrow();
-            sendPdfOrError(chatId, report, ReportType.WEEK);
+            sendPdfOrError(chatId, appUserId, report, ReportType.WEEK);
         } catch (MissingFeatureException e) {
             featureLimitNotifier.sendLimitReached(chatId, e.getRequiredFeature());
         }
@@ -153,30 +154,31 @@ public class CalorieReportUpdateHandler implements CalorieBotUpdateHandler {
                     now,
                     appUserId
             ).getOrThrow();
-            sendPdfOrError(chatId, report, type);
+            sendPdfOrError(chatId, appUserId, report, type);
         } catch (MissingFeatureException e) {
             featureLimitNotifier.sendLimitReached(chatId, e.getRequiredFeature());
         }
     }
 
-    private void sendPdfOrError(Long chatId, byte[] content, ReportType type) {
+    private void sendPdfOrError(Long chatId, Long appUserId, byte[] content, ReportType type) {
         if (content != null && content.length > 0) {
-            calorieTelegramBot.sendDocument(chatId, content, type.fileName, type.caption);
+            calorieTelegramBot.sendDocument(chatId, content, type.fileName, calorieTextsService.get(appUserId, type.captionKey));
         } else {
-            calorieTelegramBot.sendReturnedMessage(chatId, DOC_ERROR);
+            calorieTelegramBot.sendReturnedMessage(chatId, calorieTextsService.get(appUserId, PdfTextKeys.FAILED));
         }
     }
 
     @Getter
     @AllArgsConstructor
     public enum ReportType {
-        DAY("day-report.pdf", "ДНЕВНОЙ ОТЧЕТ", 1l, ChronoUnit.DAYS),
-        WEEK("week-report.pdf", "НЕДЕЛЬНЫЙ ОТЧЕТ", 7l, ChronoUnit.DAYS),
-        MONTH("month-report.pdf", "МЕСЯЧНЫЙ ОТЧЕТ", 30l, ChronoUnit.DAYS),
-        WEIGHT("weight-report.pdf", "ОТЧЕТ ПО ВЕСУ", null, null);
+        DAY("day-report.pdf", PdfTextKeys.CAPTION_DAY, 1l, ChronoUnit.DAYS),
+        WEEK("week-report.pdf", PdfTextKeys.CAPTION_WEEK, 7l, ChronoUnit.DAYS),
+        MONTH("month-report.pdf", PdfTextKeys.CAPTION_MONTH, 30l, ChronoUnit.DAYS),
+        WEIGHT("weight-report.pdf", PdfTextKeys.CAPTION_WEIGHT, null, null);
 
         private final String fileName;
-        private final String caption;
+        /** Подпись к файлу — ключ словаря pdf_*. */
+        private final String captionKey;
         private final Long amount;
         private final ChronoUnit unit;
 

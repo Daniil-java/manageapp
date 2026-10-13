@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.common.auth.security;
 
+import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorParams;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
 import com.kuklin.manageapp.common.configurations.AuthProperties;
@@ -215,16 +216,8 @@ public class AuthRateLimiter {
         }
     }
 
-    /** 429 AUTH_RATE_LIMIT; текст уходит клиенту как есть — фронт показывает его пользователю. */
+    /** 429 AUTH_RATE_LIMIT; текст «через сколько повторить» — из словаря errors_* по params. */
     private static ErrorResponseException tooMany(long retryAfterSeconds) {
-        return new ErrorResponseException(ErrorStatus.AUTH_RATE_LIMIT,
-                String.format("Too many attempts. Try again in %s.", formatWait(retryAfterSeconds)));
-    }
-
-    /** 40 → "1 min", 3700 → "1 h 2 min". */
-    private static String formatWait(long seconds) {
-        long minutes = (seconds + 59) / 60;
-        if (minutes < 60) return minutes + " min";
-        return minutes / 60 + " h " + minutes % 60 + " min";
+        return new ErrorResponseException(ErrorStatus.AUTH_RATE_LIMIT, ErrorParams.retryAfter(retryAfterSeconds));
     }
 }

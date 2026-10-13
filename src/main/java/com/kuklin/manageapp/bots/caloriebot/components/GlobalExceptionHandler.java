@@ -2,6 +2,7 @@ package com.kuklin.manageapp.bots.caloriebot.components;
 
 import com.kuklin.manageapp.bots.caloriebot.components.services.security.RequestSizeLimitFilter;
 import com.kuklin.manageapp.bots.caloriebot.configurations.AiInputLimitsProperties;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTextsService;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponse;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
@@ -28,6 +29,7 @@ import java.util.Arrays;
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     private final AiInputLimitsProperties aiInputLimits;
+    private final CalorieTextsService texts;
 
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ErrorResponse> handleBadCredentials(BadCredentialsException e, WebRequest request) {
@@ -36,7 +38,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler
     public ResponseEntity<ErrorResponse> catchAErrorResponseException(ErrorResponseException e, WebRequest request) {
-        return new ResponseEntity<>(new ErrorResponse(e, request), e.getErrorStatus().getHttpStatus());
+        return new ResponseEntity<>(new ErrorResponse(e, texts.errorForApi(e), request), e.getErrorStatus().getHttpStatus());
     }
 
     @Nullable
@@ -62,9 +64,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             HttpMessageNotReadableException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
         for (Throwable cause = ex; cause != null; cause = cause.getCause()) {
             if (cause instanceof RequestSizeLimitFilter.RequestTooLargeException) {
-                ErrorResponseException e = new ErrorResponseException(
-                        ErrorStatus.REQUEST_TOO_LARGE, RequestSizeLimitFilter.tooLargeMessage(aiInputLimits));
-                return new ResponseEntity<>(new ErrorResponse(e, request), HttpStatus.PAYLOAD_TOO_LARGE);
+                ErrorResponseException e = RequestSizeLimitFilter.tooLarge(aiInputLimits);
+                return new ResponseEntity<>(new ErrorResponse(e, texts.errorForApi(e), request), HttpStatus.PAYLOAD_TOO_LARGE);
             }
         }
         return super.handleHttpMessageNotReadable(ex, headers, status, request);

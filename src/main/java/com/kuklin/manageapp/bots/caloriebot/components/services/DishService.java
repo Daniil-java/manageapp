@@ -10,8 +10,10 @@ import com.kuklin.manageapp.bots.caloriebot.configurations.DishLimitsProperties;
 import com.kuklin.manageapp.bots.caloriebot.configurations.TelegramCaloriesBotKeyComponents;
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserFavoriteDish;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTextsService;
 import com.kuklin.manageapp.bots.caloriebot.models.ManualDishRequest;
 import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.DishDto;
+import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorParams;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.MissingFeatureException;
@@ -52,6 +54,7 @@ public class DishService {
     private final AiInputValidator aiInputValidator;
     private final AiRateLimiter aiRateLimiter;
     private final DishLimitsProperties dishLimits;
+    private final CalorieTextsService calorieTextsService;
 
     // --- Public Methods ---
 
@@ -86,7 +89,7 @@ public class DishService {
     @RequiresFeature(value = BotFeature.DISH_AI_VISION, botIdentifier = BotIdentifier.CALORIE_BOT,
             forgiveEmptyOncePerDay = true)
     public AccessResult<List<Dish>> getDishDtoByPhoto(Long userId, String photoBase64, String message) {
-        String aiPhotoPrompt = String.format(AI_PHOTO_REQUEST, message);
+        String aiPhotoPrompt = String.format(AI_PHOTO_REQUEST, message, aiLanguageOf(userId));
         String aiResponse = openAiIntegrationService.fetchPhotoResponse(
                 telegramCaloriesBotKeyComponents.getAiKey(),
                 aiPhotoPrompt,
@@ -105,12 +108,17 @@ public class DishService {
     public List<Dish> getDishByDescriptionOrNull(Long userId, String text) {
         String aiResponse = openAiIntegrationService.fetchResponse(
                 telegramCaloriesBotKeyComponents.getAiKey(),
-                String.format(AI_REQUEST, text),
+                String.format(AI_REQUEST, text, aiLanguageOf(userId)),
                 CalorieTelegramBot.BOT_IDENTIFIER,
                 this.getClass().getSimpleName(),
                 MetricsAiInteractionRecord.AiMessageType.TEXT
         );
         return getDishListByAiResponseOrNull(userId, aiResponse);
+    }
+
+    /** Язык пользователя для промпта: на нём ИИ называет блюда, если по описанию язык не понять (или описания нет). */
+    private String aiLanguageOf(Long userId) {
+        return calorieTextsService.languageOf(userId).getNativeName();
     }
 
     @Transactional
@@ -205,8 +213,7 @@ public class DishService {
      */
     public void checkDailyDishLimitOrThrow(Long userId) {
         if (isDailyDishLimitReached(userId)) {
-            throw new ErrorResponseException(ErrorStatus.DISH_DAILY_LIMIT, String.format(
-                    "Too many dishes added in the last 24 hours (max %d). Try again later.", dishLimits.getPerDay()));
+            throw new ErrorResponseException(ErrorStatus.DISH_DAILY_LIMIT, ErrorParams.max(dishLimits.getPerDay()));
         }
     }
 

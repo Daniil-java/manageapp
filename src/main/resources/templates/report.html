@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="{{LANG}}">
 <head>
     <meta charset="UTF-8" />
     <style>
@@ -7,7 +7,7 @@
             size: A4;
             margin: 1.5cm;
             @bottom-right {
-                content: "Страница " counter(page);
+                content: "{{pdf.page}} " counter(page);
                 font-family: "DejaVu Sans", sans-serif;
                 font-size: 8pt;
                 color: #95a5a6;
@@ -115,40 +115,40 @@
 
 <img id="watermark" src="calory.png" alt="" />
 
-<h1>Отчет по питанию и весу</h1>
+<h1>{{pdf.monthly.title}}</h1>
 
 <div class="ai-section">
-    <h2>Прогноз и Аналитика</h2>
+    <h2>{{pdf.monthly.forecast}}</h2>
     <div class="ai-content">
         {{PERIOD_AI_TEXT}}
     </div>
 </div>
 
 <div class="ai-section">
-    <h2>Анализ пищевого поведения</h2>
+    <h2>{{pdf.monthly.behavior}}</h2>
     <div class="ai-content">
         {{NUTRITION_ANALYSIS}}
     </div>
 </div>
 
-<h2>Распределение каллорий по категориями еды</h2>
+<h2>{{pdf.section.calories-by-category}}</h2>
 {{CATEGORY_CHART}}
 
-<h2>Распределение каллорий по времени суток, в среднем</h2>
+<h2>{{pdf.section.calories-by-time}}</h2>
 {{TIMING_CHART}}
 
-<h2>Ежедневная статистика</h2>
+<h2>{{pdf.monthly.daily}}</h2>
 {{DAILY_TABLE}}
 
-<h2>Еженедельный тренд</h2>
+<h2>{{pdf.monthly.weekly}}</h2>
 {{WEEKLY_TABLE}}
 
-<h2>Динамика веса</h2>
+<h2>{{pdf.monthly.weight}}</h2>
 {{WEIGHT_TABLE}}
 
 <div class="footer-note">
-    Данный отчет сформирован автоматически сервисом CalorieBot AI.<br />
-    Не является медицинским заключением. Обратитесь к специалисту перед изменением диеты.
+    {{pdf.monthly.disclaimer-auto}}<br />
+    {{pdf.monthly.disclaimer-medical}}
 </div>
 
 </body>

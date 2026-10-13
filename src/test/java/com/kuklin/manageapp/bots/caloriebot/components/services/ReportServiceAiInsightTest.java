@@ -6,6 +6,9 @@ import com.kuklin.manageapp.bots.caloriebot.configurations.TelegramCaloriesBotKe
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserSettings;
+import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTextsService;
+import com.kuklin.manageapp.bots.caloriebot.i18n.I18nProperties;
 import com.kuklin.manageapp.bots.caloriebot.models.AiInsightType;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
@@ -25,12 +28,14 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 /**
- * {@link ReportService#getAiInsightReport} — генерация ИИ-инсайтов для страницы Insights.
+ * {@link ReportService#getAiInsightReport} — генерация ИИ-инсайтов для страницы Insights;
+ * отчёты бота (день, недельный и месячный PDF) — промпт на языке пользователя.
  */
 class ReportServiceAiInsightTest {
 
@@ -71,8 +76,12 @@ class ReportServiceAiInsightTest {
         AiInputLimitsProperties aiInputLimits = new AiInputLimitsProperties();
         aiInputLimits.setInsightMaxDishes(1000);
 
+        // Язык пользователя — не язык по умолчанию (ru), чтобы видеть, что он доходит до промпта и PDF
+        when(settingsService.findLanguageCode(USER_ID)).thenReturn("en");
+        CalorieTextsService texts = new CalorieTextsService(new I18nProperties(), settingsService);
+
         service = new ReportService(dishService, profileService, entryService, settingsService,
-                weightService, ai, components, aiInputLimits);
+                weightService, ai, components, aiInputLimits, texts);
     }
 
     @Test
@@ -83,7 +92,7 @@ class ReportServiceAiInsightTest {
                 dish("2026-10-02T03:00:00Z")
         );
 
-        assertThatThrownBy(() -> service.getAiInsightReport(AiInsightType.WEEKLY_SUMMARY, FROM, TO, USER_ID))
+        assertThatThrownBy(() -> service.getAiInsightReport(AiInsightType.WEEKLY_SUMMARY, FROM, TO, USER_ID, AppLanguage.EN))
                 .isInstanceOf(ErrorResponseException.class)
                 .extracting(e -> ((ErrorResponseException) e).getErrorStatus())
                 .isEqualTo(ErrorStatus.AI_INSIGHT_NOT_ENOUGH_DATA);
@@ -100,7 +109,7 @@ class ReportServiceAiInsightTest {
         );
         givenAiAnswers("{\"headline\":\"ok\",\"bullets\":[]}");
 
-        AccessResult<String> result = service.getAiInsightReport(AiInsightType.WEEKLY_SUMMARY, FROM, TO, USER_ID);
+        AccessResult<String> result = service.getAiInsightReport(AiInsightType.WEEKLY_SUMMARY, FROM, TO, USER_ID, AppLanguage.EN);
 
         assertThat(result.data()).isEqualTo("{\"headline\":\"ok\",\"bullets\":[]}");
     }
@@ -114,7 +123,7 @@ class ReportServiceAiInsightTest {
         );
         givenAiAnswers("{\"patterns\":[]}");
 
-        service.getAiInsightReport(AiInsightType.PATTERNS_WEEK, FROM, TO, USER_ID);
+        service.getAiInsightReport(AiInsightType.PATTERNS_WEEK, FROM, TO, USER_ID, AppLanguage.EN);
 
         ArgumentCaptor<String> prompt = ArgumentCaptor.forClass(String.class);
         verify(ai).fetchJsonResponse(eq(AI_KEY), prompt.capture(), eq(BotIdentifier.CALORIE_BOT), anyString(),
@@ -138,7 +147,7 @@ class ReportServiceAiInsightTest {
         givenDishes(dish("2026-09-30T02:00:00Z"), dish("2026-10-01T02:00:00Z"), dish("2026-10-02T02:00:00Z"));
         givenAiAnswers("{\"headline\":\"ok\",\"bullets\":[]}");
 
-        service.getAiInsightReport(AiInsightType.MONTHLY_SUMMARY, FROM, TO, USER_ID);
+        service.getAiInsightReport(AiInsightType.MONTHLY_SUMMARY, FROM, TO, USER_ID, AppLanguage.EN);
 
         ArgumentCaptor<String> prompt = ArgumentCaptor.forClass(String.class);
         verify(ai).fetchJsonResponse(anyString(), prompt.capture(), any(), anyString(), any());
@@ -150,7 +159,7 @@ class ReportServiceAiInsightTest {
         givenDishes(dish("2026-09-30T02:00:00Z"), dish("2026-10-01T02:00:00Z"), dish("2026-10-02T02:00:00Z"));
         givenAiAnswers("Sorry, I can't help with that");
 
-        AccessResult<String> result = service.getAiInsightReport(AiInsightType.WEEKLY_SUMMARY, FROM, TO, USER_ID);
+        AccessResult<String> result = service.getAiInsightReport(AiInsightType.WEEKLY_SUMMARY, FROM, TO, USER_ID, AppLanguage.EN);
 
         assertThat(result.isAllowed()).isTrue();
         assertThat(result.data()).isNull();
@@ -162,12 +171,56 @@ class ReportServiceAiInsightTest {
         when(ai.fetchJsonResponse(anyString(), anyString(), any(), anyString(), any()))
                 .thenThrow(new RuntimeException("Read timed out"));
 
-        AccessResult<String> result = service.getAiInsightReport(AiInsightType.WEEKLY_SUMMARY, FROM, TO, USER_ID);
+        AccessResult<String> result = service.getAiInsightReport(AiInsightType.WEEKLY_SUMMARY, FROM, TO, USER_ID, AppLanguage.EN);
 
         assertThat(result.data()).isNull();
     }
 
+    // ── Отчёты бота на языке пользователя ──────────────────
+
+    @Test
+    void dayReportAsksAiInUserLanguage() {
+        when(dishService.getTodayDishes(USER_ID)).thenReturn(List.of(dish("2026-10-02T02:00:00Z")));
+        when(ai.fetchResponse(anyString(), anyString(), any(), anyString(), any())).thenReturn("ok");
+
+        service.getDayAiReport(USER_ID);
+
+        // Язык и в начале, и в конце задания: иначе модель по русской инструкции сбивалась на русский
+        assertThat(textPrompts()).singleElement().asString()
+                .contains("ЯЗЫК ОТВЕТА: English.")
+                .contains("Язык ответа: English — от первого до последнего слова");
+    }
+
+    @Test
+    void weeklyPdfAsksAiInUserLanguage() {
+        givenDishes(dish("2026-10-02T02:00:00Z"));
+        when(ai.fetchResponse(anyString(), anyString(), any(), anyString(), any())).thenReturn("ok");
+
+        service.buildWeeklyDeepPdfReportOrNull(FROM, TO, USER_ID);
+
+        assertThat(textPrompts()).singleElement().asString().contains("ЯЗЫК ОТВЕТА: English.");
+    }
+
+    @Test
+    void monthlyPdfAsksAiInUserLanguage() {
+        givenDishes(dish("2026-10-02T02:00:00Z"));
+        when(ai.fetchResponse(anyString(), anyString(), any(), anyString(), any())).thenReturn("{}");
+
+        service.buildPdfReportOrNull(FROM, TO, USER_ID);
+
+        // Прогноз веса и разбор привычек — оба на языке пользователя
+        assertThat(textPrompts()).hasSize(2)
+                .allSatisfy(prompt -> assertThat(prompt).contains(": English."));
+    }
+
     // ── Helpers ────────────────────────────────────────────
+
+    /** Промпты всех текстовых (не JSON) запросов к ИИ. */
+    private List<String> textPrompts() {
+        ArgumentCaptor<String> prompt = ArgumentCaptor.forClass(String.class);
+        verify(ai, atLeast(0)).fetchResponse(anyString(), prompt.capture(), any(), anyString(), any());
+        return prompt.getAllValues();
+    }
 
     private void givenDishes(Dish... dishes) {
         when(dishService.getAllDishedByUserIdAndPeriod(USER_ID, FROM, TO)).thenReturn(List.of(dishes));

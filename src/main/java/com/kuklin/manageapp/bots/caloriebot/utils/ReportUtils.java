@@ -4,6 +4,7 @@ import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfileEntry;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserSettings;
 import com.kuklin.manageapp.bots.caloriebot.entities.WeightEntry;
+import com.kuklin.manageapp.bots.caloriebot.i18n.PdfTexts;
 import tech.tablesaw.api.StringColumn;
 import tech.tablesaw.api.Table;
 
@@ -17,6 +18,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.kuklin.manageapp.bots.caloriebot.i18n.PdfTextKeys.*;
+
 /**
  * Утилитарный класс для трансформации данных рациона и веса в аналитические таблицы.
  * Использует Tablesaw для построения колоночных структур данных.
@@ -27,7 +30,7 @@ public class ReportUtils {
      * Формирует агрегированную таблицу по неделям.
      * Помогает AI и пользователю увидеть долгосрочные тренды, сглаживая ежедневные колебания.
      */
-    public static Table buildPeriodReportPerWeek(List<Dish> dishes, List<WeightEntry> weightEntries, UserSettings userSettings, Instant from, Instant to) {
+    public static Table buildPeriodReportPerWeek(List<Dish> dishes, List<WeightEntry> weightEntries, UserSettings userSettings, Instant from, Instant to, PdfTexts texts) {
         ZoneId zoneId = userSettings.getZoneId();
 
         // Индексируем вес по датам для быстрого доступа
@@ -42,15 +45,16 @@ public class ReportUtils {
         LocalDate endDate = to.atZone(zoneId).toLocalDate();
 
         // Инициализация колонок будущей таблицы
-        StringColumn weekCol = StringColumn.create("Неделя");
-        StringColumn caloriesCol = StringColumn.create("Ср. Ккал");
-        StringColumn proteinsCol = StringColumn.create("Ср. Белки");
-        StringColumn fatsCol = StringColumn.create("Ср. Жиры");
-        StringColumn carbsCol = StringColumn.create("Ср. Углеводы");
-        StringColumn weightCol = StringColumn.create("Ср. Вес");
+        StringColumn weekCol = StringColumn.create(texts.get(COL_WEEK));
+        StringColumn caloriesCol = StringColumn.create(texts.get(COL_AVG_CALORIES));
+        StringColumn proteinsCol = StringColumn.create(texts.get(COL_AVG_PROTEINS));
+        StringColumn fatsCol = StringColumn.create(texts.get(COL_AVG_FATS));
+        StringColumn carbsCol = StringColumn.create(texts.get(COL_AVG_CARBS));
+        StringColumn weightCol = StringColumn.create(texts.get(COL_AVG_WEIGHT));
 
         // Начинаем расчет с понедельника первой недели периода
         LocalDate weekStart = startDate.with(DayOfWeek.MONDAY);
+        DateTimeFormatter shortDate = texts.shortDateFormat();
 
         while (!weekStart.isAfter(endDate)) {
             LocalDate weekEnd = weekStart.plusDays(6);
@@ -76,7 +80,7 @@ public class ReportUtils {
                 if (w != null) weekWeights.add(w);
             }
 
-            String weekLabel = weekStart + " – " + weekEnd;
+            String weekLabel = weekStart.format(shortDate) + " – " + weekEnd.format(shortDate);
 
             // Если данных в неделе слишком мало (меньше 3-х дней с записями), не считаем среднее,
             // чтобы не искажать аналитику (особенно важно для AI-прогнозов).
@@ -99,34 +103,34 @@ public class ReportUtils {
             }
             weekStart = weekStart.plusWeeks(1);
         }
-        return Table.create("Отчет по неделям", weekCol, caloriesCol, proteinsCol, fatsCol, carbsCol, weightCol);
+        return Table.create(texts.get(TABLE_WEEKLY), weekCol, caloriesCol, proteinsCol, fatsCol, carbsCol, weightCol);
     }
 
     /**
      * Формирует детальную ежедневную таблицу.
      * Сопоставляет факт съеденного с целями (нормами), актуальными на конкретную дату.
      */
-    public static Table buildPeriodReportPerDay(List<Dish> dishes, List<UserNutritionProfileEntry> targets, List<WeightEntry> weightEntries, UserSettings userSettings, Instant from, Instant to) {
+    public static Table buildPeriodReportPerDay(List<Dish> dishes, List<UserNutritionProfileEntry> targets, List<WeightEntry> weightEntries, UserSettings userSettings, Instant from, Instant to, PdfTexts texts) {
         ZoneId zoneId = userSettings.getZoneId();
 
         // Используем NavigableMap для эффективного поиска "последнего известного веса" на дату
         NavigableMap<LocalDate, BigDecimal> weightByDate = new TreeMap<>();
         for (WeightEntry w : weightEntries) weightByDate.put(w.getEntryDate(), w.getWeight());
 
-        StringColumn dateCol = StringColumn.create("Дата");
-        StringColumn weightCol = StringColumn.create("Вес");
-        StringColumn caloriesCol = StringColumn.create("Калории");
+        StringColumn dateCol = StringColumn.create(texts.get(COL_DATE));
+        StringColumn weightCol = StringColumn.create(texts.get(COL_WEIGHT));
+        StringColumn caloriesCol = StringColumn.create(texts.get(COL_CALORIES));
         StringColumn diffCol = StringColumn.create("Δ"); // Разница между фактом и целью
-        StringColumn proteinsCol = StringColumn.create("Белки");
-        StringColumn fatsCol = StringColumn.create("Жиры");
-        StringColumn carbsCol = StringColumn.create("Углеводы");
+        StringColumn proteinsCol = StringColumn.create(texts.get(COL_PROTEINS));
+        StringColumn fatsCol = StringColumn.create(texts.get(COL_FATS));
+        StringColumn carbsCol = StringColumn.create(texts.get(COL_CARBS));
 
         Map<LocalDate, List<Dish>> dishesByDate = dishes.stream()
                 .collect(Collectors.groupingBy(d -> d.getCreated().atZone(zoneId).toLocalDate()));
 
         LocalDate startDate = from.atZone(zoneId).toLocalDate();
         LocalDate endDate = to.atZone(zoneId).toLocalDate();
-        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+        DateTimeFormatter dateFormatter = texts.dateFormat();
 
         for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
             List<Dish> dayDishes = dishesByDate.getOrDefault(date, List.of());
@@ -155,7 +159,7 @@ public class ReportUtils {
             fatsCol.append(formatFactTarget(fF, target != null ? target.getFatsNormGramsPerDay() : null));
             carbsCol.append(formatFactTarget(cbF, target != null ? target.getCarbsNormGramsPerDay() : null));
         }
-        return Table.create("Дневной отчет", dateCol, weightCol, caloriesCol, diffCol, proteinsCol, fatsCol, carbsCol);
+        return Table.create(texts.get(TABLE_DAILY), dateCol, weightCol, caloriesCol, diffCol, proteinsCol, fatsCol, carbsCol);
     }
 
     /**
@@ -209,22 +213,22 @@ public class ReportUtils {
         return null;
     }
 
-    public static Table buildDetailedDishTable(List<Dish> dishes, List<UserNutritionProfileEntry> targets, ZoneId zoneId) {
+    public static Table buildDetailedDishTable(List<Dish> dishes, List<UserNutritionProfileEntry> targets, ZoneId zoneId, PdfTexts texts) {
         // Создаем колонки
-        StringColumn dateCol = StringColumn.create("Дата");
-        StringColumn nameCol = StringColumn.create("Блюдо");
-        StringColumn calCol = StringColumn.create("Калории");
-        StringColumn targetCol = StringColumn.create("Цель калорий");
-        StringColumn pCol = StringColumn.create("Белки");
-        StringColumn fCol = StringColumn.create("Жиры");
-        StringColumn cCol = StringColumn.create("Углеводы");
+        StringColumn dateCol = StringColumn.create(texts.get(COL_DATE));
+        StringColumn nameCol = StringColumn.create(texts.get(COL_DISH));
+        StringColumn calCol = StringColumn.create(texts.get(COL_CALORIES));
+        StringColumn targetCol = StringColumn.create(texts.get(COL_CALORIE_TARGET));
+        StringColumn pCol = StringColumn.create(texts.get(COL_PROTEINS));
+        StringColumn fCol = StringColumn.create(texts.get(COL_FATS));
+        StringColumn cCol = StringColumn.create(texts.get(COL_CARBS));
 
-        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd.MM.yy");
+        DateTimeFormatter dtf = texts.shortDateFormat();
 
-        // Сортируем блюда по дате
-        dishes.sort(Comparator.comparing(Dish::getCreated));
+        // Сортируем блюда по дате — копию: список приходит снаружи и может быть неизменяемым
+        List<Dish> sortedDishes = dishes.stream().sorted(Comparator.comparing(Dish::getCreated)).toList();
 
-        for (Dish dish : dishes) {
+        for (Dish dish : sortedDishes) {
             LocalDate date = dish.getCreated().atZone(zoneId).toLocalDate();
             UserNutritionProfileEntry target = findTargetForDate(targets, dish.getCreated());
 
@@ -237,19 +241,19 @@ public class ReportUtils {
             cCol.append(String.valueOf(nvl(dish.getCarbohydrates())));
         }
 
-        return Table.create("Детальный отчет", dateCol, nameCol, calCol, targetCol, pCol, fCol, cCol);
+        return Table.create(texts.get(TABLE_DISHES), dateCol, nameCol, calCol, targetCol, pCol, fCol, cCol);
     }
 
     // Добавьте этот метод в класс ReportUtils
-    public static Table buildWeightHistoryTable(List<WeightEntry> weightEntries, Instant from, Instant to, ZoneId zoneId) {
+    public static Table buildWeightHistoryTable(List<WeightEntry> weightEntries, Instant from, Instant to, ZoneId zoneId, PdfTexts texts) {
         LocalDate startDate = from.atZone(zoneId).toLocalDate();
         LocalDate endDate = to.atZone(zoneId).toLocalDate();
 
-        StringColumn dateCol = StringColumn.create("Дата");
-        StringColumn weightCol = StringColumn.create("Вес (кг)");
-        StringColumn deltaCol = StringColumn.create("Изменение");
+        StringColumn dateCol = StringColumn.create(texts.get(COL_DATE));
+        StringColumn weightCol = StringColumn.create(texts.get(COL_WEIGHT_KG));
+        StringColumn deltaCol = StringColumn.create(texts.get(COL_CHANGE));
 
-        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+        DateTimeFormatter dateFormatter = texts.dateFormat();
 
         // Сортируем по дате, чтобы правильно считать дельту
         List<WeightEntry> sortedEntries = weightEntries.stream()
@@ -272,7 +276,7 @@ public class ReportUtils {
             previousWeight = entry.getWeight();
         }
 
-        return Table.create("Таблица веса", dateCol, weightCol, deltaCol);
+        return Table.create(texts.get(TABLE_WEIGHT_HISTORY), dateCol, weightCol, deltaCol);
     }
 
     // Добавьте это в ReportUtils.java
@@ -284,13 +288,13 @@ public class ReportUtils {
     /**
      * Генерирует горизонтальный чарт распределения калорий по категориям (в %).
      */
-    public static String buildCategoryBarChartHtml(List<Dish> dishes) {
+    public static String buildCategoryBarChartHtml(List<Dish> dishes, PdfTexts texts) {
         if (dishes == null || dishes.isEmpty()) return "";
 
         Map<String, Integer> catMap = new HashMap<>();
         int totalCal = 0;
         for (Dish d : dishes) {
-            String catName = (d.getCategory() != null) ? d.getCategory().getName() : "Прочее";
+            String catName = texts.category(d.getCategory());
             int cal = nvl(d.getCalories());
             catMap.put(catName, catMap.getOrDefault(catName, 0) + cal);
             totalCal += cal;
@@ -302,7 +306,7 @@ public class ReportUtils {
 
         StringBuilder sb = new StringBuilder();
         sb.append("<div style='margin-top: 20px; font-family: \"DejaVu Sans\", sans-serif;'>");
-        sb.append("<h3 style='border-bottom: 1px solid #eee; padding-bottom: 5px; font-size: 14px;'>Распределение по категориям (%)</h3>");
+        sb.append("<h3 style='border-bottom: 1px solid #eee; padding-bottom: 5px; font-size: 14px;'>").append(escapeHtml(texts.get(CHART_CATEGORIES))).append("</h3>");
 
         String[] colors = {"#4e73df", "#1cc88a", "#36b9cc", "#f6c23e", "#e74a3b", "#858796"};
         int colorIdx = 0;
@@ -327,7 +331,7 @@ public class ReportUtils {
      * Генерирует горизонтальный чарт распределения калорий по часам (Ритм питания).
      * Теперь без таблиц, в едином стиле с категориями.
      */
-    public static String buildHourlyCaloriesChartHtml(List<Dish> dishes, ZoneId zoneId) {
+    public static String buildHourlyCaloriesChartHtml(List<Dish> dishes, ZoneId zoneId, PdfTexts texts) {
         if (dishes == null || dishes.isEmpty()) return "";
 
         long[] hourlyCals = new long[24];
@@ -342,7 +346,7 @@ public class ReportUtils {
 
         StringBuilder sb = new StringBuilder();
         sb.append("<div style='margin-top: 25px; font-family: \"DejaVu Sans\", sans-serif;'>");
-        sb.append("<h3 style='border-bottom: 1px solid #eee; padding-bottom: 5px; font-size: 14px;'>Ритм питания по часам (%)</h3>");
+        sb.append("<h3 style='border-bottom: 1px solid #eee; padding-bottom: 5px; font-size: 14px;'>").append(escapeHtml(texts.get(CHART_HOURS))).append("</h3>");
 
         // Контейнер с вертикальными линиями сетки на фоне
         sb.append("<div style='position: relative; padding: 10px 0; border-left: 2px solid #5a5c69;'>");

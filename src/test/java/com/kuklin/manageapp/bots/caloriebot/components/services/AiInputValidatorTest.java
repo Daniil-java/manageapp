@@ -1,6 +1,7 @@
 package com.kuklin.manageapp.bots.caloriebot.components.services;
 
 import com.kuklin.manageapp.bots.caloriebot.configurations.AiInputLimitsProperties;
+import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorParams;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
 import org.junit.jupiter.api.BeforeEach;
@@ -52,7 +53,7 @@ class AiInputValidatorTest {
                 .satisfies(e -> {
                     ErrorResponseException ex = (ErrorResponseException) e;
                     assertThat(ex.getErrorStatus()).isEqualTo(ErrorStatus.TEXT_TOO_LONG);
-                    assertThat(ex.getClientMessage()).contains("10");
+                    assertThat(ex.getParams()).containsEntry(ErrorParams.MAX, 10);
                 });
     }
 

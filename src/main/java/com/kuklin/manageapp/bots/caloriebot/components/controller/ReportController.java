@@ -3,7 +3,8 @@ package com.kuklin.manageapp.bots.caloriebot.components.controller;
 import com.kuklin.manageapp.bots.caloriebot.components.services.CalorieAiInsightService;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UiAnalyticsService;
 import com.kuklin.manageapp.bots.caloriebot.models.AiInsightType;
-import com.kuklin.manageapp.bots.caloriebot.models.InsightLanguage;
+import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTextsService;
 import com.kuklin.manageapp.bots.caloriebot.models.report.AiInsightDto;
 import com.kuklin.manageapp.bots.caloriebot.models.report.DashboardResponseDto;
 import io.swagger.v3.oas.annotations.Operation;
@@ -28,6 +29,7 @@ import java.util.Map;
 public class ReportController {
     private final UiAnalyticsService uiAnalyticsService;
     private final CalorieAiInsightService calorieAiInsightService;
+    private final CalorieTextsService calorieTextsService;
 
     @GetMapping("/dashboard")
     @Operation(summary = "Получить данные для дашборда", description = "Возвращает сводку за сегодня и данные для графиков за период")
@@ -63,9 +65,11 @@ public class ReportController {
     public AiInsightDto refreshInsight(
             @Parameter(hidden = true) @AuthenticationPrincipal Long appUserId,
             @Parameter(description = "Тип инсайта", example = "WEEKLY_SUMMARY") @PathVariable(name = "type") AiInsightType type,
-            @Parameter(description = "Язык интерфейса: en, ru. Нет или неизвестный — en", example = "ru")
+            @Parameter(description = "Язык интерфейса: en, ru. Нет или неизвестный — язык пользователя из настроек", example = "ru")
             @RequestParam(name = "lang", required = false) String lang) {
 
-        return calorieAiInsightService.refresh(appUserId, type, InsightLanguage.fromCode(lang));
+        AppLanguage language = AppLanguage.fromCode(lang)
+                .orElseGet(() -> calorieTextsService.languageOf(appUserId));
+        return calorieAiInsightService.refresh(appUserId, type, language);
     }
 }

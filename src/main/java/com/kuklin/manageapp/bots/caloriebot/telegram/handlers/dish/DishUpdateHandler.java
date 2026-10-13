@@ -10,6 +10,7 @@ import com.kuklin.manageapp.bots.caloriebot.components.services.DishService;
 import com.kuklin.manageapp.bots.caloriebot.configurations.TelegramCaloriesBotKeyComponents;
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.entities.DishChoiceChatModel;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTextsService;
 import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.DishDto;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
@@ -57,6 +58,7 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
     private final FeatureLimitNotifier featureLimitNotifier;
     private final AiInputValidator aiInputValidator;
     private final AiRateLimiter aiRateLimiter;
+    private final CalorieTextsService texts;
     private static final String PORTION_COUNT_CMD = "PC";
     private static final String PORTION_WEIGHT_CMD = "PW";
     private static final String VOICE_ERROR_MESSAGE =
@@ -79,9 +81,6 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
             "🤔 Не удалось найти еду на фото. Попытка засчитана.\n\n"
                     + "Фотографируйте блюдо крупно и при хорошем свете или опишите его текстом.";
     private static final String ERROR_LIMIT_MSG = "Количество запросов, доступных вам, достигло предела!";
-    private static final String DISH_SAVE_FAILED_MESSAGE =
-            "⚠️ Не получилось сохранить блюдо — сбой на нашей стороне, попытка не засчитана. "
-                    + "Попробуйте ещё раз чуть позже.";
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
@@ -93,7 +92,7 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
             if (e.getErrorStatus() != ErrorStatus.DISH_SAVE_FAILED) throw e;
             calorieTelegramBot.sendReturnedMessage(
                     update.getMessage().getChatId(),
-                    DISH_SAVE_FAILED_MESSAGE,
+                    texts.error(telegramUser.getAppUserId(), e),
                     KeyboardCalorieUpdateHandler.getCommandKeyboard(),
                     null
             );
