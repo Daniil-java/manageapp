@@ -39,8 +39,10 @@ public class PaymentPlanListCalorieUpdateHandler implements CalorieBotUpdateHand
     private final TelegramUserService telegramUserService;
     private final PlanTexts planTexts;
 
-    private static final String IMAGE_PATH =
-            "static/images/caloriescreens/price/tarif.png";
+    /** Картинка тарифов на языке пользователя: tarif_ru.png, tarif_en.png. */
+    private static final String IMAGE_DIR = "static/images/caloriescreens/price/";
+    /** Нет картинки на языке пользователя — показываем русскую. */
+    private static final AppLanguage FALLBACK_IMAGE_LANGUAGE = AppLanguage.RU;
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
@@ -86,7 +88,10 @@ public class PaymentPlanListCalorieUpdateHandler implements CalorieBotUpdateHand
         List<PricingPlan> planList = commonPaymentFacade
                 .getPricingPlans(calorieTelegramBot.getBotIdentifier());
 
-        byte[] photoBytes = loadImageFromResourcesOrNull();
+        byte[] photoBytes = loadImageFromResourcesOrNull(language);
+        if (photoBytes == null && language != FALLBACK_IMAGE_LANGUAGE) {
+            photoBytes = loadImageFromResourcesOrNull(FALLBACK_IMAGE_LANGUAGE);
+        }
 
         if (photoBytes == null) {
             log.error("Error returning message!");
@@ -103,14 +108,23 @@ public class PaymentPlanListCalorieUpdateHandler implements CalorieBotUpdateHand
         );
     }
 
-    private byte[] loadImageFromResourcesOrNull() {
-        try {
-            ClassPathResource resource = new ClassPathResource(IMAGE_PATH);
-            return StreamUtils.copyToByteArray(resource.getInputStream());
-        } catch (IOException e) {
-            log.error("Failed to load the pricing image: {}", IMAGE_PATH, e);
+    private byte[] loadImageFromResourcesOrNull(AppLanguage language) {
+        String imagePath = getImagePath(language);
+        ClassPathResource resource = new ClassPathResource(imagePath);
+        if (!resource.exists()) {
+            log.warn("No pricing image for language {}: {}", language, imagePath);
             return null;
         }
+        try {
+            return StreamUtils.copyToByteArray(resource.getInputStream());
+        } catch (IOException e) {
+            log.error("Failed to load the pricing image: {}", imagePath, e);
+            return null;
+        }
+    }
+
+    private static String getImagePath(AppLanguage language) {
+        return IMAGE_DIR + "tarif_" + language.getCode() + ".png";
     }
 
     // Формирует inline-клавиатуру с тарифами:

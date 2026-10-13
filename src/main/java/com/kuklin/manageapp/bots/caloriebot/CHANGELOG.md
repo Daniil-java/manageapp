@@ -1,4 +1,7 @@
 ## 0.0.64 (13.10.2026)
+[et-91] — Картинка тарифов на языке пользователя
+* Сообщение со списком тарифов (PaymentPlanListCalorieUpdateHandler) берёт картинку static/images/caloriescreens/price/tarif_<код языка>.png; tarif.png переименована в tarif_ru.png. Нет картинки на языке пользователя — показывается русская (в лог — warn). Новый язык — просто положить tarif_<код>.png.
+
 [et-91] — PDF-отчёты недели и месяца в стиле мини-приложения
 * Один шаблон templates/report.html на неделю и месяц (weeklyreport.html удалён): цвета светлой темы zef-fe, карточки со скруглением, маскот Zefir на обложке и в подвале вместо старого calory.png, «стр. N из M». Вёрстка без flex/grid — openhtmltopdf их не умеет.
 * Шрифты: Nunito (как в мини-приложении), Noto Emoji — монохромные эмодзи (цветные рендерер не рисует), DejaVu Sans — запасной для стрелок. Лицензии OFL лежат рядом в resources/fonts. Текст SVG-графиков Batik берёт только из @font-face — шаблон грузит Nunito по classpath:/fonts/… (протокол регистрирует ReportService).
