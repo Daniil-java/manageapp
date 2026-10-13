@@ -14,13 +14,20 @@ import java.util.Optional;
 @Getter
 @RequiredArgsConstructor
 public enum AppLanguage {
-    RU("ru", "Русский"),
-    EN("en", "English");
+    RU("ru", "Русский", "🇷🇺"),
+    EN("en", "English", "🇬🇧");
 
     /** Код как в user_settings.language, в Telegram language_code и во фронте. */
     private final String code;
     /** Название языка на нём самом — для списков выбора и промпта ИИ («отвечай на …»). */
     private final String nativeName;
+    /** Флаг на кнопках выбора языка в боте. */
+    private final String flag;
+
+    /** «🇬🇧 English» — подпись кнопки выбора языка. */
+    public String getLabel() {
+        return flag + " " + nativeName;
+    }
 
     public Locale getLocale() {
         return Locale.forLanguageTag(code);

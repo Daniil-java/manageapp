@@ -27,10 +27,14 @@ public final class BotTextKeys {
         return "payment.provider." + provider.name();
     }
 
-    // ── /lang (только для разработчиков) ───────────────────────────
-    public static final String DEV_LANG_CURRENT = "dev.lang.current";
-    public static final String DEV_LANG_CURRENT_DEFAULT = "dev.lang.current-default";
-    public static final String DEV_LANG_CHANGED = "dev.lang.changed";
+    // ── Выбор языка: /start, ⚙ Настройки → 🌐 Язык, /lang ─────────
+    /** Блок вопроса о языке в /start — на каждом языке свой, вопрос собирается из всех. {0} — флаг. */
+    public static final String LANGUAGE_CHOOSE_PROMPT = "language.choose-prompt";
+    public static final String LANGUAGE_CHOSEN = "language.chosen";
+    public static final String LANGUAGE_SETTINGS_TITLE = "language.settings-title";
+    public static final String LANGUAGE_CHANGED = "language.changed";
+
+    // ── /lang <код>, /lang reset (только для разработчиков) ────────
     public static final String DEV_LANG_RESET = "dev.lang.reset";
     public static final String DEV_LANG_UNKNOWN = "dev.lang.unknown";
 
@@ -255,6 +259,7 @@ public final class BotTextKeys {
     public static final String SETTINGS_REMINDERS_ON = "settings.reminders-on";
     public static final String SETTINGS_REMINDERS_OFF = "settings.reminders-off";
     public static final String SETTINGS_TIMEZONE = "settings.timezone";
+    public static final String SETTINGS_LANGUAGE = "settings.language";
     public static final String SETTINGS_DAILY_ON = "settings.daily-on";
     public static final String SETTINGS_DAILY_OFF = "settings.daily-off";
     public static final String SETTINGS_DAILY_TIME = "settings.daily-time";
@@ -264,6 +269,7 @@ public final class BotTextKeys {
     public static final String SETTINGS_MEAL_INTERVAL = "settings.meal-interval";
     public static final String SETTINGS_BUTTON_TIMEZONE = "settings.button.timezone";
     public static final String SETTINGS_BUTTON_REMINDERS = "settings.button.reminders";
+    public static final String SETTINGS_BUTTON_LANGUAGE = "settings.button.language";
     public static final String SETTINGS_BUTTON_DAILY = "settings.button.daily";
     public static final String SETTINGS_BUTTON_MEAL = "settings.button.meal";
     public static final String SETTINGS_BUTTON_BACK_TO_SETTINGS = "settings.button.back-to-settings";

@@ -19,10 +19,11 @@ public class SettingsTexts extends AbstractBotTexts {
         super(texts);
     }
 
-    /** Экран настроек: напоминания, таймзона, итоги дня, напоминания о еде. */
+    /** Экран настроек: напоминания, таймзона, язык, итоги дня, напоминания о еде. */
     public String buildSettingsText(UserSettings settings, AppLanguage language) {
         return getRemindersStatus(settings, language) + "\n"
-                + texts.get(language, BotTextKeys.SETTINGS_TIMEZONE, settings.getZoneId().getId())
+                + texts.get(language, BotTextKeys.SETTINGS_TIMEZONE, settings.getZoneId().getId()) + "\n"
+                + texts.get(language, BotTextKeys.SETTINGS_LANGUAGE, language.getLabel())
                 + "\n\n"
                 + buildDailySummaryText(settings, language, true)
                 + "\n\n"

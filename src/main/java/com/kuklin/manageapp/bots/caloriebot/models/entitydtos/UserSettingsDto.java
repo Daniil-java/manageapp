@@ -17,6 +17,8 @@ public class UserSettingsDto {
     private Boolean mealReminderEnabled;
     private Integer mealReminderIntervalMinutes;
     private UserSettings.UserTheme userTheme;
+    /** Выбранный язык (ru, en…); null — не выбирал. Только для чтения: меняется через PUT /calorie/settings/language. */
+    private String language;
 
     public static UserSettingsDto fromEntity(UserSettings entity) {
         UserSettingsDto dto = new UserSettingsDto();
@@ -27,6 +29,7 @@ public class UserSettingsDto {
         dto.setMealReminderEnabled(entity.isMealReminderEnabled());
         dto.setMealReminderIntervalMinutes(entity.getMealReminderIntervalMinutes());
         dto.setUserTheme(entity.getUserTheme());
+        dto.setLanguage(entity.getLanguage());
         return dto;
     }
 

@@ -1,3 +1,14 @@
+## 0.0.62 (13.10.2026)
+[et-89] — Выбор языка: в /start, в настройках бота и в миниаппке
+* /start: кто ещё не выбирал язык, сначала видит вопрос «На каком языке будем общаться?» — абзац на каждом языке (bot_*: language.choose-prompt) и кнопки 🇷🇺 Русский / 🇬🇧 English; язык Telegram (language_code) — первым. После выбора вопрос превращается в «🇬🇧 English — great, let's go! 🚀», дальше обычное приветствие на выбранном языке (StartLanguageUpdateHandler, колбэк /startlang <код>).
+* UTM засчитывается и пробный период создаётся сразу при /start; предложение из калькулятора лендинга и сообщение о пробном периоде — после выбора языка (в памяти StartUpdateHandler, после перезапуска теряются только эти два сообщения).
+* ⚙ Настройки → 🌐 Язык (CalorieLanguageSettingsHandler, колбэк langset): список языков, текущий с ✅, «Вернуться к настройкам». На экране настроек — строка «🌐 Язык: 🇷🇺 Русский».
+* CalorieLanguageSwitcher — смена языка из настроек, /lang и миниаппки: если язык бота сменился, бот присылает «✅ Язык: … Меню внизу обновлено 👇» с нижней клавиатурой на новом языке.
+* /lang открыт всем — показывает тот же список языков. Разработчикам по-прежнему /lang <код> и /lang reset (сбросить выбор — /start снова спросит язык). Ключи dev.lang.current, dev.lang.current-default, dev.lang.changed убраны.
+* API: GET /calorie/settings отдаёт language (выбранный код или null); PUT /calorie/settings/language?lang=ru|en — сменить язык (400 на неизвестный).
+* AppLanguage: флаг и getLabel() («🇬🇧 English»).
+* Тесты: CalorieLanguageSwitcherTest.
+
 ## 0.0.61 (13.10.2026)
 [et-88] — Тарифы и модуль оплаты на языке пользователя
 * Словарь i18n/calorie/plans_ru/en: plan.<code_for_order_id>.title / .description для FREE_TRIAL, CALORIE_SUB_30_XTR, CALORIE_PREMIUM_MONTH, _THREE_MONTH, _NINE_MONTH. Нет ключа — title / description из БД (pricing_plans), миграций нет. Как добавить тариф — ops/pricing-plans.md.

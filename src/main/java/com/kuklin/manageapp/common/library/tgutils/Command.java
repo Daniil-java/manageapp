@@ -45,6 +45,8 @@ public enum Command {
     CALORIE_TERMS("/terms", BotIdentifier.CALORIE_BOT),
     CALORIE_PRIVACY("/privacy", BotIdentifier.CALORIE_BOT),
     CALORIE_LANGUAGE("/lang", BotIdentifier.CALORIE_BOT),
+    CALORIE_SETTINGS_LANGUAGE("langset", BotIdentifier.CALORIE_BOT),
+    CALORIE_START_LANGUAGE("/startlang", BotIdentifier.CALORIE_BOT),
 
     //==========================PAYMENT============================
     PAYMENT_PRE_CHECK_QUERY("precheckquerynotcommand", BotIdentifier.PAYMENT),

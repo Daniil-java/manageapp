@@ -75,9 +75,9 @@ class CalorieTextsTest {
 
     @Test
     void textComesInUserLanguageWithArguments() {
-        assertThat(texts.get(RU_USER, BotTextKeys.DEV_LANG_CHANGED, "X")).isEqualTo("🌐 Язык переключён: X");
-        assertThat(texts.get(EN_USER, BotTextKeys.DEV_LANG_CHANGED, "X")).isEqualTo("🌐 Language switched: X");
-        assertThat(texts.get(NEW_USER, BotTextKeys.DEV_LANG_CHANGED, "X")).isEqualTo("🌐 Язык переключён: X");
+        assertThat(texts.get(RU_USER, BotTextKeys.SETTINGS_LANGUAGE, "X")).isEqualTo("🌐 Язык: X");
+        assertThat(texts.get(EN_USER, BotTextKeys.SETTINGS_LANGUAGE, "X")).isEqualTo("🌐 Language: X");
+        assertThat(texts.get(NEW_USER, BotTextKeys.SETTINGS_LANGUAGE, "X")).isEqualTo("🌐 Язык: X");
     }
 
     @Test

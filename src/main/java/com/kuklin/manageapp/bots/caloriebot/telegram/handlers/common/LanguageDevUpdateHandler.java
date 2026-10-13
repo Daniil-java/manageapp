@@ -4,7 +4,9 @@ import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.i18n.I18nProperties;
+import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieLanguageSwitcher;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
+import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.settings.CalorieLanguageSettingsHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import lombok.RequiredArgsConstructor;
@@ -16,8 +18,9 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
- * /lang — смена языка для разработчиков (calorie.i18n.dev-telegram-ids), пользователям пока не открыта.
- * /lang — текущий язык, /lang en — переключить, /lang reset — вернуть язык по умолчанию.
+ * /lang — список языков (как ⚙ Настройки → 🌐 Язык), для всех.
+ * Разработчикам (calorie.i18n.dev-telegram-ids) ещё /lang en — переключить сразу,
+ * /lang reset — сбросить выбор, чтобы /start снова спросил язык.
  */
 @Component
 @RequiredArgsConstructor
@@ -27,35 +30,35 @@ public class LanguageDevUpdateHandler implements CalorieBotUpdateHandler {
     private final CalorieTelegramBot calorieTelegramBot;
     private final CalorieTexts texts;
     private final I18nProperties i18nProperties;
+    private final CalorieLanguageSettingsHandler languageSettingsHandler;
+    private final CalorieLanguageSwitcher languageSwitcher;
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
-        if (!i18nProperties.getDevTelegramIds().contains(telegramUser.getTelegramId())) return;
-
+        Long chatId = update.getMessage().getChatId();
         Long userId = telegramUser.getAppUserId();
         String[] parts = update.getMessage().getText().trim().split("\\s+");
         String arg = parts.length > 1 ? parts[1] : null;
 
-        String reply;
-        if (arg == null) {
-            String key = texts.hasChosenLanguage(userId)
-                    ? BotTextKeys.DEV_LANG_CURRENT
-                    : BotTextKeys.DEV_LANG_CURRENT_DEFAULT;
-            reply = texts.get(userId, key, describe(texts.languageOf(userId)), availableLanguages());
-        } else if (RESET.equalsIgnoreCase(arg)) {
-            texts.setLanguage(userId, null);
-            reply = texts.get(userId, BotTextKeys.DEV_LANG_RESET, describe(texts.languageOf(userId)));
-        } else {
-            Optional<AppLanguage> language = AppLanguage.fromCode(arg);
-            if (language.isEmpty()) {
-                reply = texts.get(userId, BotTextKeys.DEV_LANG_UNKNOWN, arg, availableLanguages());
-            } else {
-                texts.setLanguage(userId, language.get());
-                reply = texts.get(userId, BotTextKeys.DEV_LANG_CHANGED, describe(language.get()));
-            }
+        if (arg == null || !i18nProperties.getDevTelegramIds().contains(telegramUser.getTelegramId())) {
+            languageSettingsHandler.sendLanguageChoice(chatId, userId);
+            return;
         }
 
-        calorieTelegramBot.sendReturnedMessage(telegramUser.getTelegramId(), reply);
+        if (RESET.equalsIgnoreCase(arg)) {
+            texts.setLanguage(userId, null);
+            calorieTelegramBot.sendReturnedMessage(chatId,
+                    texts.get(userId, BotTextKeys.DEV_LANG_RESET, describe(texts.languageOf(userId))));
+            return;
+        }
+
+        Optional<AppLanguage> language = AppLanguage.fromCode(arg);
+        if (language.isEmpty()) {
+            calorieTelegramBot.sendReturnedMessage(chatId,
+                    texts.get(userId, BotTextKeys.DEV_LANG_UNKNOWN, arg, availableLanguages()));
+            return;
+        }
+        languageSwitcher.switchLanguage(chatId, userId, language.get());
     }
 
     private static String describe(AppLanguage language) {
