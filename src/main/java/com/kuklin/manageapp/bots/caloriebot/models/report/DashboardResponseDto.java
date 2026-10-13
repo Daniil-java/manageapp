@@ -14,4 +14,5 @@ public class DashboardResponseDto {
     private List<CategoryStatDto> categoryDistribution; // Для пирога категорий
     private List<WeightPointDto> weightTrend; // Для графика веса
     private Map<Integer, Integer> hourlyRhythm; // Час -> Калории
+    private InsightsAnalyticsDto analytics; // Календарь нормы, вес с трендом, реальный расход, привычки
 }

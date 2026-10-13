@@ -189,7 +189,8 @@ class ReportServicePdfTest {
         TelegramCaloriesBotKeyComponents components = mock(TelegramCaloriesBotKeyComponents.class);
         when(components.getAiKey()).thenReturn("test-ai-key");
 
-        return new ReportService(dishService, profileService, entryService, settingsService, weightService, waterService,
+        ReportSourceLoader loader = new ReportSourceLoader(dishService, profileService, entryService, settingsService, weightService, waterService);
+        return new ReportService(dishService, profileService, settingsService, weightService, loader,
                 ai, components, new AiInputLimitsProperties(), new CalorieTexts(new I18nProperties(), settingsService));
     }
 

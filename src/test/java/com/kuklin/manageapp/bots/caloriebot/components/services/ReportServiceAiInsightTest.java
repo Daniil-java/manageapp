@@ -64,9 +64,6 @@ class ReportServiceAiInsightTest {
         UserSettingsService settingsService = mock(UserSettingsService.class);
         when(settingsService.getOrCreate(USER_ID)).thenReturn(new UserSettings().setTimezoneId(ZONE));
 
-        UserNutritionProfileEntryService entryService = mock(UserNutritionProfileEntryService.class);
-        when(entryService.getAllByUserId(USER_ID)).thenReturn(List.of());
-
         WeightEntryService weightService = mock(WeightEntryService.class);
         when(weightService.getAllWeightHistory(USER_ID)).thenReturn(List.of());
 
@@ -80,8 +77,8 @@ class ReportServiceAiInsightTest {
         when(settingsService.findLanguageCode(USER_ID)).thenReturn("en");
         CalorieTexts texts = new CalorieTexts(new I18nProperties(), settingsService);
 
-        service = new ReportService(dishService, profileService, entryService, settingsService,
-                weightService, mock(WaterEntryService.class), ai, components, aiInputLimits, texts);
+        service = new ReportService(dishService, profileService, settingsService, weightService,
+                mock(ReportSourceLoader.class), ai, components, aiInputLimits, texts);
     }
 
     @Test

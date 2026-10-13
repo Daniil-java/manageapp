@@ -5,6 +5,7 @@ import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserSettings;
 import com.kuklin.manageapp.bots.caloriebot.entities.WeightEntry;
 import com.kuklin.manageapp.bots.caloriebot.models.report.*;
+import com.kuklin.manageapp.bots.caloriebot.utils.ReportStatsCalculator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -23,6 +24,7 @@ public class UiAnalyticsService {
     private final WeightEntryService weightService;
     private final UserNutritionProfileService profileService; // Для получения норм БЖУ и лимитов воды
     private final UserSettingsService userSettingsService; // Для определения ZoneId
+    private final ReportSourceLoader reportSourceLoader; // Данные для календаря, тренда веса, расхода и привычек
 
     /**
      * Собирает комплексный дашборд для UI за указанный период.
@@ -52,7 +54,8 @@ public class UiAnalyticsService {
         // 6. Расчет тренда изменения веса
         List<WeightPointDto> weightTrend = weights.stream()
                 .map(w -> new WeightPointDto()
-                        .setDate(w.getCreatedAt().atZone(userZone).toLocalDate())
+                        // Дата взвешивания, а не записи: вес можно внести задним числом
+                        .setDate(w.getEntryDate())
                         .setWeight(w.getWeight()))
                 .sorted(Comparator.comparing(WeightPointDto::getDate))
                 .collect(Collectors.toList());
@@ -60,8 +63,12 @@ public class UiAnalyticsService {
         // 7. Расчет часового ритма питания (0-23 ч)
         Map<Integer, Integer> hourlyRhythm = buildHourlyRhythm(dishes, userZone);
 
+        // 8. Календарь нормы, вес с трендом и прогнозом, реальный расход, привычки — как в PDF-отчёте
+        ReportStats stats = ReportStatsCalculator.buildStats(reportSourceLoader.loadPeriod(from, to, appUserId));
+
         // Собираем все воедино
         return new DashboardResponseDto()
+                .setAnalytics(InsightsAnalyticsDto.of(stats))
                 .setTodayProgress(todayProgress)
                 .setPeriodStats(periodStats)
                 .setCategoryDistribution(categoryDistribution)
@@ -75,10 +82,10 @@ public class UiAnalyticsService {
                 .filter(d -> d.getCreated().atZone(zoneId).toLocalDate().equals(today))
                 .toList();
 
-        int caloriesFact = todayDishes.stream().mapToInt(Dish::getCalories).sum();
-        int proteinsFact = todayDishes.stream().mapToInt(Dish::getProteins).sum();
-        int fatsFact = todayDishes.stream().mapToInt(Dish::getFats).sum();
-        int carbsFact = todayDishes.stream().mapToInt(Dish::getCarbohydrates).sum();
+        int caloriesFact = todayDishes.stream().mapToInt(d -> nvl(d.getCalories())).sum();
+        int proteinsFact = todayDishes.stream().mapToInt(d -> nvl(d.getProteins())).sum();
+        int fatsFact = todayDishes.stream().mapToInt(d -> nvl(d.getFats())).sum();
+        int carbsFact = todayDishes.stream().mapToInt(d -> nvl(d.getCarbohydrates())).sum();
 
         DailyProgressDto dto = new DailyProgressDto()
                 .setCaloriesFact(caloriesFact)
@@ -105,10 +112,10 @@ public class UiAnalyticsService {
         for (LocalDate date = from; !date.isAfter(to); date = date.plusDays(1)) {
             List<Dish> dayDishes = groupedByDate.getOrDefault(date, Collections.emptyList());
 
-            int calories = dayDishes.stream().mapToInt(Dish::getCalories).sum();
-            int proteins = dayDishes.stream().mapToInt(Dish::getProteins).sum();
-            int fats = dayDishes.stream().mapToInt(Dish::getFats).sum();
-            int carbs = dayDishes.stream().mapToInt(Dish::getCarbohydrates).sum();
+            int calories = dayDishes.stream().mapToInt(d -> nvl(d.getCalories())).sum();
+            int proteins = dayDishes.stream().mapToInt(d -> nvl(d.getProteins())).sum();
+            int fats = dayDishes.stream().mapToInt(d -> nvl(d.getFats())).sum();
+            int carbs = dayDishes.stream().mapToInt(d -> nvl(d.getCarbohydrates())).sum();
 
             result.add(new PeriodStatDto()
                     .setDate(date)
@@ -121,7 +128,7 @@ public class UiAnalyticsService {
     }
 
     private List<CategoryStatDto> buildCategoryDistribution(List<Dish> dishes) {
-        int totalCalories = dishes.stream().mapToInt(Dish::getCalories).sum();
+        int totalCalories = dishes.stream().mapToInt(d -> nvl(d.getCalories())).sum();
         if (totalCalories == 0) {
             return Collections.emptyList();
         }
@@ -131,7 +138,7 @@ public class UiAnalyticsService {
                 .filter(d -> d.getCategory() != null)
                 .collect(Collectors.groupingBy(
                         d -> d.getCategory().name(),
-                        Collectors.summingInt(Dish::getCalories)
+                        Collectors.summingInt(d -> nvl(d.getCalories()))
                 ));
 
         return caloriesByCategory.entrySet().stream()
@@ -156,9 +163,14 @@ public class UiAnalyticsService {
         // Суммируем калории по часам с учетом таймзоны
         dishes.forEach(d -> {
             int hour = d.getCreated().atZone(zoneId).getHour();
-            hourlyMap.put(hour, hourlyMap.get(hour) + d.getCalories());
+            hourlyMap.put(hour, hourlyMap.get(hour) + nvl(d.getCalories()));
         });
 
         return hourlyMap;
+    }
+
+    /** Пустое поле блюда (калории, БЖУ) — 0, а не NullPointerException на весь дашборд */
+    private static int nvl(Integer value) {
+        return value != null ? value : 0;
     }
 }

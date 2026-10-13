@@ -41,7 +41,6 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.EnumSet;
@@ -108,10 +107,9 @@ public class ReportService {
 
     private final DishService dishService;
     private final UserNutritionProfileService userNutritionProfileService;
-    private final UserNutritionProfileEntryService userNutritionProfileEntryService;
     private final UserSettingsService userSettingsService;
     private final WeightEntryService weightEntryService;
-    private final WaterEntryService waterEntryService;
+    private final ReportSourceLoader reportSourceLoader;
     private final OpenAiProviderProcessor openAiProviderProcessor;
     private final TelegramCaloriesBotKeyComponents components;
     private final AiInputLimitsProperties aiInputLimits;
@@ -242,7 +240,7 @@ public class ReportService {
      */
     byte[] buildPdfReportOrNull(ReportKind kind, Instant now, Long userId) {
         try {
-            ReportSource source = loadReportSource(kind, now, userId);
+            ReportSource source = reportSourceLoader.loadLastDays(kind, now, userId);
             ReportStats stats = ReportStatsCalculator.buildStats(source);
             PdfTexts texts = new PdfTexts(calorieTexts, calorieTexts.languageOf(userId));
             ReportAiResponse ai = stats.hasFood() ? fetchReportAiOrEmpty(stats, source, texts) : ReportAiResponse.empty();
@@ -253,27 +251,6 @@ public class ReportService {
             log.error("Failed to build {} PDF report for user {}", kind, userId, e);
             return null;
         }
-    }
-
-    private ReportSource loadReportSource(ReportKind kind, Instant now, Long userId) {
-        ZoneId zone = userSettingsService.getOrCreate(userId).getZoneId();
-        LocalDate endDate = LocalDate.ofInstant(now, zone);
-        LocalDate startDate = endDate.minusDays(kind.getDays() - 1);
-        Instant from = startDate.atStartOfDay(zone).toInstant();
-        Instant previousFrom = startDate.minusDays(kind.getDays()).atStartOfDay(zone).toInstant();
-
-        return new ReportSource(
-                kind,
-                startDate,
-                endDate,
-                zone,
-                dishService.getAllDishedByUserIdAndPeriod(userId, from, now),
-                dishService.getAllDishedByUserIdAndPeriod(userId, previousFrom, from.minusMillis(1)),
-                userNutritionProfileEntryService.getAllByUserId(userId),
-                weightEntryService.getAllWeightHistory(userId),
-                waterEntryService.getAllWaterEntryByPeriod(userId, startDate, endDate),
-                userNutritionProfileService.getOrCreateProfile(userId)
-        );
     }
 
     /**

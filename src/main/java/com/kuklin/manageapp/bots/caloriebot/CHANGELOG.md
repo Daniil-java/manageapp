@@ -9,7 +9,9 @@
 * Период — последние 7 / 30 дней по таймзоне пользователя, включая сегодня. ReportService.buildWeeklyPdfReportOrNull / buildMonthlyPdfReportOrNull(userId) вместо методов с from/to; ReportType в боте больше не хранит длину периода.
 * UserNutritionProfileService.calcFormulaMaintenanceCaloriesOrNull — расход по формуле без поправки на цель (для сравнения с реальным).
 * Словарь pdf_ru/en переписан под новые блоки; числа и даты — по языку (1 850 / 1,850, «5 октября» / "Oct 5"), типографский минус.
-* Тесты: ReportStatsCalculatorTest, ReportServicePdfTest (неделя и месяц на реалистичных данных, без еды, при ошибке ИИ; -Dreport.preview.dir=<папка> сохраняет PDF и PNG страниц), PdfTextsTest переписан под блоки.
+* GET /calorie/reports/dashboard: новый блок analytics (InsightsAnalyticsDto) для вкладки Insights — календарь нормы по дням, вес с трендом и прогнозом, реальный расход против формулы, привычки (будни/выходные, окно питания, поздние калории, белок на кг). Считает тот же ReportStatsCalculator; данные грузит общий ReportSourceLoader (им же пользуется PDF-отчёт).
+* Исправлено в дашборде: точки веса брали дату записи (createdAt), а не взвешивания (entryDate) — вес, внесённый задним числом, вставал не на свой день; блюдо без калорий или БЖУ роняло весь дашборд (NullPointerException).
+* Тесты: ReportStatsCalculatorTest, ReportServicePdfTest (неделя и месяц на реалистичных данных, без еды, при ошибке ИИ; -Dreport.preview.dir=<папка> сохраняет PDF и PNG страниц), PdfTextsTest переписан под блоки, InsightsAnalyticsDtoTest (блок analytics дашборда).
 
 ## 0.0.63 (13.10.2026)
 [et-90] — Лендинг на русском и английском
