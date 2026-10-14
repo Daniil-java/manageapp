@@ -104,6 +104,18 @@ public class UserSettingsService {
         }
     }
 
+    /**
+     * Часовой пояс пользователя. Только читает: если настроек ещё нет — пояс по умолчанию,
+     * тот же, что получили бы созданные настройки. Безопасно в @Transactional(readOnly = true).
+     * Сами настройки создаются при обращении к боту ({@code TelegramCalorieBotFacade}) — от строки
+     * в user_settings зависят шедулеры ежедневного отчёта и напоминаний.
+     */
+    public ZoneId getZoneId(Long userId) {
+        return userSettingsRepository.findById(userId)
+                .map(UserSettings::getZoneId)
+                .orElse(ZoneId.of(UserSettings.DEF_TIMEZONE));
+    }
+
     //Получение и создание настроек пользователя
     public UserSettings getOrCreate(Long userId) {
         Optional<UserSettings> optSettings = userSettingsRepository.findById(userId);

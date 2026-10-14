@@ -33,7 +33,7 @@ public class WeekTexts extends AbstractBotTexts {
         StringBuilder sb = new StringBuilder();
 
         // Группируем по дате
-        ZoneId userZone = userSettingsService.getOrCreate(userId).getZoneId();
+        ZoneId userZone = userSettingsService.getZoneId(userId);
 
         Map<LocalDate, List<Dish>> byDay = dishes.stream()
                 .collect(Collectors.groupingBy(d -> d.getCreated()

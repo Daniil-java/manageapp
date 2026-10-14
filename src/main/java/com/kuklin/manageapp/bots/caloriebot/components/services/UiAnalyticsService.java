@@ -2,7 +2,6 @@ package com.kuklin.manageapp.bots.caloriebot.components.services;
 
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
-import com.kuklin.manageapp.bots.caloriebot.entities.UserSettings;
 import com.kuklin.manageapp.bots.caloriebot.entities.WeightEntry;
 import com.kuklin.manageapp.bots.caloriebot.models.report.*;
 import com.kuklin.manageapp.bots.caloriebot.utils.ReportStatsCalculator;
@@ -33,8 +32,7 @@ public class UiAnalyticsService {
         log.info("Сбор аналитики для пользователя {} с {} по {}", appUserId, from, to);
 
         // 1. Получаем настройки времени пользователя (важно для правильной группировки дней)
-        UserSettings userSettings = userSettingsService.getOrCreate(appUserId);
-        ZoneId userZone = userSettings.getZoneId();
+        ZoneId userZone = userSettingsService.getZoneId(appUserId);
         LocalDate today = LocalDate.now(userZone);
 
         // 2. Загружаем исходные данные из БД за период

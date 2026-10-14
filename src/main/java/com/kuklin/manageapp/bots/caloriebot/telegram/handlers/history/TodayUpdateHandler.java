@@ -4,7 +4,6 @@ import com.kuklin.manageapp.bots.caloriebot.components.services.UserSettingsServ
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.components.services.AnalyticsService;
 import com.kuklin.manageapp.bots.caloriebot.components.services.DishService;
-import com.kuklin.manageapp.bots.caloriebot.entities.UserSettings;
 import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
@@ -117,8 +116,7 @@ public class TodayUpdateHandler implements CalorieBotUpdateHandler {
 
     /** Сегодняшняя дата пользователя для заголовка дневника: «12 ОКТЯБРЯ 2026» / «12 OCTOBER 2026». */
     private String getUserTime(Long userId) {
-        UserSettings userSettings = userSettingsService.getOrCreate(userId);
-        LocalDate date = Instant.now().atZone(userSettings.getZoneId()).toLocalDate();
+        LocalDate date = Instant.now().atZone(userSettingsService.getZoneId(userId)).toLocalDate();
         AppLanguage language = texts.languageOf(userId);
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd MMMM yyyy", language.getLocale());

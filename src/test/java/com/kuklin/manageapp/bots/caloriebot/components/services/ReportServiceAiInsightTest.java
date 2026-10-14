@@ -5,7 +5,6 @@ import com.kuklin.manageapp.bots.caloriebot.configurations.AiInputLimitsProperti
 import com.kuklin.manageapp.bots.caloriebot.configurations.TelegramCaloriesBotKeyComponents;
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
-import com.kuklin.manageapp.bots.caloriebot.entities.UserSettings;
 import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.i18n.I18nProperties;
@@ -20,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.time.Instant;
+import java.time.ZoneId;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -62,7 +62,7 @@ class ReportServiceAiInsightTest {
                 .setCaloriesNormPerDay(2000));
 
         UserSettingsService settingsService = mock(UserSettingsService.class);
-        when(settingsService.getOrCreate(USER_ID)).thenReturn(new UserSettings().setTimezoneId(ZONE));
+        when(settingsService.getZoneId(USER_ID)).thenReturn(ZoneId.of(ZONE));
 
         WeightEntryService weightService = mock(WeightEntryService.class);
         when(weightService.getAllWeightHistory(USER_ID)).thenReturn(List.of());

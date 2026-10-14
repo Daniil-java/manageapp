@@ -7,8 +7,11 @@ import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import com.kuklin.manageapp.common.repositories.TelegramUserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.telegram.telegrambots.meta.api.objects.User;
 
 import java.util.List;
@@ -23,6 +26,7 @@ public class TelegramUserService {
     private final GenerationBalanceService generationBalanceService;
     private final AppUserService appUserService;
     private final UserAuthIdentityService userAuthIdentityService;
+    private final PlatformTransactionManager transactionManager;
 
     public TelegramUser getTelegramUserByTelegramIdAndBotIdentifierOrNull(Long telegramId, BotIdentifier botIdentifier) {
         return telegramUserRepository
@@ -39,8 +43,27 @@ public class TelegramUserService {
         return telegramUserRepository.findAllByBotIdentifier(botIdentifier);
     }
 
-    @Transactional
+    /**
+     * Не @Transactional: повтор должен идти в новой транзакции, а не в той, что уже упала.
+     * <p>
+     * Гонка: кнопки обходят inProcess, поэтому /start и нажатие кнопки нового пользователя обрабатываются
+     * параллельно, оба видят «пользователя нет» и создают его. Проигравший упирается в уникальный индекс
+     * (ux_telegram_users__bot_tg, identity, generation_balance) — вся его транзакция откатывается вместе
+     * с лишним AppUser. Повторяем один раз: теперь пользователь найдётся по сценарию 1.
+     * Если вызвать изнутри чужой транзакции, повтор не поможет — она уже помечена на откат.
+     */
     public TelegramUser createOrGetUserByTelegram(BotIdentifier botIdentifier, User telegramUser) {
+        TransactionTemplate transaction = new TransactionTemplate(transactionManager);
+        try {
+            return transaction.execute(status -> doCreateOrGetUserByTelegram(botIdentifier, telegramUser));
+        } catch (DataIntegrityViolationException e) {
+            log.debug("TelegramUser tgId={} bot={} was created by a concurrent update, retrying",
+                    telegramUser.getId(), botIdentifier);
+            return transaction.execute(status -> doCreateOrGetUserByTelegram(botIdentifier, telegramUser));
+        }
+    }
+
+    private TelegramUser doCreateOrGetUserByTelegram(BotIdentifier botIdentifier, User telegramUser) {
 
         Optional<TelegramUser> optionalTelegramUser =
                 telegramUserRepository.findTelegramUserByBotIdentifierAndTelegramId(

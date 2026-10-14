@@ -3,13 +3,13 @@ package com.kuklin.manageapp.bots.caloriebot.texts;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserSettingsService;
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
-import com.kuklin.manageapp.bots.caloriebot.entities.UserSettings;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.i18n.I18nProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.time.ZoneId;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,7 +38,7 @@ class WeekTextsTest {
         UserSettingsService settings = mock(UserSettingsService.class);
         when(settings.findLanguageCode(RU_USER)).thenReturn("ru");
         when(settings.findLanguageCode(EN_USER)).thenReturn("en");
-        when(settings.getOrCreate(any())).thenReturn(new UserSettings().setTimezoneId("UTC"));
+        when(settings.getZoneId(any())).thenReturn(ZoneId.of("UTC"));
         weekTexts = new WeekTexts(new CalorieTexts(new I18nProperties(), settings), settings);
     }
 

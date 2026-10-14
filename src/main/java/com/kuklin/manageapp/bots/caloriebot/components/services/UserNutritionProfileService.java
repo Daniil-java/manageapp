@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 
 import static com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile.*;
 
@@ -85,12 +86,16 @@ public class UserNutritionProfileService {
      */
     @Transactional
     public UserNutritionProfile getOrCreateProfile(Long userId) {
-        return userNutritionProfileRepository.findByUserId(userId)
-                .orElseGet(() -> userNutritionProfileRepository.save(
-                        new UserNutritionProfile()
-                                .setUserId(userId)
-                                .setWaterTargetMlPerDay(DEF_WATER_ML)
-                ));
+        Optional<UserNutritionProfile> optProfile = userNutritionProfileRepository.findByUserId(userId);
+        if (optProfile.isPresent()) {
+            return optProfile.get();
+        }
+
+        // Первый заход: мини-апп и бот запрашивают профиль параллельно, оба видят «нет профиля».
+        // Обычный save упал бы на ux_user_nutrition_profiles_user_id (500 у проигравшего),
+        // ON CONFLICT DO NOTHING просто ничего не вставит — и оба прочитают один профиль.
+        userNutritionProfileRepository.insertIfAbsent(userId, DEF_WATER_ML);
+        return userNutritionProfileRepository.findByUserId(userId).orElseThrow();
     }
 
     /**

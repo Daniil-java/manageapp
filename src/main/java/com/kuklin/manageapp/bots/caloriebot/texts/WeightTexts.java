@@ -42,7 +42,7 @@ public class WeightTexts extends AbstractBotTexts {
         sb.append(texts.get(language, BotTextKeys.WEIGHT_HISTORY_TITLE)).append("\n");
         sb.append("⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯\n");
 
-        ZoneId zoneId = userSettingsService.getOrCreate(userId).getZoneId();
+        ZoneId zoneId = userSettingsService.getZoneId(userId);
         for (int i = 0; i < weightEntries.size(); i++) {
             WeightEntry current = weightEntries.get(i);
             String trend = "";

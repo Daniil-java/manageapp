@@ -43,7 +43,7 @@ public class UserFeatureUsageService {
                 );
 
         // Получаем часовой пояс пользователя для корректного определения наступления "нового дня"
-        ZoneId zoneId = userSettingsService.getOrCreate(userId).getZoneId();
+        ZoneId zoneId = userSettingsService.getZoneId(userId);
 
         if (userFeatureUsageOpt.isPresent()) {
             UserFeatureUsage usage = userFeatureUsageOpt.get();
@@ -55,16 +55,15 @@ public class UserFeatureUsageService {
             }
         }
 
-        // Создание новой записи для пользователя, который впервые использует фичу
-        return userFeatureUsageRepository.save(
-                new UserFeatureUsage()
-                        .setUserId(userId)
-                        .setBotIdentifier(botIdentifier)
-                        .setFeature(botFeature)
-                        .setUsedCount(0)
-                        .setLastResetLocalDate(LocalDate.now(zoneId))
-                        .setLastResetUtc(getStartOfTodayUtc(zoneId))
+        // Пользователь впервые использует фичу. Параллельные запросы (фото + голос, бот + сайт) оба видят
+        // «строки нет»: обычный save упал бы на uk_usage_row, а ON CONFLICT DO NOTHING просто не вставит дубль.
+        userFeatureUsageRepository.insertIfAbsent(
+                userId, botIdentifier.name(), botFeature.name(),
+                LocalDate.now(zoneId), getStartOfTodayUtc(zoneId)
         );
+        return userFeatureUsageRepository
+                .findByUserIdAndFeatureAndAndBotIdentifier(userId, botFeature, botIdentifier)
+                .orElseThrow();
     }
 
 
@@ -138,7 +137,7 @@ public class UserFeatureUsageService {
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public boolean tryUseDailyGrace(Long userId, BotIdentifier botIdentifier, BotFeature feature) {
-        LocalDate today = LocalDate.now(userSettingsService.getOrCreate(userId).getZoneId());
+        LocalDate today = LocalDate.now(userSettingsService.getZoneId(userId));
         return userFeatureUsageRepository.markGraceUsed(userId, botIdentifier, feature, today) > 0;
     }
 

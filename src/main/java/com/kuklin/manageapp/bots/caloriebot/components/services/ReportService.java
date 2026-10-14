@@ -224,8 +224,7 @@ public class ReportService {
     public AccessResult<String> getDayAiReport(Long userId) {
         List<Dish> dishes = dishService.getTodayDishes(userId);
         UserNutritionProfile profile = userNutritionProfileService.getOrCreateProfile(userId);
-        UserSettings userSettings = userSettingsService.getOrCreate(userId);
-        ZonedDateTime userTime = ZonedDateTime.now(userSettings.getZoneId());
+        ZonedDateTime userTime = ZonedDateTime.now(userSettingsService.getZoneId(userId));
 
         String prompt = DayReportPrompt.buildPrompt(profile, dishes, userTime,
                 calorieTexts.languageOf(userId).getNativeName(), ThreadLocalRandom.current());
@@ -355,7 +354,7 @@ public class ReportService {
                 dishService.getAllDishedByUserIdAndPeriod(userId, from, to),
                 weightEntryService.getAllWeightHistory(userId),
                 userNutritionProfileService.getOrCreateProfile(userId),
-                userSettingsService.getOrCreate(userId).getZoneId()
+                userSettingsService.getZoneId(userId)
         );
     }
 

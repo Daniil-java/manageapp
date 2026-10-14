@@ -36,7 +36,7 @@ public class SubscriptionTexts extends AbstractBotTexts {
     /** Период — в часовом поясе пользователя. */
     public String buildSubscriptionEntryText(Long appUserId, UserSubscription sub) {
         AppLanguage language = languageOf(appUserId);
-        ZoneId zoneId = userSettingsService.getOrCreate(appUserId).getZoneId();
+        ZoneId zoneId = userSettingsService.getZoneId(appUserId);
 
         String name;
         try {

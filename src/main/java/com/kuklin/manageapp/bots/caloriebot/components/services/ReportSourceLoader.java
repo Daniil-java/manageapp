@@ -26,14 +26,14 @@ public class ReportSourceLoader {
 
     /** Последние kind.getDays() дней по таймзоне пользователя, включая сегодняшний (до момента now). */
     public ReportSource loadLastDays(ReportKind kind, Instant now, Long userId) {
-        ZoneId zone = userSettingsService.getOrCreate(userId).getZoneId();
+        ZoneId zone = userSettingsService.getZoneId(userId);
         LocalDate endDate = LocalDate.ofInstant(now, zone);
         return load(kind, endDate.minusDays(kind.getDays() - 1), endDate, now, zone, userId);
     }
 
     /** Дни from–to включительно по таймзоне пользователя. */
     public ReportSource loadPeriod(LocalDate from, LocalDate to, Long userId) {
-        ZoneId zone = userSettingsService.getOrCreate(userId).getZoneId();
+        ZoneId zone = userSettingsService.getZoneId(userId);
         long days = to.toEpochDay() - from.toEpochDay() + 1;
         ReportKind kind = days >= ReportKind.MONTH.getDays() ? ReportKind.MONTH : ReportKind.WEEK;
         Instant upperBound = to.plusDays(1).atStartOfDay(zone).toInstant().minusMillis(1);

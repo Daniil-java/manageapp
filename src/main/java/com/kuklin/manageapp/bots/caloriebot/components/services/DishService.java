@@ -156,7 +156,7 @@ public class DishService {
 
     @Transactional(readOnly = true)
     public List<Dish> getTodayDishes(Long userId) {
-        ZoneId userZone = userSettingsService.getOrCreate(userId).getZoneId();
+        ZoneId userZone = userSettingsService.getZoneId(userId);
 
         ZonedDateTime userNow = ZonedDateTime.now(userZone);
         ZonedDateTime startOfDayUser = userNow.toLocalDate().atStartOfDay(userZone);
@@ -177,7 +177,7 @@ public class DishService {
 
     @Transactional(readOnly = true)
     public List<Dish> getWeekDishes(Long userId) {
-        ZoneId userZone = userSettingsService.getOrCreate(userId).getZoneId();
+        ZoneId userZone = userSettingsService.getZoneId(userId);
         ZonedDateTime userNow = ZonedDateTime.now(userZone);
 
         ZonedDateTime start = userNow.toLocalDate().minusDays(7).atStartOfDay(userZone);
@@ -442,7 +442,7 @@ public class DishService {
 
     @Transactional(readOnly = true)
     public List<Dish> getDishesByPeriod(Long userId, LocalDateTime from, LocalDateTime to) {
-        ZoneId userZone = userSettingsService.getOrCreate(userId).getZoneId();
+        ZoneId userZone = userSettingsService.getZoneId(userId);
 
         return dishRepository.findAllByUserIdAndCreatedBetween(
                 userId,

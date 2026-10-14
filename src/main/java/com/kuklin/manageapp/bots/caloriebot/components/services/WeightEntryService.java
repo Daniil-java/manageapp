@@ -29,7 +29,7 @@ public class WeightEntryService {
     // Сохранить новый вес
     @Transactional
     public WeightEntry updateWeight(Long userId, BigDecimal weightKg) {
-        ZoneId userZone = userSettingsService.getOrCreate(userId).getZoneId();
+        ZoneId userZone = userSettingsService.getZoneId(userId);
 
         // Сохраняем в историю (лог)
         WeightEntry entry = new WeightEntry()
@@ -41,7 +41,7 @@ public class WeightEntryService {
 
     // Получить историю веса для графика
     public List<WeightEntry> getWeightHistory(Long userId, int days) {
-        ZoneId userZone = userSettingsService.getOrCreate(userId).getZoneId();
+        ZoneId userZone = userSettingsService.getZoneId(userId);
 
         LocalDate startDate = LocalDate.now(userZone).minusDays(days);
         return weightEntryRepository.findAllByUserIdAndEntryDateBetweenOrderByEntryDateAsc(
@@ -86,7 +86,7 @@ public class WeightEntryService {
         String toStr = to.atTime(23, 59, 59).format(formatter);
 
 
-        ZoneId userZone = userSettingsService.getOrCreate(appUserId).getZoneId();
+        ZoneId userZone = userSettingsService.getZoneId(appUserId);
 
         ZonedDateTime fromZdt = ZonedDateTime.of(
                 LocalDateTime.parse(fromStr),

@@ -173,7 +173,7 @@ class ReportServicePdfTest {
                 target(1850, Instant.parse("2026-08-01T00:00:00Z"), TARGET_CHANGED),
                 target(1750, TARGET_CHANGED, null)));
 
-        when(settingsService.getOrCreate(USER_ID)).thenReturn(new UserSettings().setTimezoneId(ZONE.getId()));
+        when(settingsService.getZoneId(USER_ID)).thenReturn(ZONE);
         when(settingsService.findLanguageCode(USER_ID)).thenReturn(language);
 
         List<Dish> dishes = buildDishes(russianDishes);

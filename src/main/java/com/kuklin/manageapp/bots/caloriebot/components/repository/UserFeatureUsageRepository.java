@@ -10,12 +10,34 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Repository
 public interface UserFeatureUsageRepository extends JpaRepository<UserFeatureUsage, Long> {
 
     Optional<UserFeatureUsage> findByUserIdAndFeatureAndAndBotIdentifier(Long userId, BotFeature botFeature, BotIdentifier botIdentifier);
+
+    /**
+     * Создаёт строку счётчика, если её ещё нет. При параллельном первом использовании фичи проигравший
+     * не получает ошибку (ON CONFLICT по uk_usage_row), транзакция вызывающего кода остаётся рабочей.
+     *
+     * @return 1 — создали, 0 — уже была
+     */
+    @Modifying
+    @Query(value = """
+            INSERT INTO user_feature_usage (user_id, bot_identifier, feature, used_count,
+                                            last_reset_local_date, last_reset_utc)
+            VALUES (:userId, :botIdentifier, :feature, 0, :lastResetLocalDate, :lastResetUtc)
+            ON CONFLICT (user_id, bot_identifier, feature) DO NOTHING
+            """, nativeQuery = true)
+    int insertIfAbsent(
+            @Param("userId") Long userId,
+            @Param("botIdentifier") String botIdentifier,
+            @Param("feature") String feature,
+            @Param("lastResetLocalDate") LocalDate lastResetLocalDate,
+            @Param("lastResetUtc") LocalDateTime lastResetUtc
+    );
 
     /**
      * Списывает одну попытку, только если лимит ещё не исчерпан. Проверка и списание — одной командой,

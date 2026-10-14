@@ -33,7 +33,7 @@ public class WaterEntryService {
     @Transactional
     public WaterEntry addWater(Long userId, Integer amountMl) {
         //Получаем зону пользователя
-        ZoneId userZone = userSettingsService.getOrCreate(userId).getZoneId();
+        ZoneId userZone = userSettingsService.getZoneId(userId);
 
         log.info("WATER ADD: {}", amountMl);
         WaterEntry entry = new WaterEntry()
@@ -45,7 +45,7 @@ public class WaterEntryService {
 
     // Получить общее количество воды за сегодня
     public Integer getTodayTotal(Long userId) {
-        ZoneId userZone = userSettingsService.getOrCreate(userId).getZoneId();
+        ZoneId userZone = userSettingsService.getZoneId(userId);
 
         return waterEntryRepository.findAllByUserIdAndEntryDate(userId, LocalDate.now(userZone))
                 .stream()
@@ -55,7 +55,7 @@ public class WaterEntryService {
 
     // Последняя отметка за сегодня (по таймзоне пользователя) или null
     public WaterEntry getLastTodayEntryOrNull(Long userId) {
-        ZoneId userZone = userSettingsService.getOrCreate(userId).getZoneId();
+        ZoneId userZone = userSettingsService.getZoneId(userId);
         return waterEntryRepository
                 .findTopByUserIdAndEntryDateOrderByCreatedAtDescIdDesc(userId, LocalDate.now(userZone))
                 .orElse(null);
@@ -89,7 +89,7 @@ public class WaterEntryService {
         String toStr = to.atTime(23, 59, 59).format(formatter);
 
 
-        ZoneId userZone = userSettingsService.getOrCreate(tgUserId).getZoneId();
+        ZoneId userZone = userSettingsService.getZoneId(tgUserId);
 
         ZonedDateTime fromZdt = ZonedDateTime.of(
                 LocalDateTime.parse(fromStr),

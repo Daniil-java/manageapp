@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram;
 
+import com.kuklin.manageapp.bots.caloriebot.components.services.UserSettingsService;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramFacade;
@@ -27,6 +28,8 @@ public class TelegramCalorieBotFacade extends TelegramFacade {
     private TelegramUserService telegramUserService;
     @Autowired
     private CalorieMenuButtons menuButtons;
+    @Autowired
+    private UserSettingsService userSettingsService;
 
     @Override
     public void handleUpdate(Update update) {
@@ -42,6 +45,9 @@ public class TelegramCalorieBotFacade extends TelegramFacade {
 
         TelegramUser telegramUser = telegramUserService
                 .createOrGetUserByTelegram(BotIdentifier.CALORIE_BOT, user);
+        // Настройки создаём явно здесь, а не лениво при чтении часового пояса: по строке user_settings
+        // шедулеры решают, кому слать ежедневный отчёт и напоминания. У существующих — один поиск по PK.
+        userSettingsService.getOrCreate(telegramUser.getAppUserId());
 
         UpdateHandler updateHandler = processInputUpdate(update);
         // null — только у незнакомых кнопок и кнопок-подписей: их нажатие ничего не делает

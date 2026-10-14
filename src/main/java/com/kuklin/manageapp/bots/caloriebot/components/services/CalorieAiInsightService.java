@@ -51,7 +51,7 @@ public class CalorieAiInsightService {
      * Последний инсайт нужного типа. Без вызова ИИ.
      */
     public Optional<AiInsightDto> getLatest(Long userId, AiInsightType type) {
-        ZoneId zoneId = userSettingsService.getOrCreate(userId).getZoneId();
+        ZoneId zoneId = userSettingsService.getZoneId(userId);
         return calorieAiInsightRepository.findByAppUserIdAndType(userId, type)
                 .map(insight -> toDto(insight, zoneId));
     }
@@ -61,7 +61,7 @@ public class CalorieAiInsightService {
      * Типы, которые ещё ни разу не генерировались, в ответ не попадают.
      */
     public Map<AiInsightType, AiInsightDto> getLatestAll(Long userId) {
-        ZoneId zoneId = userSettingsService.getOrCreate(userId).getZoneId();
+        ZoneId zoneId = userSettingsService.getZoneId(userId);
         Map<AiInsightType, AiInsightDto> result = new EnumMap<>(AiInsightType.class);
         calorieAiInsightRepository.findAllByAppUserId(userId)
                 .forEach(insight -> result.put(insight.getType(), toDto(insight, zoneId)));
@@ -86,7 +86,7 @@ public class CalorieAiInsightService {
         try {
             aiRateLimiter.acquireOrThrow(userId);
 
-            ZoneId zoneId = userSettingsService.getOrCreate(userId).getZoneId();
+            ZoneId zoneId = userSettingsService.getZoneId(userId);
             LocalDate periodTo = LocalDate.now(zoneId);
             LocalDate periodFrom = periodTo.minusDays(type.getPeriodDays() - 1L);
 

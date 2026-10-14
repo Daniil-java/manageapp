@@ -32,7 +32,7 @@ public class StreakService {
 
     @Transactional(readOnly = true)
     public StreakDto getStreak(Long userId) {
-        ZoneId zone = userSettingsService.getOrCreate(userId).getZoneId();
+        ZoneId zone = userSettingsService.getZoneId(userId);
         return buildStreak(findActiveDays(userId, zone), LocalDate.now(zone));
     }
 

@@ -5,7 +5,6 @@ import com.kuklin.manageapp.bots.caloriebot.components.repository.CalorieAiInsig
 import com.kuklin.manageapp.bots.caloriebot.components.repository.CalorieAiInsightRepository;
 import com.kuklin.manageapp.bots.caloriebot.entities.CalorieAiInsight;
 import com.kuklin.manageapp.bots.caloriebot.entities.CalorieAiInsightRefresh;
-import com.kuklin.manageapp.bots.caloriebot.entities.UserSettings;
 import com.kuklin.manageapp.bots.caloriebot.models.AiInsightType;
 import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
@@ -55,7 +54,7 @@ class CalorieAiInsightServiceTest {
         repository = mock(CalorieAiInsightRepository.class);
         reportService = mock(ReportService.class);
         UserSettingsService userSettingsService = mock(UserSettingsService.class);
-        when(userSettingsService.getOrCreate(USER_ID)).thenReturn(new UserSettings().setTimezoneId(ZONE.getId()));
+        when(userSettingsService.getZoneId(USER_ID)).thenReturn(ZONE);
         when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         refreshRows = new HashMap<>();
