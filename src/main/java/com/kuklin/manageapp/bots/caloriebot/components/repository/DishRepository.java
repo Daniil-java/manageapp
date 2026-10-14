@@ -21,18 +21,9 @@ public interface DishRepository extends JpaRepository<Dish, Long> {
     @Query("select max(d.created) from Dish d where d.userId = :userId")
     Instant findLastCreatedByUserId(@Param("userId") Long userId);
 
-    @Query("""
-        select d.created
-        from Dish d
-        where d.userId = :userId
-          and d.created >= :start
-          and d.created < :end
-    """)
-    List<Instant> findCreatedByUserIdAndCreatedBetween(
-            @Param("userId") Long userId,
-            @Param("start") Instant start,
-            @Param("end") Instant end
-    );
+    /** Время всех блюд пользователя — для серии дней (лучшая серия считается за всю историю). */
+    @Query("select d.created from Dish d where d.userId = :userId and d.created is not null")
+    List<Instant> findAllCreatedByUserId(@Param("userId") Long userId);
 
 }
 

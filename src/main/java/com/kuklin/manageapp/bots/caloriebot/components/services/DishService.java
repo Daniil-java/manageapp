@@ -459,40 +459,6 @@ public class DishService {
         return DishDto.fromEntities(getDishByDescriptionOrNull(tgUserId, request));
     }
 
-    @Transactional(readOnly = true)
-    public int getCurrentStreak(Long userId) {
-
-        ZoneId zone = userSettingsService.getOrCreate(userId).getZoneId();
-
-        LocalDate today = LocalDate.now(zone);
-
-        Instant start = today.minusYears(1)
-                .atStartOfDay(zone)
-                .toInstant();
-
-        Instant end = today.plusDays(1)
-                .atStartOfDay(zone)
-                .toInstant();
-
-        Set<LocalDate> activeDays = new HashSet<>();
-        for (Instant created : dishRepository.findCreatedByUserIdAndCreatedBetween(userId, start, end)) {
-            activeDays.add(created.atZone(zone).toLocalDate());
-        }
-
-        LocalDate currentDay = activeDays.contains(today)
-                ? today
-                : today.minusDays(1);
-
-        int streak = 0;
-
-        while (activeDays.contains(currentDay)) {
-            streak++;
-            currentDay = currentDay.minusDays(1);
-        }
-
-        return streak;
-    }
-
     // --- Commented Methods ---
 
     //Не работает, если несколько блюд вернется. Требует дополнительного рефакторинга, для обработки списка блюд

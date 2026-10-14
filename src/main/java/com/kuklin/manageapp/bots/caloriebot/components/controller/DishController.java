@@ -1,6 +1,7 @@
 package com.kuklin.manageapp.bots.caloriebot.components.controller;
 
 import com.kuklin.manageapp.bots.caloriebot.components.services.DishService;
+import com.kuklin.manageapp.bots.caloriebot.components.services.StreakService;
 import com.kuklin.manageapp.bots.caloriebot.models.FoodImageRequest;
 import com.kuklin.manageapp.bots.caloriebot.models.FoodTextRequest;
 import com.kuklin.manageapp.bots.caloriebot.models.FoodVoiceRequest;
@@ -25,6 +26,7 @@ import java.util.List;
 @Tag(name = "Блюда (Дневник питания)", description = "Управление приемами пищи пользователя")
 public class DishController {
     private final DishService dishService;
+    private final StreakService streakService;
 
     @GetMapping("/period")
     @Operation(summary = "Получить блюда за период")
@@ -98,10 +100,12 @@ public class DishController {
         dishService.removeByDishId(appUserId, dishId);
     }
 
+    /** Только число — для мини-приложения, ещё не перешедшего на GET /calorie/streak. */
+    @Deprecated
     @GetMapping("/streak")
-    @Operation(summary = "Удалить блюдо", description = "Удаляет блюдо из дневника питания по его ID")
+    @Operation(summary = "Текущая серия дней (устарело)", description = "Число дней подряд с записями еды или воды. Используйте GET /calorie/streak")
     public int getDishStreakByDays(@Parameter(hidden = true) @AuthenticationPrincipal Long appUserId) {
-        return dishService.getCurrentStreak(appUserId);
+        return streakService.getCurrentStreak(appUserId);
     }
 
 }

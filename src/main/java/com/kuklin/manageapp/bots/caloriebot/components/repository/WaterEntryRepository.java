@@ -2,6 +2,8 @@ package com.kuklin.manageapp.bots.caloriebot.components.repository;
 
 import com.kuklin.manageapp.bots.caloriebot.entities.WaterEntry;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
@@ -19,6 +21,11 @@ public interface WaterEntryRepository extends JpaRepository<WaterEntry, Long> {
     void deleteByIdAndUserId(Long id, Long userId);
 
     List<WaterEntry> findAllByUserIdAndEntryDate(Long userId, LocalDate date);
+
+    /** Дни, в которые пользователь пил воду (отметки за день в сумме больше нуля) — для серии дней. */
+    @Query("select w.entryDate from WaterEntry w where w.userId = :userId and w.entryDate is not null"
+            + " group by w.entryDate having sum(w.amount) > 0")
+    List<LocalDate> findWaterDatesByUserId(@Param("userId") Long userId);
 
     List<WaterEntry> findAllByUserIdAndCreatedAtBetween(Long tgUserId, Instant toInstant, Instant toInstant1);
 }
