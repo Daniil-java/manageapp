@@ -40,11 +40,11 @@ public class CalorieAccessService {
 
     /**
      * Увеличивает счетчик общего количества ответов бота пользователю.
+     * Пишет только response_count через UPDATE: сохранять весь объект нельзя —
+     * устаревшая копия затёрла бы поля, изменённые за время запроса к ИИ (например, isBotBlocked).
      */
     public void incrementResponses(TelegramUser user) {
-        telegramUserService.save(
-                user.setResponseCount(user.getResponseCount() + 1)
-        );
+        telegramUserService.incrementResponseCount(user.getId());
     }
 
     /**

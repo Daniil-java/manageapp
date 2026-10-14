@@ -143,6 +143,11 @@ public class TelegramUserService {
         }
     }
 
+    @Transactional
+    public void incrementResponseCount(Long telegramUserId) {
+        telegramUserRepository.incrementResponseCount(telegramUserId);
+    }
+
     public TelegramUser save(TelegramUser telegramUser) {
         return telegramUserRepository.save(telegramUser);
     }
