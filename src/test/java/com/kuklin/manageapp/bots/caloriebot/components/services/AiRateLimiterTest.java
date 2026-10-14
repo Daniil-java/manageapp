@@ -1,6 +1,8 @@
 package com.kuklin.manageapp.bots.caloriebot.components.services;
 
+import com.kuklin.manageapp.bots.caloriebot.components.repository.CalorieAiRequestRepository;
 import com.kuklin.manageapp.bots.caloriebot.configurations.AiRateLimitProperties;
+import com.kuklin.manageapp.bots.caloriebot.entities.CalorieAiRequest;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorParams;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
@@ -8,16 +10,23 @@ import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import com.kuklin.manageapp.payment.services.UserSubscriptionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
+import org.springframework.data.domain.Pageable;
 
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -30,6 +39,9 @@ class AiRateLimiterTest {
 
     private MutableClock clock;
     private UserSubscriptionService subscriptions;
+    private CalorieAiRequestRepository repository;
+    // Строки таблицы calorie_ai_request — их видит фейковый репозиторий
+    private List<CalorieAiRequest> rows;
     private AiRateLimiter limiter;
 
     @BeforeEach
@@ -43,7 +55,9 @@ class AiRateLimiterTest {
         when(subscriptions.hasActiveSubscription(PREMIUM_USER, BotIdentifier.CALORIE_BOT)).thenReturn(true);
 
         clock = new MutableClock(Instant.parse("2026-10-05T10:00:00Z"));
-        limiter = new AiRateLimiter(limits, subscriptions, clock);
+        rows = new ArrayList<>();
+        repository = buildFakeRepository(rows);
+        limiter = new AiRateLimiter(limits, subscriptions, repository, clock);
     }
 
     // ── Минутный лимит ─────────────────────────────────────────────
@@ -152,16 +166,43 @@ class AiRateLimiterTest {
                 .isEqualTo(ErrorStatus.AI_DAILY_LIMIT);
     }
 
-    // ── Очистка памяти ─────────────────────────────────────────────
+    // ── БД ─────────────────────────────────────────────
 
     @Test
-    void idleUsersAreEvictedAndStartFresh() {
-        acquireSpread(USER, 5);
-        clock.advance(Duration.ofHours(25));
+    void userIsLockedBeforeCountingAndRequestIsSaved() {
+        limiter.tryAcquire(USER);
 
-        limiter.evictIdleUsers();
+        InOrder order = inOrder(repository);
+        order.verify(repository).lockUserRequests(USER);
+        order.verify(repository).countByAppUserIdAndCreatedAtAfter(USER, clock.instant().minus(Duration.ofMinutes(1)));
+        order.verify(repository).save(any());
+        assertThat(rows).singleElement().satisfies(row -> {
+            assertThat(row.getAppUserId()).isEqualTo(USER);
+            assertThat(row.getCreatedAt()).isEqualTo(clock.instant());
+        });
+    }
 
+    @Test
+    void deniedCallIsNotSaved() {
         acquire(USER, 3);
+
+        limiter.tryAcquire(USER);
+
+        assertThat(rows).hasSize(3);
+    }
+
+    @Test
+    void requestsOlderThanThirtyDaysAreDeleted() {
+        acquire(USER, 1);
+        clock.advance(Duration.ofDays(29));
+        acquire(USER, 1);
+        clock.advance(Duration.ofDays(2));
+
+        limiter.deleteOldRequests();
+
+        assertThat(rows).singleElement()
+                .extracting(CalorieAiRequest::getCreatedAt)
+                .isEqualTo(clock.instant().minus(Duration.ofDays(2)));
     }
 
     // ── Helpers ─────────────────────────────────────────────
@@ -179,6 +220,38 @@ class AiRateLimiterTest {
             assertThat(limiter.tryAcquire(user).allowed()).as("call #%d", i + 1).isTrue();
             clock.advance(Duration.ofMinutes(2));
         }
+    }
+
+    /** Репозиторий поверх списка: запросы делают то же, что SQL в CalorieAiRequestRepository. */
+    private static CalorieAiRequestRepository buildFakeRepository(List<CalorieAiRequest> rows) {
+        CalorieAiRequestRepository repository = mock(CalorieAiRequestRepository.class);
+        when(repository.save(any())).thenAnswer(inv -> {
+            rows.add(inv.getArgument(0));
+            return inv.getArgument(0);
+        });
+        when(repository.countByAppUserIdAndCreatedAtAfter(anyLong(), any())).thenAnswer(inv ->
+                (long) findRowsAfter(rows, inv.getArgument(0), inv.getArgument(1)).size());
+        when(repository.findByAppUserIdAndCreatedAtAfterOrderByCreatedAtDesc(anyLong(), any(), any())).thenAnswer(inv -> {
+            Pageable page = inv.getArgument(2);
+            return findRowsAfter(rows, inv.getArgument(0), inv.getArgument(1)).stream()
+                    .sorted(Comparator.comparing(CalorieAiRequest::getCreatedAt).reversed())
+                    .skip(page.getOffset())
+                    .limit(page.getPageSize())
+                    .toList();
+        });
+        when(repository.deleteCreatedBefore(any())).thenAnswer(inv -> {
+            Instant border = inv.getArgument(0);
+            int before = rows.size();
+            rows.removeIf(row -> row.getCreatedAt().isBefore(border));
+            return before - rows.size();
+        });
+        return repository;
+    }
+
+    private static List<CalorieAiRequest> findRowsAfter(List<CalorieAiRequest> rows, Long userId, Instant since) {
+        return rows.stream()
+                .filter(row -> row.getAppUserId().equals(userId) && row.getCreatedAt().isAfter(since))
+                .toList();
     }
 
     private static class MutableClock extends Clock {

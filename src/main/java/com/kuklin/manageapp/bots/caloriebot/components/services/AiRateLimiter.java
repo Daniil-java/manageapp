@@ -1,6 +1,8 @@
 package com.kuklin.manageapp.bots.caloriebot.components.services;
 
+import com.kuklin.manageapp.bots.caloriebot.components.repository.CalorieAiRequestRepository;
 import com.kuklin.manageapp.bots.caloriebot.configurations.AiRateLimitProperties;
+import com.kuklin.manageapp.bots.caloriebot.entities.CalorieAiRequest;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorParams;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
@@ -8,17 +10,15 @@ import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import com.kuklin.manageapp.payment.services.UserSubscriptionService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayDeque;
-import java.util.Deque;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Ограничивает, как часто один пользователь может обращаться к ИИ: текст, фото, голос, отчёты, инсайты.
@@ -26,12 +26,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * не больше per-minute за последние 60 секунд и не больше per-day за последние 24 часа
  * (per-day-premium — с активной подпиской).
  *
- * Как устроено: на каждого пользователя храним время его обращений к ИИ за последние 24 часа
- * (очередь, старые в начале). При новом обращении выкидываем всё старше суток, считаем,
- * сколько осталось за минуту и за сутки, и либо разрешаем (добавляем текущее время), либо отказываем.
+ * Как устроено: каждое разрешённое обращение — строка в calorie_ai_request. При новом обращении считаем строки
+ * пользователя за минуту и за сутки и либо разрешаем (добавляем строку), либо отказываем.
  * Считаются попытки, а не успешные ответы: неудачный вызов ИИ тоже стоит денег.
- *
- * Хранится в памяти: работает, пока бэк в одном экземпляре; после перезапуска счётчики обнуляются.
+ * Хранится в БД: счётчики переживают перезапуск и общие для всех экземпляров бэка.
  *
  * Где вызывается — в точках входа, один раз на действие пользователя:
  * API — DishService (text / photo / voice), CalorieAiInsightService.refresh;
@@ -44,23 +42,26 @@ public class AiRateLimiter {
 
     private static final Duration MINUTE = Duration.ofMinutes(1);
     private static final Duration DAY = Duration.ofDays(1);
+    // Сколько хранить обращения: для лимитов хватает суток, остальное — чтобы видеть расход ИИ по пользователям
+    private static final Duration KEEP_REQUESTS = Duration.ofDays(30);
 
     private final AiRateLimitProperties limits;
     private final UserSubscriptionService userSubscriptionService;
+    private final CalorieAiRequestRepository calorieAiRequestRepository;
     private final Clock clock;
 
-    // appUserId → время обращений к ИИ за последние 24 часа, по возрастанию
-    private final Map<Long, Deque<Instant>> callsByUser = new ConcurrentHashMap<>();
-
     @Autowired
-    public AiRateLimiter(AiRateLimitProperties limits, UserSubscriptionService userSubscriptionService) {
-        this(limits, userSubscriptionService, Clock.systemUTC());
+    public AiRateLimiter(AiRateLimitProperties limits, UserSubscriptionService userSubscriptionService,
+                         CalorieAiRequestRepository calorieAiRequestRepository) {
+        this(limits, userSubscriptionService, calorieAiRequestRepository, Clock.systemUTC());
     }
 
     // Для тестов — подменяем часы
-    AiRateLimiter(AiRateLimitProperties limits, UserSubscriptionService userSubscriptionService, Clock clock) {
+    AiRateLimiter(AiRateLimitProperties limits, UserSubscriptionService userSubscriptionService,
+                  CalorieAiRequestRepository calorieAiRequestRepository, Clock clock) {
         this.limits = limits;
         this.userSubscriptionService = userSubscriptionService;
+        this.calorieAiRequestRepository = calorieAiRequestRepository;
         this.clock = clock;
     }
 
@@ -81,49 +82,53 @@ public class AiRateLimiter {
     /**
      * Проверяет лимиты и, если можно, засчитывает обращение.
      * Для бота: при отказе обработчик сам отправляет сообщение (FeatureLimitNotifier.sendAiRateLimited).
+     * <p>
+     * Своя транзакция (REQUIRES_NEW): обращение засчитывается сразу, даже если вызывающий код потом упадёт
+     * и откатит свою, а блокировка пользователя держится миллисекунды, а не всё время ответа ИИ.
      */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Decision tryAcquire(Long appUserId) {
+        // Параллельные запросы одного пользователя не проскочат проверку одновременно —
+        // ждут здесь, пока текущий не допишет обращение и не закроет транзакцию
+        calorieAiRequestRepository.lockUserRequests(appUserId);
         Instant now = clock.instant();
-        Deque<Instant> calls = callsByUser.computeIfAbsent(appUserId, id -> new ArrayDeque<>());
 
-        // synchronized на очередь пользователя: параллельные запросы одного пользователя
-        // не проскочат проверку одновременно, а разные пользователи друг друга не ждут
-        synchronized (calls) {
-            removeOlderThan(calls, now.minus(DAY));
-
-            // 1. Минутный лимит
-            int perMinute = limits.getPerMinute();
-            if (countSince(calls, now.minus(MINUTE)) >= perMinute) {
-                // Место освободится, когда из минутного окна выпадет самое раннее из последних perMinute обращений
-                Instant oldestInWindow = nthFromEnd(calls, perMinute);
-                return denied(Reason.MINUTE, oldestInWindow.plus(MINUTE), now, false, limits.getPerDay());
-            }
-
-            // 2. Суточный лимит. Подписку проверяем только когда дошли до бесплатного лимита —
-            // чтобы не ходить в БД на каждый запрос
-            boolean premium = false;
-            int dailyLimit = limits.getPerDay();
-            if (calls.size() >= dailyLimit) {
-                premium = userSubscriptionService.hasActiveSubscription(appUserId, BotIdentifier.CALORIE_BOT);
-                if (premium) {
-                    dailyLimit = limits.getPerDayPremium();
-                }
-            }
-            if (calls.size() >= dailyLimit) {
-                Instant oldestInWindow = nthFromEnd(calls, dailyLimit);
-                log.warn("AI daily limit reached for user {} ({} per day, premium={})", appUserId, dailyLimit, premium);
-                return denied(Reason.DAY, oldestInWindow.plus(DAY), now, premium, dailyLimit);
-            }
-
-            calls.addLast(now);
-            return new Decision(true, null, 0, premium, dailyLimit);
+        // 1. Минутный лимит
+        int perMinute = limits.getPerMinute();
+        if (calorieAiRequestRepository.countByAppUserIdAndCreatedAtAfter(appUserId, now.minus(MINUTE)) >= perMinute) {
+            // Место освободится, когда из минутного окна выпадет самое раннее из последних perMinute обращений
+            Instant oldestInWindow = findNthLatestRequestTime(appUserId, now.minus(MINUTE), perMinute);
+            return denied(Reason.MINUTE, oldestInWindow.plus(MINUTE), now, false, limits.getPerDay());
         }
+
+        // 2. Суточный лимит. Подписку проверяем только когда дошли до бесплатного лимита —
+        // чтобы не ходить за ней на каждый запрос
+        long callsToday = calorieAiRequestRepository.countByAppUserIdAndCreatedAtAfter(appUserId, now.minus(DAY));
+        boolean premium = false;
+        int dailyLimit = limits.getPerDay();
+        if (callsToday >= dailyLimit) {
+            premium = userSubscriptionService.hasActiveSubscription(appUserId, BotIdentifier.CALORIE_BOT);
+            if (premium) {
+                dailyLimit = limits.getPerDayPremium();
+            }
+        }
+        if (callsToday >= dailyLimit) {
+            Instant oldestInWindow = findNthLatestRequestTime(appUserId, now.minus(DAY), dailyLimit);
+            log.warn("AI daily limit reached for user {} ({} per day, premium={})", appUserId, dailyLimit, premium);
+            return denied(Reason.DAY, oldestInWindow.plus(DAY), now, premium, dailyLimit);
+        }
+
+        calorieAiRequestRepository.save(new CalorieAiRequest().setAppUserId(appUserId).setCreatedAt(now));
+        return new Decision(true, null, 0, premium, dailyLimit);
     }
 
     /**
      * Для API: проверяет лимиты и при отказе бросает 429 (AI_RATE_LIMIT или AI_DAILY_LIMIT)
      * с указанием, через сколько можно повторить.
+     * Транзакция — как у tryAcquire (вызов изнутри класса идёт мимо прокси, поэтому аннотация и здесь).
+     * Исключение её откатывает, но при отказе в неё ничего не записано.
      */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void acquireOrThrow(Long appUserId) {
         Decision decision = tryAcquire(appUserId);
         if (decision.allowed()) return;
@@ -137,52 +142,28 @@ public class AiRateLimiter {
     }
 
     /**
-     * Раз в час убираем пользователей, которые не обращались к ИИ больше суток, — чтобы память не росла.
+     * Раз в сутки удаляем обращения старше {@link #KEEP_REQUESTS} — чтобы таблица не росла.
      */
-    @Scheduled(fixedRate = 60 * 60 * 1000)
-    public void evictIdleUsers() {
-        Instant dayAgo = clock.instant().minus(DAY);
-        callsByUser.entrySet().removeIf(entry -> {
-            Deque<Instant> calls = entry.getValue();
-            synchronized (calls) {
-                removeOlderThan(calls, dayAgo);
-                return calls.isEmpty();
-            }
-        });
+    @Scheduled(fixedRate = 24 * 60 * 60 * 1000)
+    @Transactional
+    public void deleteOldRequests() {
+        int deleted = calorieAiRequestRepository.deleteCreatedBefore(clock.instant().minus(KEEP_REQUESTS));
+        log.info("Deleted {} AI requests older than {} days", deleted, KEEP_REQUESTS.toDays());
     }
 
     // --- Private ---
+
+    /** Время n-го с конца обращения позже since (n = 1 — самое последнее). */
+    private Instant findNthLatestRequestTime(Long appUserId, Instant since, int n) {
+        return calorieAiRequestRepository
+                .findByAppUserIdAndCreatedAtAfterOrderByCreatedAtDesc(appUserId, since, PageRequest.of(n - 1, 1))
+                .get(0)
+                .getCreatedAt();
+    }
 
     private static Decision denied(Reason reason, Instant freesAt, Instant now, boolean premium, int dailyLimit) {
         // Округляем вверх и минимум 1 секунда — чтобы не ответить «повторите через 0 секунд»
         long seconds = Math.max(1, (Duration.between(now, freesAt).toMillis() + 999) / 1000);
         return new Decision(false, reason, seconds, premium, dailyLimit);
-    }
-
-    /** Выкидывает из начала очереди обращения не позже границы (ровно 24 часа назад — уже не считается). */
-    private static void removeOlderThan(Deque<Instant> calls, Instant border) {
-        while (!calls.isEmpty() && !calls.peekFirst().isAfter(border)) {
-            calls.pollFirst();
-        }
-    }
-
-    /** Сколько обращений было позже момента since (идём с конца — там самые свежие). */
-    private static int countSince(Deque<Instant> calls, Instant since) {
-        int count = 0;
-        Iterator<Instant> it = calls.descendingIterator();
-        while (it.hasNext() && it.next().isAfter(since)) {
-            count++;
-        }
-        return count;
-    }
-
-    /** n-е обращение с конца (n = 1 — самое последнее). */
-    private static Instant nthFromEnd(Deque<Instant> calls, int n) {
-        Iterator<Instant> it = calls.descendingIterator();
-        Instant result = null;
-        for (int i = 0; i < n && it.hasNext(); i++) {
-            result = it.next();
-        }
-        return result;
     }
 }

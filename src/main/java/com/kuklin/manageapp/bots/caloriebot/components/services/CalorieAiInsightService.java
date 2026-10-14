@@ -2,6 +2,7 @@ package com.kuklin.manageapp.bots.caloriebot.components.services;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.kuklin.manageapp.bots.caloriebot.components.repository.CalorieAiInsightRefreshRepository;
 import com.kuklin.manageapp.bots.caloriebot.components.repository.CalorieAiInsightRepository;
 import com.kuklin.manageapp.bots.caloriebot.entities.CalorieAiInsight;
 import com.kuklin.manageapp.bots.caloriebot.models.AiInsightType;
@@ -22,8 +23,6 @@ import java.time.ZoneId;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * ИИ-инсайты для страницы Insights: саммари и шаблоны поведения за неделю и месяц.
@@ -37,17 +36,16 @@ public class CalorieAiInsightService {
 
     // Не чаще одного обращения к ИИ на (пользователь, тип) в минуту — считаются и неудачные
     private static final Duration REFRESH_COOLDOWN = Duration.ofMinutes(1);
+    // Генерация, начатая раньше, считается зависшей (бэк перезапустили посреди ответа ИИ) — можно запускать заново
+    private static final Duration GENERATION_TIMEOUT = Duration.ofMinutes(5);
 
     private final CalorieAiInsightRepository calorieAiInsightRepository;
+    // Идёт ли генерация и когда обращались к ИИ — защита от двойного нажатия и пауза между обновлениями
+    private final CalorieAiInsightRefreshRepository calorieAiInsightRefreshRepository;
     private final ReportService reportService;
     private final UserSettingsService userSettingsService;
     private final ObjectMapper objectMapper;
     private final AiRateLimiter aiRateLimiter;
-
-    // Генерации, которые идут прямо сейчас — защита от двойного нажатия. Ключ "userId:type"
-    private final Set<String> inProgress = ConcurrentHashMap.newKeySet();
-    // Когда последний раз обращались к ИИ (успешно или нет). Ключ "userId:type"
-    private final Map<String, Instant> lastAiCalls = new ConcurrentHashMap<>();
 
     /**
      * Последний инсайт нужного типа. Без вызова ИИ.
@@ -78,13 +76,14 @@ public class CalorieAiInsightService {
      *                                AI_INSIGHT_FAILED — ИИ ответил с ошибкой.
      */
     public AiInsightDto refresh(Long userId, AiInsightType type, AppLanguage language) {
-        String key = userId + ":" + type;
-        if (!inProgress.add(key)) {
+        Instant now = Instant.now();
+        int started = calorieAiInsightRefreshRepository.tryMarkStarted(userId, type.name(), now,
+                now.minus(GENERATION_TIMEOUT), now.minus(REFRESH_COOLDOWN));
+        if (started == 0) {
             throw new ErrorResponseException(ErrorStatus.AI_INSIGHT_TOO_FREQUENT);
         }
 
         try {
-            checkCooldown(key);
             aiRateLimiter.acquireOrThrow(userId);
 
             ZoneId zoneId = userSettingsService.getOrCreate(userId).getZoneId();
@@ -96,7 +95,7 @@ public class CalorieAiInsightService {
 
             // Если данных мало — бросит AI_INSIGHT_NOT_ENOUGH_DATA до вызова ИИ, cooldown не тратится
             AccessResult<String> result = reportService.getAiInsightReport(type, from, to, userId, language);
-            lastAiCalls.put(key, Instant.now());
+            calorieAiInsightRefreshRepository.markAiCalled(userId, type.name(), Instant.now());
 
             String payload = result.getOrThrow();
             if (payload == null) {
@@ -115,18 +114,11 @@ public class CalorieAiInsightService {
         } catch (MissingFeatureException e) {
             throw new ErrorResponseException(ErrorStatus.MISSING_FEATURE, e);
         } finally {
-            inProgress.remove(key);
+            calorieAiInsightRefreshRepository.markFinished(userId, type.name());
         }
     }
 
     // --- Private Methods ---
-
-    private void checkCooldown(String key) {
-        Instant lastCall = lastAiCalls.get(key);
-        if (lastCall != null && lastCall.isAfter(Instant.now().minus(REFRESH_COOLDOWN))) {
-            throw new ErrorResponseException(ErrorStatus.AI_INSIGHT_TOO_FREQUENT);
-        }
-    }
 
     /**
      * Устарел ли инсайт: прошло staleAfterDays дней с даты генерации (в таймзоне пользователя).

@@ -1,8 +1,10 @@
 package com.kuklin.manageapp.bots.caloriebot.components.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.kuklin.manageapp.bots.caloriebot.components.repository.CalorieAiInsightRefreshRepository;
 import com.kuklin.manageapp.bots.caloriebot.components.repository.CalorieAiInsightRepository;
 import com.kuklin.manageapp.bots.caloriebot.entities.CalorieAiInsight;
+import com.kuklin.manageapp.bots.caloriebot.entities.CalorieAiInsightRefresh;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserSettings;
 import com.kuklin.manageapp.bots.caloriebot.models.AiInsightType;
 import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
@@ -18,6 +20,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -43,6 +46,8 @@ class CalorieAiInsightServiceTest {
 
     private CalorieAiInsightRepository repository;
     private ReportService reportService;
+    // Строки calorie_ai_insight_refresh по ключу "userId:type" — их видит фейковый репозиторий
+    private Map<String, CalorieAiInsightRefresh> refreshRows;
     private CalorieAiInsightService service;
 
     @BeforeEach
@@ -53,8 +58,9 @@ class CalorieAiInsightServiceTest {
         when(userSettingsService.getOrCreate(USER_ID)).thenReturn(new UserSettings().setTimezoneId(ZONE.getId()));
         when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        service = new CalorieAiInsightService(repository, reportService, userSettingsService, new ObjectMapper(),
-                mock(AiRateLimiter.class));
+        refreshRows = new HashMap<>();
+        service = new CalorieAiInsightService(repository, buildFakeRefreshRepository(refreshRows), reportService,
+                userSettingsService, new ObjectMapper(), mock(AiRateLimiter.class));
     }
 
     // ── Чтение ─────────────────────────────────────────────
@@ -244,7 +250,66 @@ class CalorieAiInsightServiceTest {
         verify(reportService, times(1)).getAiInsightReport(any(), any(), any(), any(), any());
     }
 
+    @Test
+    void refreshFinishesGenerationEvenWhenAiFails() {
+        when(reportService.getAiInsightReport(any(), any(), any(), any(), any())).thenReturn(AccessResult.success(null));
+
+        assertError(() -> service.refresh(USER_ID, AiInsightType.WEEKLY_SUMMARY, AppLanguage.EN), ErrorStatus.AI_INSIGHT_FAILED);
+
+        CalorieAiInsightRefresh row = refreshRows.get(USER_ID + ":" + AiInsightType.WEEKLY_SUMMARY.name());
+        assertThat(row.getStartedAt()).isNull();
+        assertThat(row.getAiCalledAt()).isNotNull();
+    }
+
+    @Test
+    void stuckGenerationCanBeRestarted() {
+        // Бэк перезапустили посреди генерации: отметка осталась, но ей больше 5 минут
+        refreshRows.put(USER_ID + ":" + AiInsightType.WEEKLY_SUMMARY.name(), new CalorieAiInsightRefresh()
+                .setStartedAt(Instant.now().minus(Duration.ofMinutes(6))));
+        when(repository.findByAppUserIdAndType(any(), any())).thenReturn(Optional.empty());
+        when(reportService.getAiInsightReport(any(), any(), any(), any(), any())).thenReturn(AccessResult.success(SUMMARY_JSON));
+
+        service.refresh(USER_ID, AiInsightType.WEEKLY_SUMMARY, AppLanguage.EN);
+
+        verify(reportService).getAiInsightReport(any(), any(), any(), any(), any());
+    }
+
     // ── Helpers ────────────────────────────────────────────
+
+    /**
+     * Репозиторий поверх карты: методы делают то же, что SQL в CalorieAiInsightRefreshRepository.
+     * tryMarkStarted — под synchronized, как атомарный INSERT … ON CONFLICT в БД.
+     */
+    private static CalorieAiInsightRefreshRepository buildFakeRefreshRepository(Map<String, CalorieAiInsightRefresh> rows) {
+        CalorieAiInsightRefreshRepository refreshRepository = mock(CalorieAiInsightRefreshRepository.class);
+        when(refreshRepository.tryMarkStarted(any(), any(), any(), any(), any())).thenAnswer(inv -> {
+            synchronized (rows) {
+                Instant now = inv.getArgument(2);
+                Instant stuckBefore = inv.getArgument(3);
+                Instant cooldownFrom = inv.getArgument(4);
+                CalorieAiInsightRefresh row = rows.computeIfAbsent(inv.getArgument(0) + ":" + inv.getArgument(1),
+                        key -> new CalorieAiInsightRefresh());
+                boolean running = row.getStartedAt() != null && !row.getStartedAt().isBefore(stuckBefore);
+                boolean cooldown = row.getAiCalledAt() != null && row.getAiCalledAt().isAfter(cooldownFrom);
+                if (running || cooldown) return 0;
+                row.setStartedAt(now);
+                return 1;
+            }
+        });
+        when(refreshRepository.markAiCalled(any(), any(), any())).thenAnswer(inv -> {
+            synchronized (rows) {
+                rows.get(inv.getArgument(0) + ":" + inv.getArgument(1)).setAiCalledAt(inv.getArgument(2));
+                return 1;
+            }
+        });
+        when(refreshRepository.markFinished(any(), any())).thenAnswer(inv -> {
+            synchronized (rows) {
+                rows.get(inv.getArgument(0) + ":" + inv.getArgument(1)).setStartedAt(null);
+                return 1;
+            }
+        });
+        return refreshRepository;
+    }
 
     private static CalorieAiInsight insight(AiInsightType type, Instant createdAt) {
         return new CalorieAiInsight()
