@@ -8,8 +8,6 @@ import lombok.experimental.Accessors;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.Instant;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Entity
 @Table(name = "dishes")
@@ -162,15 +160,5 @@ public class Dish {
         sb.append(", created=").append(created); // Instant в формате UTC ISO-8601
         sb.append("}");
         return sb.toString();
-    }
-
-    public static String toStringList(List<Dish> dishes) {
-        if (dishes == null || dishes.isEmpty()) {
-            return "dishes: empty";
-        }
-
-        return dishes.stream()
-                .map(Dish::toString)
-                .collect(Collectors.joining("\n"));
     }
 }

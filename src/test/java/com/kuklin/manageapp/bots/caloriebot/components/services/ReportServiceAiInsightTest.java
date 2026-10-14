@@ -178,22 +178,24 @@ class ReportServiceAiInsightTest {
     @Test
     void dayReportAsksAiInUserLanguage() {
         when(dishService.getTodayDishes(USER_ID)).thenReturn(List.of(dish("2026-10-02T02:00:00Z")));
-        when(ai.fetchResponse(anyString(), anyString(), any(), anyString(), any())).thenReturn("ok");
+        when(ai.fetchCreativeResponse(anyString(), anyString(), any(), anyString(), any())).thenReturn("ok");
 
         service.getDayAiReport(USER_ID);
 
         // Язык и в начале, и в конце задания: иначе модель по русской инструкции сбивалась на русский
-        assertThat(textPrompts()).singleElement().asString()
+        assertThat(creativePrompts()).singleElement().asString()
                 .contains("ЯЗЫК ОТВЕТА: English.")
-                .contains("Язык ответа: English — от первого до последнего слова");
+                .contains("Язык ответа: English — от первого до последнего слова")
+                // 02:00 UTC → 09:00 у пользователя (UTC+7)
+                .contains("09:00 — Oatmeal");
     }
 
     // ── Helpers ────────────────────────────────────────────
 
-    /** Промпты всех текстовых (не JSON) запросов к ИИ. */
-    private List<String> textPrompts() {
+    /** Промпты всех творческих (высокая температура) запросов к ИИ. */
+    private List<String> creativePrompts() {
         ArgumentCaptor<String> prompt = ArgumentCaptor.forClass(String.class);
-        verify(ai, atLeast(0)).fetchResponse(anyString(), prompt.capture(), any(), anyString(), any());
+        verify(ai, atLeast(0)).fetchCreativeResponse(anyString(), prompt.capture(), any(), anyString(), any());
         return prompt.getAllValues();
     }
 

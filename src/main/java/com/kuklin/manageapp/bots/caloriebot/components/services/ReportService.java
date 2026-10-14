@@ -23,6 +23,8 @@ import com.kuklin.manageapp.bots.caloriebot.texts.PdfTexts;
 import com.kuklin.manageapp.bots.caloriebot.models.airesponse.InsightPayloadRecord;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
+import com.kuklin.manageapp.bots.caloriebot.utils.DayReportPrompt;
+import com.kuklin.manageapp.bots.caloriebot.utils.GoalPromptRules;
 import com.kuklin.manageapp.bots.caloriebot.utils.ReportHtml;
 import com.kuklin.manageapp.bots.caloriebot.utils.ReportStatsCalculator;
 import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
@@ -46,6 +48,7 @@ import java.time.ZonedDateTime;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 
 // Статические импорты для улучшения читаемости (ИИ-промпты)
 import static com.kuklin.manageapp.bots.caloriebot.utils.ReportCalorieBotPrompts.*;
@@ -195,7 +198,8 @@ public class ReportService {
             };
             String periodLabel = "последние " + type.getPeriodDays() + " дней";
 
-            String prompt = AI_PERSONA + String.format(request, periodLabel, language.getNativeName(), jsonContext);
+            String prompt = AI_PERSONA + String.format(request, periodLabel, language.getNativeName(), jsonContext,
+                    GoalPromptRules.buildRules(data.profile()));
             String response = openAiProviderProcessor.fetchJsonResponse(
                     components.getAiKey(),
                     prompt,
@@ -223,13 +227,10 @@ public class ReportService {
         UserSettings userSettings = userSettingsService.getOrCreate(userId);
         ZonedDateTime userTime = ZonedDateTime.now(ZoneId.of(userSettings.getTimezoneId()));
 
-        // Компоновка промпта: Личность ИИ + Инструкция + Данные профиля + Список блюд
-        String prompt = AI_PERSONA + String.format(
-                AI_REQUEST_TODAY_ANALYSIS,
-                profile, Dish.toStringList(dishes), userTime.toString(), calorieTexts.languageOf(userId).getNativeName()
-        );
+        String prompt = DayReportPrompt.buildPrompt(profile, dishes, userTime,
+                calorieTexts.languageOf(userId).getNativeName(), ThreadLocalRandom.current());
 
-        return AccessResult.success(fetchAiResponse(prompt, "AI DAY REPORT"));
+        return AccessResult.success(fetchCreativeAiResponse(prompt, "AI DAY REPORT"));
     }
 
     // --- PDF-ОТЧЁТ ---
@@ -261,7 +262,8 @@ public class ReportService {
         try {
             var payload = ReportAiPayloadRecord.of(stats, source.profile(), source.dishes(), source.zoneId());
             String prompt = AI_PERSONA + String.format(AI_REQUEST_REPORT,
-                    source.kind().getDays(), texts.language().getNativeName(), mapper.writeValueAsString(payload));
+                    source.kind().getDays(), texts.language().getNativeName(), mapper.writeValueAsString(payload),
+                    GoalPromptRules.buildRules(source.profile()));
             String response = openAiProviderProcessor.fetchJsonResponse(
                     components.getAiKey(),
                     prompt,
@@ -300,7 +302,7 @@ public class ReportService {
                 .replace(VAR_CALENDAR, month ? ReportHtml.buildCalendar(stats, texts) : "")
                 .replace(VAR_CALORIES, ReportHtml.buildCaloriesSection(stats, texts))
                 .replace(VAR_WEIGHT, ReportHtml.buildWeightSection(stats, texts))
-                .replace(VAR_ENERGY, ReportHtml.buildEnergySection(stats, texts))
+                .replace(VAR_ENERGY, ReportHtml.buildEnergySection(stats, source.profile(), texts))
                 .replace(VAR_MACROS, ReportHtml.buildMacrosSection(stats, texts))
                 .replace(VAR_RHYTHM, ReportHtml.buildRhythmSection(stats, texts))
                 .replace(VAR_TOP, ReportHtml.buildTopSection(stats, texts))
@@ -360,8 +362,8 @@ public class ReportService {
     /**
      * Обертка для запросов к OpenAiProviderProcessor.
      */
-    private String fetchAiResponse(String prompt, String loggingContext) {
-        return openAiProviderProcessor.fetchResponse(
+    private String fetchCreativeAiResponse(String prompt, String loggingContext) {
+        return openAiProviderProcessor.fetchCreativeResponse(
                 components.getAiKey(),
                 prompt,
                 BotIdentifier.CALORIE_BOT,
