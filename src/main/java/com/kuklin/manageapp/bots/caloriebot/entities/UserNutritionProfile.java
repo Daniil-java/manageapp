@@ -98,10 +98,19 @@ public class UserNutritionProfile {
         return waterMode == NormMode.MANUAL;
     }
 
+    /**
+     * proteinsFactor — поправка к белку: растительный усваивается хуже, веганам +10%.
+     * maxCarbsShare — потолок доли калорий из углеводов (null — без потолка), лишнее уходит в жиры.
+     */
+    @Getter
+    @RequiredArgsConstructor
     public enum DietType implements Labeled {
-        REGULAR,
-        LOW_CARB,
-        VEGAN;
+        REGULAR(1d, null),
+        LOW_CARB(1d, 0.25d),
+        VEGAN(1.1d, null);
+
+        private final Double proteinsFactor;
+        private final Double maxCarbsShare;
 
         @Override
         public String getTextKey() {
@@ -112,13 +121,12 @@ public class UserNutritionProfile {
     @Getter
     @RequiredArgsConstructor
     public enum Goal implements Labeled {
-        LOSE_WEIGHT(0.8d, 2d, 0.9d),
-        MAINTAIN(1d, 1.8d, 0.9d),
-        GAIN_WEIGHT(1.15d, 1.8d, 0.9d);
+        LOSE_WEIGHT(0.8d, 2d),
+        MAINTAIN(1d, 1.8d),
+        GAIN_WEIGHT(1.15d, 1.8d);
 
         private final Double coef;
         private final Double proteinsPerKg;
-        private final Double fatsPerKg;
 
         @Override
         public String getTextKey() {

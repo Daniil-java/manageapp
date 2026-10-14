@@ -278,6 +278,10 @@ public class UserNutritionProfileService {
             // Ручная норма без веса/цели: белки — 30% калорий
             proteins = (int) Math.round(caloriesTarget * 0.30 / 4);
         }
+        DietType diet = profile.getDietType();
+        if (diet != null) {
+            proteins = (int) Math.round(proteins * diet.getProteinsFactor());
+        }
 
         // --- Fats (процент от калорий, а не от веса) ---
         // 20–30% — норма, берём 25%
@@ -286,6 +290,15 @@ public class UserNutritionProfileService {
 
         // --- Carbs (остаток; при маленькой ручной норме белок может съесть всё — не уходим в минус) ---
         int carbs = Math.max(0, (caloriesTarget - proteins * 4 - fats * 9) / 4);
+
+        // --- Low carb: углеводы не выше потолка, освободившиеся калории — в жиры ---
+        if (diet != null && diet.getMaxCarbsShare() != null) {
+            int maxCarbs = (int) Math.round(caloriesTarget * diet.getMaxCarbsShare() / 4);
+            if (carbs > maxCarbs) {
+                fats += (carbs - maxCarbs) * 4 / 9;
+                carbs = maxCarbs;
+            }
+        }
 
         // --- Water --- (своя норма или без веса/активности — оставляем как было)
         Integer formulaWater = calcFormulaWaterOrNull(profile);

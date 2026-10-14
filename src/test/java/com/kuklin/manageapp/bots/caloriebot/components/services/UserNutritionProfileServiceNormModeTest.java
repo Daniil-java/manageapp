@@ -219,6 +219,29 @@ class UserNutritionProfileServiceNormModeTest {
     }
 
     @Test
+    void lowCarbCapsCarbsAndMovesRestToFats() {
+        profile.setDietType(UserNutritionProfile.DietType.LOW_CARB);
+
+        UserNutritionProfileDto saved = put(new UserNutritionProfileDto());
+
+        // 1756 ккал: углеводы не выше 25% (110 г), вместо 192 г остатка; лишние 82 г × 4 / 9 → +36 г жиров к 48
+        assertThat(saved.getProteinsNormGramsPerDay()).isEqualTo(139);
+        assertThat(saved.getCarbsNormGramsPerDay()).isEqualTo(110);
+        assertThat(saved.getFatsNormGramsPerDay()).isEqualTo(84);
+    }
+
+    @Test
+    void veganGetsMoreProtein() {
+        profile.setDietType(UserNutritionProfile.DietType.VEGAN);
+
+        UserNutritionProfileDto saved = put(new UserNutritionProfileDto());
+
+        // 69.5 × 2 = 139 г, растительный белок +10%
+        assertThat(saved.getProteinsNormGramsPerDay()).isEqualTo(153);
+        assertThat(saved.getFatsNormGramsPerDay()).isEqualTo(48);
+    }
+
+    @Test
     void formulaHintIsAvailableOnlyForFilledProfile() {
         assertThat(service.calcFormulaCaloriesOrNull(profile)).isEqualTo(1756);
 

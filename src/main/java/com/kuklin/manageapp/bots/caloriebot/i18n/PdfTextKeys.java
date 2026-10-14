@@ -104,6 +104,8 @@ public final class PdfTextKeys {
     public static final String SPLIT_ALL = "pdf.split.all";
     public static final String SPLIT_EXTRA = "pdf.split.extra";
     public static final String SPLIT_EVEN = "pdf.split.even";
+    public static final String SPLIT_GAIN_MORE = "pdf.split.gain_more";
+    public static final String SPLIT_GAIN_LESS = "pdf.split.gain_less";
 
     // ── БЖУ ─────────────────────────────────────────────────────────
     public static final String MACROS_TITLE = "pdf.macros.title";

@@ -31,6 +31,7 @@ public final class ReportHtml {
 
     /** Разница с прошлым периодом меньше этого — не показываем стрелку */
     private static final double MIN_VISIBLE_CHANGE = 0.005;
+    private static final double MAINTAIN_WEIGHT_TOLERANCE_KG = 0.5;
     /** Реальный расход отличается от формулы меньше — «почти как по формуле» */
     private static final int TDEE_CLOSE_KCAL = 100;
     /** Во сколько раз белка в выходные меньше, чтобы об этом сказать */
@@ -124,7 +125,7 @@ public final class ReportHtml {
         WeightStat weight = stats.weight();
         if (weight != null) {
             tiles.add(buildKpi("⚖️", texts.formatSigned(weight.deltaKg(), 1), texts.get(UNIT_KG), texts.get(KPI_WEIGHT),
-                    texts.get(KPI_WEIGHT_RATE, texts.formatSigned(weight.ratePerWeek(), 1)), getToneForChange(weight.deltaKg(), goal)));
+                    texts.get(KPI_WEIGHT_RATE, texts.formatSigned(weight.ratePerWeek(), 1)), getWeightTone(weight.deltaKg(), goal)));
         } else {
             tiles.add(buildKpi("⚖️", "—", null, texts.get(KPI_WEIGHT), texts.get(KPI_WEIGHT_EMPTY), "neutral"));
         }
@@ -165,6 +166,14 @@ public final class ReportHtml {
         if (goal == null || goal == UserNutritionProfile.Goal.MAINTAIN) return "neutral";
         boolean wanted = goal == UserNutritionProfile.Goal.LOSE_WEIGHT ? change < 0 : change > 0;
         return wanted ? "good" : "warn";
+    }
+
+    /** Вес: при поддержании хорошо держаться в пределах ±0,5 кг, заметный уход в любую сторону — сигнал. */
+    private static String getWeightTone(double deltaKg, UserNutritionProfile.Goal goal) {
+        if (goal == UserNutritionProfile.Goal.MAINTAIN) {
+            return Math.abs(deltaKg) <= MAINTAIN_WEIGHT_TOLERANCE_KG ? "good" : "warn";
+        }
+        return getToneForChange(deltaKg, goal);
     }
 
     /** value может содержать разметку &lt;small&gt; — экранируется вызывающим. */
@@ -273,9 +282,9 @@ public final class ReportHtml {
 
     // ── Реальный расход и выходные ──────────────────────────────────
 
-    public static String buildEnergySection(ReportStats stats, PdfTexts texts) {
+    public static String buildEnergySection(ReportStats stats, UserNutritionProfile profile, PdfTexts texts) {
         String tdee = buildTdeeCard(stats, texts);
-        String split = buildSplitCard(stats, texts);
+        String split = buildSplitCard(stats, profile.getGoal(), texts);
         if (tdee.isEmpty() && split.isEmpty()) return "";
         if (tdee.isEmpty() || split.isEmpty()) return "<div class=\"block gap\">" + tdee + split + "</div>";
         return "<div class=\"block gap\"><div class=\"row\"><table class=\"grid\"><tr><td style=\"width: 58%;\">" + tdee + "</td><td>" + split + "</td></tr></table></div></div>";
@@ -298,7 +307,8 @@ public final class ReportHtml {
                 + "<div class=\"how\">" + escapeHtml(texts.get(TDEE_HOW)) + "</div></div>";
     }
 
-    private static String buildSplitCard(ReportStats stats, PdfTexts texts) {
+    /** При наборе веса выходные сверх будней — не «съеденный дефицит», а плюс к цели; меньше в выходные — недобор. */
+    private static String buildSplitCard(ReportStats stats, UserNutritionProfile.Goal goal, PdfTexts texts) {
         Integer wd = stats.weekdayAvgCalories(), we = stats.weekendAvgCalories();
         if (wd == null || we == null) return "";
         int scale = Math.max(Math.max(wd, we), stats.avgTarget() != null ? stats.avgTarget() : 0) * 115 / 100;
@@ -312,7 +322,11 @@ public final class ReportHtml {
         s.append("</table>");
         int extra = (we - wd) * 2;
         String note;
-        if (extra <= 0) {
+        if (goal == UserNutritionProfile.Goal.GAIN_WEIGHT && extra < 0) {
+            note = highlight(texts.get(SPLIT_GAIN_LESS, texts.formatInt(-extra)), texts.formatInt(-extra));
+        } else if (goal == UserNutritionProfile.Goal.GAIN_WEIGHT && extra > 0) {
+            note = highlight(texts.get(SPLIT_GAIN_MORE, texts.formatInt(extra)), "+" + texts.formatInt(extra));
+        } else if (extra <= 0) {
             note = escapeHtml(texts.get(SPLIT_EVEN));
         } else if (stats.weekendShare() != null && stats.weekendShare() >= 1) {
             note = highlight(texts.get(SPLIT_ALL, texts.formatInt(extra)), "+" + texts.formatInt(extra));

@@ -87,7 +87,7 @@ public final class ReportStatsCalculator {
                 avgTarget,
                 weekdayAvg,
                 weekendAvg,
-                buildWeekendShareOrNull(weekdayAvg, weekendAvg, reference),
+                buildWeekendShareOrNull(weekdayAvg, weekendAvg, reference, source.profile().getGoal()),
                 weight,
                 realTdee,
                 UserNutritionProfileService.calcFormulaMaintenanceCaloriesOrNull(source.profile()),
@@ -232,7 +232,10 @@ public final class ReportStatsCalculator {
         return (int) Math.round(byDate.values().stream().mapToInt(d -> sum(d, Dish::getCalories)).average().orElse(0));
     }
 
-    private static Double buildWeekendShareOrNull(Integer weekdayAvg, Integer weekendAvg, Integer reference) {
+    private static Double buildWeekendShareOrNull(Integer weekdayAvg, Integer weekendAvg, Integer reference,
+                                                  UserNutritionProfile.Goal goal) {
+        // При наборе веса недобор будней — не «дефицит», который жалко съесть, а проблема сама по себе
+        if (goal == UserNutritionProfile.Goal.GAIN_WEIGHT) return null;
         if (weekdayAvg == null || weekendAvg == null || reference == null) return null;
         if (weekendAvg <= weekdayAvg || reference <= weekdayAvg) return null;
         // «Лишнее» двух выходных против дефицита пяти будней

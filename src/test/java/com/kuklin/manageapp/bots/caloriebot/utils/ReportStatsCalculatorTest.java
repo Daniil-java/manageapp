@@ -111,6 +111,24 @@ class ReportStatsCalculatorTest {
     }
 
     @Test
+    void noWeekendDeficitShareWhenGaining() {
+        List<Dish> dishes = new ArrayList<>();
+        for (int i = 0; i < 28; i++) {
+            LocalDate date = START.plusDays(i);
+            boolean weekend = date.getDayOfWeek() == DayOfWeek.SATURDAY || date.getDayOfWeek() == DayOfWeek.SUNDAY;
+            dishes.add(dish(date, 12, weekend ? 2600 : 1800, "Rice"));
+        }
+        UserNutritionProfile gaining = profile().setGoal(UserNutritionProfile.Goal.GAIN_WEIGHT);
+
+        ReportStats stats = ReportStatsCalculator.buildStats(new ReportSource(ReportKind.MONTH, START, END, ZONE,
+                dishes, List.of(), List.of(), List.of(), List.of(), gaining));
+
+        // Недобор будней при наборе — не «дефицит», который съедают выходные
+        assertThat(stats.weekdayAvgCalories()).isEqualTo(1800);
+        assertThat(stats.weekendShare()).isNull();
+    }
+
+    @Test
     void targetHistoryAppliesPerDay() {
         LocalDate change = START.plusDays(17);
         List<UserNutritionProfileEntry> targets = List.of(
