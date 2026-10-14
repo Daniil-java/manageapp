@@ -331,16 +331,15 @@ public class UserSettingsService {
         return userSettingsRepository.findAllUsersReadyForMealReminder(Instant.now(), BotIdentifier.CALORIE_BOT.name());
     }
 
+    // Отметки времени пишем одним UPDATE одной колонки, а не load → set → save всей сущности:
+    // save затёр бы настройки, которые пользователь поменял между загрузкой и сохранением.
+    // Строки нет — нечего отмечать: шедулеры работают только по существующим настройкам.
     public void updateDailyLastReminder(Long userId) {
-        UserSettings userSettings = getOrCreate(userId);
-        userSettings.setDailyLastReminder(Instant.now());
-        userSettingsRepository.save(userSettings);
+        userSettingsRepository.updateDailyLastReminder(userId, Instant.now());
     }
 
     public void updateMealLastReminder(Long userId) {
-        UserSettings userSettings = getOrCreate(userId);
-        userSettings.setMealLastReminderUtc(Instant.now());
-        userSettingsRepository.save(userSettings);
+        userSettingsRepository.updateMealLastReminder(userId, Instant.now());
     }
 
 }

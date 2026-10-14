@@ -67,8 +67,11 @@ public class WeightEntryService {
         return last.subtract(first);
     }
 
-    public void deleteWeightEntryById(Long tgUserId, Long weightId) {
-        weightEntryRepository.deleteByIdAndUserId(weightId, tgUserId);
+    // Derived deleteBy сначала загружает записи, потом удаляет через em.remove — без транзакции это
+    // TransactionRequiredException. Своя @Transactional: метод не должен зависеть от того, кто его вызвал.
+    @Transactional
+    public void deleteWeightEntryById(Long userId, Long weightId) {
+        weightEntryRepository.deleteByIdAndUserId(weightId, userId);
     }
 
     public WeightEntry getLatestOrNull(Long userId) {

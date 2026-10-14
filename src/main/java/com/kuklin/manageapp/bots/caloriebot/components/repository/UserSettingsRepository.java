@@ -3,15 +3,28 @@ package com.kuklin.manageapp.bots.caloriebot.components.repository;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserSettings;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.List;
 
 @Repository
 public interface UserSettingsRepository extends JpaRepository<UserSettings, Long> {
+
+    // @Transactional здесь: вызываются и из шедулеров вне транзакции, а @Modifying без неё падает
+    @Transactional
+    @Modifying
+    @Query("update UserSettings s set s.dailyLastReminder = :now where s.userId = :userId")
+    int updateDailyLastReminder(@Param("userId") Long userId, @Param("now") Instant now);
+
+    @Transactional
+    @Modifying
+    @Query("update UserSettings s set s.mealLastReminderUtc = :now where s.userId = :userId")
+    int updateMealLastReminder(@Param("userId") Long userId, @Param("now") Instant now);
     List<UserSettings> findAllByDailySummaryEnabled(boolean enabled);
 
     @Query("""

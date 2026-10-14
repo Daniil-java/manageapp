@@ -42,26 +42,15 @@ public class UtmService {
         }).orElse(false); // Если ссылка не найдена, вернем false
     }
 
-    /**
-     * Создание новой ссылки
-     */
-    public UtmLink createLink(String code, UtmLink.OwnerType type, Long creatorId) {
-        UtmLink link = new UtmLink()
-                .setCode(code)
-                .setOwnerType(type)
-                .setCreatorId(creatorId);
-        return utmLinkRepository.save(link);
-    }
-
     public String getOrCreateReferralLink(Long userId) {
         String code = "ref" + userId; // Простой и понятный код
-        return utmLinkRepository.findByCode(code)
-                .orElseGet(() -> createLink(
-                        code,
-                        UtmLink.OwnerType.USER,
-                        userId
-                ))
-                .getCode();
+        // Код детерминирован — строка нужна только для учёта кликов (processClick). Двойное нажатие
+        // «пригласить» не должно падать на UNIQUE(code), поэтому INSERT ... ON CONFLICT DO NOTHING.
+        // Сначала find: ON CONFLICT тратит значение id-последовательности даже без вставки.
+        if (utmLinkRepository.findByCode(code).isEmpty()) {
+            utmLinkRepository.insertIfAbsent(code, UtmLink.OwnerType.USER.name(), userId);
+        }
+        return code;
     }
 
     public UtmLink saveLink(UtmCalorieUpdateHandler.UtmDto utmDto, Long creatorId) {

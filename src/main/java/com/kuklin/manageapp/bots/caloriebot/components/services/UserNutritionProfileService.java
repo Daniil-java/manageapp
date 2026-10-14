@@ -32,49 +32,10 @@ import static com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile
 @Service
 @RequiredArgsConstructor
 @Slf4j
-@Transactional
 public class UserNutritionProfileService {
     private final UserNutritionProfileRepository userNutritionProfileRepository;
     private final WeightEntryService weightEntryService;
     private final UserNutritionProfileEntryService userNutritionProfileEntryService;
-
-    public UserNutritionProfile updateCaloriesNorms(Long userId, Integer calories, Integer water) {
-        UserNutritionProfile profile = getOrCreateProfile(userId);
-
-        if (calories != null) {
-            // Своё число — иначе следующий пересчёт затрёт его формулой
-            profile.setNormMode(NormMode.MANUAL).setCaloriesNormPerDay(calories);
-        } else {
-            return null;
-        }
-
-        // Сохраняем напрямую в репозиторий, минуя метод recalculateAndSave,
-        // который вызывает recalcTargets() и затирает всё формулами
-        UserNutritionProfile saved = userNutritionProfileRepository.save(profile);
-        userNutritionProfileEntryService.syncWithProfile(saved);
-
-        return saved;
-    }
-
-    public UserNutritionProfile updateWaterNorms(Long userId, Integer water) {
-        UserNutritionProfile profile = getOrCreateProfile(userId);
-
-        if (water != null) {
-            profile.setWaterMode(NormMode.MANUAL).setWaterTargetMlPerDay(water);
-        } else {
-            return null;
-        }
-
-        // Сохраняем напрямую в репозиторий, минуя метод recalculateAndSave,
-        // который вызывает recalcTargets() и затирает всё формулами
-        UserNutritionProfile saved = userNutritionProfileRepository.save(profile);
-
-        // Важно: обновляем текущие записи (Entry), чтобы в отчетах за сегодня
-        // сразу отобразилась новая норма
-        userNutritionProfileEntryService.syncWithProfile(saved);
-
-        return saved;
-    }
 
     @Transactional
     public UserNutritionProfileDto getOrCreateProfileDto(Long userId) {
@@ -183,21 +144,6 @@ public class UserNutritionProfileService {
     private static boolean sameWeight(BigDecimal a, BigDecimal b) {
         if (a == null || b == null) return a == b;
         return a.compareTo(b) == 0;
-    }
-
-    /**
-     * Обновить только цель по воде (когда пользователь меняет её явно).
-     */
-    @Transactional
-    public UserNutritionProfile updateWaterTarget(Long userId, Integer waterTargetMlPerDay) {
-        UserNutritionProfile profile = getOrCreateProfile(userId)
-                .setWaterMode(NormMode.MANUAL)
-                .setWaterTargetMlPerDay(waterTargetMlPerDay);
-
-        // Ничего пересчитывать не надо, только обновляем поле
-        profile = userNutritionProfileRepository.save(profile);
-        userNutritionProfileEntryService.syncWithProfile(profile);
-        return profile;
     }
 
     //Валидация данных, без обращений в репозиторий

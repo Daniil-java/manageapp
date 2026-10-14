@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
@@ -28,6 +29,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class UserFavoriteDishService {
+    // Уникальный индекс (user_id, lower(name)) из 0.0.24.sql — по нему отличаем дубль от других нарушений
+    private static final String FAVORITE_NAME_UNIQUE_INDEX = "uk_user_favorite_dishes_user_name";
     private final UserFavoriteDishRepository userFavoriteDishRepository;
     private final DishService dishService;
     private final UserFeatureUsageService userFeatureUsageService;
@@ -48,6 +51,8 @@ public class UserFavoriteDishService {
         }
     }
 
+    // @Transactional и здесь: addDishFromFavorite ниже — вызов через this, мимо прокси, его аннотация не сработает
+    @Transactional
     public DishDto addDishFromFavoriteDto(Long userId, Long favoriteId) {
         // API: при суточном лимите — 429 с понятным текстом, а не пустой ответ
         dishService.checkDailyDishLimitOrThrow(userId);
@@ -115,12 +120,28 @@ public class UserFavoriteDishService {
             throw new ErrorResponseException(ErrorStatus.FAVORITE_DISH_ALREADY_EXISTS);
         }
 
-        return AccessResult.success(userFavoriteDishRepository.save(UserFavoriteDish.fromDish(dish)));
+        // Проверка выше не спасает от гонки (двойной тап, бот + сайт): оба видят «нет», оба вставляют,
+        // второй падает на uk_user_favorite_dishes_user_name. Отдаём ту же понятную ошибку, а не 500.
+        // Транзакция после ошибки в Postgres уже не рабочая — но мы и так из неё выходим исключением.
+        try {
+            return AccessResult.success(userFavoriteDishRepository.saveAndFlush(UserFavoriteDish.fromDish(dish)));
+        } catch (DataIntegrityViolationException e) {
+            if (isFavoriteNameConflict(e)) {
+                throw new ErrorResponseException(ErrorStatus.FAVORITE_DISH_ALREADY_EXISTS);
+            }
+            throw e;
+        }
+    }
+
+    private static boolean isFavoriteNameConflict(DataIntegrityViolationException e) {
+        String message = e.getMostSpecificCause().getMessage();
+        return message != null && message.contains(FAVORITE_NAME_UNIQUE_INDEX);
     }
 
     /**
-     * Добавить в дневник блюдо из избранного.
+     * Добавить в дневник блюдо из избранного. Две записи (блюдо + lastUsedAt у избранного) — одной транзакцией.
      */
+    @Transactional
     public Dish addDishFromFavorite(Long userId, Long favoriteId) {
         UserFavoriteDish favorite = userFavoriteDishRepository.findByIdAndUserId(favoriteId, userId)
                 .orElse(null);
