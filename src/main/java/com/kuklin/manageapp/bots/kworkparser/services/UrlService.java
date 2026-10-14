@@ -1,7 +1,7 @@
 package com.kuklin.manageapp.bots.kworkparser.services;
 
-import com.kuklin.manageapp.bots.kworkparser.entities.Url;
 import com.kuklin.manageapp.bots.kworkparser.repositories.UrlRepository;
+import com.kuklin.manageapp.bots.kworkparser.entities.Url;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
