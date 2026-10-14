@@ -7,8 +7,10 @@ import com.kuklin.manageapp.bots.caloriebot.components.services.DishService;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserSettings;
 import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
+import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
+import com.kuklin.manageapp.bots.caloriebot.telegram.TelegramCalorieBotFacade;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.dish.DishKeyboards;
 import com.kuklin.manageapp.bots.caloriebot.texts.DishTexts;
@@ -48,7 +50,7 @@ public class TodayUpdateHandler implements CalorieBotUpdateHandler {
     private static final String REMOVE_CMD = Command.CALORIE_TODAY_LIST.getCommandText() + DELIMITER + "r";
     private static final String GET_DISH_CMD = REMOVE_CMD + DELIMITER;
     private static final String CLOSE_CMD = Command.CALORIE_CLOSE.getCommandText();
-    private static final String DUMMY_CALLBACK = "temp";
+    private static final String DUMMY_CALLBACK = TelegramCalorieBotFacade.NO_ACTION_CALLBACK;
 
     /**
      * Основная точка входа для обработки обновлений.
@@ -92,7 +94,13 @@ public class TodayUpdateHandler implements CalorieBotUpdateHandler {
         try {
             // Парсинг ID блюда из строки формата "команда:r:id"
             Long dishId = Long.valueOf(data.split(DELIMITER)[2]);
-            Dish dish = dishService.getDishByIdOrNull(dishId);
+            Dish dish = dishService.getUserDishOrNull(userId, dishId);
+            if (dish == null) {
+                // Блюдо уже удалили или id в callback_data чужой
+                calorieTelegramBot.sendReturnedMessage(update.getCallbackQuery().getMessage().getChatId(),
+                        texts.error(userId, ErrorStatus.DISH_NOT_FOUND));
+                return;
+            }
 
             calorieTelegramBot.sendReturnedMessage(
                     update.getCallbackQuery().getMessage().getChatId(),

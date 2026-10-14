@@ -126,9 +126,15 @@ public class DishService {
         return calorieTexts.languageOf(userId).getNativeName();
     }
 
+    /**
+     * Удалить блюдо из дневника (бот, кнопка «Удалить»). false — блюда нет или оно чужое:
+     * id приходит в callback_data, а её клиент может подделать.
+     */
     @Transactional
-    public void removeByDishId(Long id) {
-        dishRepository.deleteById(id);
+    public boolean removeUserDish(Long userId, Long dishId) {
+        Optional<Dish> dish = dishRepository.findByIdAndUserId(dishId, userId);
+        dish.ifPresent(dishRepository::delete);
+        return dish.isPresent();
     }
 
     @Transactional
@@ -189,6 +195,12 @@ public class DishService {
         return dishRepository.findById(dishId).orElse(null);
     }
 
+    /** Блюдо пользователя или null, если его нет или оно чужое. Для бота: id блюда приходит в callback_data. */
+    @Transactional(readOnly = true)
+    public Dish getUserDishOrNull(Long userId, Long dishId) {
+        return dishRepository.findByIdAndUserId(dishId, userId).orElse(null);
+    }
+
     @Transactional
     public DishDto addManualDishDto(Long userId, ManualDishRequest request) {
         checkDailyDishLimitOrThrow(userId);
@@ -245,21 +257,29 @@ public class DishService {
         return dishRepository.save(dish);
     }
 
+    /**
+     * Изменить вес порции на percentDelta процентов (бот, кнопки ±10%).
+     * null — блюда нет или оно чужое: id приходит в callback_data, а её клиент может подделать.
+     * Процент не ограничиваем — подделать его можно только для своего блюда; ниже нуля вес не уйдёт.
+     */
     @Transactional
-    public Dish changePortionWeightByPercent(Long dishId, int percentDelta) {
-        return dishRepository.findById(dishId)
+    public Dish changePortionWeightByPercentOrNull(Long userId, Long dishId, int percentDelta) {
+        return dishRepository.findByIdAndUserId(dishId, userId)
                 .map(dish -> dish.applyPortionWeightPercentDelta(percentDelta))
                 .map(dishRepository::save)
                 .orElse(null);
     }
 
+    /**
+     * Новое количество порций (бот, кнопки ➖ ➕). null — блюда нет, оно чужое или порций меньше одной.
+     */
     @Transactional
-    public Dish saveNewPortionsCountOrNull(Long dishId, Integer newPortions) {
+    public Dish saveNewPortionsCountOrNull(Long userId, Long dishId, Integer newPortions) {
         if (newPortions == null || newPortions <= 0) {
             return null;
         }
 
-        Dish dish = getDishByIdOrNull(dishId);
+        Dish dish = getUserDishOrNull(userId, dishId);
         if (dish == null) {
             return null;
         }
@@ -270,7 +290,7 @@ public class DishService {
             dish.setPortions(newPortions);
 
             if (dish.getPortionWeight() != null) {
-                dish.setWeight(dish.getPortionWeight() * newPortions);
+                dish.setWeight(scale(dish.getPortionWeight(), newPortions));
             }
 
             return dishRepository.save(dish);
@@ -281,7 +301,7 @@ public class DishService {
         dish.setPortions(newPortions);
 
         if (dish.getPortionWeight() != null) {
-            dish.setWeight(dish.getPortionWeight() * newPortions);
+            dish.setWeight(scale(dish.getPortionWeight(), newPortions));
         } else if (dish.getWeight() != null) {
             dish.setWeight(scale(dish.getWeight(), multiplier));
         }
@@ -386,17 +406,15 @@ public class DishService {
         return s;
     }
 
+    @Transactional
     public DishDto updateDishPortion(Long userId, Long dishId, DishDto request) {
-        Dish dish = getDishByIdOrNull(dishId);
+        Dish dish = dishRepository.findById(dishId).orElseThrow(
+                () -> new ErrorResponseException(ErrorStatus.DISH_NOT_FOUND));
         if (!dish.getUserId().equals(userId)) {
-            //TODO выкидывать ошибку
-            return null;
+            throw new ErrorResponseException(ErrorStatus.DISH_NOT_BELONG_USER);
         }
 
-        dish = request.mergeToEntity(dish);
-        dish = dishRepository.save(dish);
-        return DishDto.fromEntity(dish);
-
+        return DishDto.fromEntity(dishRepository.save(request.mergeToEntity(dish)));
     }
 
     @Transactional(readOnly = true)

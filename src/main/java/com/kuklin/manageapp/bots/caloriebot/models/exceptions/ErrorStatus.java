@@ -27,6 +27,10 @@ public enum ErrorStatus {
     DISH_NOT_BELONG_USER(HttpStatus.BAD_REQUEST),
     EMAIL_ALREADY_BUSY(HttpStatus.BAD_REQUEST),
     SITE_ACCESS_DENIED(HttpStatus.FORBIDDEN),
+    // PUT /calorie/settings: значения проверяются до сохранения — кривая таймзона ломала все запросы пользователя
+    INVALID_TIMEZONE(HttpStatus.BAD_REQUEST),
+    INVALID_DAILY_SUMMARY_HOUR(HttpStatus.BAD_REQUEST),
+    INVALID_MEAL_REMINDER_INTERVAL(HttpStatus.BAD_REQUEST),
     AI_INSIGHT_TOO_FREQUENT(HttpStatus.TOO_MANY_REQUESTS),
     AI_INSIGHT_FAILED(HttpStatus.SERVICE_UNAVAILABLE),
     AI_INSIGHT_NOT_ENOUGH_DATA(HttpStatus.UNPROCESSABLE_ENTITY),

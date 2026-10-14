@@ -48,7 +48,7 @@ public class UserFeatureUsageService {
         if (userFeatureUsageOpt.isPresent()) {
             UserFeatureUsage usage = userFeatureUsageOpt.get();
             // Проверяем, наступил ли срок обнуления лимита (новые сутки/месяц)
-            if (shouldReset(usage, featureLimitPeriod, zoneId)) {
+            if (shouldReset(usage, featureLimitPeriod, zoneId, Instant.now())) {
                 return resetUsage(usage, zoneId);
             } else {
                 return usage;
@@ -63,7 +63,7 @@ public class UserFeatureUsageService {
                         .setFeature(botFeature)
                         .setUsedCount(0)
                         .setLastResetLocalDate(LocalDate.now(zoneId))
-                        .setLastResetUtc(LocalDateTime.now(ZoneOffset.UTC))
+                        .setLastResetUtc(getStartOfTodayUtc(zoneId))
         );
     }
 
@@ -159,20 +159,33 @@ public class UserFeatureUsageService {
         return userFeatureUsageRepository.save(
                 userFeatureUsage
                         .setLastResetLocalDate(LocalDate.now(userZoneId))
-                        .setLastResetUtc(LocalDateTime.now(ZoneOffset.UTC))
+                        .setLastResetUtc(getStartOfTodayUtc(userZoneId))
                         .setUsedCount(0)
         );
+    }
+
+    /**
+     * Начало сегодняшнего дня пользователя (полночь в его таймзоне) в UTC — от него отсчитываются
+     * 18 часов до следующего сброса. Не момент сброса: сброс случается при первом обращении за день,
+     * и после первого фото в 23:00 лимит не обнулялся бы назавтра до 17:00.
+     */
+    static LocalDateTime getStartOfTodayUtc(ZoneId userZone) {
+        return getStartOfDayUtc(LocalDate.now(userZone), userZone);
+    }
+
+    private static LocalDateTime getStartOfDayUtc(LocalDate day, ZoneId userZone) {
+        return LocalDateTime.ofInstant(day.atStartOfDay(userZone).toInstant(), ZoneOffset.UTC);
     }
 
     /**
      * Ключевая логика проверки необходимости сброса лимита.
      * Реализует защиту от злоупотреблений сменой часовых поясов.
      */
-    private boolean shouldReset(UserFeatureUsage usage, FeatureLimitPeriod period, ZoneId userZone) {
+    static boolean shouldReset(UserFeatureUsage usage, FeatureLimitPeriod period, ZoneId userZone, Instant now) {
         if (usage.getLastResetUtc() == null) return true;
 
-        LocalDateTime nowUtc = LocalDateTime.now(ZoneOffset.UTC);
-        LocalDate userToday = LocalDate.now(userZone);
+        LocalDateTime nowUtc = LocalDateTime.ofInstant(now, ZoneOffset.UTC);
+        LocalDate userToday = LocalDate.ofInstant(now, userZone);
 
         // Минимальный интервал между сбросами (защита от частой смены ZoneId в настройках)
         int minResetTime = 18;
@@ -183,8 +196,9 @@ public class UserFeatureUsageService {
                 boolean isNewLocalDay = userToday.isAfter(usage.getLastResetLocalDate());
 
                 // 2. Проверка по "физическому" времени (прошло ли достаточно часов?)
-                // Если юзер сменил зону с UTC+12 на UTC-12, по календарю наступит "завтра",
-                // но в реальности пройдет всего пара часов. Порог в 18 часов отсекает такие манипуляции.
+                // lastResetUtc — полночь дня сброса по зоне на тот момент: без смены зоны новый день
+                // наступает через 24 часа. Если юзер сменил зону с UTC-12 на UTC+12, по календарю наступит
+                // "завтра", но с той полуночи пройдёт лишь несколько часов — порог в 18 часов это отсекает.
                 long hoursPassed = ChronoUnit.HOURS.between(usage.getLastResetUtc(), nowUtc);
                 boolean isNotCheat = hoursPassed >= minResetTime;
 

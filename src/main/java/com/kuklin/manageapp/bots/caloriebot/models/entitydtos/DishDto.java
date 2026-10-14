@@ -83,7 +83,8 @@ public class DishDto {
             dish = new Dish();
         }
 
-        if (id != null) dish.setId(id);
+        // id из тела запроса не берём: id блюда задаёт путь запроса (PATCH /dishes/{dishId}/portion),
+        // а с подменённым id save() обновил бы другое, в том числе чужое, блюдо
         if (name != null) dish.setName(name);
         if (emojiIcon != null) dish.setEmojiIcon(emojiIcon);
 
@@ -117,7 +118,7 @@ public class DishDto {
         if (portions == null || portions < 1) portions = 1;
         // ИИ мог прислать только вес порции — общий вес считаем из него
         if ((weight == null || weight <= 1) && portionWeight != null && portionWeight > 1) {
-            weight = portionWeight * portions;
+            weight = Dish.scale(portionWeight, portions);
         }
         if (weight == null) weight = 1;
         if (portionWeight == null) portionWeight = 1;

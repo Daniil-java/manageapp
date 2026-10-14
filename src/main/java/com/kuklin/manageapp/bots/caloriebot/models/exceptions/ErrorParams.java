@@ -34,9 +34,17 @@ public final class ErrorParams {
     public static final String WAIT_HOURS = "waitHours";
     public static final String WAIT_MINUTES = "waitMinutes";
 
+    /** Нижний предел допустимого значения: интервал напоминаний в минутах. */
+    public static final String MIN = "min";
+
     /** {max}: лимит в штуках или символах. */
     public static Map<String, Object> max(int max) {
         return Map.of(MAX, max);
+    }
+
+    /** {min} + {max}: допустимый диапазон значения. */
+    public static Map<String, Object> range(int min, int max) {
+        return Map.of(MIN, min, MAX, max);
     }
 
     /** {maxSizeMb}: лимит размера. */

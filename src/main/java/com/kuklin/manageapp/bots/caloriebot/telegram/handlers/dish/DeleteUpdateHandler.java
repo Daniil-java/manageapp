@@ -26,7 +26,8 @@ public class DeleteUpdateHandler implements CalorieBotUpdateHandler {
         Long dishId = extractDishIdOrNull(callback.getData());
         if (dishId == null) return;
 
-        dishService.removeByDishId(dishId);
+        // Чужое или уже удалённое блюдо — кнопку не трогаем
+        if (!dishService.removeUserDish(telegramUser.getAppUserId(), dishId)) return;
         calorieTelegramBot.editMarkup(chatId, messageId, dishKeyboards.buildNotCountedKeyboard(telegramUser.getAppUserId()));
     }
 

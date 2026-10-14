@@ -8,10 +8,15 @@ import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface DishRepository extends JpaRepository<Dish, Long> {
     List<Dish> findAllByUserId(Long userId);
+
+    /** Блюдо, если оно принадлежит пользователю. */
+    Optional<Dish> findByIdAndUserId(Long id, Long userId);
+
     List<Dish> findAllByUserIdAndCreatedBetween(Long userId, Instant start, Instant end);
 
     /** Сколько блюд пользователь добавил после момента after — для суточного лимита (calorie.dish-limits). */

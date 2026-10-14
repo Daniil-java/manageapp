@@ -4,6 +4,7 @@ import com.kuklin.manageapp.bots.caloriebot.entities.UserFavoriteDish;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserFavoriteDishService;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
+import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
@@ -103,7 +104,13 @@ public class CalorieFavoriteDishDeleteCallbackUpdateHandler implements CalorieBo
         Long favoriteId = extractFavoriteIdOrNull(query.getData(), chatId, telegramUser.getAppUserId());
         if (page == null || favoriteId == null) return;
 
-        UserFavoriteDish userFavoriteDish = userFavoriteDishService.getUserFavoriteDishByIdOrNull(favoriteId);
+        UserFavoriteDish userFavoriteDish =
+                userFavoriteDishService.getUserFavoriteDishOrNull(telegramUser.getAppUserId(), favoriteId);
+        if (userFavoriteDish == null) {
+            calorieTelegramBot.sendReturnedMessage(chatId,
+                    texts.error(telegramUser.getAppUserId(), ErrorStatus.FAVORITE_DISH_NOT_FOUND));
+            return;
+        }
         calorieTelegramBot.sendEditMessage(
                 chatId,
                 buildConfirmMessage(userFavoriteDish, telegramUser.getAppUserId()),

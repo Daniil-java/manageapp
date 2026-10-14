@@ -37,44 +37,53 @@ public class CalorieScaleCallbackUpdateHandler implements CalorieBotUpdateHandle
         String data = update.getCallbackQuery().getData();
         String[] parts = data.split(TelegramBot.DEFAULT_DELIMETER);
 
+        Long appUserId = telegramUser.getAppUserId();
         Dish dish = null;
         try {
             if (parts.length == WEIGHT_PORTIONS_PARTS) {
-                dish = handleWeightPortions(parts);
+                dish = handleWeightPortions(appUserId, parts);
             } else if (parts.length == COUNT_PORTIONS_PARTS) {
-                dish = handleCountPortions(parts);
+                dish = handleCountPortions(appUserId, parts);
             }
         } catch (Exception e) {
             log.error("Callback data error! {}", BotIdentifier.CALORIE_BOT);
             calorieTelegramBot.sendReturnedMessage(
                     update.getCallbackQuery().getMessage().getChatId(),
-                    texts.get(telegramUser.getAppUserId(), BotTextKeys.DISH_SCALE_ERROR)
+                    texts.get(appUserId, BotTextKeys.DISH_SCALE_ERROR)
+            );
+            return;
+        }
+        // Блюдо удалено, чужое или значение вне допустимого — карточку не перерисовываем
+        if (dish == null) {
+            calorieTelegramBot.sendReturnedMessage(
+                    update.getCallbackQuery().getMessage().getChatId(),
+                    texts.get(appUserId, BotTextKeys.DISH_SCALE_ERROR)
             );
             return;
         }
         calorieTelegramBot.sendEditMessage(
                 update.getCallbackQuery().getMessage().getChatId(),
-                dishTexts.buildDishCardText(dish, telegramUser.getAppUserId()),
+                dishTexts.buildDishCardText(dish, appUserId),
                 update.getCallbackQuery().getMessage().getMessageId(),
-                dishKeyboards.buildPortionKeyboard(dish, telegramUser.getAppUserId())
+                dishKeyboards.buildPortionKeyboard(dish, appUserId)
         );
 
     }
 
     //<command>delim<dishId>delim<+-scale%> - для увеличения веса порции
-    private Dish handleWeightPortions(String[] parts) {
+    private Dish handleWeightPortions(Long appUserId, String[] parts) {
         Long dishId = Long.parseLong(parts[1]);
-        Integer scale = Integer.parseInt(parts[2]);
+        int scale = Integer.parseInt(parts[2]);
 
-        return dishService.changePortionWeightByPercent(dishId, scale);
+        return dishService.changePortionWeightByPercentOrNull(appUserId, dishId, scale);
     }
 
     //<command>delim<dishId>delim<cmd><value> - для увеличения количества порций
-    private Dish handleCountPortions(String[] parts) {
+    private Dish handleCountPortions(Long appUserId, String[] parts) {
         Long dishId = Long.parseLong(parts[1]);
         Integer value = Integer.parseInt(parts[3]);
 
-        return dishService.saveNewPortionsCountOrNull(dishId, value);
+        return dishService.saveNewPortionsCountOrNull(appUserId, dishId, value);
     }
 
     @Override

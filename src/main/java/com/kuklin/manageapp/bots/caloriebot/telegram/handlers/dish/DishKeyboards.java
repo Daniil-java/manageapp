@@ -4,6 +4,7 @@ import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
+import com.kuklin.manageapp.bots.caloriebot.telegram.TelegramCalorieBotFacade;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;
@@ -22,7 +23,7 @@ import java.util.Collections;
 public class DishKeyboards {
     private static final String PORTION_COUNT_CMD = "PC";
     // Заглушка для кнопок-подписей, которые ничего не делают
-    private static final String NO_ACTION = "temp";
+    private static final String NO_ACTION = TelegramCalorieBotFacade.NO_ACTION_CALLBACK;
 
     private final CalorieTexts texts;
 

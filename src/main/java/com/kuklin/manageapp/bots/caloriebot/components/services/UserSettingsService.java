@@ -3,6 +3,9 @@ package com.kuklin.manageapp.bots.caloriebot.components.services;
 import com.kuklin.manageapp.bots.caloriebot.components.repository.UserSettingsRepository;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserSettings;
 import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.UserSettingsDto;
+import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorParams;
+import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
+import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +27,10 @@ import java.util.Optional;
 @RequiredArgsConstructor
 @Slf4j
 public class UserSettingsService {
+    // Интервал напоминаний о еде: шедулер проверяет раз в 20 минут, чаще часа — спам, реже суток — смысла нет
+    static final int MEAL_REMINDER_INTERVAL_MIN = 60;
+    static final int MEAL_REMINDER_INTERVAL_MAX = 24 * 60;
+
     private final UserSettingsRepository userSettingsRepository;
     private final PlatformTransactionManager transactionManager;
 
@@ -40,6 +47,7 @@ public class UserSettingsService {
 
     @Transactional
     public UserSettingsDto updateSettingsDto(Long userId, UserSettingsDto dto) {
+        validateOrThrow(dto);
         UserSettings settings = getOrCreate(userId);
 
         // Обновляем поля сущности данными из DTO
@@ -86,7 +94,7 @@ public class UserSettingsService {
     /**
      * Проверяет, существует ли такая таймзона в системе.
      */
-    public boolean isValidTimeZone(String tz) {
+    public static boolean isValidTimeZone(String tz) {
         if (tz == null || tz.isBlank()) return false;
         try {
             ZoneId.of(tz);
@@ -270,7 +278,26 @@ public class UserSettingsService {
 
     // ---------- COMMON ----------
 
-    private boolean validateHour(int hour) {
+    /**
+     * Проверка настроек из API до сохранения (null — поле не меняется).
+     * Без неё таймзона «Foo/Bar» ломала getZoneId() во всех запросах пользователя и в шедулерах,
+     * час 99 — ежедневный отчёт, интервал 0 — напоминания о еде.
+     */
+    static void validateOrThrow(UserSettingsDto dto) {
+        if (dto.getTimezone() != null && !isValidTimeZone(dto.getTimezone())) {
+            throw new ErrorResponseException(ErrorStatus.INVALID_TIMEZONE);
+        }
+        if (dto.getDailySummaryHour() != null && !validateHour(dto.getDailySummaryHour())) {
+            throw new ErrorResponseException(ErrorStatus.INVALID_DAILY_SUMMARY_HOUR);
+        }
+        Integer interval = dto.getMealReminderIntervalMinutes();
+        if (interval != null && (interval < MEAL_REMINDER_INTERVAL_MIN || interval > MEAL_REMINDER_INTERVAL_MAX)) {
+            throw new ErrorResponseException(ErrorStatus.INVALID_MEAL_REMINDER_INTERVAL,
+                    ErrorParams.range(MEAL_REMINDER_INTERVAL_MIN, MEAL_REMINDER_INTERVAL_MAX));
+        }
+    }
+
+    private static boolean validateHour(int hour) {
         return hour >= 0 && hour <= 23;
     }
 

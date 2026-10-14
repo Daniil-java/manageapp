@@ -118,7 +118,8 @@ public class Dish {
         this.portionWeight = scale(this.portionWeight, multiplier);
 
         // 2. Пересчитываем общий вес
-        this.weight = this.portionWeight * this.portions;
+        // scale, а не умножение int: при огромном числе порций вес упрётся в максимум, а не уйдёт в минус
+        this.weight = scale(this.portionWeight, this.portions);
 
         // 3. Масштабируем КБЖУ
         this.calories      = scale(this.calories, multiplier);

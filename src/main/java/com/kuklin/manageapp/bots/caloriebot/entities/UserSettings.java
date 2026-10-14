@@ -6,6 +6,7 @@ import lombok.experimental.Accessors;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.time.DateTimeException;
 import java.time.Instant;
 import java.time.ZoneId;
 
@@ -95,7 +96,13 @@ public class UserSettings {
     // --- Утилиты ---
 
     public ZoneId getZoneId() {
-        return timezoneId != null ? ZoneId.of(timezoneId) : ZoneId.of("UTC");
+        if (timezoneId == null) return ZoneId.of("UTC");
+        try {
+            return ZoneId.of(timezoneId);
+        } catch (DateTimeException e) {
+            // Сохранено до проверки в PUT /calorie/settings — не ломаем пользователю все запросы и шедулеры
+            return ZoneId.of(DEF_TIMEZONE);
+        }
     }
 
     public static UserSettings createDefaultSettings(Long userId) {

@@ -29,6 +29,7 @@ class SettingsTextsTest {
         assertThat(settingsTexts.buildSettingsText(settings(), AppLanguage.RU)).isEqualTo("""
                 🔔 Напоминания: 🟢 включены
                 🌍 Таймзона: Europe/Moscow
+                🌐 Язык: 🇷🇺 Русский
 
                 📊 Итоги дня: 🟢 включены
                 ⏰ Время: 21:00 (локальное)

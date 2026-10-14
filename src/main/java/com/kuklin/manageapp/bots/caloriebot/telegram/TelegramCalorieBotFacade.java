@@ -20,6 +20,9 @@ import java.util.Optional;
 @Component
 @Slf4j
 public class TelegramCalorieBotFacade extends TelegramFacade {
+    /** callback_data кнопок-подписей, которые ничего не делают («Вес порции», шкалы на экране «Сегодня»). */
+    public static final String NO_ACTION_CALLBACK = "temp";
+
     @Autowired
     private TelegramUserService telegramUserService;
     @Autowired
@@ -41,8 +44,9 @@ public class TelegramCalorieBotFacade extends TelegramFacade {
                 .createOrGetUserByTelegram(BotIdentifier.CALORIE_BOT, user);
 
         UpdateHandler updateHandler = processInputUpdate(update);
+        // null — только у незнакомых кнопок и кнопок-подписей: их нажатие ничего не делает
         if (updateHandler == null) {
-            log.error("No suitable handler found, no reply will be sent");
+            log.debug("No suitable handler found, no reply will be sent");
         } else {
             updateHandler.handle(update, telegramUser);
         }
@@ -83,8 +87,12 @@ public class TelegramCalorieBotFacade extends TelegramFacade {
         String commandKey = data.split(TelegramBot.DEFAULT_DELIMETER)[0];
         UpdateHandler handler = getUpdateHandlerMap().get(commandKey);
 
-        // Если команда не найдена — скорее всего, это удаление (судя по вашей логике)
-        return (handler != null) ? handler : getHandler(Command.CALORIE_DELETE);
+        // Незнакомая кнопка (старое сообщение, переименованная команда) — ничего не делаем.
+        // Раньше такие уходили в удаление блюда: «xxx 123» удаляла блюдо 123
+        if (handler == null && !NO_ACTION_CALLBACK.equals(data)) {
+            log.warn("Unknown callback data: {}", data);
+        }
+        return handler;
     }
 
     private UpdateHandler handleMessage(Message message) {

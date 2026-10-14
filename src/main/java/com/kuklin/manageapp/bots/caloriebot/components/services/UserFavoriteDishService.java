@@ -152,7 +152,8 @@ public class UserFavoriteDishService {
                 });
     }
 
-    public UserFavoriteDish getUserFavoriteDishByIdOrNull(Long id) {
-        return userFavoriteDishRepository.findById(id).orElse(null);
+    /** Избранное блюдо пользователя или null, если его нет или оно чужое (id приходит в callback_data). */
+    public UserFavoriteDish getUserFavoriteDishOrNull(Long userId, Long favoriteId) {
+        return userFavoriteDishRepository.findByIdAndUserId(favoriteId, userId).orElse(null);
     }
 }

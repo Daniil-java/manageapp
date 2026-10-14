@@ -225,7 +225,7 @@ public class ReportService {
         List<Dish> dishes = dishService.getTodayDishes(userId);
         UserNutritionProfile profile = userNutritionProfileService.getOrCreateProfile(userId);
         UserSettings userSettings = userSettingsService.getOrCreate(userId);
-        ZonedDateTime userTime = ZonedDateTime.now(ZoneId.of(userSettings.getTimezoneId()));
+        ZonedDateTime userTime = ZonedDateTime.now(userSettings.getZoneId());
 
         String prompt = DayReportPrompt.buildPrompt(profile, dishes, userTime,
                 calorieTexts.languageOf(userId).getNativeName(), ThreadLocalRandom.current());
