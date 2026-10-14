@@ -26,9 +26,9 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 @Slf4j
@@ -47,7 +47,9 @@ public abstract class TelegramBot extends TelegramLongPollingBot implements Tele
     public TelegramBot(String key) {
         super(key);
         botToken = key;
-        inProcess = new HashSet<>();
+        // add — в потоке приёма апдейтов, remove — в @Async-потоках (notifyAsyncDone): обычный HashSet
+        // мог потерять remove, и пользователь навсегда получал «предыдущее сообщение обрабатывается»
+        inProcess = ConcurrentHashMap.newKeySet();
     }
 
     public Message sendPhotoMessage(Long chatId, String path, String caption, ReplyKeyboard replyKeyboard) {
