@@ -79,9 +79,12 @@ public class CaloriePaymentService {
 
         PricingPlan plan = getPurchasablePlan(planId);
 
+        // Сначала запись в базе, потом Telegram: в счёт уходит payload с id платежа. Не одной транзакцией —
+        // она держала бы соединение с БД всё время HTTP-запроса к Telegram.
+        Payment payment = null;
         try {
             // 1. Создаем системную запись о платеже
-            Payment payment = paymentService.createNewPayment(
+            payment = paymentService.createNewPayment(
                     BotIdentifier.CALORIE_BOT,
                     appUserId,
                     plan,
@@ -112,7 +115,19 @@ public class CaloriePaymentService {
 
         } catch (Exception e) {
             log.error("Ошибка при генерации ссылки на оплату звездами для пользователя {}", appUserId, e);
+            markFailedQuietly(payment, e);
             throw new ErrorResponseException(ErrorStatus.PAYMENT_FAILED);
+        }
+    }
+
+    // Ссылку пользователь не получил — платёж не должен висеть в CREATED. Ошибка пометки не должна
+    // подменить исходную: пользователю всё равно уходит PAYMENT_FAILED, а причина — в логе выше.
+    private void markFailedQuietly(Payment payment, Exception cause) {
+        if (payment == null) return;   // упали ещё при создании записи — помечать нечего
+        try {
+            paymentService.markFailed(payment, "Invoice link not created: " + cause);
+        } catch (Exception e) {
+            log.error("Failed to mark payment {} as FAILED", payment.getId(), e);
         }
     }
 

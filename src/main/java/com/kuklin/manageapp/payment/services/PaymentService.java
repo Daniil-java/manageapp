@@ -100,7 +100,15 @@ public class PaymentService {
                     query.getCurrency(),
                     query.getTotalAmount()
             );
-            return payment != null;
+            // Ссылки на оплату у Telegram многоразовые: без этой проверки уже оплаченный (SUCCESS),
+            // отменённый или несостоявшийся счёт можно оплатить ещё раз. pre_checkout — до списания,
+            // отказ здесь безопасен. Автопродление подписки Telegram приходит без pre_checkout — его не задевает.
+            if (payment.getStatus() != Payment.PaymentStatus.CREATED) {
+                log.warn("Pre-checkout rejected: payment {} has status {}, payload={}",
+                        payment.getId(), payment.getStatus(), query.getInvoicePayload());
+                return false;
+            }
+            return true;
         } catch (PaymentValidationDataException e) {
             return false;
         } catch (PricingPlanNotFoundException e) {
@@ -385,6 +393,15 @@ public class PaymentService {
         // по желанию: посмотреть причину в paymentApi.get("cancellation_details")
         paymentRepository.save(payment);
 
+    }
+
+    /**
+     * Счёт так и не выставлен (например, Telegram не отдал ссылку на оплату) — помечаем FAILED,
+     * чтобы запись не висела в CREATED, будто ждёт оплаты.
+     */
+    @Transactional
+    public void markFailed(Payment payment, String error) {
+        handleFailed(payment, error);
     }
 
     //Запись лога об ошибке в БД

@@ -26,12 +26,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.telegram.telegrambots.meta.api.methods.invoices.CreateInvoiceLink;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 class CaloriePaymentServiceTest {
@@ -137,6 +139,37 @@ class CaloriePaymentServiceTest {
         assertThat(invoice.getPrices()).singleElement()
                 .satisfies(price -> assertThat(price.getAmount()).isEqualTo(350));
         assertThat(response.getPaymentId()).isEqualTo("1");
+    }
+
+    @Test
+    void telegramFailureMarksPaymentFailed() throws Exception {
+        when(identityService.hasTelegram(USER_ID)).thenReturn(true);
+        PricingPlan plan = plan(30, 150);
+        when(pricingPlanService.getPricingPlanById(PLAN_ID)).thenReturn(plan);
+        Payment payment = payment(150);
+        when(paymentService.createNewPayment(BotIdentifier.CALORIE_BOT, USER_ID, plan, Payment.Provider.STARS))
+                .thenReturn(payment);
+        when(bot.execute(any(CreateInvoiceLink.class))).thenThrow(new TelegramApiException("timeout"));
+
+        assertThatThrownBy(() -> service.createPaymentLink(USER_ID, PLAN_ID, AppLanguage.RU))
+                .isInstanceOfSatisfying(ErrorResponseException.class,
+                        e -> assertThat(e.getErrorStatus()).isEqualTo(ErrorStatus.PAYMENT_FAILED));
+        verify(paymentService).markFailed(eq(payment), any());
+    }
+
+    @Test
+    void markFailedErrorDoesNotReplacePaymentFailed() throws Exception {
+        when(identityService.hasTelegram(USER_ID)).thenReturn(true);
+        PricingPlan plan = plan(30, 150);
+        when(pricingPlanService.getPricingPlanById(PLAN_ID)).thenReturn(plan);
+        when(paymentService.createNewPayment(BotIdentifier.CALORIE_BOT, USER_ID, plan, Payment.Provider.STARS))
+                .thenReturn(payment(150));
+        when(bot.execute(any(CreateInvoiceLink.class))).thenThrow(new TelegramApiException("timeout"));
+        doThrow(new RuntimeException("db down")).when(paymentService).markFailed(any(), any());
+
+        assertThatThrownBy(() -> service.createPaymentLink(USER_ID, PLAN_ID, AppLanguage.RU))
+                .isInstanceOfSatisfying(ErrorResponseException.class,
+                        e -> assertThat(e.getErrorStatus()).isEqualTo(ErrorStatus.PAYMENT_FAILED));
     }
 
     private static Payment payment(int stars) {
