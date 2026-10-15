@@ -1,6 +1,7 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram;
 
 import com.kuklin.manageapp.bots.caloriebot.configurations.TelegramCaloriesBotKeyComponents;
+import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.paymentpart.PaymentPlanListCalorieUpdateHandler;
@@ -44,11 +45,20 @@ public class CalorieTelegramBot extends TelegramBot {
 
     @Override
     protected String getAlreadyInProcessText(Update update) {
+        return texts.get(getLanguage(update), BotTextKeys.COMMON_ALREADY_IN_PROCESS);
+    }
+
+    @Override
+    protected String getOverloadedText(Update update) {
+        return texts.get(getLanguage(update), BotTextKeys.COMMON_OVERLOADED);
+    }
+
+    /** Язык автора апдейта — до обработчиков, где пользователь ещё не загружен. */
+    private AppLanguage getLanguage(Update update) {
         User user = getUserFromUpdate(update);
         TelegramUser telegramUser = user == null ? null
                 : telegramUserService.getTelegramUserByTelegramIdAndBotIdentifierOrNull(user.getId(), BOT_IDENTIFIER);
-        return texts.get(texts.languageOf(telegramUser == null ? null : telegramUser.getAppUserId()),
-                BotTextKeys.COMMON_ALREADY_IN_PROCESS);
+        return texts.languageOf(telegramUser == null ? null : telegramUser.getAppUserId());
     }
 
     @Override

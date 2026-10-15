@@ -6,6 +6,7 @@ import com.kuklin.manageapp.payment.entities.Payment;
 import com.kuklin.manageapp.payment.models.common.Currency;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.task.TaskRejectedException;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.ActionType;
 import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
@@ -269,18 +270,30 @@ public abstract class TelegramBot extends TelegramLongPollingBot implements Tele
     }
 
     public void notifyAlreadyInProcess(Update update) {
-        Long chatId = update.hasCallbackQuery()
-                ? update.getCallbackQuery().getMessage().getChatId()
-                : update.hasPreCheckoutQuery()
-                ? update.getPreCheckoutQuery().getFrom().getId()
-                : update.getMessage().getChatId();
-
-        sendReturnedMessage(chatId, getAlreadyInProcessText(update));
+        sendReturnedMessage(getChatId(update), getAlreadyInProcessText(update));
     }
 
     /** Текст «предыдущее сообщение ещё обрабатывается». Бот с переводами переопределяет — на языке пользователя. */
     protected String getAlreadyInProcessText(Update update) {
         return "Предыдущее сообщение обрабатывается, вам необходимо дождаться его завершения.";
+    }
+
+    /** Текст «бот перегружен, повторите через минуту». Бот с переводами переопределяет — на языке пользователя. */
+    protected String getOverloadedText(Update update) {
+        return "Бот сейчас перегружен. Повторите, пожалуйста, через минуту.";
+    }
+
+    private static Long getChatId(Update update) {
+        return update.hasCallbackQuery()
+                ? update.getCallbackQuery().getMessage().getChatId()
+                : update.hasPreCheckoutQuery()
+                ? update.getPreCheckoutQuery().getFrom().getId()
+                : update.getMessage().getChatId();
+    }
+
+    /** Оплата: подтверждение до списания (на ответ у бота 10 с) и сообщение об успешном платеже. */
+    private static boolean isPaymentUpdate(Update update) {
+        return update.hasPreCheckoutQuery() || (update.hasMessage() && update.getMessage().hasSuccessfulPayment());
     }
 
     public void notifyAsyncDone(Update update) {
@@ -312,7 +325,7 @@ public abstract class TelegramBot extends TelegramLongPollingBot implements Tele
     protected boolean doAsync(AsyncService asyncService, Update update, Consumer<Update> runnable) {
         try {
             if (update.hasCallbackQuery()) {
-                asyncService.executeAsyncCustom(this, update, runnable);
+                executeAsyncOrReject(asyncService, update, runnable);
                 return true;
             }
 
@@ -325,7 +338,7 @@ public abstract class TelegramBot extends TelegramLongPollingBot implements Tele
             Long tgUserId = user.getId();
             if (inProcess.add(tgUserId)) {
                 try {
-                    asyncService.executeAsyncCustom(this, update, runnable);
+                    executeAsyncOrReject(asyncService, update, runnable);
                 } catch (Exception ex) {
                     inProcess.remove(tgUserId);
                     log.error("Parallel execution failed", ex);
@@ -337,6 +350,26 @@ public abstract class TelegramBot extends TelegramLongPollingBot implements Tele
         } catch (Exception ex) {
             sendReturnedMessage(425120436, ex.getMessage());
             return false;
+        }
+    }
+
+    /**
+     * Пул апдейтов (BotUpdateExecutorConfig) ограничен: очередь переполнена — он отказывает сразу.
+     * Тогда отвечаем «бот перегружен», а не молчим; оплату не теряем — обрабатываем здесь же, в потоке приёма.
+     */
+    void executeAsyncOrReject(AsyncService asyncService, Update update, Consumer<Update> runnable) {
+        try {
+            asyncService.executeAsyncCustom(this, update, runnable);
+        } catch (TaskRejectedException e) {
+            // Задача не началась — finally в AsyncService не выполнится, снимаем замок сами
+            notifyAsyncDone(update);
+            if (isPaymentUpdate(update)) {
+                log.warn("Bot {} update executor is full, handling payment update synchronously", getBotIdentifier());
+                runnable.accept(update);
+                return;
+            }
+            log.warn("Bot {} update executor is full, update rejected for chat {}", getBotIdentifier(), getChatId(update));
+            sendReturnedMessage(getChatId(update), getOverloadedText(update));
         }
     }
 

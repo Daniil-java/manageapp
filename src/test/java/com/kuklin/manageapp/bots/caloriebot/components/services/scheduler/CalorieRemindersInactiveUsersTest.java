@@ -20,9 +20,11 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -83,6 +85,56 @@ class CalorieRemindersInactiveUsersTest {
 
             verifyNoInteractions(todayUpdateHandler, reportService);
             verify(userSettingsService).updateDailyLastReminder(USER_ID);
+        }
+
+        @Test
+        void reportsAreBuiltInParallelAndAllMarked() throws Exception {
+            // 10 пользователей с блюдами, ИИ «думает» 300 мс: по одному — 3 с, по 5 сразу — около 0,6 с
+            List<UserSettings> many = new ArrayList<>();
+            for (long id = 1; id <= 10; id++) {
+                many.add(new UserSettings().setUserId(id).setTimezoneId("UTC")
+                        .setRemindersEnabled(true).setDailySummaryEnabled(true).setDailySummaryHour(0));
+                when(dishService.getLastDishTimeOrNull(id)).thenReturn(Instant.now().minusSeconds(1));
+                when(telegramUserService.findByAppUserIdAndBotIdentifier(id, BotIdentifier.CALORIE_BOT))
+                        .thenReturn(Optional.of(new TelegramUser().setTelegramId(id * 100)));
+            }
+            when(userSettingsService.getAllUserSettingWithEnabledDailySummary(true)).thenReturn(many);
+            when(reportService.getDayAiReport(anyLong())).thenAnswer(invocation -> {
+                Thread.sleep(300);
+                return AccessResult.success("day report");
+            });
+
+            long started = System.nanoTime();
+            processor.process();
+            long millis = (System.nanoTime() - started) / 1_000_000;
+
+            assertThat(millis).isLessThan(2000);
+            for (long id = 1; id <= 10; id++) {
+                verify(userSettingsService).updateDailyLastReminder(id);
+            }
+        }
+
+        @Test
+        void aiFailureStillMarksDaySoTodayIsNotResent() {
+            lastDish(Instant.now().minusSeconds(1));
+            when(reportService.getDayAiReport(USER_ID)).thenThrow(new RuntimeException("OpenAI 503"));
+
+            processor.process();
+
+            verify(todayUpdateHandler, times(1)).sendTodayMessage(CHAT_ID, USER_ID);
+            verify(userSettingsService).updateDailyLastReminder(USER_ID);
+        }
+
+        @Test
+        void failureBeforeTodayScreenLeavesDayForRetry() {
+            lastDish(Instant.now().minusSeconds(1));
+            when(telegramUserService.findByAppUserIdAndBotIdentifier(USER_ID, BotIdentifier.CALORIE_BOT))
+                    .thenThrow(new RuntimeException("DB down"));
+
+            processor.process();
+
+            verifyNoInteractions(todayUpdateHandler, reportService);
+            verify(userSettingsService, never()).updateDailyLastReminder(USER_ID);
         }
 
         @Test

@@ -54,6 +54,7 @@ public final class BotTextKeys {
     public static final String COMMON_BUTTON_NEXT = "common.button.next";
     public static final String COMMON_BUTTON_INSTRUCTION = "common.button.instruction";
     public static final String COMMON_ALREADY_IN_PROCESS = "common.already-in-process";
+    public static final String COMMON_OVERLOADED = "common.overloaded";
 
     // ── Онбординг: /start, знакомство, FAQ, /menu, /keyboard, /support ──
     public static final String START_WELCOME = "start.welcome";

@@ -31,11 +31,20 @@ spring:
     scheduling:
       pool:
         size: 4
+    # Общий пул Spring для @Async (вебхуки платежей) создавать всегда: без force он пропадает,
+    # как только в контексте есть свой пул (bots.update-executor), и @Async уходили бы мимо него
+    execution:
+      mode: force
 
 # Выключенные боты: не регистрируются в Telegram и не запускают шедулеры (EnabledBots, @BotScheduler).
 # Через запятую, имена из BotIdentifier: BOTS_DISABLED=HH_BOT,KWORK. Пусто — включены все
 bots:
   disabled: ${BOTS_DISABLED:}
+  # Пул апдейтов всех ботов (BotUpdateExecutorConfig). Очередь заполнена — пользователь сразу получает
+  # «бот перегружен», а не ждёт минутами; оплаты при переполнении обрабатываются сразу, не теряются
+  update-executor:
+    threads: 16
+    queue: 200
 
 # Ошибки приложения в метрикс-бот (ErrorReportFormatter): ссылка на строку кода в GitHub.
 # commit — хеш задеплоенного коммита, Railway отдаёт его сам при деплое из GitHub; пусто — без ссылки
@@ -124,6 +133,8 @@ calorie:
   # локально CALORIE_DAILY_SUMMARY_ENABLED=false — иначе тратит ИИ на всех пользователей локальной базы.
   daily-summary:
     enabled: ${CALORIE_DAILY_SUMMARY_ENABLED:true}
+    # Сколько отчётов готовить одновременно (ИИ 10–30 с на отчёт). Больше — риск 429 от OpenAI
+    parallelism: 5
   # Языки (CalorieTexts, словари i18n/calorie/*). Язык пользователь выбирает в /start, ⚙ Настройках, /lang и миниаппке;
   # /lang en и /lang reset (сбросить выбор — /start снова спросит) — только Telegram id из dev-telegram-ids.
   i18n:
