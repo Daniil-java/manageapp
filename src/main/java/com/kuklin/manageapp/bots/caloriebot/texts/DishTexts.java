@@ -31,20 +31,34 @@ public class DishTexts extends AbstractBotTexts {
      * Карточка блюда: данные блюда + итоги КБЖУ за день в сравнении с нормой.
      */
     public String buildDishCardText(Dish dish, Long userId) {
-        List<Dish> dishes = dishService.getTodayDishes(userId);
-        int totalCalories = 0, totalProteins = 0, totalFats = 0, totalCarbs = 0;
+        return buildDishCardTexts(List.of(dish), userId).get(0);
+    }
 
-        for (Dish d : dishes) {
-            totalCalories += d.getCalories();
-            totalProteins += d.getProteins();
-            totalFats += d.getFats();
-            totalCarbs += d.getCarbohydrates();
-        }
-
+    /**
+     * Карточки нескольких блюд (одно фото — несколько блюд). Блюда и профиль за день читаем один раз на все карточки:
+     * все блюда уже сохранены, итоги дня у карточек одинаковые.
+     */
+    public List<String> buildDishCardTexts(List<Dish> dishes, Long userId) {
+        List<Dish> today = dishService.getTodayDishes(userId);
+        DayTotals totals = new DayTotals(
+                today.stream().mapToInt(d -> nvl(d.getCalories())).sum(),
+                today.stream().mapToInt(d -> nvl(d.getProteins())).sum(),
+                today.stream().mapToInt(d -> nvl(d.getFats())).sum(),
+                today.stream().mapToInt(d -> nvl(d.getCarbohydrates())).sum());
         UserNutritionProfile profile = userNutritionProfileService.getOrCreateProfile(userId);
         boolean hasTargets = userNutritionProfileService.checkTargetCalculateParams(profile);
-
         AppLanguage language = languageOf(userId);
+
+        return dishes.stream().map(dish -> buildDishCardText(dish, totals, profile, hasTargets, language)).toList();
+    }
+
+    private record DayTotals(int calories, int proteins, int fats, int carbs) {
+    }
+
+    private String buildDishCardText(Dish dish, DayTotals totals, UserNutritionProfile profile,
+                                     boolean hasTargets, AppLanguage language) {
+        int totalCalories = totals.calories(), totalProteins = totals.proteins();
+        int totalFats = totals.fats(), totalCarbs = totals.carbs();
         StringBuilder sb = new StringBuilder();
 
         // 1. Название и прибавка калорий

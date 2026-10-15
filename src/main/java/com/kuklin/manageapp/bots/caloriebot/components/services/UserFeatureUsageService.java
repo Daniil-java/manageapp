@@ -14,6 +14,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.*;
 import java.time.temporal.ChronoUnit;
+import java.util.EnumMap;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -66,6 +68,27 @@ public class UserFeatureUsageService {
                 .orElseThrow();
     }
 
+
+    /**
+     * Сколько попыток использовано сейчас по каждой фиче — только чтение, одним запросом.
+     * Для показа остатка (миниаппка, подсказки бота): строку не создаёт и счётчик не сбрасывает.
+     * Строки нет или период уже сменился (новый день / месяц) — 0, как будет после сброса при следующем списании.
+     *
+     * @param periods период лимита каждой фичи из тарифа; фичи без периода в ответ не попадают
+     */
+    @Transactional(readOnly = true)
+    public Map<BotFeature, Integer> getUsedCounts(Long userId, BotIdentifier botIdentifier,
+                                                  Map<BotFeature, FeatureLimitPeriod> periods) {
+        ZoneId zoneId = userSettingsService.getZoneId(userId);
+        Instant now = Instant.now();
+        Map<BotFeature, Integer> usedCounts = new EnumMap<>(BotFeature.class);
+        for (UserFeatureUsage usage : userFeatureUsageRepository.findAllByUserIdAndBotIdentifier(userId, botIdentifier)) {
+            FeatureLimitPeriod period = periods.get(usage.getFeature());
+            if (period == null) continue;
+            usedCounts.put(usage.getFeature(), shouldReset(usage, period, zoneId, now) ? 0 : usage.getUsedCount());
+        }
+        return usedCounts;
+    }
 
     /**
      * Проверяет лимит и списывает одну попытку — одной командой в БД.

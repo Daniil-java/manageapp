@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.*;
@@ -19,37 +20,40 @@ import java.util.stream.Collectors;
 @Slf4j
 public class UiAnalyticsService {
 
-    private final DishService dishService;
-    private final WeightEntryService weightService;
-    private final UserNutritionProfileService profileService; // Для получения норм БЖУ и лимитов воды
-    private final UserSettingsService userSettingsService; // Для определения ZoneId
-    private final ReportSourceLoader reportSourceLoader; // Данные для календаря, тренда веса, расхода и привычек
+    // Данные для всего дашборда: блюда, вес, профиль, таймзона, календарь нормы, расход и привычки
+    private final ReportSourceLoader reportSourceLoader;
 
     /**
      * Собирает комплексный дашборд для UI за указанный период.
+     * Всё читается одним ReportSourceLoader.loadPeriod — раньше блюда, вес и профиль грузились ещё раз отдельно.
      */
     public DashboardResponseDto getDashboardData(Long appUserId, LocalDate from, LocalDate to) {
         log.info("Сбор аналитики для пользователя {} с {} по {}", appUserId, from, to);
 
-        // 1. Получаем настройки времени пользователя (важно для правильной группировки дней)
-        ZoneId userZone = userSettingsService.getZoneId(appUserId);
+        // 1. Исходные данные за период (таймзона пользователя — для правильной группировки дней)
+        ReportSource source = reportSourceLoader.loadPeriod(from, to, appUserId);
+        ZoneId userZone = source.zoneId();
         LocalDate today = LocalDate.now(userZone);
+        List<Dish> dishes = source.dishes();
+        UserNutritionProfile profile = source.profile();
+        // Взвешивания, записанные в период (как раньше getAllWeightByPeriod — по createdAt), из всей истории
+        Instant periodStart = from.atStartOfDay(userZone).toInstant();
+        Instant periodEnd = to.plusDays(1).atStartOfDay(userZone).toInstant();
+        List<WeightEntry> weights = source.weights().stream()
+                .filter(w -> w.getCreatedAt() != null
+                        && !w.getCreatedAt().isBefore(periodStart) && w.getCreatedAt().isBefore(periodEnd))
+                .toList();
 
-        // 2. Загружаем исходные данные из БД за период
-        List<Dish> dishes = dishService.getDishesByPeriod(appUserId, from, to);
-        List<WeightEntry> weights = weightService.getAllWeightByPeriod(appUserId, from, to);
-        UserNutritionProfile profile = profileService.getOrCreateProfile(appUserId);
-
-        // 3. Расчет прогресса за сегодняшний день
+        // 2. Расчет прогресса за сегодняшний день
         DailyProgressDto todayProgress = buildTodayProgress(dishes, profile, today, userZone);
 
-        // 4. Расчет периодической статистики (Калории и БЖУ по дням)
+        // 3. Расчет периодической статистики (Калории и БЖУ по дням)
         List<PeriodStatDto> periodStats = buildPeriodStats(dishes, from, to, userZone);
 
-        // 5. Расчет распределения по категориям
+        // 4. Расчет распределения по категориям
         List<CategoryStatDto> categoryDistribution = buildCategoryDistribution(dishes);
 
-        // 6. Расчет тренда изменения веса
+        // 5. Расчет тренда изменения веса
         List<WeightPointDto> weightTrend = weights.stream()
                 .map(w -> new WeightPointDto()
                         // Дата взвешивания, а не записи: вес можно внести задним числом
@@ -58,11 +62,11 @@ public class UiAnalyticsService {
                 .sorted(Comparator.comparing(WeightPointDto::getDate))
                 .collect(Collectors.toList());
 
-        // 7. Расчет часового ритма питания (0-23 ч)
+        // 6. Расчет часового ритма питания (0-23 ч)
         Map<Integer, Integer> hourlyRhythm = buildHourlyRhythm(dishes, userZone);
 
-        // 8. Календарь нормы, вес с трендом и прогнозом, реальный расход, привычки — как в PDF-отчёте
-        ReportStats stats = ReportStatsCalculator.buildStats(reportSourceLoader.loadPeriod(from, to, appUserId));
+        // 7. Календарь нормы, вес с трендом и прогнозом, реальный расход, привычки — как в PDF-отчёте
+        ReportStats stats = ReportStatsCalculator.buildStats(source);
 
         // Собираем все воедино
         return new DashboardResponseDto()

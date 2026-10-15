@@ -75,7 +75,11 @@ public class CalorieMenuButtons {
 
     /** Нижняя клавиатура бота на языке пользователя. */
     public ReplyKeyboardMarkup buildKeyboard(Long appUserId) {
-        AppLanguage language = texts.languageOf(appUserId);
+        return buildKeyboard(texts.languageOf(appUserId));
+    }
+
+    /** Нижняя клавиатура бота на заданном языке — когда одну клавиатуру шлём многим (рассылка). */
+    public ReplyKeyboardMarkup buildKeyboard(AppLanguage language) {
         ReplyKeyboardMarkup markup = new ReplyKeyboardMarkup();
         markup.setResizeKeyboard(true);
         markup.setOneTimeKeyboard(false);

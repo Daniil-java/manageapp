@@ -27,7 +27,6 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.stream.Stream;
 
 /**
  * Обработчик для отображения статистики и списка блюд пользователя за текущий день.
@@ -177,14 +176,8 @@ public class TodayUpdateHandler implements CalorieBotUpdateHandler {
     public InlineKeyboardMarkup getStatsKeyboard(Long userId) {
         TelegramKeyboard.TelegramKeyboardBuilder builder = TelegramKeyboard.builder();
 
-        // Собираем все бары аналитики и добавляем только те, которые содержат данные
-        Stream.of(
-                        analyticsService.getCaloriesBarButtonOrEmpty(userId),
-                        analyticsService.getProteinsBarButtonOrEmpty(userId),
-                        analyticsService.getFatsBarButtonOrEmpty(userId),
-                        analyticsService.getCarbsBarButton(userId),
-                        analyticsService.getWaterBarButton(userId)
-                ).filter(bar -> bar != null && !bar.isBlank())
+        // Шкалы без нормы AnalyticsService не возвращает
+        analyticsService.buildTodayBars(userId)
                 .forEach(bar -> builder.row(TelegramKeyboard.button(bar, DUMMY_CALLBACK)));
 
         builder.row(TelegramKeyboard.button(texts.get(userId, BotTextKeys.TODAY_BUTTON_GO_TO_REMOVE), REMOVE_CMD));

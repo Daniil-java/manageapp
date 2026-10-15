@@ -3,7 +3,6 @@ package com.kuklin.manageapp.bots.caloriebot.components.services;
 import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.entities.PlanFeature;
-import com.kuklin.manageapp.bots.caloriebot.entities.UserFeatureUsage;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.BotFeature;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.FeatureLimitDto;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.FeatureLimitPeriod;
@@ -17,6 +16,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -98,19 +98,20 @@ public class CalorieAccessService {
     public int getRemainingLimits(Long appUserId, BotFeature feature) {
         PlanFeature planFeature = planFeatureService
                 .getFeatureByUserIdAndBotIdentifierAndFeatureOrNull(appUserId, BotIdentifier.CALORIE_BOT, feature);
-        return getRemaining(appUserId, feature, planFeature);
+        return getRemaining(planFeature, getUsedCounts(appUserId, planFeature == null ? List.of() : List.of(planFeature)));
     }
 
     /**
      * Лимиты по всем функциям бота для текущего тарифа пользователя — одним запросом для миниаппки.
-     * Тариф определяется один раз, а не для каждой фичи.
+     * Тариф определяется один раз, счётчики читаются одним запросом и не создаются (GET ничего не пишет).
      */
     public List<FeatureLimitDto> getAllLimits(Long appUserId) {
         AppLanguage language = texts.languageOf(appUserId);
-        Map<BotFeature, PlanFeature> planFeatures = planFeatureService
-                .getFeaturesByUserIdAndBotIdentifier(appUserId, BotIdentifier.CALORIE_BOT)
-                .stream()
+        List<PlanFeature> features = planFeatureService
+                .getFeaturesByUserIdAndBotIdentifier(appUserId, BotIdentifier.CALORIE_BOT);
+        Map<BotFeature, PlanFeature> planFeatures = features.stream()
                 .collect(Collectors.toMap(PlanFeature::getFeature, Function.identity(), (a, b) -> a));
+        Map<BotFeature, Integer> usedCounts = getUsedCounts(appUserId, features);
 
         return Arrays.stream(BotFeature.values())
                 .map(feature -> {
@@ -119,7 +120,7 @@ public class CalorieAccessService {
                             feature,
                             texts.get(language, feature.getTextKey()),
                             isUnlimited(planFeature) ? -1 : (planFeature == null ? 0 : planFeature.getLimitValue()),
-                            getRemaining(appUserId, feature, planFeature),
+                            getRemaining(planFeature, usedCounts),
                             planFeature == null ? null : planFeature.getLimitPeriod()
                     );
                 })
@@ -133,18 +134,23 @@ public class CalorieAccessService {
                 || planFeature.getLimitValue() <= -1);
     }
 
-    private int getRemaining(Long appUserId, BotFeature feature, PlanFeature planFeature) {
+    /** Использовано по фичам с лимитом; у безлимитных счётчик не ведём и в БД за ним не ходим. */
+    private Map<BotFeature, Integer> getUsedCounts(Long appUserId, List<PlanFeature> planFeatures) {
+        Map<BotFeature, FeatureLimitPeriod> periods = new EnumMap<>(BotFeature.class);
+        planFeatures.stream()
+                .filter(pf -> !isUnlimited(pf))
+                .forEach(pf -> periods.putIfAbsent(pf.getFeature(), pf.getLimitPeriod()));
+        if (periods.isEmpty()) return Map.of();
+        return userFeatureUsageService.getUsedCounts(appUserId, BotIdentifier.CALORIE_BOT, periods);
+    }
+
+    private int getRemaining(PlanFeature planFeature, Map<BotFeature, Integer> usedCounts) {
         if (planFeature == null) {
             return 0; // фича не описана для тарифа — доступа нет
         }
         if (isUnlimited(planFeature)) {
             return -1;
         }
-
-        UserFeatureUsage usage = userFeatureUsageService
-                .getUserFeatureUsageByUserIdAndBotIdentifierAndBotFeatureOrCreate(
-                        appUserId, BotIdentifier.CALORIE_BOT, feature, planFeature.getLimitPeriod());
-
-        return Math.max(0, planFeature.getLimitValue() - usage.getUsedCount());
+        return Math.max(0, planFeature.getLimitValue() - usedCounts.getOrDefault(planFeature.getFeature(), 0));
     }
 }

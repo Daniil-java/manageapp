@@ -2,12 +2,15 @@ package com.kuklin.manageapp.bots.caloriebot.components.services;
 
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
+import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
 @Service
 @RequiredArgsConstructor
@@ -16,6 +19,8 @@ import java.util.List;
  * Тексты (карточка блюда, дневник, история веса) — в пакете texts.
  */
 public class AnalyticsService {
+    private static final int DEFAULT_WATER_TARGET_ML = 2000;
+
     private final WaterEntryService waterEntryService;
     private final DishService dishService;
     private final UserNutritionProfileService userNutritionProfileService;
@@ -29,87 +34,38 @@ public class AnalyticsService {
     }
 
     /**
-     * Возвращает строку прогресса для кнопки ККАЛ (Синий + Фиолетовый)
+     * Шкалы прогресса за сегодня: калории, белки, жиры, углеводы, вода — по строке на кнопку.
+     * Профиль, блюда, воду и язык читаем один раз (раньше каждая шкала грузила всё заново — около 20 запросов).
+     * Нормы нет (профиль не заполнен) — этой шкалы нет.
      */
-    public String getCaloriesBarButtonOrEmpty(Long userId) {
-        try {
-            UserNutritionProfile profile = userNutritionProfileService.getOrCreateProfile(userId);
-            List<Dish> dishes = dishService.getTodayDishes(userId);
+    public List<String> buildTodayBars(Long userId) {
+        UserNutritionProfile profile = userNutritionProfileService.getOrCreateProfile(userId);
+        List<Dish> dishes = dishService.getTodayDishes(userId);
+        AppLanguage language = texts.languageOf(userId);
+        Integer waterTarget = profile.getWaterTargetMlPerDay();
 
-            int total = dishes.stream().mapToInt(Dish::getCalories).sum();
-            int norm = profile.getCaloriesNormPerDay();
-            int percent = (int) (((double) total / norm) * 100);
-
-            return texts.get(userId, BotTextKeys.MACRO_LABEL_CALORIES) + ": " + generateButtonBar(total, norm, "\uD83D\uDFE7", "⬜") + " " + percent + "%";
-        } catch (Exception e) {
-            return "";
-        }
+        List<String> bars = new ArrayList<>();
+        addBar(bars, language, BotTextKeys.MACRO_LABEL_CALORIES, sum(dishes, Dish::getCalories),
+                profile.getCaloriesNormPerDay(), "🟧");
+        addBar(bars, language, BotTextKeys.MACRO_LABEL_PROTEINS, sum(dishes, Dish::getProteins),
+                profile.getProteinsNormGramsPerDay(), "🟪");
+        addBar(bars, language, BotTextKeys.MACRO_LABEL_FATS, sum(dishes, Dish::getFats),
+                profile.getFatsNormGramsPerDay(), "🟨");
+        addBar(bars, language, BotTextKeys.MACRO_LABEL_CARBS, sum(dishes, Dish::getCarbohydrates),
+                profile.getCarbsNormGramsPerDay(), "🟩");
+        addBar(bars, language, BotTextKeys.MACRO_LABEL_WATER, getTodayWaterMl(userId),
+                waterTarget == null ? DEFAULT_WATER_TARGET_ML : waterTarget, "🟦");
+        return bars;
     }
 
-    /**
-     * Возвращает строку прогресса для кнопки БЕЛКИ (Фиолетовый)
-     */
-    public String getProteinsBarButtonOrEmpty(Long userId) {
-        try {
-            UserNutritionProfile profile = userNutritionProfileService.getOrCreateProfile(userId);
-            int total = dishService.getTodayDishes(userId).stream().mapToInt(Dish::getProteins).sum();
-            int norm = profile.getProteinsNormGramsPerDay();
-            int percent = (int) (((double) total / norm) * 100);
-
-            return texts.get(userId, BotTextKeys.MACRO_LABEL_PROTEINS) + ": " + generateButtonBar(total, norm, "🟪", "⬜") + " " + percent + "%";
-        } catch (Exception e) {
-            return "";
-        }
+    private void addBar(List<String> bars, AppLanguage language, String labelKey, int total, Integer norm, String filledEmoji) {
+        if (norm == null || norm <= 0) return;
+        int percent = (int) (((double) total / norm) * 100);
+        bars.add(texts.get(language, labelKey) + ": " + generateButtonBar(total, norm, filledEmoji, "⬜") + " " + percent + "%");
     }
 
-    /**
-     * Возвращает строку прогресса для кнопки ЖИРЫ (Желтый)
-     */
-    public String getFatsBarButtonOrEmpty(Long userId) {
-        try {
-            UserNutritionProfile profile = userNutritionProfileService.getOrCreateProfile(userId);
-            int total = dishService.getTodayDishes(userId).stream().mapToInt(Dish::getFats).sum();
-            int norm = profile.getFatsNormGramsPerDay();
-            int percent = (int) (((double) total / norm) * 100);
-
-            return texts.get(userId, BotTextKeys.MACRO_LABEL_FATS) + ": " + generateButtonBar(total, norm, "🟨", "⬜") + " " + percent + "%";
-        } catch (Exception e) {
-            return "";
-        }
-    }
-
-    /**
-     * Возвращает строку прогресса для кнопки УГЛЕВОДЫ (Синий/Коричневый)
-     */
-    public String getCarbsBarButton(Long userId) {
-        try {
-            UserNutritionProfile profile = userNutritionProfileService.getOrCreateProfile(userId);
-            int total = dishService.getTodayDishes(userId).stream().mapToInt(Dish::getCarbohydrates).sum();
-            int norm = profile.getCarbsNormGramsPerDay();
-            int percent = (int) (((double) total / norm) * 100);
-
-            return texts.get(userId, BotTextKeys.MACRO_LABEL_CARBS) + ": " + generateButtonBar(total, norm, "\uD83D\uDFE9", "⬜") + " " + percent + "%";
-        } catch (Exception e) {
-            return "";
-        }
-    }
-
-    /**
-     * Возвращает строку прогресса для кнопки ВОДА (Голубые круги)
-     */
-    public String getWaterBarButton(Long userId) {
-        try {
-            UserNutritionProfile profile = userNutritionProfileService.getOrCreateProfile(userId);
-            int total = getTodayWaterMl(userId);
-            int norm = profile.getWaterTargetMlPerDay() == null ? 2000 : profile.getWaterTargetMlPerDay();
-
-            int percent = (int) (((double) total / norm) * 100);
-
-            // Используем круги для визуального отличия воды от еды
-            return texts.get(userId, BotTextKeys.MACRO_LABEL_WATER) + ": " + generateButtonBar(total, norm, "\uD83D\uDFE6", "⬜") + " " + percent + "%";
-        } catch (Exception e) {
-            return "";
-        }
+    private static int sum(List<Dish> dishes, Function<Dish, Integer> value) {
+        return dishes.stream().map(value).mapToInt(v -> v == null ? 0 : v).sum();
     }
 
     /**
@@ -117,7 +73,6 @@ public class AnalyticsService {
      */
     private String generateButtonBar(int current, int norm, String filledEmoji, String emptyEmoji) {
         int totalBars = 10; // Оптимально для Inline-кнопок
-        if (norm <= 0) return emptyEmoji.repeat(totalBars);
 
         int filled = (int) Math.round((double) current / norm * totalBars);
 

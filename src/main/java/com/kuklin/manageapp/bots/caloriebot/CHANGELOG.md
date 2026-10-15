@@ -1,10 +1,16 @@
 ## 0.0.69 (15.10.2026)
-[et-96] — Производительность: быстрые правки
+[et-96] — Производительность
 * Индекс dishes (user_id, created) — миграция 0.0.60. Все выборки блюд (за день, за период, count, max(created) в шедулерах напоминаний) шли полным просмотром таблицы.
 * TelegramUserService.createOrGetUserByTelegram: если пользователь уже есть, привязан к AppUser и не блокировал бота, хватает одного SELECT без транзакции. Раньше на каждый апдейт, включая клики, открывалась пишущая транзакция и проверялся баланс генераций. Баланс создаётся при регистрации, а в редком пути (разблокировка, старая запись без AppUser) досоздаётся уже после привязки: раньше проверка шла до неё, с appUserId = null. Операции с балансом (GenerationBalanceOperationService.createNewBalanceOperation — оплата и возврат пакета генераций) сами создают строку, если её нет, а не падают с GenerationBalanceNotFoundException.
 * Язык пользователя кэшируется в памяти (UserSettingsService.findLanguageCode). CalorieTexts.get читал его из БД на каждый текст, 3–10 одинаковых SELECT за апдейт. Кэш сбрасывается в setLanguageCode (сразу и после завершения транзакции), других мест записи языка нет.
 * Шаблон PDF-отчёта и маскот читаются с диска один раз, а не на каждый отчёт (ReportService.getCachedResourceOrNull).
-* Тесты: UserSettingsServiceLanguageCacheTest, TelegramUserServiceFastPathTest.
+* Рассылка админа (AdminMessageSenderUpdateHandler) идёт в своём потоке: обработчик сразу отвечает «Broadcast queued: N» и освобождает inProcess и поток @Async, в конце админ получает итог (sent / blocked / failed). Шлём только тем, кто не блокировал бота, не быстрее 20 сообщений в секунду. 429 — ждём retry_after и повторяем, 403 — пользователь помечается заблокировавшим, 400 при HTML — повтор простым текстом. Клавиатура строится одна на язык (CalorieMenuButtons.buildKeyboard(AppLanguage)), а не на каждого получателя. Пустой текст не рассылается.
+* Кнопки «Сегодня»: пять методов get*BarButton заменены одним AnalyticsService.buildTodayBars — профиль, блюда, вода и язык читаются один раз (было около 20 запросов на клавиатуру). Шкала без нормы не показывается явно, а не через catch (Exception) → "", который прятал любой NPE.
+* Карточки блюд после фото (DishTexts.buildDishCardTexts): блюда и профиль за день читаются один раз на все карточки, а не на каждое распознанное блюдо. Пустые КБЖУ в сегодняшних блюдах считаются нулём, а не роняют карточку.
+* Дашборд мини-приложения (UiAnalyticsService.getDashboardData) берёт блюда, вес, профиль и таймзону из одного ReportSourceLoader.loadPeriod — раньше они грузились отдельно, а затем ещё раз в loadPeriod. Вес за период — из той же истории, отфильтрованной по createdAt, как в WeightEntryService.getAllWeightByPeriod.
+* Тарифы не кэшируются намеренно: plan_features правятся руками в БД и должны подхватываться без перезапуска, а активный план меняется оплатой, триалом, возвратом и шедулером — кэш показал бы FREE сразу после оплаты.
+* Лимиты для мини-приложения (CalorieAccessService.getAllLimits, getRemainingLimits) читают счётчики одним запросом (UserFeatureUsageService.getUsedCounts) и ничего не пишут. Раньше на каждую фичу — getOrCreate счётчика с INSERT/сбросом при GET и отдельное чтение таймзоны. Строки нет или период сменился — использовано 0, как будет после сброса.
+* Тесты: UserSettingsServiceLanguageCacheTest, TelegramUserServiceFastPathTest, AdminMessageSenderUpdateHandlerTest, AnalyticsServiceTodayBarsTest, CalorieAccessServiceLimitsTest.
 
 ## 0.0.68 (14.10.2026)
 [et-95] — Транзакции и гонки

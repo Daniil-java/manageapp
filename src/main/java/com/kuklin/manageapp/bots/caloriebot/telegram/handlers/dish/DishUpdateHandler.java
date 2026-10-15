@@ -81,11 +81,13 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
         }
         if (dishes == null || dishes.isEmpty()) return;
 
-        for (Dish dish: dishes) {
+        // Итоги дня у всех карточек общие — собираем тексты разом, а не грузим блюда и профиль на каждую
+        List<String> cards = dishTexts.buildDishCardTexts(dishes, telegramUser.getAppUserId());
+        for (int i = 0; i < dishes.size(); i++) {
             calorieTelegramBot.sendReturnedMessage(
                     update.getMessage().getChatId(),
-                    dishTexts.buildDishCardText(dish, telegramUser.getAppUserId()),
-                    dishKeyboards.buildPortionKeyboard(dish, telegramUser.getAppUserId()),
+                    cards.get(i),
+                    dishKeyboards.buildPortionKeyboard(dishes.get(i), telegramUser.getAppUserId()),
                     null
             );
             ThreadUtil.sleep(100);

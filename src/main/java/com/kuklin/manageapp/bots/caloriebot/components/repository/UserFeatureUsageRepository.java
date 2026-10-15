@@ -11,12 +11,15 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface UserFeatureUsageRepository extends JpaRepository<UserFeatureUsage, Long> {
 
     Optional<UserFeatureUsage> findByUserIdAndFeatureAndAndBotIdentifier(Long userId, BotFeature botFeature, BotIdentifier botIdentifier);
+
+    List<UserFeatureUsage> findAllByUserIdAndBotIdentifier(Long userId, BotIdentifier botIdentifier);
 
     /**
      * Создаёт строку счётчика, если её ещё нет. При параллельном первом использовании фичи проигравший
