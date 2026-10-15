@@ -25,6 +25,7 @@ import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseExcep
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
 import com.kuklin.manageapp.bots.caloriebot.utils.DayReportPrompt;
 import com.kuklin.manageapp.bots.caloriebot.utils.GoalPromptRules;
+import com.kuklin.manageapp.bots.caloriebot.utils.ReportPrompts;
 import com.kuklin.manageapp.bots.caloriebot.utils.ReportHtml;
 import com.kuklin.manageapp.bots.caloriebot.utils.ReportStatsCalculator;
 import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
@@ -51,9 +52,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
-
-// Статические импорты для улучшения читаемости (ИИ-промпты)
-import static com.kuklin.manageapp.bots.caloriebot.utils.ReportCalorieBotPrompts.*;
 
 /**
  * Сервис для формирования аналитической отчетности.
@@ -196,14 +194,14 @@ public class ReportService {
                     aiInputLimits.getInsightMaxDishes());
             String jsonContext = mapper.writeValueAsString(payload);
 
+            ReportPrompts prompts = ReportPrompts.of(language);
             String request = switch (type) {
-                case WEEKLY_SUMMARY, MONTHLY_SUMMARY -> AI_REQUEST_INSIGHT_SUMMARY;
-                case PATTERNS_WEEK, PATTERNS_MONTH -> AI_REQUEST_INSIGHT_PATTERNS;
+                case WEEKLY_SUMMARY, MONTHLY_SUMMARY -> prompts.insightSummary();
+                case PATTERNS_WEEK, PATTERNS_MONTH -> prompts.insightPatterns();
             };
-            String periodLabel = "последние " + type.getPeriodDays() + " дней";
 
-            String prompt = AI_PERSONA + String.format(request, periodLabel, language.getNativeName(), jsonContext,
-                    GoalPromptRules.buildRules(data.profile()));
+            String prompt = prompts.persona() + String.format(request, prompts.buildPeriodLabel(type.getPeriodDays()),
+                    language.getNativeName(), jsonContext, GoalPromptRules.buildRules(data.profile(), language));
             String response = openAiProviderProcessor.fetchJsonResponse(
                     components.getAiKey(),
                     prompt,
@@ -231,7 +229,7 @@ public class ReportService {
         ZonedDateTime userTime = ZonedDateTime.now(userSettingsService.getZoneId(userId));
 
         String prompt = DayReportPrompt.buildPrompt(profile, dishes, userTime,
-                calorieTexts.languageOf(userId).getNativeName(), ThreadLocalRandom.current());
+                calorieTexts.languageOf(userId), ThreadLocalRandom.current());
 
         return AccessResult.success(fetchCreativeAiResponse(prompt, "AI DAY REPORT"));
     }
@@ -264,9 +262,10 @@ public class ReportService {
     private ReportAiResponse fetchReportAiOrEmpty(ReportStats stats, ReportSource source, PdfTexts texts) {
         try {
             var payload = ReportAiPayloadRecord.of(stats, source.profile(), source.dishes(), source.zoneId());
-            String prompt = AI_PERSONA + String.format(AI_REQUEST_REPORT,
+            ReportPrompts prompts = ReportPrompts.of(texts.language());
+            String prompt = prompts.persona() + String.format(prompts.report(),
                     source.kind().getDays(), texts.language().getNativeName(), mapper.writeValueAsString(payload),
-                    GoalPromptRules.buildRules(source.profile()));
+                    GoalPromptRules.buildRules(source.profile(), texts.language()));
             String response = openAiProviderProcessor.fetchJsonResponse(
                     components.getAiKey(),
                     prompt,

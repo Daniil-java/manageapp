@@ -22,8 +22,9 @@ public class OpenAiChatCompletionRequest {
     private ResponseFormat responseFormat;
 
     public static final float TEMPERATURE_DEFAULT = 0.1f;
-    // Для живого текста (дневной отчёт): на 0.1 модель на похожих данных выдаёт почти одно и то же
-    public static final float TEMPERATURE_CREATIVE = 0.9f;
+    // Для живого текста (дневной отчёт): на 0.1 модель на похожих данных выдаёт почти одно и то же,
+    // а на 0.9 иногда срывается — вставляла русские слова в английский ответ
+    public static final float TEMPERATURE_CREATIVE = 0.8f;
     private static final String MODEL_DEFAULT = ChatModel.GPT51.getName();
 
     public record ResponseFormat(String type) {

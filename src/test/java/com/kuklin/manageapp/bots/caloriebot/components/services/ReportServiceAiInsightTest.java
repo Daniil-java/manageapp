@@ -127,7 +127,7 @@ class ReportServiceAiInsightTest {
                 eq(MetricsAiInteractionRecord.AiMessageType.TEXT));
 
         assertThat(prompt.getValue())
-                .contains("последние 7 дней")
+                .contains("last 7 days")
                 .contains("English")
                 // 02:30 UTC → 09:30 у пользователя
                 .contains("\"eatenAt\":\"2026-10-02T09:30")
@@ -148,7 +148,7 @@ class ReportServiceAiInsightTest {
 
         ArgumentCaptor<String> prompt = ArgumentCaptor.forClass(String.class);
         verify(ai).fetchJsonResponse(anyString(), prompt.capture(), any(), anyString(), any());
-        assertThat(prompt.getValue()).contains("последние 30 дней");
+        assertThat(prompt.getValue()).contains("last 30 days");
     }
 
     @Test
@@ -182,10 +182,12 @@ class ReportServiceAiInsightTest {
 
         service.getDayAiReport(USER_ID);
 
-        // Язык и в начале, и в конце задания: иначе модель по русской инструкции сбивалась на русский
+        // Английскому пользователю — английский промпт, язык и в начале, и в конце задания:
+        // по русской инструкции модель вставляла русские слова
         assertThat(creativePrompts()).singleElement().asString()
-                .contains("ЯЗЫК ОТВЕТА: English.")
-                .contains("Язык ответа: English — от первого до последнего слова")
+                .contains("RESPONSE LANGUAGE: English.")
+                .contains("Response language: English — from the first word to the last")
+                .doesNotContain("ЯЗЫК ОТВЕТА")
                 // 02:00 UTC → 09:00 у пользователя (UTC+7)
                 .contains("09:00 — Oatmeal");
     }

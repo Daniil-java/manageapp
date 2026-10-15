@@ -63,10 +63,10 @@ class ReportServicePdfTest {
         ArgumentCaptor<String> prompt = ArgumentCaptor.forClass(String.class);
         verify(ai, times(2)).fetchJsonResponse(anyString(), prompt.capture(), any(), anyString(), any());
         verify(ai, never()).fetchResponse(anyString(), anyString(), any(), anyString(), any());
-        assertThat(prompt.getAllValues().get(0)).contains("за 7 дней");
-        assertThat(prompt.getAllValues().get(1)).contains("за 30 дней");
+        assertThat(prompt.getAllValues().get(0)).contains("for 7 days");
+        assertThat(prompt.getAllValues().get(1)).contains("for 30 days");
         assertThat(prompt.getAllValues()).allSatisfy(p -> assertThat(p)
-                .contains("ЯЗЫК ОТВЕТА: English.")
+                .contains("RESPONSE LANGUAGE: English.")
                 .contains("\"avgCalories\":")
                 .contains("\"realExpenditureKcal\":")
                 .contains("\"topByCalories\":")

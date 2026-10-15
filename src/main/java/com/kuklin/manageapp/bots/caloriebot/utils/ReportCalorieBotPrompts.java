@@ -1,5 +1,10 @@
 package com.kuklin.manageapp.bots.caloriebot.utils;
 
+/**
+ * Русские промпты отчётов — для русского и любого языка без своих промптов.
+ * Английская пара — {@link ReportCalorieBotPromptsEn}, выбирает {@link ReportPrompts#of}.
+ * Правишь здесь — правь и там (ReportPromptsConsistencyTest сверяет подстановки).
+ */
 public class ReportCalorieBotPrompts {
     /**
      * Отчёт за день в боте. Собирает {@link DayReportPrompt} — он же выбирает формат вступления и тему совета.

@@ -2,6 +2,7 @@ package com.kuklin.manageapp.bots.caloriebot.utils;
 
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
+import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -35,7 +36,7 @@ class DayReportPromptTest {
 
     @Test
     void totalsAreCountedByCode() {
-        assertThat(DayReportPrompt.buildTotalsText(PROFILE, DISHES))
+        assertThat(DayReportPrompt.buildTotalsText(PROFILE, DISHES, AppLanguage.RU))
                 .contains("калории 1950 из 1800 ккал, перебор 150")
                 .contains("белки 62 из 100 г, осталось 38")
                 .contains("жиры 0 г, норма не задана");
@@ -44,28 +45,28 @@ class DayReportPromptTest {
     @Test
     void dishTimeIsLocal() {
         // 05:30 UTC → 08:30 МСК
-        assertThat(DayReportPrompt.buildDishesText(DISHES, USER_TIME))
+        assertThat(DayReportPrompt.buildDishesText(DISHES, USER_TIME, AppLanguage.RU))
                 .startsWith("08:30 — Овсянка, 200 г: 350 ккал, Б 12 / Ж 0 / У 0")
                 .contains("19:00 — Пицца");
     }
 
     @Test
     void profileHasNoServiceFields() {
-        assertThat(DayReportPrompt.buildProfileText(PROFILE))
+        assertThat(DayReportPrompt.buildProfileText(PROFILE, AppLanguage.RU))
                 .isEqualTo("пол FEMALE, вес 64.5 кг, цель похудение")
                 .doesNotContain("42");
     }
 
     @Test
     void promptHasWeekdayIntroAndTipTheme() {
-        String prompt = DayReportPrompt.buildPrompt(PROFILE, DISHES, USER_TIME, "English", new Random(1));
+        String prompt = DayReportPrompt.buildPrompt(PROFILE, DISHES, USER_TIME, AppLanguage.RU, new Random(1));
 
         assertThat(prompt)
                 .contains("Сейчас у пользователя: среда, 14 октября 2026, 21:05")
-                .contains("ЯЗЫК ОТВЕТА: English.")
+                .contains("ЯЗЫК ОТВЕТА: Русский.")
                 .doesNotContain("$s");
-        assertThat(DayReportPrompt.INTRO_FORMATS).anyMatch(prompt::contains);
-        assertThat(DayReportPrompt.getTipThemes(UserNutritionProfile.Goal.LOSE_WEIGHT)).anyMatch(prompt::contains);
+        assertThat(DayReportPrompt.RU.introFormats()).anyMatch(prompt::contains);
+        assertThat(DayReportPrompt.getTipThemes(UserNutritionProfile.Goal.LOSE_WEIGHT, AppLanguage.RU)).anyMatch(prompt::contains);
     }
 
     @Test
@@ -73,8 +74,8 @@ class DayReportPromptTest {
         Random random = new Random(7);
         Set<String> intros = new HashSet<>();
         for (int i = 0; i < 30; i++) {
-            String prompt = DayReportPrompt.buildPrompt(PROFILE, DISHES, USER_TIME, "English", random);
-            DayReportPrompt.INTRO_FORMATS.stream().filter(prompt::contains).forEach(intros::add);
+            String prompt = DayReportPrompt.buildPrompt(PROFILE, DISHES, USER_TIME, AppLanguage.RU, random);
+            DayReportPrompt.RU.introFormats().stream().filter(prompt::contains).forEach(intros::add);
         }
         assertThat(intros).hasSizeGreaterThan(5);
     }
@@ -85,7 +86,7 @@ class DayReportPromptTest {
                 .setGoal(UserNutritionProfile.Goal.GAIN_WEIGHT)
                 .setDietType(UserNutritionProfile.DietType.VEGAN);
 
-        String prompt = DayReportPrompt.buildPrompt(gaining, DISHES, USER_TIME, "English", new Random(1));
+        String prompt = DayReportPrompt.buildPrompt(gaining, DISHES, USER_TIME, AppLanguage.RU, new Random(1));
 
         assertThat(prompt)
                 .contains("цель набор веса, питание веганское")
@@ -93,20 +94,20 @@ class DayReportPromptTest {
                 .contains("Главный риск — недобор калорий")
                 .contains("Тип питания: веганское.")
                 .doesNotContain("$s");
-        assertThat(DayReportPrompt.getTipThemes(UserNutritionProfile.Goal.GAIN_WEIGHT)).anyMatch(prompt::contains);
+        assertThat(DayReportPrompt.getTipThemes(UserNutritionProfile.Goal.GAIN_WEIGHT, AppLanguage.RU)).anyMatch(prompt::contains);
     }
 
     @Test
     void tipThemesFitGoal() {
-        assertThat(DayReportPrompt.getTipThemes(UserNutritionProfile.Goal.GAIN_WEIGHT))
+        assertThat(DayReportPrompt.getTipThemes(UserNutritionProfile.Goal.GAIN_WEIGHT, AppLanguage.RU))
                 .doesNotContain("есть медленнее и без экрана", "специи и вкус без лишних калорий")
                 .contains("больше приёмов пищи вместо огромных порций");
-        assertThat(DayReportPrompt.getTipThemes(UserNutritionProfile.Goal.LOSE_WEIGHT))
+        assertThat(DayReportPrompt.getTipThemes(UserNutritionProfile.Goal.LOSE_WEIGHT, AppLanguage.RU))
                 .contains("есть медленнее и без экрана")
                 .doesNotContain("больше приёмов пищи вместо огромных порций");
         // Цель не указана — темы как для поддержания
-        assertThat(DayReportPrompt.getTipThemes(null))
-                .isEqualTo(DayReportPrompt.getTipThemes(UserNutritionProfile.Goal.MAINTAIN));
+        assertThat(DayReportPrompt.getTipThemes(null, AppLanguage.RU))
+                .isEqualTo(DayReportPrompt.getTipThemes(UserNutritionProfile.Goal.MAINTAIN, AppLanguage.RU));
     }
 
     private static Dish dish(String name, String createdUtc, int calories, int proteins) {
