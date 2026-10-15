@@ -36,7 +36,7 @@ public class UiAnalyticsService {
         LocalDate today = LocalDate.now(userZone);
         List<Dish> dishes = source.dishes();
         UserNutritionProfile profile = source.profile();
-        // Взвешивания, записанные в период (как раньше getAllWeightByPeriod — по createdAt), из всей истории
+        // Взвешивания, записанные в период (как раньше getAllWeightByPeriod — по createdAt); loadPeriod грузит и их
         Instant periodStart = from.atStartOfDay(userZone).toInstant();
         Instant periodEnd = to.plusDays(1).atStartOfDay(userZone).toInstant();
         List<WeightEntry> weights = source.weights().stream()

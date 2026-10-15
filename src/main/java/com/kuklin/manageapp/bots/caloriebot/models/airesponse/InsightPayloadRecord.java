@@ -21,7 +21,7 @@ public record InsightPayloadRecord(InsightProfile profile,
                                    List<InsightWeight> weights) {
 
     /** Сколько последних взвешиваний отдаём ИИ (могут быть и раньше периода — для динамики) */
-    private static final int WEIGHTS_LIMIT = 20;
+    public static final int WEIGHTS_LIMIT = 20;
 
     /**
      * @param maxDishes сколько последних блюд отдать ИИ (calorie.ai-input.insight-max-dishes):

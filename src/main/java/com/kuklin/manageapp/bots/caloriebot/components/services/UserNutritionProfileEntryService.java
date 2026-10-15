@@ -50,6 +50,11 @@ public class UserNutritionProfileEntryService {
         return userNutritionProfileEntryRepository.findAllByUserId(userId);
     }
 
+    /** Нормы, действовавшие хотя бы в один момент from–to (включительно). */
+    public List<UserNutritionProfileEntry> getAllActiveBetween(Long userId, Instant from, Instant to) {
+        return userNutritionProfileEntryRepository.findAllActiveBetween(userId, from, to);
+    }
+
     public List<UserNutritionProfileEntryDto> getAllDtoByUserId(Long userId) {
         return UserNutritionProfileEntryDto.fromEntities(getAllByUserId(userId));
     }

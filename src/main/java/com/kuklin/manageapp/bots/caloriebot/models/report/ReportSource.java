@@ -16,7 +16,9 @@ import java.util.List;
  * @param startDate      первый день отчёта (в таймзоне пользователя)
  * @param endDate        последний день отчёта, обычно сегодня
  * @param previousDishes блюда за такой же период перед отчётным — для сравнения
- * @param weights        вся история веса: тренд сглаживается и по взвешиваниям до периода
+ * @param targets        нормы, действовавшие в период
+ * @param weights        взвешивания периода и за TREND_WINDOW_DAYS до него (тренд сглаживается и по ним),
+ *                       плюс внесённые в период задним числом — их показывает дашборд
  */
 public record ReportSource(ReportKind kind,
                            LocalDate startDate,

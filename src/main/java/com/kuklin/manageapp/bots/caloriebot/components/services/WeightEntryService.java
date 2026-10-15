@@ -5,10 +5,12 @@ import com.kuklin.manageapp.bots.caloriebot.components.repository.WeightEntryRep
 import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.WeightEntryDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Limit;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -55,6 +57,17 @@ public class WeightEntryService {
 
     public List<WeightEntry> getAllWeightHistory(Long userId) {
         return weightEntryRepository.findAllByUserIdOrderByEntryDateAsc(userId);
+    }
+
+    /** Взвешивания с датой в fromDate–toDate или внесённые в createdFrom–createdTo, от старых к новым. */
+    public List<WeightEntry> getReportWeights(Long userId, LocalDate fromDate, LocalDate toDate,
+                                              Instant createdFrom, Instant createdTo) {
+        return weightEntryRepository.findAllForReport(userId, fromDate, toDate, createdFrom, createdTo);
+    }
+
+    /** Последние limit взвешиваний, от новых к старым. */
+    public List<WeightEntry> getLastWeights(Long userId, int limit) {
+        return weightEntryRepository.findAllByUserIdAndEntryDateNotNullOrderByEntryDateDesc(userId, Limit.of(limit));
     }
 
     // Получить разницу (дельту) веса за период

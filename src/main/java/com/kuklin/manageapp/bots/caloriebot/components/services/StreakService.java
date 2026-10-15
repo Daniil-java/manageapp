@@ -8,9 +8,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -43,8 +43,12 @@ public class StreakService {
 
     private Set<LocalDate> findActiveDays(Long userId, ZoneId zone) {
         Set<LocalDate> days = new HashSet<>(waterEntryRepository.findWaterDatesByUserId(userId));
-        for (Instant created : dishRepository.findAllCreatedByUserId(userId)) {
-            days.add(created.atZone(zone).toLocalDate());
+        // Фиксированное смещение (+03:00, GMT+3) — числом поверх UTC, зона с переходами — по имени IANA
+        boolean fixedOffset = zone.normalized() instanceof ZoneOffset;
+        String zoneName = fixedOffset ? "UTC" : zone.getId();
+        int offsetSeconds = fixedOffset ? ((ZoneOffset) zone.normalized()).getTotalSeconds() : 0;
+        for (Integer epochDay : dishRepository.findDishEpochDaysByUserId(userId, zoneName, offsetSeconds)) {
+            days.add(LocalDate.ofEpochDay(epochDay));
         }
         return days;
     }

@@ -355,7 +355,7 @@ public class ReportService {
     private InsightData loadInsightData(Long userId, Instant from, Instant to) {
         return new InsightData(
                 dishService.getAllDishedByUserIdAndPeriod(userId, from, to),
-                weightEntryService.getAllWeightHistory(userId),
+                weightEntryService.getLastWeights(userId, InsightPayloadRecord.WEIGHTS_LIMIT),
                 userNutritionProfileService.getOrCreateProfile(userId),
                 userSettingsService.getZoneId(userId)
         );

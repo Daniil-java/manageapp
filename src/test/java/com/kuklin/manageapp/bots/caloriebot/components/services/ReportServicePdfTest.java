@@ -169,7 +169,7 @@ class ReportServicePdfTest {
                 .setWaterTargetMlPerDay(2000));
 
         UserNutritionProfileEntryService entryService = mock(UserNutritionProfileEntryService.class);
-        when(entryService.getAllByUserId(USER_ID)).thenReturn(List.of(
+        when(entryService.getAllActiveBetween(eq(USER_ID), any(), any())).thenReturn(List.of(
                 target(1850, Instant.parse("2026-08-01T00:00:00Z"), TARGET_CHANGED),
                 target(1750, TARGET_CHANGED, null)));
 
@@ -184,7 +184,7 @@ class ReportServicePdfTest {
         when(waterService.getAllWaterEntryByPeriod(eq(USER_ID), any(), any())).thenReturn(buildWater());
 
         WeightEntryService weightService = mock(WeightEntryService.class);
-        when(weightService.getAllWeightHistory(USER_ID)).thenReturn(buildWeights());
+        when(weightService.getReportWeights(eq(USER_ID), any(), any(), any(), any())).thenReturn(buildWeights());
 
         TelegramCaloriesBotKeyComponents components = mock(TelegramCaloriesBotKeyComponents.class);
         when(components.getAiKey()).thenReturn("test-ai-key");

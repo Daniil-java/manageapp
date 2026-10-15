@@ -2,6 +2,7 @@ package com.kuklin.manageapp.bots.caloriebot.components.services;
 
 import com.kuklin.manageapp.bots.caloriebot.models.report.ReportKind;
 import com.kuklin.manageapp.bots.caloriebot.models.report.ReportSource;
+import com.kuklin.manageapp.bots.caloriebot.utils.ReportStatsCalculator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -52,8 +53,11 @@ public class ReportSourceLoader {
                 zone,
                 dishService.getAllDishedByUserIdAndPeriod(userId, from, upperBound),
                 dishService.getAllDishedByUserIdAndPeriod(userId, previousFrom, from.minusMillis(1)),
-                userNutritionProfileEntryService.getAllByUserId(userId),
-                weightEntryService.getAllWeightHistory(userId),
+                // Норма дня — та, что действовала в его начало
+                userNutritionProfileEntryService.getAllActiveBetween(userId, from, endDate.atStartOfDay(zone).toInstant()),
+                // Тренд в начале периода сглаживается и по взвешиваниям до него; дашборд берёт внесённые за период
+                weightEntryService.getReportWeights(userId, startDate.minusDays(ReportStatsCalculator.TREND_WINDOW_DAYS),
+                        endDate, from, upperBound),
                 waterEntryService.getAllWaterEntryByPeriod(userId, startDate, endDate),
                 userNutritionProfileService.getOrCreateProfile(userId)
         );

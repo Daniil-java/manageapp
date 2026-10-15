@@ -31,7 +31,7 @@ public final class ReportStatsCalculator {
     /** Больше нормы на 25% — сильный перебор */
     private static final long BIG_OVER_PERCENT = 25;
     /** Сглаживание веса: прямая по взвешиваниям в окне ±N дней вокруг дня */
-    private static final int TREND_WINDOW_DAYS = 7;
+    public static final int TREND_WINDOW_DAYS = 7;
     private static final int MIN_TREND_SPREAD_DAYS = 4;
     /** Калорий в килограмме жира — для реального расхода */
     private static final int KCAL_PER_KG = 7700;

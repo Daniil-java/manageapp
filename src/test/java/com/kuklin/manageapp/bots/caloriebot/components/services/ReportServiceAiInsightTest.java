@@ -25,6 +25,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -65,7 +66,7 @@ class ReportServiceAiInsightTest {
         when(settingsService.getZoneId(USER_ID)).thenReturn(ZoneId.of(ZONE));
 
         WeightEntryService weightService = mock(WeightEntryService.class);
-        when(weightService.getAllWeightHistory(USER_ID)).thenReturn(List.of());
+        when(weightService.getLastWeights(eq(USER_ID), anyInt())).thenReturn(List.of());
 
         TelegramCaloriesBotKeyComponents components = mock(TelegramCaloriesBotKeyComponents.class);
         when(components.getAiKey()).thenReturn(AI_KEY);
