@@ -122,31 +122,36 @@ public class PaymentService {
             SuccessfulPayment successfulPayment, Long appUserId
     ) throws PaymentException, PricingPlanNotFoundException {
 
-        // ИСПРАВЛЕНИЕ: Проверяем именно тот токен, который мы будем сохранять
+        // Проверяем именно тот токен, который мы будем сохранять
         // Определяем, какой ID является главным для этого типа валюты
         String checkToken = successfulPayment.getCurrency().equals(Currency.XTR.name()) ?
                 successfulPayment.getTelegramPaymentChargeId() :
                 successfulPayment.getProviderPaymentChargeId();
 
-        Optional<Payment> byProviderId = paymentRepository.findByProviderPaymentId(checkToken);
-
-        if (byProviderId.isPresent()) {
-            log.info("Payment with ID {} has already been processed. Skipping.", checkToken);
-            return byProviderId.get(); // Или return null, если выше по стеку это обрабатывается
-        }
-
-        // Находим оригинальный платеж по Payload
-        Payment payment = getValidPayment(
+        // Счёт берём под блокировкой: два successful_payment по одному счёту (оплата с двух устройств,
+        // повтор апдейта) иначе параллельно видят CREATED и оба выдают покупку в одну запись.
+        Payment invoice = validatePayment(
+                paymentRepository.findByTelegramInvoicePayloadForUpdate(successfulPayment.getInvoicePayload()),
                 successfulPayment.getInvoicePayload(),
                 appUserId,
                 successfulPayment.getCurrency(),
                 successfulPayment.getTotalAmount()
         );
 
-        PricingPlan plan = pricingPlanService.getPricingPlanById(payment.getPricingPlanId());
+        // После блокировки: параллельный обработчик того же списания уже закоммитил его
+        Optional<Payment> byProviderId = paymentRepository.findByProviderPaymentId(checkToken);
+        if (byProviderId.isPresent()) {
+            log.info("Payment with ID {} has already been processed. Skipping.", checkToken);
+            return byProviderId.get();
+        }
 
-        // Здесь создается новая запись, если это продление
-        payment = processTelegramSubs(payment, plan, plan.getBotIdentifier());
+        Payment payment = invoice;
+        if (invoice.getStatus() != Payment.PaymentStatus.CREATED) {
+            PricingPlan plan = pricingPlanService.getPricingPlanById(invoice.getPricingPlanId());
+            payment = createExtraChargePayment(invoice, plan);
+            log.warn("Extra charge {} for already processed payment {} (status {}), recorded as payment {}",
+                    checkToken, invoice.getId(), invoice.getStatus(), payment.getId());
+        }
 
         // Используем тот же самый токен для смены статуса
         changeStatus(payment, Payment.PaymentStatus.SUCCESS, checkToken);
@@ -154,69 +159,53 @@ public class PaymentService {
         return payment;
     }
 
-    //Обработка телеграммовской подписки. Работает вместе с методом processTelegramSuccessfulPaymentAndGetOrNull
-    // ⚠️ Продление подписки Telegram с автосписанием. Сейчас подписки выключены (только разовые оплаты, et-81),
-    // и этот путь вживую не проверялся. Срабатывает, когда successful_payment пришёл по уже оплаченному
-    // payload (Telegram сам списал звёзды через 30 дней) — создаётся новый Payment.
-    // При разовых оплатах повтор по тому же payload — это дубль, а не продление: если когда-нибудь
-    // успешный разовый платёж 30-дневного тарифа придёт повторно, он здесь продлит подписку.
-    // Перед включением подписок различать продление по полю is_recurring из successful_payment
-    // (в telegrambots 6.9 его нет — понадобится обновить библиотеку).
-    private Payment processTelegramSubs(
-            Payment payment, PricingPlan plan, BotIdentifier botIdentifier) {
-        if (!payment.getStatus().equals(Payment.PaymentStatus.CREATED)) {
-            //Длительность подписки, допустимая в телеграмме.
-            int telegramSubsDaysDuration = 30;
+    /**
+     * Ещё одно списание по уже обработанному счёту — своя запись Payment со своим charge_id,
+     * чтобы каждое списание было в учёте и его можно было вернуть (refundTelegramPayment ищет по charge_id).
+     * Так приходят: вторая оплата одной ссылки (Telegram-ссылки многоразовые, два pre_checkout проходят,
+     * пока счёт ещё CREATED) и продление подписки Telegram с автосписанием (сейчас выключены, et-81).
+     * Пользователь заплатил ещё раз — покупка выдаётся ещё раз.
+     */
+    private Payment createExtraChargePayment(Payment invoice, PricingPlan plan) {
+        Payment extra = paymentRepository.save(
+                new Payment()
+                        .setProvider(invoice.getProvider())
+                        .setPricingPlanId(invoice.getPricingPlanId())
+                        .setDescription(invoice.getDescription())
+                        .setCurrency(invoice.getCurrency())
+                        .setAmount(invoice.getAmount())
+                        .setStarsAmount(invoice.getStarsAmount())
+                        .setStatus(Payment.PaymentStatus.CREATED)
+                        .setAppUserId(invoice.getAppUserId())
+                        .setProviderStatus(Payment.ProviderStatus.SUCCEEDED)
+                        .setBotIdentifier(invoice.getBotIdentifier())
+        );
 
-            //Проверяем, что это действительно подписка-телеграмм.
-            if (
-                    plan.getDurationDays().equals(telegramSubsDaysDuration)
-                            && plan.getPayloadType().equals(PricingPlan.PricingPlanType.SUBSCRIPTION)
-                            && plan.getCurrency().equals(Currency.XTR)
-            ) {
-                //Если это подписка, то нам надо создать новый платеж
-                Payment renewalPayment = paymentRepository.save(
-                        new Payment()
-                                .setProvider(payment.getProvider())
-                                .setPricingPlanId(payment.getPricingPlanId())
-                                .setDescription(payment.getDescription())
-                                .setCurrency(payment.getCurrency())
-                                .setAmount(payment.getAmount())
-                                .setStarsAmount(payment.getStarsAmount())
-                                .setStatus(Payment.PaymentStatus.CREATED)
-                                .setAppUserId(payment.getAppUserId())
-                                .setProviderStatus(Payment.ProviderStatus.SUCCEEDED)
-                                .setBotIdentifier(botIdentifier)
-                );
-
-                // 2. Сохраняем, чтобы получить ID
-                renewalPayment = paymentRepository.save(renewalPayment);
-
-                // 3. Генерируем новый Payload на основе нового ID
-                String newPayload = generateTelegramInvoicePayload(renewalPayment.getId(), plan);
-                renewalPayment.setTelegramInvoicePayload(newPayload);
-
-                // 4. Сохраняем обновленный payload
-                return paymentRepository.save(renewalPayment);
-            }
-        }
-        return payment;
+        // payload уникален — свой, на основе нового ID
+        extra.setTelegramInvoicePayload(generateTelegramInvoicePayload(extra.getId(), plan));
+        return paymentRepository.save(extra);
     }
 
     private Payment getValidPayment(String invoicePayload,
                                     Long appUserId,
                                     String currency,
                                     Integer totalAmount) throws PaymentValidationDataException, PricingPlanNotFoundException {
+        return validatePayment(paymentRepository.findByTelegramInvoicePayload(invoicePayload),
+                invoicePayload, appUserId, currency, totalAmount);
+    }
 
-        Payment payment = paymentRepository
-                .findByTelegramInvoicePayload(invoicePayload)
+    private Payment validatePayment(Optional<Payment> found,
+                                    String invoicePayload,
+                                    Long appUserId,
+                                    String currency,
+                                    Integer totalAmount) throws PaymentValidationDataException, PricingPlanNotFoundException {
+
+        Payment payment = found
                 .orElseThrow(() -> {
                     log.error("{}: payment not found by invoicePayload={}",
                             PaymentValidationDataException.DEF_MSG, invoicePayload);
                     return new PaymentValidationDataException();
                 });
-
-        log.info("For invoice payload: {} Payment not null: {}", invoicePayload, payment != null);
 
         // Получаем актуальный тариф из БД прямо сейчас
         PricingPlan actualPlan = pricingPlanService.getPricingPlanById(payment.getPricingPlanId());
