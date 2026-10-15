@@ -95,8 +95,10 @@ public class    GenerationBalanceOperationService {
             String comment,
             boolean isRefund
     ) throws GenerationBalanceNotFoundException, GenerationBalanceIllegalOperationDataException, GenerationBalanceNotEnoughBalanceException {
+        // Баланс больше не проверяется на каждом апдейте (TelegramUserService) — если строки нет, создаём здесь,
+        // а не роняем оплату пакета. Списание с пустого баланса упрётся в NotEnoughBalance, как и раньше
         GenerationBalance balance = generationBalanceService
-                .getBalanceByAppUserIdAndBotIdentifier(telegramId, botIdentifier);
+                .createNewBalanceIfNotExist(telegramId, botIdentifier);
 
         if (requestCount < 0) {
             log.error(GenerationBalanceIllegalOperationDataException.DEF_MSG);

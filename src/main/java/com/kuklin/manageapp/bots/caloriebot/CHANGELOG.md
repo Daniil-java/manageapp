@@ -1,3 +1,11 @@
+## 0.0.69 (15.10.2026)
+[et-96] — Производительность: быстрые правки
+* Индекс dishes (user_id, created) — миграция 0.0.60. Все выборки блюд (за день, за период, count, max(created) в шедулерах напоминаний) шли полным просмотром таблицы.
+* TelegramUserService.createOrGetUserByTelegram: если пользователь уже есть, привязан к AppUser и не блокировал бота, хватает одного SELECT без транзакции. Раньше на каждый апдейт, включая клики, открывалась пишущая транзакция и проверялся баланс генераций. Баланс создаётся при регистрации, а в редком пути (разблокировка, старая запись без AppUser) досоздаётся уже после привязки: раньше проверка шла до неё, с appUserId = null. Операции с балансом (GenerationBalanceOperationService.createNewBalanceOperation — оплата и возврат пакета генераций) сами создают строку, если её нет, а не падают с GenerationBalanceNotFoundException.
+* Язык пользователя кэшируется в памяти (UserSettingsService.findLanguageCode). CalorieTexts.get читал его из БД на каждый текст, 3–10 одинаковых SELECT за апдейт. Кэш сбрасывается в setLanguageCode (сразу и после завершения транзакции), других мест записи языка нет.
+* Шаблон PDF-отчёта и маскот читаются с диска один раз, а не на каждый отчёт (ReportService.getCachedResourceOrNull).
+* Тесты: UserSettingsServiceLanguageCacheTest, TelegramUserServiceFastPathTest.
+
 ## 0.0.68 (14.10.2026)
 [et-95] — Транзакции и гонки
 * Счётчик ответов бота (TelegramUser.responseCount) увеличивается одним UPDATE ... SET response_count = response_count + 1 (TelegramUserRepository.incrementResponseCount). Раньше сохранялся весь TelegramUser, загруженный до запроса к ИИ: параллельные фото теряли инкременты, а устаревшая копия затирала поля, изменённые за эти секунды, — например, isBotBlocked после блокировки бота (пользователь снова попадал в рассылки).

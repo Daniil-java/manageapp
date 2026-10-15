@@ -47,7 +47,9 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 
 // Статические импорты для улучшения читаемости (ИИ-промпты)
@@ -117,6 +119,8 @@ public class ReportService {
     private final TelegramCaloriesBotKeyComponents components;
     private final AiInputLimitsProperties aiInputLimits;
     private final CalorieTexts calorieTexts;
+    // Шаблон и маскот не меняются, пока приложение работает: читаем с диска один раз, а не на каждый PDF
+    private final Map<String, String> resources = new ConcurrentHashMap<>();
     // Маппер с поддержкой Java 8 Time API (даты блюд в JSON для ИИ)
     private final ObjectMapper mapper = new ObjectMapper()
             .registerModule(new JavaTimeModule())
@@ -282,8 +286,8 @@ public class ReportService {
      * Наполняет HTML-шаблон: сначала тексты словаря {{pdf.…}}, потом данные — {{pdf.…}} в ответе ИИ подставляться не должны.
      */
     private String fillTemplateOrNull(ReportSource source, ReportStats stats, ReportAiResponse ai, PdfTexts texts, Instant now) {
-        String template = loadResourceOrNull(REPORT_TEMPLATE_PATH);
-        String mascot = loadResourceOrNull(MASCOT_PATH);
+        String template = getCachedResourceOrNull(REPORT_TEMPLATE_PATH);
+        String mascot = getCachedResourceOrNull(MASCOT_PATH);
         if (template == null || mascot == null) return null;
 
         boolean month = source.kind() == ReportKind.MONTH;
@@ -369,6 +373,11 @@ public class ReportService {
                 loggingContext,
                 MetricsAiInteractionRecord.AiMessageType.TEXT
         );
+    }
+
+    /** Текстовый файл из ресурсов, прочитанный один раз. Не прочитался — null, в кэш не кладём, попробуем снова. */
+    private String getCachedResourceOrNull(String path) {
+        return resources.computeIfAbsent(path, this::loadResourceOrNull);
     }
 
     /**

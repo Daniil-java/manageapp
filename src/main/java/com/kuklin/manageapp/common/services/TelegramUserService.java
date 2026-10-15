@@ -53,6 +53,13 @@ public class TelegramUserService {
      * Если вызвать изнутри чужой транзакции, повтор не поможет — она уже помечена на откат.
      */
     public TelegramUser createOrGetUserByTelegram(BotIdentifier botIdentifier, User telegramUser) {
+        // Вызывается на каждый апдейт, включая клики. Обычный случай — пользователь есть, привязан и не блокировал бота:
+        // одного SELECT хватает, писать нечего, транзакция не нужна
+        TelegramUser existing = getTelegramUserByTelegramIdAndBotIdentifierOrNull(telegramUser.getId(), botIdentifier);
+        if (existing != null && existing.getAppUserId() != null && !Boolean.TRUE.equals(existing.getIsBotBlocked())) {
+            return existing;
+        }
+
         TransactionTemplate transaction = new TransactionTemplate(transactionManager);
         try {
             return transaction.execute(status -> doCreateOrGetUserByTelegram(botIdentifier, telegramUser));
@@ -74,16 +81,17 @@ public class TelegramUserService {
         if (optionalTelegramUser.isPresent()) {
             TelegramUser tgUser = optionalTelegramUser.get();
 
-            generationBalanceService.createNewBalanceIfNotExist(
-                    tgUser.getAppUserId(), botIdentifier
-            );
-
-            if (tgUser.getIsBotBlocked()) {
+            if (Boolean.TRUE.equals(tgUser.getIsBotBlocked())) {
                 tgUser = telegramUserRepository.save(tgUser.setIsBotBlocked(false));
             }
 
             // Безопасно проверяем привязку к AppUser
             checkIfAppUserExist(tgUser);
+            // Сюда попадают только разблокировка и старые записи без AppUser — заодно досоздаём баланс.
+            // Раньше это было на каждом апдейте и шло до привязки, то есть с appUserId = null
+            generationBalanceService.createNewBalanceIfNotExist(
+                    tgUser.getAppUserId(), botIdentifier
+            );
             return tgUser;
         }
 

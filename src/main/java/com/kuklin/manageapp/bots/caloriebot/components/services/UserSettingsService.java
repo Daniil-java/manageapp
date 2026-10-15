@@ -14,11 +14,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.*;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Сервис для пользовательских настроек
@@ -33,6 +37,9 @@ public class UserSettingsService {
 
     private final UserSettingsRepository userSettingsRepository;
     private final PlatformTransactionManager transactionManager;
+    // Язык читается на каждый текст (CalorieTexts.get) — 3–10 раз за апдейт. Пишется только в setLanguageCode,
+    // там и сбрасываем. Optional.empty() — язык не выбран. Запись — пара десятков байт на пользователя.
+    private final Map<Long, Optional<String>> languageCache = new ConcurrentHashMap<>();
 
     // Для альтернативного варианта getOrCreate через самовызов — см. комментарий под методом.
     // Ссылка на собственный прокси — для вызова @Transactional-метода изнутри класса
@@ -77,8 +84,8 @@ public class UserSettingsService {
 
     /** Код языка из настроек или null, если пользователь язык не выбирал. Настройки не создаёт. */
     public String findLanguageCode(Long userId) {
-        return userSettingsRepository.findById(userId)
-                .map(UserSettings::getLanguage)
+        return languageCache.computeIfAbsent(userId, id -> userSettingsRepository.findById(id)
+                        .map(UserSettings::getLanguage))
                 .orElse(null);
     }
 
@@ -88,7 +95,20 @@ public class UserSettingsService {
         UserSettings settings = getOrCreate(userId);
         settings.setLanguage(languageCode);
         userSettingsRepository.save(settings);
+        evictLanguageAfterCommit(userId);
         log.info("Language for user {} set to {}", userId, languageCode);
+    }
+
+    // Сбрасываем и сейчас, и после транзакции: чтение до коммита положило бы в кэш ещё старый язык
+    private void evictLanguageAfterCommit(Long userId) {
+        languageCache.remove(userId);
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) return;
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCompletion(int status) {
+                languageCache.remove(userId);
+            }
+        });
     }
 
     /**
