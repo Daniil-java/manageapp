@@ -5,9 +5,21 @@
 
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>DK_ — Резюме Java-разработчика</title>
-  <meta name="description" content="Даниил Куклин — Java Developer | Spring, PostgreSQL, Docker. Резюме, стэк, опыт, образование и контакты." />
+  <title>Даниил Куклин — Java Backend Developer</title>
+  <meta name="description" content="Даниил Куклин — Java Backend Developer | Spring Boot, PostgreSQL, Docker. Опыт, стек, проекты, образование и контакты." />
+  <meta property="og:type" content="profile" />
+  <meta property="og:title" content="Даниил Куклин — Java Backend Developer" />
+  <meta property="og:description" content="Java, Spring Boot, PostgreSQL, Docker. Опыт, стек, проекты и контакты." />
   <meta name="color-scheme" content="light dark" />
+  <script>
+    // Тема до первой отрисовки — без вспышки светлой темы
+    (function(){ let t=null; try{ t=localStorage.getItem('dk_theme'); }catch(e){}
+      if(!t) t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
+      document.documentElement.setAttribute('data-theme', t); })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700;800&display=swap" />
   <style>
     /* =========================
        ТЕМА / ПАЛИТРА
@@ -53,7 +65,6 @@
     html,body{height:100%}
     body{
       margin:0; background:var(--bg); color:var(--text);
-      font-family: "Fira Code", "JetBrains Mono", "Source Code Pro";
       line-height:1.6; text-rendering:optimizeLegibility; -webkit-font-smoothing:antialiased;
       scroll-behavior:smooth;
     }
@@ -146,17 +157,6 @@
     }
     .typing-name{font-size:clamp(36px,7vw,80px); letter-spacing:.6px; font-weight:900}
 
-    /* базовый вид на время печати */
-    .typing-cursor{
-        display:inline-block;
-        width:.65ch;
-        height:1em;
-        translate:0 .15em;
-        background:var(--text);
-        animation: blink .9s steps(1,end) infinite;
-    }
-
-    /* режим после завершения печати: показываем "_" вместо блока */
     .typing-cursor{
         /* сам контейнер курсора */
         display:inline-block;
@@ -175,10 +175,6 @@
         animation: blink .85s steps(1,end) infinite;
     }
 
-    /* если где-то остался старый класс — он не меняет вид */
-    .typing-cursor.underscore::after{
-        border-bottom-width: 0.2em;
-    }
 
     /* уважение reduce-motion */
     @media (prefers-reduced-motion: reduce){
@@ -204,7 +200,7 @@
     .skills-grid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px}
     .skill{border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px; background:color-mix(in oklab, var(--panel) 88%, transparent); transition:transform .12s ease, background .12s ease}
     .skill:hover{transform:translateY(-2px); background:color-mix(in oklab, var(--accent-2) 6%, var(--panel))}
-    .stack-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(110px,1fr)); gap:12px}
+    .stack-grid{display:grid; grid-template-columns:repeat(auto-fill, minmax(110px,1fr)); gap:12px}
     .stack-item{display:grid; gap:8px; place-items:center; border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--panel); box-shadow:var(--shadow); padding:8px; text-align:center}
     .exp-list{display:grid; gap:14px}
     article.exp{display:grid; gap:6px; border:1px solid var(--border); border-radius:var(--radius); padding:16px; background:var(--panel); box-shadow:var(--shadow)}
@@ -387,10 +383,8 @@
 
     /* Состояния показа */
     .ct-value .ct-real{ display:none; }
-    .ct-value[data-state="shown"] .ct-reveal{ display:none; }
-    .ct-value[data-state="shown"] .ct-real{ display:flex; gap:10px; align-items:center; animation:fadeIn .16s ease-out; }
-    /*@keyframes fadeIn{ from{opacity:0; transform:translateY(-2px)} to{opacity:1; transform:translateY(0)} }*/
-    @keyframes blink { 50% { opacity: 0; } }
+    .ct-value[data-state="shown"] .ct-real{ display:flex; gap:10px; align-items:center; }
+    .icon-btn.copied{ color:#16a34a; border-color:#16a34a; }
 
     /* Иконка-кнопка копирования */
     .icon-btn{
@@ -416,15 +410,6 @@
         .icon-btn{ width:32px; height:32px; }
     }
 
-    /* Контакты: привести кнопку "Показать" к 38px и без тени */
-    .ct-value .ct-reveal.btn{
-        min-height: 38px;
-        height: 38px;
-        padding: 0 12px;
-        border-radius: 10px;       /* под иконку-кнопку (у неё 10px) */
-        box-shadow: none;          /* тень убираем — внутри карточки лишняя */
-        border-color: var(--border);
-    }
     /* Контакты: выровнять кнопку копирования справа и зафиксировать высоту строки */
     .ct-head:has(.ct-value[data-state="shown"]) .ct-value{
         justify-self: stretch;   /* вместо end — растянуть колонку */
@@ -441,12 +426,6 @@
 
     .ct-value[data-state="shown"] .pill{ min-width: 0; } /* чтобы работал ellipsis */
 
-    /* Контакты — как на странице фриланса (mobile tidy) */
-    @media (max-width:560px){
-        #contacts .ct-title small{ display:none; }                       /* убираем подпись */
-        #contacts .ct-head{ min-height:64px; grid-template-columns:38px 1fr auto; }
-        #contacts .pill{ max-width:clamp(160px,62vw,480px); }            /* пилла не обрезается рано */
-    }
 
     /* 1) Шапка: меню прокручивается по горизонтали, кнопки компактнее */
     @media (max-width: 560px){
@@ -475,10 +454,7 @@
         .card{ padding: 12px; }
     }
 
-    /* 3) About/Stack/Exp: аккуратная ужимка сеток */
-    @media (max-width: 780px){
-        .about-grid{ grid-template-columns: 1fr; }               /* уже есть, дублим на всякий случай */
-    }
+    /* 3) Stack/Exp: аккуратная ужимка сеток */
     @media (max-width: 560px){
         .stack-grid{ gap: 10px; }
         .stack-item img{ width: 56px; height: 56px; }
@@ -493,10 +469,6 @@
         #contacts .pill{ max-width: clamp(160px, 62vw, 480px); } /* не обрезается рано */
     }
 
-    /* 5) Кнопки копирования в контактах — компактнее на самых узких */
-    @media (max-width: 420px){
-        .icon-btn{ width:32px; height:32px; }
-    }
 
     /* ===== Бургер + выезжающее меню (как на фрилансе) ===== */
     .menu-btn{ display:none; align-items:center; justify-content:center;
@@ -535,28 +507,49 @@
     /* Блокировка прокрутки страницы при открытом меню */
     body.no-scroll{ overflow:hidden; }
 
-    /* базовый вид — такой же как у .icon-link */
-    .menu-btn{
-        display:none;              /* показываем только на мобилках ниже */
-        align-items:center;
-        justify-content:center;
-        width:36px; height:36px;
-        border-radius:10px;
-        background:var(--panel);
-        border:1px solid var(--border);
-        box-shadow:var(--shadow);
-        cursor:pointer;
-    }
+    .menu-btn{ box-shadow:var(--shadow); cursor:pointer; }
 
-    /* телефоны: показываем бургер и ужимаем иконки */
-    @media (max-width:560px){
-        .menu-btn{ display:inline-flex; }
-        nav[aria-label="Основная навигация"]{ display:none; } /* оглавление прячем — как на фрилансе */
-        .actions{ gap:8px; }
-        .actions .icon-link, .actions .menu-btn{ width:32px; height:32px; }
-        .actions .icon-link svg, .actions .menu-btn svg{ width:18px; height:18px; }
-    }
+    /* Стек: группы и текстовые чипы для того, у чего нет логотипа */
+    .stack-group + .stack-group{ margin-top:1.4rem; }
+    .stack-group h3{ font-size:clamp(15px,1.4vw,17px); color:var(--muted); font-weight:700; margin-bottom:.7rem; }
+    .chips{ display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 0; padding:0; list-style:none; }
+    .chips li{ padding:.35rem .7rem; border-radius:10px; border:1px solid var(--border); background:var(--panel); font-size:.85rem; font-weight:700; }
 
+    /* ===== Типографика: текст — Inter, акценты — JetBrains Mono ===== */
+    :root{
+      --font-sans:"Inter", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      --font-mono:"JetBrains Mono", Consolas, "Courier New", monospace;
+    }
+    html, body{ font-family:var(--font-sans); }
+    .logo, h1, .section-title, .hero small, .price, .badge,
+    .stack-item span, .chips li, .exp .meta, .pill{ font-family:var(--font-mono); }
+    h2{ letter-spacing:-.01em; }
+    h3{ font-weight:700; letter-spacing:-.005em; }
+    p, li{ font-size:clamp(15px,1.1vw,17px); }
+    .hero-sub{ text-wrap:balance; }
+
+    /* Курсор "_" — обычный символ того же размера, что и имя, стоит на базовой линии */
+    .typing-line{ --name-size:clamp(36px,7vw,80px); }
+    .hero--split .typing-line{ --name-size:clamp(34px,5.2vw,68px); }
+    .typing-name{ font-size:var(--name-size); }
+    .typing-cursor{ width:auto; height:auto; font:800 var(--name-size)/1.05 var(--font-mono); }
+    .typing-cursor::after{ content:"_"; display:inline; width:auto; border:0; transform:none; }
+    /* ===== Hero: ниже экрана, аватар и статус ===== */
+    .hero{ min-height:calc(78svh - var(--header-h)); padding:32px 0; }
+    .avatar{
+      width:112px; height:112px; border-radius:50%; margin-bottom:18px;
+      object-fit:cover; background:var(--panel);
+      box-shadow:0 10px 30px color-mix(in oklab, var(--accent-2) 35%, transparent);
+      border:4px solid var(--panel);
+    }
+    .status{
+      display:inline-flex; align-items:center; gap:8px; margin-top:.8rem;
+      padding:.35rem .8rem; border-radius:999px; font-size:.9rem; font-weight:600;
+      background:color-mix(in oklab, #16a34a 10%, var(--panel));
+      border:1px solid color-mix(in oklab, #16a34a 35%, var(--border));
+    }
+    .status__dot{ width:8px; height:8px; border-radius:50%; background:#16a34a; box-shadow:0 0 0 4px color-mix(in oklab, #16a34a 22%, transparent); }
+    @media (max-width:560px){ .avatar{ width:88px; height:88px; } }
   </style>
 </head>
 <body>
@@ -572,8 +565,8 @@
       <nav aria-label="Основная навигация">
         <ul role="list">
           <li><a href="#about" data-nav>Обо мне</a></li>
-          <li><a href="#stack" data-nav>Стэк технологий</a></li>
-          <li><a href="#experience" data-nav>Опыт работы</a></li>
+          <li><a href="#stack" data-nav>Стек</a></li>
+          <li><a href="#experience" data-nav>Опыт</a></li>
           <li><a href="#education" data-nav>Образование</a></li>
             <li><a href="#contacts" data-nav>Контакты</a></li>
         </ul>
@@ -589,16 +582,6 @@
               </svg>
           </button>
 
-<!--        <a class="icon-link" href="mailto:saponembigas@gmail.com" aria-label="Написать на email">-->
-<!--          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M3.5 7.5 12 13l8.5-5.5M4 6h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z"/></svg>-->
-<!--        </a>-->
-<!--        <a class="icon-link" href="https://t.me/kuklin_daniil" target="_blank" rel="noopener" aria-label="Открыть Telegram">-->
-<!--          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M9.18 15.42 9 19a1 1 0 0 0 1.64.77l2.35-1.93 3.89 2.86a1.5 1.5 0 0 0 2.35-.95l3.77-16.7a1 1 0 0 0-1.36-1.14L1.45 9.36a1 1 0 0 0 .08 1.88l5.92 1.8 13.68-8.5L9.18 15.42Z"/></svg>-->
-<!--        </a>-->
-<!--        <a class="icon-link" href="https://github.com/Daniil-java" target="_blank" rel="noopener" aria-label="Открыть GitHub">-->
-<!--          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 .5a12 12 0 0 0-3.79 23.4c.6.11.82-.26.82-.58v-2.03c-3.34.73-4.04-1.61-4.04-1.61-.55-1.4-1.36-1.77-1.36-1.77-1.11-.76.08-.74.08-.74 1.23.09 1.88 1.27 1.88 1.27 1.09 1.87 2.86 1.33 3.56 1.02.11-.79.43-1.33.77-1.63-2.66-.3-5.46-1.33-5.46-5.93 0-1.31.47-2.38 1.25-3.22-.13-.31-.54-1.56.12-3.26 0 0 1.02-.33 3.34 1.23a11.6 11.6 0 0 1 6.08 0c2.32-1.56 3.34-1.23 3.34-1.23.66 1.7.25 2.95.12 3.26.78.84 1.25 1.91 1.25 3.22 0 4.61-2.8 5.62-5.48 5.92.44.38.83 1.12.83 2.26v3.35c0 .32.22.69.83.58A12 12 0 0 0 12 .5Z"/></svg>-->
-<!--        </a>-->
-
         <button id="themeToggle" class="theme-toggle" type="button" aria-pressed="false" aria-label="Переключить тему День/Ночь">
           <span aria-hidden="true">🌓</span><span class="muted">Тема</span>
         </button>
@@ -610,30 +593,32 @@
     <!-- ===== FULLSCREEN HERO ===== -->
     <section class="hero" aria-labelledby="hero-title">
       <div class="hero-inner">
+        <img class="avatar" src="/images/avatar.webp" alt="Даниил Куклин" width="112" height="112">
         <small>Привет, я</small>
-        <div class="typing-line" aria-live="polite" aria-atomic="true">
-          <h1 id="hero-title" class="typing-name" data-typing="Даниил Куклин">‎</h1>
+        <div class="typing-line">
+          <h1 id="hero-title" class="typing-name" data-typing="Даниил Куклин" aria-label="Даниил Куклин">Даниил Куклин</h1>
           <span class="typing-cursor" aria-hidden="true"></span>
         </div>
-        <div class="hero-sub">Backend Developer | Java | Spring Framework</div>
+        <div class="hero-sub">Java Backend Developer · Spring Boot · PostgreSQL · Docker</div>
+        <div class="status"><span class="status__dot" aria-hidden="true"></span>Открыт к предложениям</div>
         <div class="hero-actions" role="group" aria-label="Действия">
-            <a class="btn btn-primary" href="/assets/kuklin.pdf" target="_blank" aria-label="Резюме">Резюме</a>
-            <a class="btn btn-ghost" href="https://github.com/Daniil-java" target="_blank" rel="noopener" aria-label="Открыть GitHub"> Посмотреть Github</a>
+            <a class="btn btn-primary" href="/assets/kuklin.pdf" target="_blank" rel="noopener">Резюме в PDF</a>
+            <a class="btn btn-ghost" href="#contacts" data-nav>Связаться</a>
+            <a class="btn btn-ghost" href="https://github.com/Daniil-java" target="_blank" rel="noopener">GitHub</a>
         </div>
       </div>
     </section>
 
-    <!-- ===== НИЖЕ — СОДЕРЖАНИЕ (пример) ===== -->
     <section id="about" class="section" aria-labelledby="about-title">
       <div class="container">
         <h2 id="about-title" class="section-title">Обо мне</h2>
         <div class="about-grid">
           <article class="card" aria-label="Кратко обо мне">
-            <p>Я Java‑разработчик с трёхлетним опытом фриланса. Создаю веб‑приложения, сервисы и ботов, уделяя внимание чистоте кода, продуманной архитектуре и удобству интерфейсов. </p>
-            <p>В работе ценю прозрачность и предсказуемость, умею быстро адаптироваться к новым задачам и интегрировать сторонние решения. Опыт со Spring Boot, PostgreSQL, Docker и CI/CD помогает мне не только писать код, но и выстраивать надёжные процессы. </p>
-            <p>Для меня важно не только решать задачи, но и создавать ценность для пользователей. Открыт к новым возможностям и профессиональному развитию.</p>
+            <p>Java-разработчик. С 2023 года занимаюсь коммерческой разработкой на фрилансе: веб-приложения, сервисы и Telegram-боты — от сбора требований до деплоя и поддержки.</p>
+            <p>Пишу REST API на Spring Boot, настраиваю авторизацию (Spring Security, JWT, OAuth2), миграции БД (Liquibase), интеграции с внешними API — Google Calendar и Sheets, OpenAI, Telegram. Упаковываю сервисы в Docker и выстраиваю CI/CD.</p>
+            <p>Сам общаюсь с заказчиками: разбираю требования, предлагаю решения и отвечаю за результат. Открыт к предложениям о работе Backend-разработчиком.</p>
           </article>
-          <div class="skills-grid" role="list" aria-label="Софт-скиллы">
+          <div class="skills-grid" role="list" aria-label="Чем занимаюсь">
               <div class="skill" role="listitem">
                   <h3>Чистый код</h3>
                   <p class="muted">Поддерживаемость и читаемость.</p>
@@ -666,99 +651,59 @@
 
     <section id="stack" class="section" aria-labelledby="stack-title">
       <div class="container">
-        <h2 id="stack-title" class="section-title">Стэк технологий</h2>
-        <div class="stack-grid" role="list">
+        <h2 id="stack-title" class="section-title">Стек технологий</h2>
 
-          <div class="stack-item" role="listitem">
-            <img src="assets/Java.webp" alt="Java logo" width="42" height="42">
-            <span>Java</span>
+        <div class="stack-group">
+          <h3>Backend</h3>
+          <div class="stack-grid" role="list">
+            <div class="stack-item" role="listitem"><img src="/assets/Java.webp" alt="" width="64" height="64"><span>Java</span></div>
+            <div class="stack-item" role="listitem"><img src="/assets/SpringBoot.webp" alt="" width="64" height="64"><span>Spring Boot</span></div>
           </div>
+          <ul class="chips" aria-label="Библиотеки и фреймворки">
+            <li>Spring Security</li><li>Spring Data JPA / Hibernate</li><li>OpenFeign</li><li>MapStruct</li><li>Lombok</li><li>JUnit</li><li>OpenAPI / Swagger</li><li>JWT / OAuth2</li>
+          </ul>
+        </div>
 
-          <div class="stack-item" role="listitem">
-            <img src="assets/SpringBoot.webp" alt="spring logo" width="42" height="42">
-            <span>Spring</span>
+        <div class="stack-group">
+          <h3>Базы данных</h3>
+          <div class="stack-grid" role="list">
+            <div class="stack-item" role="listitem"><img src="/assets/PostgresSQL.webp" alt="" width="64" height="64"><span>PostgreSQL</span></div>
+            <div class="stack-item" role="listitem"><img src="/assets/MySQL.webp" alt="" width="64" height="64"><span>MySQL</span></div>
+            <div class="stack-item" role="listitem"><img src="/assets/MongoDB.webp" alt="" width="64" height="64"><span>MongoDB</span></div>
+            <div class="stack-item" role="listitem"><img src="/assets/redis.svg" alt="" width="64" height="64"><span>Redis</span></div>
+            <div class="stack-item" role="listitem"><img src="/assets/dbmigrate.png" alt="" width="64" height="64"><span>Liquibase / Flyway</span></div>
           </div>
+        </div>
 
-            <div class="stack-item" role="listitem">
-                <img src="assets/sql.png" alt="SQL logo" width="42" height="42">
-                <span>SQL</span>
-            </div>
+        <div class="stack-group">
+          <h3>Интеграции и очереди</h3>
+          <div class="stack-grid" role="list">
+            <div class="stack-item" role="listitem"><img src="/assets/kafka.svg" alt="" width="64" height="64"><span>Apache Kafka</span></div>
+            <div class="stack-item" role="listitem"><img src="/assets/rabbitmq.svg" alt="" width="64" height="64"><span>RabbitMQ</span></div>
+          </div>
+          <ul class="chips" aria-label="Внешние API">
+            <li>Telegram Bot API</li><li>Google Calendar / Sheets API</li><li>OpenAI API</li><li>Gemini</li>
+          </ul>
+        </div>
 
-            <div class="stack-item" role="listitem">
-                <img src="assets/PostgresSQL.webp" alt="postgres logo" width="42" height="42">
-                <span>PostgresSQL</span>
-            </div>
+        <div class="stack-group">
+          <h3>Инфраструктура и инструменты</h3>
+          <div class="stack-grid" role="list">
+            <div class="stack-item" role="listitem"><img src="/assets/docker.png" alt="" width="64" height="64"><span>Docker</span></div>
+            <div class="stack-item" role="listitem"><img src="/assets/Git.webp" alt="" width="64" height="64"><span>Git</span></div>
+            <div class="stack-item" role="listitem"><img src="/assets/GitHub.webp" alt="" width="64" height="64"><span>GitHub</span></div>
+            <div class="stack-item" role="listitem"><img src="/assets/Postman.webp" alt="" width="64" height="64"><span>Postman</span></div>
+            <div class="stack-item" role="listitem"><img src="/assets/IntelliJIDEA.webp" alt="" width="64" height="64"><span>IntelliJ IDEA</span></div>
+          </div>
+        </div>
 
-            <div class="stack-item" role="listitem">
-                <img src="assets/MongoDB.webp" alt="MongoDB logo" width="42" height="42">
-                <span>MongoDB</span>
-            </div>
-
-            <div class="stack-item" role="listitem">
-                <img src="assets/MySQL.webp" alt="MySQL logo" width="42" height="42">
-                <span>MySQL</span>
-            </div>
-            
-            <div class="stack-item" role="listitem">
-                <img src="assets/dbmigrate.png" alt="DB Migrate logo" width="42" height="42">
-                <span>DB Migrate</span>
-            </div>
-
-            <div class="stack-item" role="listitem">
-                <img src="assets/JavaScript.webp" alt="JavaScript logo" width="42" height="42">
-                <span>JavaScript</span>
-            </div>
-
-            <div class="stack-item" role="listitem">
-                <img src="assets/HTML.webp" alt="HTML logo" width="42" height="42">
-                <span>HTML</span>
-            </div>
-
-            <div class="stack-item" role="listitem">
-                <img src="assets/CSS.webp" alt="CSS logo" width="42" height="42">
-                <span>CSS</span>
-            </div>
-
-            <div class="stack-item" role="listitem">
-                <img src="assets/docker.png" alt="Docker logo" width="42" height="42">
-                <span>Docker</span>
-            </div>
-
-            <div class="stack-item" role="listitem">
-                <img src="assets/Postman.webp" alt="Postman logo" width="42" height="42">
-                <span>Postman</span>
-            </div>
-
-            <div class="stack-item" role="listitem">
-                <img src="assets/redis.svg" alt="Redis logo" width="42" height="42">
-                <span>Redis</span>
-            </div>
-
-            <div class="stack-item" role="listitem">
-                <img src="assets/kafka.svg" alt="Kafka logo" width="42" height="42">
-                <span>Apache Kafka</span>
-            </div>
-
-            <div class="stack-item" role="listitem">
-                <img src="assets/rabbitmq.svg" alt="rabbitmq logo" width="42" height="42">
-                <span>RabbitMQ</span>
-            </div>
-
-            <div class="stack-item" role="listitem">
-                <img src="assets/Git.webp" alt="Git logo" width="42" height="42">
-                <span>Git</span>
-            </div>
-
-            <div class="stack-item" role="listitem">
-                <img src="assets/GitHub.webp" alt="GitHub logo" width="42" height="42">
-                <span>GitHub</span>
-            </div>
-
-            <div class="stack-item" role="listitem">
-                <img src="assets/IntelliJIDEA.webp" alt="IntelliJIDEA logo" width="42" height="42">
-                <span>IntelliJ IDEA</span>
-            </div>
-
+        <div class="stack-group">
+          <h3>Frontend (для админок и лендингов)</h3>
+          <div class="stack-grid" role="list">
+            <div class="stack-item" role="listitem"><img src="/assets/HTML.webp" alt="" width="64" height="64"><span>HTML</span></div>
+            <div class="stack-item" role="listitem"><img src="/assets/CSS.webp" alt="" width="64" height="64"><span>CSS</span></div>
+            <div class="stack-item" role="listitem"><img src="/assets/JavaScript.webp" alt="" width="64" height="64"><span>JavaScript</span></div>
+          </div>
         </div>
       </div>
     </section>
@@ -769,10 +714,10 @@
         <div class="exp-list">
           <article class="exp" aria-labelledby="exp1-title">
             <header>
-              <h3 id="exp1-title">Java-разработчик</h3>
-              <div class="meta">Проектная деятельность в сфере разработки • <time datetime="2023-01">Янв 2023</time> — <time datetime="2025-09">Сент 2025</time></div>
+              <h3 id="exp1-title">Java Backend Developer (фриланс)</h3>
+              <div class="meta">Заказные проекты и собственные продукты • <time datetime="2023-01">Янв 2023</time> — по настоящее время</div>
             </header>
-            <div class="muted">Стэк: Java | Spring Framework | Liquibase/Flyway | PostgreSQL | Docker | OpenFeign | Telegram Bot API | Google API | OpenAI</div>
+            <div class="muted">Стек: Java · Spring Boot · Spring Security · JPA/Hibernate · Liquibase/Flyway · PostgreSQL · Docker · OpenFeign · Telegram Bot API · Google API · OpenAI</div>
             <ul>
 
                 <li><b>Основные направления работы:</b>
@@ -789,7 +734,8 @@
                             <b>Система управления задачами с помидоро‑таймером и интеграцией OpenAI</b><br>
                             Стек: Java, Spring Framework, Liquibase, PostgreSQL, Telegram Bot API, OpenFeign, Docker.<br>
                             Реализовал автоматическое разбиение задач на подзадачи с помощью OpenAI.<br>
-                            Контейнеризация и деплой приложения в Docker.
+                            Контейнеризация и деплой приложения в Docker.<br>
+                            <a href="https://t.me/taskGPT_Bot" target="_blank" rel="noopener">@taskGPT_Bot</a>
                         </li>
                         <li>
                             <b>Telegram‑бот для парсинга вакансий</b><br>
@@ -798,19 +744,27 @@
                         </li>
                         <li>
                             <b>Ассистент‑бот с интеграцией Google API</b><br>
-                            Приём голосовых и текстовых сообщений, автоматическое добавление задач в Google Calendar.
+                            Приём голосовых и текстовых сообщений, автоматическое добавление задач в Google Calendar.<br>
+                            <a href="https://t.me/personal_calen_bot" target="_blank" rel="noopener">@personal_calen_bot</a>
                         </li>
                         <li>
                             <b>Telegram‑бот для подсчёта калорий</b><br>
-                            Распознавание блюд по фото или описанию, расчёт КБЖУ с использованием AI‑моделей.
+                            Распознавание блюд по фото или описанию, расчёт КБЖУ с использованием AI‑моделей.<br>
+                            <a href="https://t.me/calorydairy_bot" target="_blank" rel="noopener">@calorydairy_bot</a>
                         </li>
                         <li>
                             <b>Telegram‑бот для отслеживания авиарейсов</b><br>
-                            Получение информации по номеру рейса и отправка обновлений пользователю в реальном времени.
+                            Получение информации по номеру рейса и отправка обновлений пользователю в реальном времени.<br>
+                            <a href="https://t.me/deparr_bot" target="_blank" rel="noopener">@deparr_bot</a>
                         </li>
                         <li>
                             <b>Микросервис для работы с меню и интеграция с веб‑приложением</b><br>
                             Настройка взаимодействия между ботом и веб‑частью, маршрутизация и фильтры на уровне gateway.
+                        </li>
+                        <li>
+                            <b>Telegram‑бот для бронирования ресурсов</b><br>
+                            Бронирование переговорных и кабинетов с автоматической записью в Google Sheets.<br>
+                            <a href="https://t.me/slotmanage_bot" target="_blank" rel="noopener">@slotmanage_bot</a>
                         </li>
                         <li>
                             <b>Разработка лендингов и промо‑страниц</b><br>
@@ -831,17 +785,17 @@
 
           <div class="card">
               <h3>Прикладная информатика</h3>
-              <p class="muted">Университет Синергия • Магистратура • <time datetime="2025">2025</time> — <time datetime="2027">2027</time></p>
+              <p class="muted">Университет «Синергия» • Магистратура • <time datetime="2025">2025</time> — <time datetime="2027">2027</time> (обучаюсь)</p>
           </div>
 
         <div class="card">
           <h3>Факультет Java-разработки</h3>
-          <p class="muted">Geekbrains • Курсы профессиональной перподготовки • <time datetime="2020">2020</time> — <time datetime="2022">2022</time></p>
+          <p class="muted">GeekBrains • Профессиональная переподготовка • <time datetime="2020">2020</time> — <time datetime="2022">2022</time></p>
         </div>
 
           <div class="card">
               <h3>Факультет цифровых технологий и химического инжиниринга</h3>
-              <p class="muted">РХТУ им. Д.И.Менделеева • Бакалавриат • <time datetime="2017">2017</time> — <time datetime="2021">2021</time></p>
+              <p class="muted">РХТУ им. Д. И. Менделеева • Бакалавриат • <time datetime="2017">2017</time> — <time datetime="2021">2021</time></p>
           </div>
 
       </div>
@@ -866,11 +820,8 @@
                               <small class="muted">Почта</small>
                           </div>
 
-                          <div class="ct-value" data-state="hidden">
-                              <!-- Плейсхолдер (виден по умолчанию) -->
-                              <button class="ct-reveal btn btn-ghost" type="button" aria-label="Показать email">Показать</button>
+                          <div class="ct-value" data-state="shown">
 
-                              <!-- Реальное значение (после клика) -->
                               <div class="ct-real">
                                   <a class="pill" href="mailto:saponembigas@gmail.com">saponembigas@gmail.com</a>
                                   <button class="icon-btn ct-copy" type="button" data-copy="saponembigas@gmail.com" aria-label="Скопировать email">
@@ -899,8 +850,7 @@
                               <small class="muted">Быстрее всего</small>
                           </div>
 
-                          <div class="ct-value" data-state="hidden">
-                              <button class="ct-reveal btn btn-ghost" type="button" aria-label="Показать Telegram">Показать</button>
+                          <div class="ct-value" data-state="shown">
                               <div class="ct-real">
                                   <a class="pill" href="https://t.me/kuklin_daniil" target="_blank" rel="noopener">@kuklin_daniil</a>
                                   <button class="icon-btn ct-copy" type="button" data-copy="@kuklin_daniil" aria-label="Скопировать Telegram">
@@ -928,8 +878,7 @@
                               <small class="muted">Код и проекты</small>
                           </div>
 
-                          <div class="ct-value" data-state="hidden">
-                              <button class="ct-reveal btn btn-ghost" type="button" aria-label="Показать GitHub">Показать</button>
+                          <div class="ct-value" data-state="shown">
                               <div class="ct-real">
                                   <a class="pill" href="https://github.com/Daniil-java" target="_blank" rel="noopener">github.com/Daniil-java</a>
                                   <button class="icon-btn ct-copy" type="button" data-copy="https://github.com/Daniil-java" aria-label="Скопировать ссылку GitHub">
@@ -953,7 +902,7 @@
 
   <footer role="contentinfo">
     <div class="container foot">
-      <div>© <span id="year"></span> Daniil Kuklin. Все права защищены.</div>
+      <div>© <span id="year"></span> Даниил Куклин · <a href="/freelance">Услуги для заказчиков</a></div>
       <div class="icons" aria-label="Соцссылки">
         <a class="icon-link" href="mailto:saponembigas@gmail.com" aria-label="Email">
           <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M3.5 7.5 12 13l8.5-5.5M4 6h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z"/></svg>
@@ -983,35 +932,27 @@
     // Год в футере
     $('#year').textContent = new Date().getFullYear();
 
-    // Тема
+    // Тема (начальная выставляется в <head>, здесь — переключатель)
     const THEME_KEY='dk_theme', htmlEl=document.documentElement, themeBtn=$('#themeToggle');
-    function setTheme(t, persist=true){ htmlEl.setAttribute('data-theme', t); themeBtn.setAttribute('aria-pressed', String(t==='dark')); if(persist) localStorage.setItem(THEME_KEY,t); const m=$('meta[name="color-scheme"]'); if(m) m.setAttribute('content', t==='dark'?'dark light':'light dark'); }
-    (function(){ const saved=localStorage.getItem(THEME_KEY); if(saved){setTheme(saved,false)} else {const prefersDark=matchMedia('(prefers-color-scheme: dark)').matches; setTheme(prefersDark?'dark':'light',false);} })();
+    function setTheme(t, persist=true){
+        htmlEl.setAttribute('data-theme', t);
+        themeBtn.setAttribute('aria-pressed', String(t==='dark'));
+        if(persist){ try{ localStorage.setItem(THEME_KEY,t); }catch(e){} }
+    }
+    setTheme(htmlEl.getAttribute('data-theme') || 'light', false);
     themeBtn.addEventListener('click',()=>setTheme(htmlEl.getAttribute('data-theme')==='light'?'dark':'light'));
 
-    // Анимация печати имени
-    // Анимация печати имени (курсор — всегда мигающее "_")
+    // Анимация печати имени. Текст уже в разметке — без JS и для поисковиков имя на месте
     (function typing(){
-        const title  = document.getElementById('hero-title');
-        const txt    = title?.getAttribute('data-typing') || '';
-
-        if (!title) return;
-
-        // Без анимаций — сразу показываем текст
-        if (matchMedia('(prefers-reduced-motion: reduce)').matches){
-            title.textContent = txt;
-            return;
-        }
-
+        const title = document.getElementById('hero-title');
+        if (!title || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        const txt = title.getAttribute('data-typing') || title.textContent;
         let i = 0;
-        const speed = 55; // мс на символ (можно 45–65)
+        title.textContent = '';
         const t = setInterval(() => {
-            title.textContent = txt.slice(0, i++);
-            if (i > txt.length){
-                clearInterval(t);
-                // ничего не переключаем: курсор уже "_"
-            }
-        }, speed);
+            title.textContent = txt.slice(0, ++i);
+            if (i >= txt.length) clearInterval(t);
+        }, 55);
     })();
 
     // Скролл к якорю с учётом шапки
@@ -1019,24 +960,16 @@
     function scrollToHash(hash){ const el=$(hash); if(!el) return; const y=window.scrollY+el.getBoundingClientRect().top-(headerH+8); window.scrollTo({top:y, behavior:'smooth'}); }
     $$('a[data-nav]').forEach(a=>a.addEventListener('click',e=>{ if(a.hash){ e.preventDefault(); history.pushState(null,'',a.hash); scrollToHash(a.hash);} }));
 
-    // Подсветка активного пункта
-    const navLinks=$$('a[data-nav]'); const map=new Map(navLinks.map(a=>[a.getAttribute('href'),a]));
-    const io=new IntersectionObserver((entries)=>{ entries.forEach(en=>{ const id='#'+en.target.id; const link=map.get(id); if(!link) return; if(en.isIntersecting){ navLinks.forEach(x=>x.classList.remove('active')); link.classList.add('active'); if(history.replaceState) history.replaceState(null,'',id); } }); },{ rootMargin:`-${headerH+24}px 0px -60% 0px`, threshold:0.1 });
+    // Подсветка активного пункта (только ссылки шапки)
+    const navLinks=$$('header a[data-nav]'); const map=new Map(navLinks.map(a=>[a.getAttribute('href'),a]));
+    function setActive(link){ navLinks.forEach(x=>x.classList.remove('active')); link?.classList.add('active'); }
+    const io=new IntersectionObserver((entries)=>{ entries.forEach(en=>{ const id='#'+en.target.id; const link=map.get(id); if(link && en.isIntersecting){ setActive(link); history.replaceState(null,'',id); } }); },{ rootMargin:`-${headerH+24}px 0px -60% 0px`, threshold:0.1 });
     ['about','stack','experience','education','contacts'].forEach(id=>{ const s=$('#'+id); if(s) io.observe(s); });
+    $$('a[data-nav]').forEach(a => a.addEventListener('click', () => setActive(map.get(a.getAttribute('href')))));
 
-    // 1) Мгновенная подсветка по клику (ещё до срабатывания observer)
-    navLinks.forEach(a => a.addEventListener('click', () => {
-        navLinks.forEach(x => x.classList.remove('active'));
-        a.classList.add('active');
-    }));
-
-    // 2) Если долистали до низа — всегда подсвечиваем «Контакты»
+    // Если долистали до низа — всегда подсвечиваем «Контакты»
     addEventListener('scroll', () => {
-        const atBottom = Math.ceil(window.scrollY + window.innerHeight) >= document.documentElement.scrollHeight;
-        if (atBottom) {
-            navLinks.forEach(x => x.classList.remove('active'));
-            map.get('#contacts')?.classList.add('active');
-        }
+        if (Math.ceil(window.scrollY + window.innerHeight) >= document.documentElement.scrollHeight) setActive(map.get('#contacts'));
     }, { passive: true });
 
     // ====== Фон-канвас «поток» (лёгкий) ======
@@ -1110,45 +1043,33 @@
       requestAnimationFrame(tick);
     })();
 
-    // Контакты: замена плейсхолдера на контакт без изменения размера
-    (function flatContacts(){
-        document.addEventListener('click', (e)=>{
-            const btn = e.target.closest('.ct-reveal');
-            if (btn){
-                const wrap = btn.closest('.ct-value');
-                if (wrap){
-                    wrap.setAttribute('data-state', 'shown');
-                    // докрутить карточку к центру — значение видно целиком
-                    setTimeout(()=> wrap.closest('.ct-flat')?.scrollIntoView({behavior:'smooth', block:'center'}), 0);
-                }
-            }
-            const cp = e.target.closest('.ct-copy');
-            if (cp){
-                const val = cp.getAttribute('data-copy') || '';
-                navigator.clipboard?.writeText(val).then(()=>{
-                    const old = cp.textContent;
-                    cp.textContent = 'Скопировано!';
-                    setTimeout(()=> cp.textContent = old, 1200);
-                });
-            }
+    // Контакты: копирование. Иконку не затираем — меняем на галочку и возвращаем
+    const CHECK_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5 10 17l9-10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    document.addEventListener('click', (e)=>{
+        const cp = e.target.closest('.ct-copy');
+        if (!cp || !navigator.clipboard) return;
+        navigator.clipboard.writeText(cp.getAttribute('data-copy') || '').then(()=>{
+            if (!cp.dataset.icon) cp.dataset.icon = cp.innerHTML;
+            clearTimeout(cp._copyTimer);
+            cp.innerHTML = CHECK_ICON;
+            cp.classList.add('copied');
+            cp.title = 'Скопировано';
+            cp._copyTimer = setTimeout(()=>{ cp.innerHTML = cp.dataset.icon; cp.classList.remove('copied'); cp.removeAttribute('title'); }, 1200);
         });
-    })();
+    });
 
     (function mobileDrawer(){
         const btn = document.getElementById('menuToggle');
         const drawer = document.getElementById('mobileDrawer');
         if (!btn || !drawer) return;
 
-        const panel = drawer.querySelector('.drawer-panel');
         const backdrop = drawer.querySelector('.drawer-backdrop');
         const list = drawer.querySelector('#drawerList');
 
-        // Берём пункты из хедера (a[data-nav]) и клонируем в панель без data-nav
-        const headerLinks = Array.from(document.querySelectorAll('header a[data-nav]'));
-        list.innerHTML = headerLinks.map(a =>
+        // Берём пункты из хедера и клонируем в панель без data-nav
+        list.innerHTML = navLinks.map(a =>
             `<li><a class="drawer-link" href="${a.getAttribute('href')}">${a.textContent.trim()}</a></li>`
         ).join('');
-
         const links = drawer.querySelectorAll('.drawer-link');
 
         const open = () => {
@@ -1158,7 +1079,7 @@
                 btn.setAttribute('aria-expanded', 'true');
                 drawer.setAttribute('aria-hidden', 'false');
                 document.body.classList.add('no-scroll');
-                panel.focus?.({preventScroll:true});
+                links[0]?.focus({ preventScroll: true });
             });
         };
         const close = () => {
@@ -1169,37 +1090,18 @@
             setTimeout(() => { drawer.hidden = true; }, 220);
         };
 
-        btn.addEventListener('click', () =>
-            drawer.classList.contains('open') ? close() : open()
-        );
+        btn.addEventListener('click', () => drawer.classList.contains('open') ? close() : open());
         backdrop.addEventListener('click', close);
-        addEventListener('keydown', e => { if (e.key === 'Escape' && drawer.classList.contains('open')) close(); });
+        addEventListener('keydown', e => { if (e.key === 'Escape' && drawer.classList.contains('open')) { close(); btn.focus(); } });
 
-        // Плавный скролл к секции (используем твою функцию, если есть)
-        function goTo(hash){
-            const header = document.querySelector('.site-header');
-            const offset = (window.headerH || header?.offsetHeight || 64) + 8;
-            const el = document.querySelector(hash);
-            if (!el) return;
-            const y = el.getBoundingClientRect().top + window.scrollY - offset;
-            window.scrollTo({ top: y, behavior: 'smooth' });
-        }
-
-        // Клик по пунктам панели: закрыть, подсветить пункт в ХЕДЕРЕ и скролльнуть
+        // Клик по пунктам панели: закрыть, подсветить пункт в хедере и скролльнуть
         links.forEach(a => a.addEventListener('click', (e) => {
             e.preventDefault();
             const hash = a.getAttribute('href');
             close();
-
-            const headerLink = document.querySelector(`header a[data-nav][href="${hash}"]`);
-            if (headerLink) {
-                document.querySelectorAll('header a[data-nav]').forEach(x => x.classList.remove('active'));
-                headerLink.classList.add('active');
-                history.pushState?.(null, '', hash);
-            }
-
-            if (typeof window.scrollToHash === 'function') window.scrollToHash(hash);
-            else goTo(hash);
+            setActive(map.get(hash));
+            history.pushState(null, '', hash);
+            scrollToHash(hash);
         }));
 
         // Авто-закрытие при расширении до десктопа
@@ -1207,7 +1109,6 @@
             if (window.innerWidth > 560 && drawer.classList.contains('open')) close();
         }, { passive:true });
     })();
-
   </script>
 
 </body>

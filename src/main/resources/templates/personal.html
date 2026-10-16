@@ -3,11 +3,23 @@
 <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
-    <title>DK_ — Java Developer | Landing</title>
+    <title>Даниил Куклин — Java Backend Developer</title>
     <meta name="description"
-          content="Личный лендинг Java-разработчика: Главный экран, Обо мне, Чем я полезен, Технологии, Портфолио, Контакты."/>
+          content="Даниил Куклин — Java-разработчик: бэкенд на Spring Boot, Telegram-боты, AI-интеграции. Резюме, услуги, примеры работ и контакты."/>
+    <meta property="og:type" content="website"/>
+    <meta property="og:title" content="Даниил Куклин — Java Backend Developer"/>
+    <meta property="og:description" content="Бэкенд на Spring Boot, Telegram-боты, AI-интеграции. Резюме, услуги и примеры работ."/>
     <meta name="color-scheme" content="light dark"/>
-    <style>
+    <script>
+        // Тема до первой отрисовки — без вспышки светлой темы
+        (function(){ let t=null; try{ t=localStorage.getItem('dk_theme'); }catch(e){}
+          if(!t) t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
+          document.documentElement.setAttribute('data-theme', t); })();
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700;800&display=swap" />
+  <style>
         /* ========= Палитра / тема ========= */
         :root {
             --header-h: 64px;
@@ -46,9 +58,9 @@
             box-sizing: border-box
         }
 
+        /* clip, а не hidden: hidden делал body отдельным скролл-контейнером вместо окна */
         html, body {
-            height: 100%;
-            overflow-x: hidden
+            overflow-x: clip
         }
 
         body {
@@ -474,7 +486,7 @@
         }
 
         .card.work .thumb {
-            aspect-ratio: 16/9;
+            aspect-ratio: 4/3;
             position: relative;
             overflow: hidden;
             background: var(--panel);
@@ -484,7 +496,7 @@
         .card.work .thumb img {
             width: 100%;
             height: 100%;
-            object-fit: cover;
+            object-fit: contain;
             display: block
         }
 
@@ -892,9 +904,6 @@
             display: none
         }
 
-        .ct-value[data-state="shown"] .ct-reveal {
-            display: none
-        }
 
         .ct-value[data-state="shown"] .ct-real {
             display: flex;
@@ -976,15 +985,6 @@
             justify-self: end;
         }
 
-        /* Контакты: привести кнопку "Показать" к 38px и без тени */
-        .ct-value .ct-reveal.btn {
-            min-height: 38px;
-            height: 38px;
-            padding: 0 12px;
-            border-radius: 10px; /* под иконку-кнопку (у неё 10px) */
-            box-shadow: none; /* тень убираем — внутри карточки лишняя */
-            border-color: var(--border);
-        }
 
         /* Контакты: выровнять кнопку копирования справа и зафиксировать высоту строки */
         .ct-head:has(.ct-value[data-state="shown"]) .ct-value {
@@ -1029,7 +1029,51 @@
             }
         }
 
-    </style>
+        /* ===== Hero главной: фото и два пути — резюме и услуги ===== */
+        .hero { min-height: calc(80svh - var(--header-h)); padding: 32px 0; }
+        .avatar {
+            width: 112px; height: 112px; border-radius: 50%; margin-bottom: 18px;
+            object-fit: cover; background: var(--panel); border: 4px solid var(--panel);
+            box-shadow: 0 10px 30px color-mix(in oklab, var(--accent-2) 35%, transparent);
+        }
+        .paths { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; width: min(640px, 100%); margin-top: 1.4rem; }
+        .path {
+            display: flex; flex-direction: column; gap: 4px; text-align: left;
+            padding: 16px 18px; border-radius: var(--radius); text-decoration: none; color: var(--text);
+            background: var(--panel); border: 1px solid var(--border); box-shadow: var(--shadow);
+            transition: transform .12s ease, border-color .12s ease;
+        }
+        .path:hover { transform: translateY(-2px); text-decoration: none; border-color: color-mix(in oklab, var(--accent-2) 60%, var(--border)); }
+        .path small { color: var(--muted); font-size: .85rem; }
+        .path strong { font-size: 1.05rem; }
+        .path span { color: var(--brand); font-weight: 600; font-size: .9rem; margin-top: 6px; }
+        .path--primary { background: color-mix(in oklab, var(--accent-2) 10%, var(--panel)); border-color: color-mix(in oklab, var(--accent-2) 45%, var(--border)); }
+        .icon-btn.copied { color: #16a34a; border-color: #16a34a; }
+        .foot a { color: var(--muted); }
+        @media (max-width: 560px) {
+            .avatar { width: 88px; height: 88px; }
+            .paths { grid-template-columns: 1fr; }
+        }
+      /* ===== Типографика: текст — Inter, акценты — JetBrains Mono ===== */
+    :root{
+      --font-sans:"Inter", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      --font-mono:"JetBrains Mono", Consolas, "Courier New", monospace;
+    }
+    html, body{ font-family:var(--font-sans); }
+    .logo, h1, .section-title, .hero small, .price, .badge,
+    .stack-item span, .chips li, .exp .meta, .pill{ font-family:var(--font-mono); }
+    h2{ letter-spacing:-.01em; }
+    h3{ font-weight:700; letter-spacing:-.005em; }
+    p, li{ font-size:clamp(15px,1.1vw,17px); }
+    .hero-sub{ text-wrap:balance; }
+
+    /* Курсор "_" — обычный символ того же размера, что и имя, стоит на базовой линии */
+    .typing-line{ --name-size:clamp(36px,7vw,80px); }
+    .hero--split .typing-line{ --name-size:clamp(34px,5.2vw,68px); }
+    .typing-name{ font-size:var(--name-size); }
+    .typing-cursor{ width:auto; height:auto; font:800 var(--name-size)/1.05 var(--font-mono); }
+    .typing-cursor::after{ content:"_"; display:inline; width:auto; border:0; transform:none; }
+  </style>
 </head>
 <body>
 <canvas id="flow" aria-hidden="true"></canvas>
@@ -1094,19 +1138,28 @@
     <!-- ===== Hero ===== -->
     <section class="hero" aria-labelledby="hero-title">
         <div class="hero-inner">
+            <img class="avatar" src="/images/avatar.webp" alt="Даниил Куклин" width="112" height="112">
             <small>Привет, я</small>
-            <div class="typing-line" aria-live="polite" aria-atomic="true">
-                <h1 id="hero-title" class="typing-name" data-typing="Даниил Куклин">‎</h1>
+            <div class="typing-line">
+                <h1 id="hero-title" class="typing-name" data-typing="Даниил Куклин" aria-label="Даниил Куклин">Даниил Куклин</h1>
                 <span class="typing-cursor" aria-hidden="true"></span>
             </div>
-            <div class="hero-sub">Java Developer | Spring, PostgreSQL, Docker</div>
-            <div class="badges" aria-label="Факты доверия">
-                <span class="badge">💬 На связи в течение дня</span>
-                <span class="badge">⚙️ Чистый код и документация</span>
-            </div>
+            <div class="hero-sub">Java Backend Developer · Spring Boot · Telegram-боты · AI-интеграции</div>
+            <nav class="paths" aria-label="Куда дальше">
+                <a class="path path--primary" href="/resume">
+                    <small>Для работодателей</small>
+                    <strong>Резюме</strong>
+                    <span>Опыт, стек, образование →</span>
+                </a>
+                <a class="path" href="/freelance">
+                    <small>Для заказчиков</small>
+                    <strong>Услуги и цены</strong>
+                    <span>Боты, бэкенд, AI →</span>
+                </a>
+            </nav>
             <div class="hero-actions" role="group" aria-label="Действия">
-                <a class="btn btn-primary" href="#portfolio">Посмотреть проекты</a>
-                <a class="btn btn-ghost" href="#contacts">Связаться</a>
+                <a class="btn btn-ghost" href="#portfolio" data-nav>Примеры работ</a>
+                <a class="btn btn-ghost" href="#contacts" data-nav>Связаться</a>
             </div>
         </div>
     </section>
@@ -1117,10 +1170,12 @@
             <h2 id="about-title" class="section-title">Обо мне</h2>
             <div class="about-grid">
                 <article class="card">
-                    <p>Я Java-разработчик. Делаю веб-сервисы, бэкенд-API и телеграм-ботов. Мне важны предсказуемые
-                        сроки, читаемый код и внятные интеграции.</p>
-                    <p>Использую Spring Boot, PostgreSQL, Docker, CI/CD. Привычка: фиксировать чек-листы и «готово» до
-                        старта.</p>
+                    <p>Я Java-разработчик. С 2023 года делаю веб-сервисы, бэкенд-API и Telegram-ботов — от сбора
+                        требований до деплоя. Мне важны предсказуемые сроки, читаемый код и внятные интеграции.</p>
+                    <p>Использую Spring Boot, PostgreSQL, Docker, CI/CD. Привычка: фиксировать чек-лист и критерии
+                        «готово» до старта.</p>
+                    <p>Подробнее — в <a href="/resume">резюме</a>, а если нужен разработчик под задачу —
+                        на странице <a href="/freelance">услуг</a>.</p>
                 </article>
                 <div class="skills-grid" role="list" aria-label="Сильные стороны">
                     <div class="skill" role="listitem"><h3>Чистый код</h3>
@@ -1139,96 +1194,96 @@
     <!-- ===== Технологии ===== -->
     <section id="stack" class="section" aria-labelledby="stack-title">
         <div class="container">
-            <h2 id="stack-title" class="section-title">Стэк технологий</h2>
+            <h2 id="stack-title" class="section-title">Стек технологий</h2>
             <div class="stack-grid" role="list">
 
                 <div class="stack-item" role="listitem">
-                    <img src="assets/Java.webp" alt="Java logo" width="42" height="42">
+                    <img src="/assets/Java.webp" alt="" width="42" height="42">
                     <span>Java</span>
                 </div>
 
                 <div class="stack-item" role="listitem">
-                    <img src="assets/SpringBoot.webp" alt="spring logo" width="42" height="42">
-                    <span>Spring</span>
+                    <img src="/assets/SpringBoot.webp" alt="" width="42" height="42">
+                    <span>Spring Boot</span>
                 </div>
 
                 <div class="stack-item" role="listitem">
-                    <img src="assets/sql.png" alt="SQL logo" width="42" height="42">
+                    <img src="/assets/sql.png" alt="" width="42" height="42">
                     <span>SQL</span>
                 </div>
 
                 <div class="stack-item" role="listitem">
-                    <img src="assets/PostgresSQL.webp" alt="postgres logo" width="42" height="42">
-                    <span>PostgresSQL</span>
+                    <img src="/assets/PostgresSQL.webp" alt="" width="42" height="42">
+                    <span>PostgreSQL</span>
                 </div>
 
                 <div class="stack-item" role="listitem">
-                    <img src="assets/MongoDB.webp" alt="MongoDB logo" width="42" height="42">
+                    <img src="/assets/MongoDB.webp" alt="" width="42" height="42">
                     <span>MongoDB</span>
                 </div>
 
                 <div class="stack-item" role="listitem">
-                    <img src="assets/MySQL.webp" alt="MySQL logo" width="42" height="42">
+                    <img src="/assets/MySQL.webp" alt="" width="42" height="42">
                     <span>MySQL</span>
                 </div>
 
                 <div class="stack-item" role="listitem">
-                    <img src="assets/dbmigrate.png" alt="DB Migrate logo" width="42" height="42">
-                    <span>DB Migrate</span>
+                    <img src="/assets/dbmigrate.png" alt="" width="42" height="42">
+                    <span>Liquibase / Flyway</span>
                 </div>
 
                 <div class="stack-item" role="listitem">
-                    <img src="assets/JavaScript.webp" alt="JavaScript logo" width="42" height="42">
+                    <img src="/assets/JavaScript.webp" alt="" width="42" height="42">
                     <span>JavaScript</span>
                 </div>
 
                 <div class="stack-item" role="listitem">
-                    <img src="assets/HTML.webp" alt="HTML logo" width="42" height="42">
+                    <img src="/assets/HTML.webp" alt="" width="42" height="42">
                     <span>HTML</span>
                 </div>
 
                 <div class="stack-item" role="listitem">
-                    <img src="assets/CSS.webp" alt="CSS logo" width="42" height="42">
+                    <img src="/assets/CSS.webp" alt="" width="42" height="42">
                     <span>CSS</span>
                 </div>
 
                 <div class="stack-item" role="listitem">
-                    <img src="assets/docker.png" alt="Docker logo" width="42" height="42">
+                    <img src="/assets/docker.png" alt="" width="42" height="42">
                     <span>Docker</span>
                 </div>
 
                 <div class="stack-item" role="listitem">
-                    <img src="assets/Postman.webp" alt="Postman logo" width="42" height="42">
+                    <img src="/assets/Postman.webp" alt="" width="42" height="42">
                     <span>Postman</span>
                 </div>
 
                 <div class="stack-item" role="listitem">
-                    <img src="assets/redis.svg" alt="Redis logo" width="42" height="42">
+                    <img src="/assets/redis.svg" alt="" width="42" height="42">
                     <span>Redis</span>
                 </div>
 
                 <div class="stack-item" role="listitem">
-                    <img src="assets/kafka.svg" alt="Kafka logo" width="42" height="42">
+                    <img src="/assets/kafka.svg" alt="" width="42" height="42">
                     <span>Apache Kafka</span>
                 </div>
 
                 <div class="stack-item" role="listitem">
-                    <img src="assets/rabbitmq.svg" alt="rabbitmq logo" width="42" height="42">
+                    <img src="/assets/rabbitmq.svg" alt="" width="42" height="42">
                     <span>RabbitMQ</span>
                 </div>
 
                 <div class="stack-item" role="listitem">
-                    <img src="/assets/Git.webp" alt="Git logo" width="42" height="42">
+                    <img src="/assets/Git.webp" alt="" width="42" height="42">
                     <span>Git</span>
                 </div>
 
                 <div class="stack-item" role="listitem">
-                    <img src="/assets/GitHub.webp" alt="GitHub logo" width="42" height="42">
+                    <img src="/assets/GitHub.webp" alt="" width="42" height="42">
                     <span>GitHub</span>
                 </div>
 
                 <div class="stack-item" role="listitem">
-                    <img src="/assets/IntelliJIDEA.webp" alt="IntelliJIDEA logo" width="42" height="42">
+                    <img src="/assets/IntelliJIDEA.webp" alt="" width="42" height="42">
                     <span>IntelliJ IDEA</span>
                 </div>
 
@@ -1251,12 +1306,12 @@
 
                 <div class="hscroll" id="portfolioTrack" tabindex="0"
                      aria-label="Примеры работ (горизонтальная прокрутка)">
-                    <article class="card work" role="listitem">
+                    <article class="card work">
                         <div class="thumb">
                             <img
-                                    src="images/calory.png"
-                                    sizes="(max-width: 600px) 100vw, 600px"
-                                    alt="CALORY"
+                                    src="/images/calory.webp"
+                                    width="640" height="640"
+                                    alt="Скриншот бота CALORY — дневник питания"
                                     loading="lazy" decoding="async">
                         </div>
                         <h3>Бот дневник питания. CALORY</h3>
@@ -1264,31 +1319,31 @@
                             удобный дневник питания. Он превращает подсчёт калорий в простой и наглядный процесс,
                             сохраняя все данные в одном месте.</p>
                         <a class="btn btn-ghost" href="https://t.me/calorydairy_bot" target="_blank" rel="noopener"
-                           aria-label="Открыть кейс">Открыть кейс</a>
+                           aria-label="Открыть CALORY в Telegram">Открыть в Telegram</a>
                     </article>
 
-                    <article class="card work" role="listitem">
+                    <article class="card work">
                         <div class="thumb">
                             <img
-                                    src="images/slot.png"
-                                    sizes="(max-width: 600px) 100vw, 600px"
-                                    alt="SLOTMANAGER"
+                                    src="/images/slot.webp"
+                                    width="640" height="640"
+                                    alt="Скриншот бота для бронирования ресурсов"
                                     loading="lazy" decoding="async">
                         </div>
                         <h3>Бот для бронирования ресурсов</h3>
                         <p class="meta">Бот помогает быстро бронировать ресурсы — от переговорных до рабочих кабинетов —
                             и автоматически фиксирует все записи в Google-таблице. Благодаря гибкой настройке правил он
                             легко подстраивается под любые процессы вашей команды.</p>
-                        <a class="btn btn-ghost" href="https://t.me/booking_bot" target="_blank" rel="noopener"
-                           aria-label="Открыть кейс">Открыть кейс</a>
+                        <a class="btn btn-ghost" href="https://t.me/slotmanage_bot" target="_blank" rel="noopener"
+                           aria-label="Открыть бота бронирования в Telegram">Открыть в Telegram</a>
                     </article>
 
-                    <article class="card work" role="listitem">
+                    <article class="card work">
                         <div class="thumb">
                             <img
-                                    src="images/calen.png"
-                                    sizes="(max-width: 600px) 100vw, 600px"
-                                    alt="CALEN"
+                                    src="/images/calen.webp"
+                                    width="640" height="640"
+                                    alt="Скриншот ИИ-ассистента с Google Calendar"
                                     loading="lazy" decoding="async">
                         </div>
                         <h3>ИИ-ассистент с Google Calendar</h3>
@@ -1296,21 +1351,36 @@
                             простым голосовым или текстовым сообщением. Он автоматически создаёт запись в календаре,
                             экономя время и упрощая планирование.</p>
                         <a class="btn btn-ghost" href="https://t.me/personal_calen_bot" target="_blank" rel="noopener"
-                           aria-label="Открыть кейс">Открыть кейс</a>
+                           aria-label="Открыть ИИ-ассистента в Telegram">Открыть в Telegram</a>
                     </article>
 
-                    <article class="card work" role="listitem">
+                    <article class="card work">
                         <div class="thumb">
                             <img
-                                    src="images/deparr.png"
-                                    sizes="(max-width: 600px) 100vw, 600px"
-                                    alt="DEPARR"
+                                    src="/images/deparr.webp"
+                                    width="640" height="640"
+                                    alt="Скриншот бота-трекера авиарейсов"
                                     loading="lazy" decoding="async">
                         </div>
-                        <h3>Трекер твоих авиарейсов</h3>
-                        <p class="meta">Просто введи номер своего рейса и получай новости о его обновлении.</p>
+                        <h3>Трекер авиарейсов</h3>
+                        <p class="meta">Введите номер рейса — бот покажет информацию о нём и пришлёт уведомление, когда статус обновится.</p>
                         <a class="btn btn-ghost" href="https://t.me/deparr_bot" target="_blank" rel="noopener"
-                           aria-label="Открыть кейс">Открыть кейс</a>
+                           aria-label="Открыть трекер авиарейсов в Telegram">Открыть в Telegram</a>
+                    </article>
+
+                    <article class="card work">
+                        <div class="thumb">
+                            <img
+                                    src="/images/pomidoro.webp"
+                                    width="640" height="640"
+                                    alt="Скриншот помидоро-таймера и трекера задач"
+                                    loading="lazy" decoding="async">
+                        </div>
+                        <h3>Помидоро-таймер и трекер задач</h3>
+                        <p class="meta">Помидоро-таймер и трекер задач с приоритетами и ИИ: помогает фокусироваться,
+                            планировать и автоматически разбивать задачи на подзадачи.</p>
+                        <a class="btn btn-ghost" href="https://t.me/taskGPT_Bot" target="_blank" rel="noopener"
+                           aria-label="Открыть помидоро-таймер в Telegram">Открыть в Telegram</a>
                     </article>
                 </div>
 
@@ -1347,14 +1417,12 @@
                             <small class="muted">Свяжемся по почте</small>
                         </div>
 
-                        <div class="ct-value" data-state="hidden">
-                            <button class="ct-reveal btn btn-ghost" type="button" aria-label="Показать Email">Показать
-                            </button>
+                        <div class="ct-value" data-state="shown">
                             <div class="ct-real">
-                                <span class="pill">saponembigas@gmail.com</span>
+                                <a class="pill" href="mailto:saponembigas@gmail.com">saponembigas@gmail.com</a>
                                 <button class="icon-btn ct-copy" type="button" data-copy="saponembigas@gmail.com"
                                         aria-label="Скопировать email">
-                                    <svg viewBox="0 0 24 24">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true">
                                         <rect x="9" y="9" width="10" height="10" rx="2" ry="2" fill="none"
                                               stroke="currentColor" stroke-width="1.6"/>
                                         <rect x="5" y="5" width="10" height="10" rx="2" ry="2" fill="none"
@@ -1379,15 +1447,12 @@
                             <small class="muted">Быстрее всего</small>
                         </div>
 
-                        <div class="ct-value" data-state="hidden">
-                            <button class="ct-reveal btn btn-ghost" type="button" aria-label="Показать Telegram">
-                                Показать
-                            </button>
+                        <div class="ct-value" data-state="shown">
                             <div class="ct-real">
-                                <a class="pill" href="https://t.me/kuklin_daniil" target="_blank" rel="noopener">@your_username</a>
-                                <button class="icon-btn ct-copy" type="button" data-copy="https://t.me/your_username"
-                                        aria-label="Скопировать ссылку">
-                                    <svg viewBox="0 0 24 24">
+                                <a class="pill" href="https://t.me/kuklin_daniil" target="_blank" rel="noopener">@kuklin_daniil</a>
+                                <button class="icon-btn ct-copy" type="button" data-copy="@kuklin_daniil"
+                                        aria-label="Скопировать Telegram">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true">
                                         <rect x="9" y="9" width="10" height="10" rx="2" ry="2" fill="none"
                                               stroke="currentColor" stroke-width="1.6"/>
                                         <rect x="5" y="5" width="10" height="10" rx="2" ry="2" fill="none"
@@ -1414,15 +1479,12 @@
                             <small class="muted">Код и проекты</small>
                         </div>
 
-                        <div class="ct-value" data-state="hidden">
-                            <button class="ct-reveal btn btn-ghost" type="button" aria-label="Показать GitHub">
-                                Показать
-                            </button>
+                        <div class="ct-value" data-state="shown">
                             <div class="ct-real">
                                 <a class="pill" href="https://github.com/Daniil-java" target="_blank" rel="noopener">github.com/Daniil-java</a>
                                 <button class="icon-btn ct-copy" type="button"
-                                        data-copy="https://github.com/Daniil-java" aria-label="Скопировать ссылку">
-                                    <svg viewBox="0 0 24 24">
+                                        data-copy="https://github.com/Daniil-java" aria-label="Скопировать ссылку GitHub">
+                                    <svg viewBox="0 0 24 24" aria-hidden="true">
                                         <rect x="9" y="9" width="10" height="10" rx="2" ry="2" fill="none"
                                               stroke="currentColor" stroke-width="1.6"/>
                                         <rect x="5" y="5" width="10" height="10" rx="2" ry="2" fill="none"
@@ -1443,13 +1505,13 @@
 
 <footer>
     <div class="container foot">
-        <div>© <span id="year"></span> Daniil Kuklin</div>
-        <div>DK_<span class="logo__cursor" aria-hidden="true">_</span></div>
+        <div>© <span id="year"></span> Даниил Куклин</div>
+        <div><a href="/resume">Резюме</a> · <a href="/freelance">Услуги</a></div>
     </div>
 </footer>
 
 <script th:inline="none"> <!-- FIX: отключаем разбор Thymeleaf внутри этого скрипта -->
-/* ===== Фон flow на канвасе (из твоего подхода) ===== */
+/* ===== Фон flow на канвасе ===== */
 (function flow() {
     const canvas = document.getElementById('flow');
     if (!canvas) return;
@@ -1534,26 +1596,24 @@
     requestAnimationFrame(tick);
 })();
 
-/* ===== Тема (переключатель) ===== */
+/* ===== Тема (начальная выставляется в <head>, здесь — переключатель) ===== */
 (() => {
     const root = document.documentElement;
     const btn = document.getElementById('themeToggle');
     const key = 'dk_theme';
-    const saved = localStorage.getItem(key);
-    if (saved) root.setAttribute('data-theme', saved);
+    btn?.setAttribute('aria-pressed', String(root.getAttribute('data-theme') === 'dark'));
     btn?.addEventListener('click', () => {
         const cur = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
         root.setAttribute('data-theme', cur);
-        localStorage.setItem(key, cur);
+        try { localStorage.setItem(key, cur); } catch (e) {}
         btn.setAttribute('aria-pressed', String(cur === 'dark'));
     });
 })();
 
 /* ===== Активные пункты меню при скролле ===== */
 (() => {
-    const links = [...document.querySelectorAll('[data-nav]')];
-    const byId = id => document.querySelector(id);
-    const sections = links.map(a => byId(a.getAttribute('href')));
+    const links = [...document.querySelectorAll('header [data-nav], #mobileMenu [data-nav]')];
+    const sections = [...new Set(links.map(a => a.getAttribute('href')))].map(id => document.querySelector(id));
     const obs = new IntersectionObserver((entries) => {
         entries.forEach(e => {
             if (e.isIntersecting) {
@@ -1564,172 +1624,75 @@
     sections.forEach(s => s && obs.observe(s));
 })();
 
-/* ===== Печать имени ===== */
+/* ===== Печать имени. Текст уже в разметке — без JS и для поисковиков имя на месте ===== */
 (() => {
     const title = document.getElementById('hero-title');
-    const txt = title?.getAttribute('data-typing') || '';
-    if (!title) return;
-
-    // Без анимаций — сразу показываем текст
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        title.textContent = txt;
-        return;
-    }
-
+    if (!title || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const txt = title.getAttribute('data-typing') || title.textContent;
     let i = 0;
-    const speed = 95; // было быстро — ставим ~90–110 мс/символ
+    title.textContent = '';
     const t = setInterval(() => {
-        title.textContent = txt.slice(0, i++);
-        if (i > txt.length) clearInterval(t);
-    }, speed);
+        title.textContent = txt.slice(0, ++i);
+        if (i >= txt.length) clearInterval(t);
+    }, 95);
 })();
 
-/* ===== H-scroll стрелки ===== */
-(function initHScrollWithArrows() {
-    const wraps = document.querySelectorAll('#portfolio .hscroll-wrap');
-
-    wraps.forEach(wrap => {
+/* ===== Портфолио: стрелки. Свайп и колесо оставляем браузеру, scroll-snap ставит на целую карточку ===== */
+(function initHScroll() {
+    document.querySelectorAll('#portfolio .hscroll-wrap').forEach(wrap => {
         const track = wrap.querySelector('.hscroll');
         const prev = wrap.querySelector('.scroll-prev');
         const next = wrap.querySelector('.scroll-next');
         if (!track || !prev || !next) return;
 
-        const cs = getComputedStyle(track);
-        const GAP = parseFloat(cs.columnGap || cs.gap || 14);
-
-        const firstCard = () => track.querySelector(':scope > *');
-        const cardW = () => {
-            const el = firstCard();
-            return el ? Math.round(el.getBoundingClientRect().width) : 320;
+        const gap = parseFloat(getComputedStyle(track).columnGap) || 14;
+        const step = () => (track.firstElementChild?.getBoundingClientRect().width || 320) + gap;
+        const update = () => {
+            prev.hidden = track.scrollLeft <= 1;
+            next.hidden = Math.ceil(track.scrollLeft + track.clientWidth) >= track.scrollWidth - 1;
         };
-        const step = () => cardW() + GAP;
 
-        // Сколько целых карточек влезает
-        const visibleCount = () => Math.max(1, Math.floor((track.clientWidth + GAP) / (cardW() + GAP)));
-        const maxIndex = () => Math.max(0, track.children.length - visibleCount());
-
-        // Подушка справа, чтобы справа никогда не торчал «хвост»
-        function applyRightPadding() {
-            const k = visibleCount();
-            const fullWidth = k * cardW() + (k - 1) * GAP;
-            const rest = Math.max(0, track.clientWidth - fullWidth);
-            track.style.paddingRight = rest + 'px';
-        }
-
-        let isAnimating = false;
-        let scrollFixTimer;
-
-        function indexNow() {
-            // округляем к ближайшему «шагу»
-            return Math.round(track.scrollLeft / step());
-        }
-
-        function scrollToIndex(i, smooth = true) {
-            const idx = Math.max(0, Math.min(i, maxIndex()));
-            isAnimating = true;
-            track.scrollTo({left: idx * step(), behavior: smooth ? 'smooth' : 'auto'});
-        }
-
-        function updateBtns() {
-            const i = indexNow(), last = maxIndex();
-            prev.hidden = (i <= 0);
-            next.hidden = (i >= last || last === 0);
-        }
-
-        prev.addEventListener('click', () => scrollToIndex(indexNow() - 1));
-        next.addEventListener('click', () => scrollToIndex(indexNow() + 1));
-
-        // Блокируем «свободный» скролл, чтобы пользователь не мог оставить полу-карточку
-        track.addEventListener('wheel', e => e.preventDefault(), {passive: false});
-        track.addEventListener('touchmove', e => e.preventDefault(), {passive: false});
-
-        // Во время анимации только обновляем кнопки, без форс-снапа
-        track.addEventListener('scroll', () => {
-            updateBtns();
-            if (isAnimating) return;
-            // если кто-то всё-таки сместил скролл (клавишами), дожмём после паузы
-            clearTimeout(scrollFixTimer);
-            scrollFixTimer = setTimeout(() => scrollToIndex(indexNow()), 80);
-        }, {passive: true});
-
-        // После завершения плавной прокрутки один раз жёстко фиксируемся на целой карточке
-        const finishAnimation = () => {
-            isAnimating = false;
-            scrollToIndex(indexNow(), /*smooth*/false);
-            updateBtns();
-        };
-        // поддержка scrollend (там где есть)
-        track.addEventListener('scrollend', finishAnimation);
-        // фолбэк — на случай отсутствия scrollend
-        let afterClickTimer;
-
-        function armFinishFallback() {
-            clearTimeout(afterClickTimer);
-            afterClickTimer = setTimeout(finishAnimation, 300);
-        }
-
-        prev.addEventListener('click', armFinishFallback);
-        next.addEventListener('click', armFinishFallback);
-
-        // первичный расчёт
-        const recalc = () => {
-            applyRightPadding();
-            scrollToIndex(indexNow(), false);
-            updateBtns();
-        };
-        addEventListener('resize', recalc);
-
-        // ждём картинки, чтобы размеры были точные
-        const imgs = track.querySelectorAll('img');
-        let pending = imgs.length;
-        if (!pending) recalc();
-        imgs.forEach(img => {
-            if (img.complete) {
-                if (--pending === 0) recalc();
-            } else {
-                img.addEventListener('load', () => {
-                    if (--pending === 0) recalc();
-                });
-                img.addEventListener('error', () => {
-                    if (--pending === 0) recalc();
-                });
-            }
+        prev.addEventListener('click', () => track.scrollBy({left: -step(), behavior: 'smooth'}));
+        next.addEventListener('click', () => track.scrollBy({left: step(), behavior: 'smooth'}));
+        track.addEventListener('scroll', update, {passive: true});
+        track.addEventListener('keydown', e => {
+            if (e.key === 'ArrowRight') { e.preventDefault(); track.scrollBy({left: step(), behavior: 'smooth'}); }
+            if (e.key === 'ArrowLeft') { e.preventDefault(); track.scrollBy({left: -step(), behavior: 'smooth'}); }
         });
-
-        applyRightPadding();
-        scrollToIndex(0, false);
-        updateBtns();
+        addEventListener('resize', update, {passive: true});
+        update();
     });
 })();
 
-/* ===== Контакты: «Показать» + копирование ===== */
-// Контакты: замена плейсхолдера на контакт без изменения размера
-(function flatContacts() {
+/* ===== Контакты: копирование. Иконку не затираем — меняем на галочку и возвращаем ===== */
+(function copyContacts() {
+    const CHECK_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5 10 17l9-10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     document.addEventListener('click', (e) => {
-        const btn = e.target.closest('.ct-reveal');
-        if (btn) {
-            const wrap = btn.closest('.ct-value');
-            if (wrap) wrap.setAttribute('data-state', 'shown');
-        }
         const cp = e.target.closest('.ct-copy');
-        if (cp) {
-            const val = cp.getAttribute('data-copy') || '';
-            navigator.clipboard?.writeText(val).then(() => {
-                const old = cp.textContent;
-                cp.textContent = 'Скопировано!';
-                setTimeout(() => cp.textContent = old, 1200);
-            });
-        }
+        if (!cp || !navigator.clipboard) return;
+        navigator.clipboard.writeText(cp.getAttribute('data-copy') || '').then(() => {
+            if (!cp.dataset.icon) cp.dataset.icon = cp.innerHTML;
+            clearTimeout(cp._copyTimer);
+            cp.innerHTML = CHECK_ICON;
+            cp.classList.add('copied');
+            cp.title = 'Скопировано';
+            cp._copyTimer = setTimeout(() => {
+                cp.innerHTML = cp.dataset.icon;
+                cp.classList.remove('copied');
+                cp.removeAttribute('title');
+            }, 1200);
+        });
     });
 })();
 
-/* Off-canvas меню */
+/* ===== Off-canvas меню ===== */
 (function () {
     const btn = document.getElementById('menuToggle');
     const menu = document.getElementById('mobileMenu');
     const backdrop = document.getElementById('menuBackdrop');
     if (!btn || !menu || !backdrop) return;
     let lastFocused = null;
+    const isOpen = () => menu.getAttribute('aria-hidden') === 'false';
 
     const open = () => {
         lastFocused = document.activeElement;
@@ -1738,134 +1701,26 @@
         backdrop.hidden = false;
         requestAnimationFrame(() => backdrop.setAttribute('data-show', 'true'));
         document.body.classList.add('scroll-lock');
-        const first = menu.querySelector('a,button');
-        first && first.focus();
+        menu.querySelector('a,button')?.focus();
     };
     const close = () => {
+        if (!isOpen()) return;
         menu.setAttribute('aria-hidden', 'true');
         btn.setAttribute('aria-expanded', 'false');
         backdrop.removeAttribute('data-show');
         document.body.classList.remove('scroll-lock');
-        setTimeout(() => {
-            backdrop.hidden = true;
-        }, 200);
-        lastFocused && lastFocused.focus && lastFocused.focus();
+        setTimeout(() => { backdrop.hidden = true; }, 200);
+        lastFocused?.focus?.();
     };
-    btn.addEventListener('click', () => (menu.getAttribute('aria-hidden') === 'false') ? close() : open());
+    btn.addEventListener('click', () => isOpen() ? close() : open());
     backdrop.addEventListener('click', close);
-    addEventListener('keydown', e => {
-        if (e.key === 'Escape') close();
-    });
-    menu.addEventListener('click', e => {
-        if (e.target.closest('a[href^="#"]')) close();
-    });
-    matchMedia('(min-width: 781px)').addEventListener('change', e => {
-        if (e.matches) close();
-    });
+    addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+    menu.addEventListener('click', e => { if (e.target.closest('a[href^="#"]')) close(); });
+    matchMedia('(min-width: 781px)').addEventListener('change', e => { if (e.matches) close(); });
 })();
-
 
 /* ===== Год в футере ===== */
 document.getElementById('year').textContent = new Date().getFullYear();
-const track = document.getElementById('portfolioTrack'); // FIX: элемент трека для drag-to-scroll
-// drag-to-scroll (фикс клика по ссылкам)
-let down = false, sx = 0, sl = 0, moved = false;
-
-track.addEventListener('pointerdown', e => {
-    // если клик по интерактиву — вообще не стартуем drag
-    if (e.target.closest('a,button,[role="button"],input,textarea,select')) return;
-
-    down = true;
-    moved = false;
-    sx = e.clientX;
-    sl = track.scrollLeft;
-    track.setPointerCapture(e.pointerId);
-    track.style.cursor = 'grabbing';
-});
-
-track.addEventListener('pointermove', e => {
-    if (!down) return;
-    const dx = e.clientX - sx;
-    if (Math.abs(dx) > 5) moved = true;      // порог «это уже drag»
-    track.scrollLeft = sl - dx;
-});
-
-track.addEventListener('pointerup', e => {
-    if (!down) return;
-    down = false;
-    track.releasePointerCapture(e.pointerId);
-    track.style.cursor = '';
-    // если был drag — подавим «ложный» click после отпуска
-    if (moved) {
-        const preventOnce = ev => {
-            ev.stopPropagation();
-            ev.preventDefault();
-            track.removeEventListener('click', preventOnce, true);
-        };
-        track.addEventListener('click', preventOnce, true);
-    }
-    moved = false;
-});
-
-
-// (function initHScroll(){
-//   document.querySelectorAll('.hscroll-wrap').forEach(wrap=>{
-//     const track = wrap.querySelector('.hscroll');
-//     const prev  = wrap.querySelector('.scroll-prev');
-//     const next  = wrap.querySelector('.scroll-next');
-//     if(!track || !prev || !next) return;
-//
-//     const step = () => track.firstElementChild?.getBoundingClientRect().width || track.clientWidth * 0.8;
-//
-//     const update = () => {
-//       prev.hidden = track.scrollLeft <= 1;
-//       next.hidden = Math.ceil(track.scrollLeft + track.clientWidth) >= track.scrollWidth - 1;
-//     };
-//     update();
-//
-//     prev.addEventListener('click', ()=> { track.scrollBy({ left: -(step()+14), behavior:'smooth' }); });
-//     next.addEventListener('click', ()=> { track.scrollBy({ left:  (step()+14), behavior:'smooth' }); });
-//     track.addEventListener('scroll', update, { passive:true });
-//     addEventListener('resize', update, { passive:true });
-//
-//     // drag-to-scroll
-//     let down=false, sx=0, sl=0;
-//     track.addEventListener('pointerdown', e=>{ down=true; sx=e.clientX; sl=track.scrollLeft; track.setPointerCapture(e.pointerId); track.style.cursor='grabbing'; });
-//     track.addEventListener('pointermove', e=>{ if(!down) return; track.scrollLeft = sl - (e.clientX - sx); });
-//     track.addEventListener('pointerup',   e=>{ down=false; track.releasePointerCapture(e.pointerId); track.style.cursor=''; });
-//
-//     // клавиатура
-//     track.addEventListener('keydown', e=>{
-//       if(e.key==='ArrowRight'){ e.preventDefault(); next.click(); }
-//       if(e.key==='ArrowLeft' ){ e.preventDefault(); prev.click(); }
-//     });
-//   });
-// })();
-
-document.addEventListener('click', (e) => {
-    const btn = e.target.closest('[data-reveal]');
-    if (!btn) return;
-    const wrap = btn.closest('.ct-value');
-    if (!wrap) return;
-    wrap.dataset.state = 'shown';
-});
-
-document.addEventListener('click', (e) => {
-    const showBtn = e.target.closest('.ct-reveal');
-    if (showBtn) {
-        showBtn.closest('.ct-value')?.setAttribute('data-state', 'shown');
-    }
-    const copyBtn = e.target.closest('.ct-copy');
-    if (copyBtn) {
-        const txt = copyBtn.getAttribute('data-copy') || '';
-        navigator.clipboard?.writeText(txt).then(() => {
-            const old = copyBtn.textContent;
-            copyBtn.textContent = 'Скопировано!';
-            setTimeout(() => copyBtn.textContent = old, 1200);
-        });
-    }
-});
-
 </script>
 </body>
 </html>

@@ -3,9 +3,21 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Фрилансер — продающая страница</title>
-  <meta name="description" content="Продающая страница фрилансера: услуги, портфолио, процесс работы и контакты." />
+  <title>Даниил Куклин — разработка Telegram-ботов, бэкенда и сайтов</title>
+  <meta name="description" content="Java-разработчик на фрилансе: Telegram-боты, бэкенд и API, AI-интеграции, лендинги. Примеры работ, процесс и контакты." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Даниил Куклин — разработка Telegram-ботов, бэкенда и сайтов" />
+  <meta property="og:description" content="Telegram-боты, бэкенд и API, AI-интеграции, лендинги. Связь в течение дня." />
   <meta name="color-scheme" content="light dark" />
+  <script>
+    // Тема до первой отрисовки — без вспышки светлой темы
+    (function(){ let t=null; try{ t=localStorage.getItem('dk_theme'); }catch(e){}
+      if(!t) t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
+      document.documentElement.setAttribute('data-theme', t); })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700;800&display=swap" />
   <style>
     /* ========= ТЕМА / ПАЛИТРА (как в референсе, адаптировано) ========= */
     :root{
@@ -92,7 +104,7 @@
     .btn:hover{transform:translateY(-1px)}
     .btn-primary{background:color-mix(in oklab, var(--accent-2) 16%, var(--panel)); border-color:color-mix(in oklab, var(--accent-2) 60%, var(--border))}
     .btn-ghost{background:var(--panel)}
-    .badges{display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:.75rem}
+    .badges{display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin:.75rem 0 0; padding:0; list-style:none}
     .badge{display:inline-flex; align-items:center; gap:.5ch; padding:.35rem .6rem; border-radius:10px; border:1px solid var(--border); background:color-mix(in oklab, var(--accent) 6%, var(--panel)); font-weight:700; font-size:.85rem}
 
     /* ========= СЕКЦИИ / КАРТОЧКИ ========= */
@@ -242,23 +254,9 @@
       #process .steps .step:last-child::after{ display: none; }
     }
 
-    /* ========= КОНТАКТЫ (flat) ========= */
-    .contacts-row{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:14px}
-    .ct-flat{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden}
-    .ct-head{display:grid; align-items:center; gap:12px; padding:12px 14px; min-height:72px; grid-template-columns:38px 1fr minmax(0,46%)}
-    .ct-icon{width:38px; height:38px; border-radius:12px; display:grid; place-items:center;
-      background:color-mix(in oklab, var(--accent-2) 12%, var(--panel)); border:1px solid color-mix(in oklab, var(--accent-2) 40%, var(--border)); color:var(--accent-2)}
-    .ct-title small{display:block; margin-top:2px}
-    .ct-value{display:flex; align-items:center; justify-self:end; min-width:0; max-width:100%; overflow:hidden; gap:10px}
-    .pill{display:inline-flex; align-items:center; height:38px; padding:0 12px; border-radius:12px;
-      border:1px solid color-mix(in oklab, var(--accent-2) 45%, var(--border));
-      background:color-mix(in oklab, var(--accent-2) 8%, var(--panel)); box-shadow:none; color:var(--text); text-decoration:none; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:clamp(160px,48vw,480px)}
-    .icon-btn{width:38px; height:38px; border-radius:10px; border:1px solid var(--border); background:var(--panel); display:grid; place-items:center; padding:0; cursor:pointer}
-    .icon-btn:hover{transform:translateY(-1px)}
-    .icon-btn svg{width:18px; height:18px}
-
     footer{border-top:1px solid var(--border); padding:24px 0 40px; color:var(--muted)}
     .foot{display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between}
+    .foot .icons{display:flex; gap:10px}
 
     @media (max-width:780px){
       .nav-row{grid-template-columns:1fr auto auto}
@@ -270,40 +268,8 @@
       *{animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important; scroll-behavior:auto !important}
     }
 
-    /* Фоновый мягкий градиент */
-    #flow{position:fixed; inset:0; z-index:-1; background:linear-gradient(180deg, rgba(108,99,255,.06), rgba(255,122,24,.05))}
-
     /* ===== Канвас-фон «поток» ===== */
-    #flow{
-      position:fixed; inset:0; z-index:-1;
-      background:linear-gradient(180deg, rgba(108,99,255,.06), rgba(255,122,24,.05));
-    }
-
-    /* ===== Анимация печати: имя + курсор "_" ===== */
-    .typing-line{
-      display:inline-flex; gap:.3ch; align-items:baseline; flex-wrap:wrap; justify-content:center;
-      margin:0 0 .2rem 0;
-    }
-    .typing-name{
-      font-weight:900; line-height:1.05;
-      font-size:clamp(36px,7vw,80px);
-      margin:0;
-    }
-    .typing-cursor{
-      display:inline-block; width:1ch; height:1em; vertical-align:baseline;
-    }
-    .typing-cursor::after{
-      content:""; display:block; width:1ch;
-      border-bottom:.2em solid currentColor;
-      transform:translateY(.15em);
-      animation: blink .85s steps(1,end) infinite;
-    }
-    @keyframes blink{ 50%{ opacity:0 } }
-
-    /* Мелкие улучшения */
-    .hero{ min-height:calc(100svh - var(--header-h,64px)); display:grid; place-items:center; }
-    .hero-inner{ text-align:center; display:flex; flex-direction:column; align-items:center; }
-    .hero-sub{ color:var(--muted, #6b7280); font-size:clamp(14px,1.4vw,20px); margin-top:.25rem; }
+    #flow{position:fixed; inset:0; z-index:-1; background:linear-gradient(180deg, rgba(108,99,255,.06), rgba(255,122,24,.05))}
 
     /* Уважение prefers-reduced-motion */
     @media (prefers-reduced-motion: reduce){
@@ -368,10 +334,8 @@
 
     /* Состояния показа */
     .ct-value .ct-real{ display:none; }
-    .ct-value[data-state="shown"] .ct-reveal{ display:none; }
-    .ct-value[data-state="shown"] .ct-real{ display:flex; gap:10px; align-items:center; animation:fadeIn .16s ease-out; }
-    /*@keyframes fadeIn{ from{opacity:0; transform:translateY(-2px)} to{opacity:1; transform:translateY(0)} }*/
-    @keyframes blink { 50% { opacity: 0; } }
+    .ct-value[data-state="shown"] .ct-real{ display:flex; gap:10px; align-items:center; }
+    .icon-btn.copied{ color:#16a34a; border-color:#16a34a; }
 
     /* Иконка-кнопка копирования */
     .icon-btn{
@@ -395,16 +359,6 @@
     /* Узкие экраны: кнопка поменьше */
     @media (max-width:420px){
       .icon-btn{ width:32px; height:32px; }
-    }
-
-    /* Контакты: привести кнопку "Показать" к 38px и без тени */
-    .ct-value .ct-reveal.btn{
-      min-height: 38px;
-      height: 38px;
-      padding: 0 12px;
-      border-radius: 10px;       /* под иконку-кнопку (у неё 10px) */
-      box-shadow: none;          /* тень убираем — внутри карточки лишняя */
-      border-color: var(--border);
     }
 
     /* Контакты: выровнять кнопку копирования справа и зафиксировать высоту строки */
@@ -453,10 +407,12 @@
 
     /* Превью фиксированной пропорции — чтобы верх карточек выровнялся */
     .card.work .thumb{
-      aspect-ratio:16/9;                 /* можно 4/3, если так лучше в дизайне */
+      aspect-ratio:4/3;
       background:var(--panel);
       border-radius:16px;
     }
+    /* Картинки квадратные — вписываем целиком, а не обрезаем низ */
+    .card.work .thumb img{ width:100%; height:100%; object-fit:contain; }
 
     /* Заголовок — одинаковая высота блока, максимум 2 строки */
     .card.work h3{
@@ -545,7 +501,7 @@
       .scroll-prev{ left:-4px; } .scroll-next{ right:-4px; }
     }
     /* приятнее скроллится пальцем */
-    .hscroll{ -webkit-overflow-scrolling: touch; touch-action: pan-x; }
+    .hscroll{ -webkit-overflow-scrolling: touch; }
 
     /* 3) Карточки: лёгкая ужимка отступов на самых узких */
     @media (max-width: 420px){
@@ -647,6 +603,55 @@
       #contacts .pill{ max-width:clamp(160px,62vw,480px); }   /* значение не обрезается слишком рано */
     }
 
+    /* ===== Типографика: текст — Inter, акценты — JetBrains Mono ===== */
+    :root{
+      --font-sans:"Inter", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      --font-mono:"JetBrains Mono", Consolas, "Courier New", monospace;
+    }
+    html, body{ font-family:var(--font-sans); }
+    .logo, h1, .section-title, .hero small, .price, .badge,
+    .stack-item span, .chips li, .exp .meta, .pill{ font-family:var(--font-mono); }
+    h2{ letter-spacing:-.01em; }
+    h3{ font-weight:700; letter-spacing:-.005em; }
+    p, li{ font-size:clamp(15px,1.1vw,17px); }
+    .hero-sub{ text-wrap:balance; }
+
+    /* Курсор "_" — обычный символ того же размера, что и имя, стоит на базовой линии */
+    .typing-line{ --name-size:clamp(36px,7vw,80px); }
+    .hero--split .typing-line{ --name-size:clamp(34px,5.2vw,68px); }
+    .typing-name{ font-size:var(--name-size); }
+    .typing-cursor{ width:auto; height:auto; font:800 var(--name-size)/1.05 var(--font-mono); }
+    .typing-cursor::after{ content:"_"; display:inline; width:auto; border:0; transform:none; }
+    /* ===== Hero: текст слева, скриншот бота справа ===== */
+    .hero--split{ min-height:auto; padding:clamp(32px,8vh,96px) 0; }
+    .hero--split .hero-inner{
+      display:grid; grid-template-columns:1.05fr .95fr; gap:clamp(24px,5vw,64px);
+      align-items:center; text-align:left;
+    }
+    .hero--split .hero-text{ display:flex; flex-direction:column; align-items:flex-start; }
+    .hero--split .typing-line, .hero--split .badges, .hero--split .hero-actions{ justify-content:flex-start; }
+    .hero--split .typing-line{ flex-wrap:nowrap; }
+    .hero--split .typing-name{ font-size:clamp(34px,5.2vw,68px); white-space:nowrap; }
+    .hero--split .hero-sub{ font-size:clamp(16px,1.5vw,20px); color:var(--text); max-width:34ch; margin:.6rem 0 0; }
+    .tg-window{
+      margin:0; border-radius:20px; overflow:hidden;
+      background:var(--panel); border:1px solid var(--border);
+      box-shadow:0 24px 60px rgba(20,20,60,.16), 0 4px 14px rgba(0,0,0,.06);
+      transform:rotate(1.5deg);
+    }
+    .tg-window__head{ display:flex; align-items:center; gap:10px; padding:10px 14px; border-bottom:1px solid var(--border); }
+    .tg-window__head img{ width:36px; height:36px; border-radius:50%; object-fit:cover; }
+    .tg-window__head strong{ display:block; line-height:1.2; }
+    .tg-window__head small{ color:var(--muted); font-size:.8rem; font-family:var(--font-sans); font-weight:500; letter-spacing:0; }
+    .tg-window__shot{ width:100%; height:auto; }
+    .tg-window figcaption{ padding:10px 14px; font-size:.85rem; color:var(--muted); border-top:1px solid var(--border); }
+    @media (max-width:899px){
+      .hero--split .hero-inner{ grid-template-columns:1fr; text-align:center; }
+      .hero--split .hero-text{ align-items:center; }
+      .hero--split .typing-line, .hero--split .badges, .hero--split .hero-actions{ justify-content:center; }
+      .hero--split .hero-sub{ margin-inline:auto; }
+      .tg-window{ transform:none; max-width:520px; margin-inline:auto; }
+    }
   </style>
 </head>
 
@@ -687,26 +692,36 @@
 
 <main id="main" tabindex="-1">
   <!-- ========= HERO ========= -->
-  <section class="hero" aria-labelledby="hero-title">
+  <section class="hero hero--split" aria-labelledby="hero-title">
     <div class="hero-inner">
+      <div class="hero-text">
       <small>Привет, я</small>
-      <div class="typing-line" aria-live="polite" aria-atomic="true">
-        <h1 id="hero-title" class="typing-name" data-typing="Даниил Куклин">‎</h1>
+      <div class="typing-line">
+        <h1 id="hero-title" class="typing-name" data-typing="Даниил Куклин" aria-label="Даниил Куклин">Даниил Куклин</h1>
         <span class="typing-cursor" aria-hidden="true"></span>
       </div>
 
-      <div class="badges" aria-label="Драйверы доверия">
-<!--        <span class="badge">⏱ Предложение за 24 ч</span>-->
-        <span class="badge">💬 Связь в течение дня</span>
-        <li class="badge"><span class="i">🧩</span>Помогу с ТЗ</li>
-        <li class="badge"><span class="i">🧪</span>Тесты / проверка</li>
-<!--        <span class="badge">✅ Фикс-срок и чек-листы</span>-->
+      <div class="hero-sub">Делаю Telegram-ботов, бэкенд и AI-интеграции под ваши задачи — от ТЗ до запуска.</div>
+      <ul class="badges" aria-label="Почему со мной удобно">
+        <li class="badge"><span aria-hidden="true">💬</span>Связь в течение дня</li>
+        <li class="badge"><span aria-hidden="true">🧩</span>Помогу с ТЗ</li>
+        <li class="badge"><span aria-hidden="true">🧪</span>Тесты и проверка</li>
+      </ul>
+      <div class="hero-actions" role="group" aria-label="Действия">
+        <a class="btn btn-primary" href="https://t.me/kuklin_daniil" target="_blank" rel="noopener">Обсудить задачу в Telegram</a>
+        <a class="btn btn-ghost" href="#portfolio" data-nav>Смотреть работы</a>
       </div>
-      <div class="hero-sub">Java-разработчик и фрилансер.</div>
-<!--      <div class="hero-actions" role="group" aria-label="Действия">-->
-<!--&lt;!&ndash;        <a class="btn btn-primary" href="#contacts">Обсудить задачу</a>&ndash;&gt;-->
-<!--        <a class="btn btn-ghost" href="#portfolio">Смотреть работы</a>-->
-<!--      </div>-->
+      </div>
+
+      <figure class="tg-window">
+        <div class="tg-window__head">
+          <img src="images/calory.webp" alt="" width="36" height="36">
+          <div><strong>CALORY</strong><small>бот · дневник питания</small></div>
+        </div>
+        <img class="tg-window__shot" src="images/hero-calory.webp" width="720" height="523"
+             alt="Карточка блюда в боте CALORY: КБЖУ, прогресс за день и кнопки управления порцией">
+        <figcaption>Так выглядит один из моих ботов — <a href="https://t.me/calorydairy_bot" target="_blank" rel="noopener">попробовать</a></figcaption>
+      </figure>
     </div>
   </section>
 
@@ -716,7 +731,6 @@
       <h2 id="services-title" class="section-title">Услуги</h2>
 
       <div class="hscroll-wrap">
-<!--        <button class="scroll-btn scroll-prev" type="button" aria-label="Прокрутить влево" disabled>‹</button>-->
         <button class="scroll-btn scroll-prev" aria-label="Назад" disabled>
           <svg viewBox="0 0 24 24" aria-hidden="true">
             <path d="M15 6 L9 12 L15 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -725,39 +739,34 @@
 
 
         <div class="hscroll" id="servicesTrack" tabindex="0" aria-label="Список услуг (горизонтальная прокрутка)">
-          <!-- Карточка 1 -->
           <article class="card service">
             <h3>Лендинг / сайт</h3>
             <p class="muted">Дизайн, вёрстка, быстрая загрузка, адаптив.</p>
-            <div class="price">от 1 000 ₽</div>
+            <div class="price">от 15 000 ₽</div>
           </article>
 
-          <!-- Карточка 3 -->
           <article class="card service">
             <h3>Чат-боты</h3>
-            <p class="muted">Telegram/Discord/WhatsUp. </p>
-            <div class="price">от 1 000 ₽</div>
+            <p class="muted">Telegram, Discord, WhatsApp. Меню, рассылки, админка, интеграции с Google-таблицами и календарём.</p>
+            <div class="price">от 20 000 ₽</div>
           </article>
 
-          <!-- Карточка 2 -->
           <article class="card service">
             <h3>Бэкенд / API</h3>
             <p class="muted">Проектирование, REST, авторизация, база данных, логирование и метрики.</p>
-            <div class="price">от 1 000 ₽</div>
+            <div class="price">от 30 000 ₽</div>
           </article>
 
-          <!-- Карточка 4 -->
           <article class="card service">
             <h3>AI-функциональность</h3>
-            <p class="muted">Чат-боты, генерация текста/картинок, классификация, поиск по векторным базам.</p>
-            <div class="price">от 50 000 ₽</div>
+            <p class="muted">Ассистенты на GPT/Gemini, распознавание фото и голоса, генерация текста, классификация, поиск по векторным базам.</p>
+            <div class="price">от 40 000 ₽</div>
           </article>
 
-          <!-- Карточка 4 -->
           <article class="card service">
-            <h3>AI-функциональность</h3>
-            <p class="muted">Чат-боты, генерация текста/картинок, классификация, поиск по векторным базам.</p>
-            <div class="price">от 50 000 ₽</div>
+            <h3>Доработка и поддержка</h3>
+            <p class="muted">Разберусь в существующем проекте, исправлю ошибки, добавлю функции, настрою деплой.</p>
+            <div class="price">по оценке</div>
           </article>
         </div>
         <button class="scroll-btn scroll-next" aria-label="Вперёд" disabled>
@@ -772,7 +781,7 @@
   <!-- ========= ПРИМЕРЫ РАБОТ ========= -->
   <section id="portfolio" class="section" aria-labelledby="portfolio-title">
     <div class="container">
-      <h2 id="portfolio-title" class="section-title">Пример работ</h2>
+      <h2 id="portfolio-title" class="section-title">Примеры работ</h2>
 
       <div class="hscroll-wrap">
         <button class="scroll-btn scroll-prev" aria-label="Назад" disabled>
@@ -782,69 +791,69 @@
         </button>
 
         <div class="hscroll" id="portfolioTrack" tabindex="0" aria-label="Примеры работ (горизонтальная прокрутка)">
-                  <article class="card work" role="listitem">
+                  <article class="card work">
                     <div class="thumb">
                       <img
-                              src="images/calory.png"
-                              sizes="(max-width: 600px) 100vw, 600px"
-                              alt="CALORY"
+                              src="images/calory.webp"
+                              width="1024" height="1024"
+                              alt="Скриншот бота CALORY — дневник питания"
                               loading="lazy" decoding="async">
                     </div>
                     <h3>Бот дневник питания. CALORY</h3>
                     <p class="meta">Бот CALORY оценивает КБЖУ блюда по фото или вашему описанию и помогает вести удобный дневник питания. Он превращает подсчёт калорий в простой и наглядный процесс, сохраняя все данные в одном месте.</p>
-                    <a class="btn btn-ghost" href="https://t.me/calorydairy_bot" target="_blank" rel="noopener" aria-label="Открыть кейс">Открыть кейс</a>
+                    <a class="btn btn-ghost" href="https://t.me/calorydairy_bot" target="_blank" rel="noopener" aria-label="Открыть CALORY в Telegram">Открыть в Telegram</a>
                   </article>
 
-                  <article class="card work" role="listitem">
+                  <article class="card work">
                     <div class="thumb">
                       <img
-                              src="images/slot.png"
-                              sizes="(max-width: 600px) 100vw, 600px"
-                              alt="SLOTMANAGER"
+                              src="images/slot.webp"
+                              width="1024" height="1024"
+                              alt="Скриншот бота для бронирования ресурсов"
                               loading="lazy" decoding="async">
                     </div>
                     <h3>Бот для бронирования ресурсов</h3>
                     <p class="meta">Бот помогает быстро бронировать ресурсы — от переговорных до рабочих кабинетов — и автоматически фиксирует все записи в Google-таблице. Благодаря гибкой настройке правил он легко подстраивается под любые процессы вашей команды.</p>
-                    <a class="btn btn-ghost" href="https://t.me/slotmanage_bot" target="_blank" rel="noopener" aria-label="Открыть кейс">Открыть кейс</a>
+                    <a class="btn btn-ghost" href="https://t.me/slotmanage_bot" target="_blank" rel="noopener" aria-label="Открыть бота бронирования в Telegram">Открыть в Telegram</a>
                   </article>
 
-                  <article class="card work" role="listitem">
+                  <article class="card work">
                     <div class="thumb">
                       <img
-                              src="images/calen.png"
-                              sizes="(max-width: 600px) 100vw, 600px"
-                              alt="CALEN"
+                              src="images/calen.webp"
+                              width="1024" height="1024"
+                              alt="Скриншот ИИ-ассистента с Google Calendar"
                               loading="lazy" decoding="async">
                     </div>
                     <h3>ИИ-ассистент с Google Calendar</h3>
                     <p class="meta">ИИ-ассистент интегрируется с Google Calendar и позволяет добавлять события простым голосовым или текстовым сообщением. Он автоматически создаёт запись в календаре, экономя время и упрощая планирование.</p>
-                    <a class="btn btn-ghost" href="https://t.me/personal_calen_bot" target="_blank" rel="noopener" aria-label="Открыть кейс">Открыть кейс</a>
+                    <a class="btn btn-ghost" href="https://t.me/personal_calen_bot" target="_blank" rel="noopener" aria-label="Открыть ИИ-ассистента в Telegram">Открыть в Telegram</a>
                   </article>
 
-                  <article class="card work" role="listitem">
+                  <article class="card work">
                     <div class="thumb">
                       <img
-                              src="images/pomidoro.png"
-                              sizes="(max-width: 600px) 100vw, 600px"
-                              alt="POMIDORO"
+                              src="images/pomidoro.webp"
+                              width="1024" height="1024"
+                              alt="Скриншот помидоро-таймера и трекера задач"
                               loading="lazy" decoding="async">
                     </div>
                     <h3>Помидоро-таймер и трекер задач</h3>
-                    <p class="meta">Помидоро-таймер и трекер задач с приоритетами и ИИ: помогет фокусироваться, планировать и автоматически разбивать задачи на подзадачи.</p>
-                    <a class="btn btn-ghost" href="https://t.me/taskGPT_Bot" target="_blank" rel="noopener" aria-label="Открыть кейс">Открыть кейс</a>
+                    <p class="meta">Помидоро-таймер и трекер задач с приоритетами и ИИ: помогает фокусироваться, планировать и автоматически разбивать задачи на подзадачи.</p>
+                    <a class="btn btn-ghost" href="https://t.me/taskGPT_Bot" target="_blank" rel="noopener" aria-label="Открыть помидоро-таймер в Telegram">Открыть в Telegram</a>
                   </article>
 
-          <article class="card work" role="listitem">
+          <article class="card work">
             <div class="thumb">
               <img
-                      src="images/deparr.png"
-                      sizes="(max-width: 600px) 100vw, 600px"
-                      alt="DEPARR"
+                      src="images/deparr.webp"
+                      width="1024" height="1024"
+                      alt="Скриншот бота-трекера авиарейсов"
                       loading="lazy" decoding="async">
             </div>
-            <h3>Трекер твоих авиарейсов</h3>
-            <p class="meta">Просто введи номер своего рейса и получай новости о его обновлении.</p>
-            <a class="btn btn-ghost" href="https://t.me/deparr_bot" target="_blank" rel="noopener" aria-label="Открыть кейс">Открыть кейс</a>
+            <h3>Трекер авиарейсов</h3>
+            <p class="meta">Введите номер рейса — бот покажет информацию о нём и пришлёт уведомление, когда статус обновится.</p>
+            <a class="btn btn-ghost" href="https://t.me/deparr_bot" target="_blank" rel="noopener" aria-label="Открыть трекер авиарейсов в Telegram">Открыть в Telegram</a>
           </article>
         </div>
 
@@ -860,34 +869,33 @@
   <!-- ========= ПРОЦЕСС РАБОТЫ ========= -->
   <section id="process" class="section" aria-labelledby="process-title">
     <div class="container">
-      <h2 id="process-title" class="section-title">Процесс работ</h2>
+      <h2 id="process-title" class="section-title">Как я работаю</h2>
       <div class="steps">
         <article class="card step">
           <div class="n">1</div>
           <h3>Бриф и оценка</h3>
-          <p class="muted">Вы связываетесь со мной. Мы обсуждаем ваше задание. Я называю вам стоимость и сроки работ</p>
+          <p class="muted">Вы пишете мне, мы обсуждаем задачу. Помогаю сформулировать ТЗ и называю стоимость и сроки.</p>
         </article>
         <article class="card step">
           <div class="n">2</div>
           <h3>План</h3>
-          <p class="muted">Фиксируем чек-лист и критерии «готово». Прозрачность и предсказуемость.</p>
+          <p class="muted">Фиксируем этапы, чек-лист и критерии «готово» — вы заранее знаете, что и когда получите.</p>
         </article>
         <article class="card step">
           <div class="n">3</div>
           <h3>Реализация</h3>
-          <p class="muted">3–5 дней, встречи/отчеты о выполненной работе. Код, тесты, деплой.</p>
+          <p class="muted">Работаю по этапам и регулярно показываю прогресс. Код, тесты, деплой — в согласованные сроки.</p>
         </article>
         <article class="card step">
           <div class="n">4</div>
           <h3>Запуск и поддержка</h3>
-          <p class="muted">Показываю рабочую версию проекта. Делаю правки, при необходимости.</p>
+          <p class="muted">Показываю рабочую версию, вношу правки и запускаю проект. Помогаю с доработками после запуска.</p>
         </article>
       </div>
 
-<!--      <div class="hero-actions" style="margin-top:1.2rem">-->
-<!--        <a class="btn btn-primary" href="#contacts">Получить предложение</a>-->
-<!--        <a class="btn btn-ghost" href="#services">Выбрать услугу</a>-->
-<!--      </div>-->
+      <div class="hero-actions" style="margin-top:1.2rem">
+        <a class="btn btn-primary" href="#contacts" data-nav>Получить оценку</a>
+      </div>
     </div>
   </section>
 
@@ -911,11 +919,8 @@
               <small class="muted">Почта</small>
             </div>
 
-            <div class="ct-value" data-state="hidden">
-              <!-- Плейсхолдер (виден по умолчанию) -->
-              <button class="ct-reveal btn btn-ghost" type="button" aria-label="Показать email">Показать</button>
+            <div class="ct-value" data-state="shown">
 
-              <!-- Реальное значение (после клика) -->
               <div class="ct-real">
                 <a class="pill" href="mailto:saponembigas@gmail.com">saponembigas@gmail.com</a>
                 <button class="icon-btn ct-copy" type="button" data-copy="saponembigas@gmail.com" aria-label="Скопировать email">
@@ -944,8 +949,7 @@
               <small class="muted">Быстрее всего</small>
             </div>
 
-            <div class="ct-value" data-state="hidden">
-              <button class="ct-reveal btn btn-ghost" type="button" aria-label="Показать Telegram">Показать</button>
+            <div class="ct-value" data-state="shown">
               <div class="ct-real">
                 <a class="pill" href="https://t.me/kuklin_daniil" target="_blank" rel="noopener">@kuklin_daniil</a>
                 <button class="icon-btn ct-copy" type="button" data-copy="@kuklin_daniil" aria-label="Скопировать Telegram">
@@ -973,8 +977,7 @@
               <small class="muted">Код и проекты</small>
             </div>
 
-            <div class="ct-value" data-state="hidden">
-              <button class="ct-reveal btn btn-ghost" type="button" aria-label="Показать GitHub">Показать</button>
+            <div class="ct-value" data-state="shown">
               <div class="ct-real">
                 <a class="pill" href="https://github.com/Daniil-java" target="_blank" rel="noopener">github.com/Daniil-java</a>
                 <button class="icon-btn ct-copy" type="button" data-copy="https://github.com/Daniil-java" aria-label="Скопировать ссылку GitHub">
@@ -1030,33 +1033,27 @@
   // Год в футере
   $('#year').textContent = new Date().getFullYear();
 
-  // Тема
+  // Тема (начальная выставляется в <head>, здесь — переключатель)
   const THEME_KEY='dk_theme', htmlEl=document.documentElement, themeBtn=$('#themeToggle');
   function setTheme(t, persist=true){
     htmlEl.setAttribute('data-theme', t);
     themeBtn.setAttribute('aria-pressed', String(t==='dark'));
-    if(persist) localStorage.setItem(THEME_KEY,t);
-    const m=$('meta[name="color-scheme"]'); if(m) m.setAttribute('content', t==='dark'?'dark light':'light dark');
+    if(persist){ try{ localStorage.setItem(THEME_KEY,t); }catch(e){} }
   }
-  (function(){ const saved=localStorage.getItem(THEME_KEY); if(saved){setTheme(saved,false)}
-  else{ const prefersDark=matchMedia('(prefers-color-scheme: dark)').matches; setTheme(prefersDark?'dark':'light',false);} })();
+  setTheme(htmlEl.getAttribute('data-theme') || 'light', false);
   themeBtn.addEventListener('click',()=>setTheme(htmlEl.getAttribute('data-theme')==='light'?'dark':'light'));
 
-  // Анимация печати имени (курсор — "_")
+  // Анимация печати имени. Текст уже в разметке — без JS и для поисковиков имя на месте
   (function typing(){
     const title = document.getElementById('hero-title');
-    const txt   = title?.getAttribute('data-typing') || '';
-    if (!title) return;
-
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches){
-      title.textContent = txt; // без анимации — сразу
-      return;
-    }
-    let i = 0, speed = 55; // 45–65 мс комфортно
+    if (!title || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const txt = title.getAttribute('data-typing') || title.textContent;
+    let i = 0;
+    title.textContent = '';
     const t = setInterval(()=>{
-      title.textContent = txt.slice(0, i++);
-      if (i > txt.length) clearInterval(t);
-    }, speed);
+      title.textContent = txt.slice(0, ++i);
+      if (i >= txt.length) clearInterval(t);
+    }, 55);
   })();
 
   // Смарт-скролл к секциям
@@ -1064,94 +1061,55 @@
   function scrollToHash(hash){ const el=$(hash); if(!el) return; const y=window.scrollY+el.getBoundingClientRect().top-(headerH+8); window.scrollTo({top:y, behavior:'smooth'}); }
   $$('a[data-nav]').forEach(a=>a.addEventListener('click',e=>{ if(a.hash){ e.preventDefault(); history.pushState(null,'',a.hash); scrollToHash(a.hash);} }));
 
-  // Подсветка активного пункта
-  const navLinks=$$('a[data-nav]'); const map=new Map(navLinks.map(a=>[a.getAttribute('href'),a]));
-  const io=new IntersectionObserver((entries)=>{ entries.forEach(en=>{ const id='#'+en.target.id; const link=map.get(id); if(!link) return; if(en.isIntersecting){ navLinks.forEach(x=>x.classList.remove('active')); link.classList.add('active'); if(history.replaceState) history.replaceState(null,'',id); } }); },{ rootMargin:`-${headerH+24}px 0px -60% 0px`, threshold:0.1 });
+  // Подсветка активного пункта (только ссылки шапки)
+  const navLinks=$$('header a[data-nav]'); const map=new Map(navLinks.map(a=>[a.getAttribute('href'),a]));
+  function setActive(link){ navLinks.forEach(x=>x.classList.remove('active')); link?.classList.add('active'); }
+  const io=new IntersectionObserver((entries)=>{ entries.forEach(en=>{ const id='#'+en.target.id; const link=map.get(id); if(link && en.isIntersecting){ setActive(link); history.replaceState(null,'',id); } }); },{ rootMargin:`-${headerH+24}px 0px -60% 0px`, threshold:0.1 });
   ['services','portfolio','process','contacts'].forEach(id=>{ const s=$('#'+id); if(s) io.observe(s); });
+  $$('a[data-nav]').forEach(a => a.addEventListener('click', () => setActive(map.get(a.getAttribute('href')))));
 
-  // 1) Мгновенная подсветка активного пункта по клику
-  navLinks.forEach(a => a.addEventListener('click', () => {
-    navLinks.forEach(x => x.classList.remove('active'));
-    a.classList.add('active');
-  }));
-
-  // 2) Если долистали до самого низа — принудительно подсвечиваем "Контакты"
+  // Если долистали до самого низа — подсвечиваем «Контакты»
   addEventListener('scroll', () => {
-    const atBottom = Math.ceil(window.scrollY + window.innerHeight) >= document.documentElement.scrollHeight;
-    if (atBottom) {
-      navLinks.forEach(x => x.classList.remove('active'));
-      map.get('#contacts')?.classList.add('active');
-    }
+    if (Math.ceil(window.scrollY + window.innerHeight) >= document.documentElement.scrollHeight) setActive(map.get('#contacts'));
   }, { passive: true });
 
-  // Горизонтальный скролл услуг + кнопки
-  (function initHscrollAll(){
-      $$('.hscroll-wrap').forEach(wrap=>{
-          const track = wrap.querySelector('.hscroll');
-          const prev  = wrap.querySelector('.scroll-prev');
-          const next  = wrap.querySelector('.scroll-next');
-          if(!track || !prev || !next) return;
+  // Горизонтальные ленты + кнопки
+  $$('.hscroll-wrap').forEach(wrap=>{
+    const track = wrap.querySelector('.hscroll');
+    const prev  = wrap.querySelector('.scroll-prev');
+    const next  = wrap.querySelector('.scroll-next');
+    if(!track || !prev || !next) return;
 
-          const step = ()=> track.firstElementChild?.getBoundingClientRect().width || 320;
+    const step = ()=> (track.firstElementChild?.getBoundingClientRect().width || 320) + 14;
+    const updateBtns = ()=>{
+      prev.disabled = track.scrollLeft <= 1;
+      next.disabled = Math.ceil(track.scrollLeft + track.clientWidth) >= track.scrollWidth - 1;
+    };
+    updateBtns();
 
-          const updateBtns = ()=>{
-              const atStart = track.scrollLeft <= 1;
-              const atEnd   = Math.ceil(track.scrollLeft + track.clientWidth) >= track.scrollWidth - 1;
-              prev.disabled = atStart;
-              next.disabled = atEnd;
-          };
-          updateBtns();
+    prev.addEventListener('click', ()=> track.scrollBy({ left: -step(), behavior: 'smooth' }));
+    next.addEventListener('click', ()=> track.scrollBy({ left: step(), behavior: 'smooth' }));
+    track.addEventListener('scroll', updateBtns, { passive:true });
+    track.addEventListener('keydown', e=>{
+      if(e.key==='ArrowRight'){ e.preventDefault(); track.scrollBy({ left: step(), behavior: 'smooth' }); }
+      if(e.key==='ArrowLeft'){ e.preventDefault(); track.scrollBy({ left: -step(), behavior: 'smooth' }); }
+    });
+    addEventListener('resize', updateBtns);
+  });
 
-          prev.addEventListener('click', ()=>{
-              track.scrollBy({ left: -(step()+14), behavior: 'smooth' });
-              setTimeout(updateBtns, 260);
-          });
-          next.addEventListener('click', ()=>{
-              track.scrollBy({ left: (step()+14), behavior: 'smooth' });
-              setTimeout(updateBtns, 260);
-          });
-
-          track.addEventListener('scroll', updateBtns, { passive:true });
-
-          // Перетаскивание мышью
-        let isDown = false, startX = 0, startLeft = 0;
-
-        track.addEventListener('pointerdown', e => {
-          // ⬇️ Новая строка: игнорируем клики по интерактивным элементам
-          if (e.target.closest('a,button,input,textarea,label,[role="button"]')) return;
-
-          isDown = true;
-          startX = e.clientX;
-          startLeft = track.scrollLeft;
-          track.setPointerCapture(e.pointerId);
-          track.style.cursor = 'grabbing';
-        });
-          // let isDown=false, startX=0, startLeft=0;
-          // track.addEventListener('pointerdown', e=>{
-          //     isDown=true; startX=e.clientX; startLeft=track.scrollLeft;
-          //     track.setPointerCapture(e.pointerId); track.style.cursor='grabbing';
-          // });
-          // track.addEventListener('pointermove', e=>{
-          //     if(!isDown) return; track.scrollLeft = startLeft - (e.clientX - startX);
-          // });
-          // track.addEventListener('pointerup', e=>{
-          //     isDown=false; track.releasePointerCapture(e.pointerId); track.style.cursor='';
-          // });
-
-          // Клавиатура
-          track.addEventListener('keydown', e=>{
-              if(e.key==='ArrowRight'){ e.preventDefault(); next.click(); }
-              if(e.key==='ArrowLeft'){ e.preventDefault(); prev.click(); }
-          });
-
-          addEventListener('resize', updateBtns);
-      });
-  })();
-
-  // Контакты: показать/копировать
-  document.addEventListener('click',(e)=>{
-    const btn=e.target.closest('.ct-reveal'); if(btn){ const wrap=btn.closest('.ct-value'); if(wrap) wrap.setAttribute('data-state','shown'); }
-    const cp=e.target.closest('.ct-copy'); if(cp){ const val=cp.getAttribute('data-copy')||''; navigator.clipboard?.writeText(val).then(()=>{ const old=cp.textContent; cp.textContent='Скопировано!'; setTimeout(()=>cp.textContent=old,1200); });}
+  // Контакты: копирование. Иконку не затираем — меняем на галочку и возвращаем
+  const CHECK_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12.5 10 17l9-10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  document.addEventListener('click', (e)=>{
+    const cp = e.target.closest('.ct-copy');
+    if (!cp || !navigator.clipboard) return;
+    navigator.clipboard.writeText(cp.getAttribute('data-copy') || '').then(()=>{
+      if (!cp.dataset.icon) cp.dataset.icon = cp.innerHTML;
+      clearTimeout(cp._copyTimer);
+      cp.innerHTML = CHECK_ICON;
+      cp.classList.add('copied');
+      cp.title = 'Скопировано';
+      cp._copyTimer = setTimeout(()=>{ cp.innerHTML = cp.dataset.icon; cp.classList.remove('copied'); cp.removeAttribute('title'); }, 1200);
+    });
   });
 
   (function flow(){
@@ -1219,29 +1177,6 @@
     requestAnimationFrame(tick);
   })();
 
-  (function flatContacts(){
-    document.addEventListener('click', (e)=>{
-      const btn = e.target.closest('.ct-reveal');
-      if (btn){
-        const wrap = btn.closest('.ct-value');
-        if (wrap){
-          wrap.setAttribute('data-state', 'shown');
-          // аккуратно докрутить карточку в центр, чтобы значение было видно целиком
-          setTimeout(()=> wrap.closest('.ct-flat')?.scrollIntoView({behavior:'smooth', block:'center'}), 0);
-        }
-      }
-      const cp = e.target.closest('.ct-copy');
-      if (cp){
-        const val = cp.getAttribute('data-copy') || '';
-        navigator.clipboard?.writeText(val).then(()=>{
-          const old = cp.textContent;
-          cp.textContent = 'Скопировано!';
-          setTimeout(()=>cp.textContent = old, 1200);
-        });
-      }
-    });
-  })();
-
   (function setProcessSteps(){
     const section = document.getElementById('process');
     const steps = section?.querySelectorAll('.steps .step').length || 0;
@@ -1249,88 +1184,22 @@
   })();
 
   (function mobileDrawer(){
-    const btn = document.getElementById('menuToggle');
-    const drawer = document.getElementById('mobileDrawer');
+    const btn = $('#menuToggle');
+    const drawer = $('#mobileDrawer');
     if (!btn || !drawer) return;
 
-    const panel = drawer.querySelector('.drawer-panel');
     const backdrop = drawer.querySelector('.drawer-backdrop');
     const links = drawer.querySelectorAll('.drawer-link');
 
     const open = () => {
       drawer.hidden = false;
       // на следующий кадр — чтобы сработали CSS-переходы
-      requestAnimationFrame(()=> {
-        drawer.classList.add('open');
-        btn.setAttribute('aria-expanded', 'true');
-        drawer.setAttribute('aria-hidden', 'false');
-        document.body.classList.add('no-scroll');
-        panel.focus({preventScroll:true});
-      });
-    };
-    const close = () => {
-      drawer.classList.remove('open');
-      btn.setAttribute('aria-expanded', 'false');
-      drawer.setAttribute('aria-hidden', 'true');
-      document.body.classList.remove('no-scroll');
-      // дождёмся конца анимации
-      setTimeout(()=>{ drawer.hidden = true; }, 220);
-    };
-
-    btn.addEventListener('click', () => drawer.classList.contains('open') ? close() : open());
-    backdrop.addEventListener('click', close);
-    addEventListener('keydown', e => { if (e.key === 'Escape' && drawer.classList.contains('open')) close(); });
-
-    // Функция плавного скролла (не трогаем твои переменные; делаем безопасно)
-    if (typeof window.scrollToHash !== 'function') {
-      window.scrollToHash = function(hash){
-        const el = document.querySelector(hash);
-        if (!el) return;
-        const header = document.querySelector('.site-header');
-        const offset = (window.headerH || header?.offsetHeight || 64) + 8;
-        const y = el.getBoundingClientRect().top + window.scrollY - offset;
-        window.scrollTo({ top: y, behavior: 'smooth' });
-      };
-    }
-
-    // Клик по пунктам меню: плавный скролл + закрытие панели + подсветка в ХЕДЕРЕ
-    links.forEach(a => a.addEventListener('click', (e) => {
-      e.preventDefault();
-      const hash = a.getAttribute('href');
-      close();
-      // обновим активную ссылку в шапке — работаем с уже существующими data-nav
-      const headerLink = document.querySelector(`header a[data-nav][href="${hash}"]`);
-      if (headerLink) {
-        document.querySelectorAll('header a[data-nav]').forEach(x => x.classList.remove('active'));
-        headerLink.classList.add('active');
-        history.pushState(null, '', hash);
-      }
-      scrollToHash(hash);
-    }));
-
-    // Авто-закрытие при ресайзе на десктоп
-    addEventListener('resize', () => {
-      if (window.innerWidth > 560 && drawer.classList.contains('open')) close();
-    }, { passive:true });
-  })();
-
-  (function mobileDrawer(){
-    const btn = $('#menuToggle');
-    const drawer = $('#mobileDrawer');
-    if (!btn || !drawer) return;
-
-    const panel = drawer.querySelector('.drawer-panel');
-    const backdrop = drawer.querySelector('.drawer-backdrop');
-    const links = drawer.querySelectorAll('.drawer-link');
-
-    const open = () => {
-      drawer.hidden = false;
       requestAnimationFrame(() => {
         drawer.classList.add('open');
         btn.setAttribute('aria-expanded', 'true');
         drawer.setAttribute('aria-hidden', 'false');
         document.body.classList.add('no-scroll');
-        panel.focus?.({ preventScroll: true });
+        links[0]?.focus({ preventScroll: true });
       });
     };
     const close = () => {
@@ -1341,28 +1210,18 @@
       setTimeout(() => { drawer.hidden = true; }, 220);
     };
 
-    btn.addEventListener('click', () =>
-            drawer.classList.contains('open') ? close() : open()
-    );
+    btn.addEventListener('click', () => drawer.classList.contains('open') ? close() : open());
     backdrop.addEventListener('click', close);
-    addEventListener('keydown', e => {
-      if (e.key === 'Escape' && drawer.classList.contains('open')) close();
-    });
+    addEventListener('keydown', e => { if (e.key === 'Escape' && drawer.classList.contains('open')) { close(); btn.focus(); } });
 
     // Пункты меню: закрыть панель, подсветить пункт в хедере и проскроллить
     links.forEach(a => a.addEventListener('click', e => {
       e.preventDefault();
       const hash = a.getAttribute('href');
       close();
-      const headerLink = document.querySelector(`header a[data-nav][href="${hash}"]`);
-      if (headerLink) {
-        document.querySelectorAll('header a[data-nav]').forEach(x => x.classList.remove('active'));
-        headerLink.classList.add('active');
-        history.pushState?.(null, '', hash);
-      }
-      // используем уже существующую функцию
-      if (typeof scrollToHash === 'function') scrollToHash(hash);
-      else location.hash = hash;
+      setActive(map.get(hash));
+      history.pushState(null, '', hash);
+      scrollToHash(hash);
     }));
 
     // Если расширили экран — закрываем выезжалку
@@ -1370,20 +1229,6 @@
       if (innerWidth > 560 && drawer.classList.contains('open')) close();
     }, { passive: true });
   })();
-
 </script>
-<aside id="mobileDrawer" class="drawer" hidden aria-hidden="true" aria-label="Меню">
-  <div class="drawer-backdrop" data-close></div>
-  <nav class="drawer-panel">
-    <h3>Оглавление</h3>
-    <ul>
-      <!-- Важно: без data-nav, чтобы не мешать подсветке в хедере -->
-      <li><a href="#services"  class="drawer-link">Услуги</a></li>
-      <li><a href="#portfolio" class="drawer-link">Примеры</a></li>
-      <li><a href="#process"   class="drawer-link">Процесс</a></li>
-      <li><a href="#contacts"  class="drawer-link">Контакты</a></li>
-    </ul>
-  </nav>
-</aside>
 </body>
 </html>
