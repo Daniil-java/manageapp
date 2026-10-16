@@ -16,9 +16,14 @@ public class TopicCategory {
     private Long id;
     @Enumerated(EnumType.STRING)
     private TopicType topicType;
+    // подпись рубрики для админа (/q, превью)
     private String name;
     private Integer dailySlots;
     private Boolean isActive;
+    // дописывается последней строкой поста, null — без хэштега
+    private String hashtag;
+    // посты рубрики автопилот ставит в очередь без оценки AI (у рубрик нет источника)
+    private boolean autopilot;
 
     public enum TopicType {
         SCIENCE_ARTICLE,

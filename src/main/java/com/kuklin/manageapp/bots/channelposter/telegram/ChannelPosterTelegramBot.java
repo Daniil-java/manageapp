@@ -2,13 +2,23 @@ package com.kuklin.manageapp.bots.channelposter.telegram;
 
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.telegram.telegrambots.meta.api.methods.ParseMode;
+import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
+import org.telegram.telegrambots.meta.api.objects.InputFile;
+import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+import java.io.ByteArrayInputStream;
 import java.util.List;
+import java.util.UUID;
 
 @Component
+@Slf4j
 public class ChannelPosterTelegramBot extends TelegramBot {
 
     private final List<Long> adminsIds;
@@ -36,6 +46,27 @@ public class ChannelPosterTelegramBot extends TelegramBot {
                 update.getCallbackQuery().getFrom().getId();
         if (!adminsIds.contains(userId)) return;
         channelPosterTelegramFacade.handleUpdate(update);
+    }
+
+    /**
+     * Фото с HTML-подписью (до 1024 символов).
+     *
+     * @return отправленное сообщение или null, если Telegram не принял (например, не разобрал HTML)
+     */
+    public Message sendHtmlPhoto(long chatId, byte[] photo, String caption, InlineKeyboardMarkup keyboard) {
+        SendPhoto sendPhoto = SendPhoto.builder()
+                .chatId(String.valueOf(chatId))
+                .photo(new InputFile(new ByteArrayInputStream(photo), UUID.randomUUID() + ".jpg"))
+                .caption(caption)
+                .parseMode(ParseMode.HTML)
+                .replyMarkup(keyboard)
+                .build();
+        try {
+            return execute(sendPhoto);
+        } catch (TelegramApiException e) {
+            log.warn("Can't send photo with caption to {}: {}", chatId, e.getMessage());
+            return null;
+        }
     }
 
     @Override

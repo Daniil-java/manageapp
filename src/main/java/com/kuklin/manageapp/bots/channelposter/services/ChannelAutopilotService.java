@@ -2,6 +2,7 @@ package com.kuklin.manageapp.bots.channelposter.services;
 
 import com.kuklin.manageapp.bots.channelposter.configurations.ChannelPosterProperties;
 import com.kuklin.manageapp.bots.channelposter.entities.PostQueue;
+import com.kuklin.manageapp.bots.channelposter.entities.TopicCategory;
 import com.kuklin.manageapp.bots.channelposter.entities.source.ContentSource;
 import com.kuklin.manageapp.bots.channelposter.entities.source.SourceItem;
 import com.kuklin.manageapp.bots.channelposter.services.source.ContentSourceService;
@@ -37,6 +38,7 @@ public class ChannelAutopilotService {
     private final ContentSourceService sourceService;
     private final PostReviewService reviewService;
     private final ChannelPosterProperties properties;
+    private final RubricTopicService topicService;
 
     /**
      * @return сколько постов автопилот поставил в очередь
@@ -116,6 +118,18 @@ public class ChannelAutopilotService {
                 .append(", ждут фильтра ").append(itemService.countByStatus(SourceItem.Status.NEW))
                 .append(", одобрено и ждут поста ").append(itemService.countByStatus(SourceItem.Status.APPROVED))
                 .append('\n');
+
+        List<TopicCategory> rubrics = topicService.getRubrics();
+        if (!rubrics.isEmpty()) {
+            sb.append("Темы рубрик (новых):");
+            for (TopicCategory rubric : rubrics) {
+                long fresh = topicService.countNew(rubric.getId());
+                sb.append(' ').append(safe(rubric.getName())).append(" — ").append(fresh)
+                        .append(fresh < RubricTopicService.MIN_NEW_TOPICS ? " ⚠️" : "").append(';');
+            }
+            sb.setLength(sb.length() - 1);
+            sb.append(" · /topics\n");
+        }
 
         List<ContentSource> broken = sourceService.getActive().stream()
                 .filter(s -> s.getFailCount() != null && s.getFailCount() > 0)

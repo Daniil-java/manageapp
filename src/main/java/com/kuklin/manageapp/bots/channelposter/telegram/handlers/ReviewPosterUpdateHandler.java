@@ -104,7 +104,7 @@ public class ReviewPosterUpdateHandler implements ChannelPosterUpdateHandler {
                         return;
                     }
                     bot.sendEditMessageReplyMarkupNull(chatId, messageId);
-                    reviewService.sendPreview(chatId, post, false);
+                    reviewService.sendPreview(chatId, post, true);
                 }
                 case NO_IMAGE_CMD -> {
                     postImageService.deletePostImageByPostQueueId(post.getId());

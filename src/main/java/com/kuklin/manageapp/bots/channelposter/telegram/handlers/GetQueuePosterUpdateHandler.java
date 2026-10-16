@@ -1,8 +1,10 @@
 package com.kuklin.manageapp.bots.channelposter.telegram.handlers;
 
 import com.kuklin.manageapp.bots.channelposter.entities.PostQueue;
+import com.kuklin.manageapp.bots.channelposter.entities.TopicCategory;
 import com.kuklin.manageapp.bots.channelposter.services.PostQueueService;
 import com.kuklin.manageapp.bots.channelposter.services.PostReviewService;
+import com.kuklin.manageapp.bots.channelposter.services.TopicCategoryService;
 import com.kuklin.manageapp.bots.channelposter.telegram.ChannelPosterTelegramBot;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgutils.Command;
@@ -12,6 +14,7 @@ import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Update;
 
 import java.util.List;
+import java.util.Map;
 
 import static com.kuklin.manageapp.bots.channelposter.telegram.handlers.ReviewPosterUpdateHandler.CHANNEL_ZONE;
 import static com.kuklin.manageapp.bots.channelposter.telegram.handlers.ReviewPosterUpdateHandler.TIME_FORMAT;
@@ -26,6 +29,7 @@ public class GetQueuePosterUpdateHandler implements ChannelPosterUpdateHandler {
     private final ChannelPosterTelegramBot channelPosterTelegramBot;
     private final PostQueueService postQueueService;
     private final PostReviewService postReviewService;
+    private final TopicCategoryService topicCategoryService;
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
@@ -40,11 +44,13 @@ public class GetQueuePosterUpdateHandler implements ChannelPosterUpdateHandler {
 
         List<PostQueue> queued = postQueueService.getQueuedOrdered();
         List<PostQueue> review = postQueueService.getPostsByStatus(PostQueue.PostQueueStatus.REVIEW);
+        Map<Long, TopicCategory> categories = topicCategoryService.getAllById();
 
         StringBuilder sb = new StringBuilder("<b>Очередь</b> (").append(queued.size()).append(")\n");
         for (PostQueue post : queued) {
             sb.append(post.getScheduledAt().atZone(CHANNEL_ZONE).format(TIME_FORMAT))
-                    .append(" · #").append(post.getId()).append(' ').append(escape(post.getTitle())).append('\n');
+                    .append(" · #").append(post.getId()).append(' ')
+                    .append(getRubricPrefix(categories, post)).append(escape(post.getTitle())).append('\n');
         }
         if (queued.isEmpty()) {
             sb.append("пусто\n");
@@ -52,7 +58,8 @@ public class GetQueuePosterUpdateHandler implements ChannelPosterUpdateHandler {
 
         sb.append("\n<b>На проверке</b> (").append(review.size()).append(")\n");
         for (PostQueue post : review) {
-            sb.append("#").append(post.getId()).append(' ').append(escape(post.getTitle()));
+            sb.append("#").append(post.getId()).append(' ')
+                    .append(getRubricPrefix(categories, post)).append(escape(post.getTitle()));
             if (post.getAiScore() != null) {
                 sb.append(" · AI ").append(post.getAiScore()).append("/10");
             }
@@ -72,6 +79,15 @@ public class GetQueuePosterUpdateHandler implements ChannelPosterUpdateHandler {
         } catch (Exception e) {
             channelPosterTelegramBot.sendReturnedMessage(chatId, "Нет поста #" + escape(rawId));
         }
+    }
+
+    // «[Миф или правда] » для рубрик; у статей подписи нет — их большинство
+    private static String getRubricPrefix(Map<Long, TopicCategory> categories, PostQueue post) {
+        TopicCategory category = categories.get(post.getCategoryId());
+        if (category == null || category.getTopicType() == TopicCategory.TopicType.ARTICLE) {
+            return "";
+        }
+        return "[" + escape(category.getName()) + "] ";
     }
 
     private static String escape(String s) {

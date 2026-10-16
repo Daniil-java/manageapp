@@ -5,6 +5,7 @@ import com.kuklin.manageapp.bots.channelposter.components.PostPublisher;
 import com.kuklin.manageapp.bots.channelposter.configurations.ChannelPosterProperties;
 import com.kuklin.manageapp.bots.channelposter.entities.PostImage;
 import com.kuklin.manageapp.bots.channelposter.entities.PostQueue;
+import com.kuklin.manageapp.bots.channelposter.entities.TopicCategory;
 import com.kuklin.manageapp.bots.channelposter.telegram.ChannelPosterBotKeyComponent;
 import com.kuklin.manageapp.bots.channelposter.telegram.ChannelPosterTelegramBot;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
@@ -43,15 +44,15 @@ public class PostReviewService {
     private final PostQueueService postQueueService;
     private final PostPublisher publisher;
     private final ChannelPosterProperties properties;
+    private final TopicCategoryService topicCategoryService;
 
     /**
      * Генерирует картинку, переводит пост в REVIEW и рассылает превью.
      */
     public void prepareAndSend(PostQueue post, List<Long> chatIds) {
-        // первый получатель уже видит картинку — ему превью без повтора фото
-        Long imageShownTo = generateImage(post, chatIds.get(0)) ? chatIds.get(0) : null;
+        generateImage(post, chatIds.get(0));
         PostQueue review = postQueueService.markReview(post);
-        chatIds.forEach(chatId -> sendPreview(chatId, review, !chatId.equals(imageShownTo)));
+        chatIds.forEach(chatId -> sendPreview(chatId, review, true));
     }
 
     public void prepareAndSendToAdmins(PostQueue post) {
@@ -65,7 +66,8 @@ public class PostReviewService {
     }
 
     /**
-     * Новая картинка. Фото сразу уходит в chatId, а его file_id в Telegram сохраняем — с ним пост и публикуется.
+     * Новая картинка. Фото уходит в chatId только ради file_id в Telegram (с ним пост и публикуется)
+     * и сразу удаляется: превью следом показывает пост так, как он выйдет в канале, — с этой картинкой.
      *
      * @return true, если картинка готова
      */
@@ -81,6 +83,7 @@ public class PostReviewService {
             }
             String fileId = message.getPhoto().get(message.getPhoto().size() - 1).getFileId();
             postImageService.saveNewImage(PostImage.ImageSource.AI_GENERATED, PostImage.ImageStatus.READY, fileId, post.getId());
+            bot.sendDeleteMessage(chatId, message.getMessageId());
             return true;
         } catch (Exception e) {
             log.error("Post #{}: image generation failed", post.getId(), e);
@@ -94,6 +97,8 @@ public class PostReviewService {
 
     private String footer(PostQueue post) {
         StringBuilder sb = new StringBuilder("\n\n———\n<i>Пост #").append(post.getId());
+        topicCategoryService.findById(post.getCategoryId())
+                .ifPresent(category -> sb.append(" · ").append(category.getName()));
         if (post.getAiScore() != null) {
             sb.append(" · оценка AI ").append(post.getAiScore()).append("/10");
         }
@@ -111,13 +116,18 @@ public class PostReviewService {
     }
 
     /**
-     * Пост, который автопилот поставит в очередь сам: оценка AI от channelposter.autopilot-min-score
-     * и автопилот включён (channelposter.autopilot-after больше нуля). Ручные посты без оценки — нет.
+     * Пост, который автопилот поставит в очередь сам, если автопилот включён (channelposter.autopilot-after
+     * больше нуля): оценка AI от channelposter.autopilot-min-score или пост рубрики с autopilot = true
+     * (у рубрик нет источника и оценки). Ручные посты без оценки — нет.
      */
     public boolean isAutopilotCandidate(PostQueue post) {
-        return isAutopilotEnabled()
-                && post.getAiScore() != null
-                && post.getAiScore() >= properties.getAutopilotMinScore();
+        if (!isAutopilotEnabled()) return false;
+        if (post.getAiScore() != null) {
+            return post.getAiScore() >= properties.getAutopilotMinScore();
+        }
+        return topicCategoryService.findById(post.getCategoryId())
+                .map(TopicCategory::isAutopilot)
+                .orElse(false);
     }
 
     public boolean isAutopilotEnabled() {

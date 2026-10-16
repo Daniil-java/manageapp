@@ -47,6 +47,14 @@ public class OpenAiChatCompletionRequest {
                 .setTemperature(TEMPERATURE_CREATIVE);
     }
 
+    /**
+     * JSON-режим с высокой температурой — тексты по похожим заданиям не звучат одинаково.
+     */
+    public static OpenAiChatCompletionRequest makeCreativeJsonRequest(String content) {
+        return makeCreativeRequest(content)
+                .setResponseFormat(ResponseFormat.JSON_OBJECT);
+    }
+
     public static OpenAiChatCompletionRequest makeDefaultRequest(
             String content) {
 

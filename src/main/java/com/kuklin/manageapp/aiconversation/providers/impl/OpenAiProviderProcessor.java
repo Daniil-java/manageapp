@@ -136,6 +136,21 @@ public class OpenAiProviderProcessor implements ProviderProcessor, AiTextClient 
     }
 
     /**
+     * JSON-режим с высокой температурой: ответ — один JSON-объект, тексты не повторяются.
+     */
+    public String fetchCreativeJsonResponse(
+            String aiKey,
+            String content,
+            BotIdentifier botIdentifier,
+            String uniqLog,
+            MetricsAiInteractionRecord.AiMessageType messageType) {
+        log.info(botIdentifier + " uniq log: " + uniqLog);
+        OpenAiChatCompletionRequest request =
+                OpenAiChatCompletionRequest.makeCreativeJsonRequest(content);
+        return fetchResponse(aiKey, request, botIdentifier, messageType);
+    }
+
+    /**
      * Текстовый запрос в JSON-режиме: ответ — всегда один JSON-объект.
      */
     public String fetchJsonResponse(

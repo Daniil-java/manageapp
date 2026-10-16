@@ -4,6 +4,7 @@ import com.kuklin.manageapp.bots.channelposter.configurations.ChannelPosterPrope
 import com.kuklin.manageapp.bots.channelposter.entities.PostQueue;
 import com.kuklin.manageapp.bots.channelposter.entities.source.SourceItem;
 import com.kuklin.manageapp.bots.channelposter.services.PostQueueService;
+import com.kuklin.manageapp.bots.channelposter.services.RubricPostService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -26,6 +27,7 @@ public class ContentPipeline {
     private final SourceItemPostService postService;
     private final SourceItemService itemService;
     private final PostQueueService postQueueService;
+    private final RubricPostService rubricPostService;
     private final ChannelPosterProperties properties;
 
     private final ReentrantLock lock = new ReentrantLock();
@@ -77,6 +79,11 @@ public class ContentPipeline {
     }
 
     private int generateUnlocked() {
+        // рубрики — под свои слоты, им не нужны материалы источников
+        return rubricPostService.generateDue() + generateArticles();
+    }
+
+    private int generateArticles() {
         long inPipeline = postQueueService.countInPipeline();
         int toCreate = (int) Math.min(properties.getPostsPerRun(), properties.getPipelineTarget() - inPipeline);
         if (toCreate <= 0) {

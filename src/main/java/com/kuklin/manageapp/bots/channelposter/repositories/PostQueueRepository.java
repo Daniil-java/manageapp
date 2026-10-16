@@ -38,6 +38,8 @@ public interface PostQueueRepository extends JpaRepository<PostQueue, Long> {
 
     long countByStatusIn(Collection<PostQueue.PostQueueStatus> statuses);
 
+    long countByCategoryIdAndStatusIn(Long categoryId, Collection<PostQueue.PostQueueStatus> statuses);
+
     // заголовки недавних постов — AI-фильтр не пропускает повторы тем
     List<PostQueue> findAllByStatusInOrderByCreatedDesc(Collection<PostQueue.PostQueueStatus> statuses, Pageable pageable);
 

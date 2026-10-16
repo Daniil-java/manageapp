@@ -157,6 +157,12 @@ public class PostQueueService {
                 PostQueue.PostQueueStatus.REVIEW, PostQueue.PostQueueStatus.QUEUED));
     }
 
+    // посты рубрики в работе — рубрика генерирует новый, только если их меньше ближайших слотов
+    public long countInPipelineByCategory(Long categoryId) {
+        return postQueueRepository.countByCategoryIdAndStatusIn(categoryId, List.of(
+                PostQueue.PostQueueStatus.REVIEW, PostQueue.PostQueueStatus.QUEUED));
+    }
+
     public Optional<PostQueue> getLastSent() {
         return postQueueRepository.findTopByStatusOrderBySentAtDesc(PostQueue.PostQueueStatus.SENT);
     }
@@ -213,6 +219,9 @@ public class PostQueueService {
             List<PostQueue> plannedPosts = getPlannedAndSentFor(startOfDay, endOfDay);
 
             for (ScheduleSlot slot : categorySlots) {
+                if (!slot.isOn(dateToCheck)) {
+                    continue;
+                }
                 LocalDateTime slotDateTime = LocalDateTime.of(dateToCheck, slot.getPostTime());
 
                 // Если проверяем "сегодня" и время слота уже прошло — пропускаем этот слот

@@ -115,6 +115,7 @@ public enum Command {
     POSTER_SCHEDULE_ARTICLE("/artsch", BotIdentifier.CHANNEL_POSTER),
     POSTER_GET_QUEUE("/q", BotIdentifier.CHANNEL_POSTER),
     POSTER_SOURCES("/src", BotIdentifier.CHANNEL_POSTER),
+    POSTER_TOPICS("/topics", BotIdentifier.CHANNEL_POSTER),
     /** @deprecated et-85: старая команда добавления сабреддита, заменена на «/src add reddit» */
     @Deprecated(since = "et-85", forRemoval = true)
     POSTER_SUBREDDIT("/sub", BotIdentifier.CHANNEL_POSTER),
