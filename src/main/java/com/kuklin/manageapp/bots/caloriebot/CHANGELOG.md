@@ -1,9 +1,8 @@
 ## 0.0.71 (15.10.2026)
-[et-98] — Оплата: повторное списание по одному счёту; серия и отчёты без всей истории
-* Два списания по одной ссылке (оплата с двух устройств: оба pre_checkout проходят, пока счёт CREATED) больше не сливаются в одну запись. Раньше второй successful_payment выдавал покупку повторно в тот же Payment и затирал charge_id первого — первое списание пропадало из учёта, вернуть его через refundTelegramPayment было нельзя. Теперь счёт берётся под блокировкой (PaymentRepository.findByTelegramInvoicePayloadForUpdate), повтор того же charge_id проверяется уже под ней, а любое ещё одно списание по обработанному счёту записывается отдельным Payment со своим charge_id и выдаётся (PaymentService.createExtraChargePayment; раньше так делалось только для 30-дневной подписки за звёзды — продление Telegram).
+[et-98] — Серия и отчёты без всей истории
 * Серия дней: дни с блюдами считаются в БД — distinct дата в таймзоне пользователя (DishRepository.findDishEpochDaysByUserId), строка на день, а не время каждого блюда. Лучшая серия по-прежнему за всю историю. Фиксированное смещение (+03:00, GMT+3) передаётся числом поверх UTC: такую строку Postgres в AT TIME ZONE читает с обратным знаком.
 * Отчёты (PDF, Insights, дашборд мини-приложения — ReportSourceLoader) грузят нормы, действовавшие в период (UserNutritionProfileEntryService.getAllActiveBetween), и вес за период плюс 7 дней до него для сглаживания тренда, плюс внесённые в период задним числом (WeightEntryService.getReportWeights). Раньше — вся история норм и веса. ИИ-инсайты берут последние 20 взвешиваний запросом (getLastWeights), а не всю историю.
-* Тесты: PaymentServiceSuccessfulPaymentTest; ReportServicePdfTest, ReportServiceAiInsightTest — под новые методы загрузки.
+* Тесты: ReportServicePdfTest, ReportServiceAiInsightTest — под новые методы загрузки.
 
 ## 0.0.70 (15.10.2026)
 [et-97] — Нагрузка: пул апдейтов, параллельные дневные отчёты
