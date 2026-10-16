@@ -11,6 +11,7 @@ import com.kuklin.manageapp.bots.channelposter.telegram.ChannelPosterTelegramBot
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -145,6 +146,45 @@ class PollResultsServiceTest {
                 post.getTextContent().startsWith("<b>📊 Итоги «Угадай калорийность»</b>")
                         && post.getTextContent().endsWith("Комментарий\n\n" + ChannelFeedbackService.buildBotLinkLine(
                         "https://t.me/calorydairy_bot?start=zch44"))), eq(50));
+    }
+
+    @Test
+    void deletedPollGetsResultsAsPlainPost() {
+        ChannelPoll poll = quiz(List.of(6, 3, 1), 10);
+        when(pollService.getDueForResults()).thenReturn(List.of(poll));
+        when(publisher.publishReply(any(), any(), eq(50))).thenReturn(null);
+        when(publisher.publishReply(any(), any(), isNull())).thenReturn(62);
+
+        assertThat(service.publishDueResults()).isEqualTo(1);
+
+        verify(pollService).markResultsSent(poll, 70L);
+    }
+
+    @Test
+    void givesUpAfterADayAndTellsAdmins() {
+        ChannelPoll poll = quiz(List.of(6, 3, 1), 10)
+                .setResultsDueAt(Instant.now().minus(PollResultsService.GIVE_UP_AFTER).minusSeconds(60));
+        when(pollService.getDueForResults()).thenReturn(List.of(poll));
+
+        assertThat(service.publishDueResults()).isZero();
+
+        verify(pollService).markResultsSent(poll, null);
+        verify(bot).sendReturnedMessage(eq(1L), contains("бросаю попытки"));
+        verifyNoInteractions(generator, publisher);
+    }
+
+    @Test
+    void oneBrokenPollDoesNotBlockOthers() {
+        ChannelPoll broken = quiz(List.of(6, 3, 1), 10).setId(1L);
+        ChannelPoll fine = quiz(List.of(6, 3, 1), 10).setId(2L);
+        when(pollService.getDueForResults()).thenReturn(List.of(broken, fine));
+        when(generator.generateComment(eq(broken), any())).thenThrow(new IllegalStateException("AI"));
+        when(publisher.publishReply(any(), any(), any())).thenReturn(61);
+
+        assertThat(service.publishDueResults()).isEqualTo(1);
+
+        verify(pollService).markResultsSent(fine, 70L);
+        verify(pollService, never()).markResultsSent(eq(broken), any());
     }
 
     private static ChannelPoll quiz(List<Integer> votes, int total) {

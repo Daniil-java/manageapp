@@ -49,9 +49,18 @@ public class PostPublisher {
     public Integer publish(Long chatId, PostQueue post) {
         Optional<ChannelPoll> poll = pollService.findByPostQueueId(post.getId());
         if (poll.isPresent()) {
-            sendLeadPhoto(chatId, post);
+            Message lead = sendLeadPhoto(chatId, post);
+            // угадайка без фото — вопрос «что на фото выше» без фото: не публикуем, пост уйдёт в FAILED
+            if (lead == null && poll.get().getType() == ChannelPoll.Type.CALORIES) {
+                log.warn("Post #{}: guess-calories photo not sent, poll skipped", post.getId());
+                return null;
+            }
             Message message = sendPoll(chatId, poll.get());
-            if (message == null) return null;
+            if (message == null) {
+                // квиз не ушёл — не оставляем в канале фото без вопроса
+                if (lead != null) bot.sendDeleteMessage(chatId, lead.getMessageId());
+                return null;
+            }
             // по id опроса придут голоса, на сообщение ответят итоги
             pollService.markPublished(poll.get(), message.getPoll().getId(), message.getMessageId());
             return message.getMessageId();
@@ -93,12 +102,17 @@ public class PostPublisher {
     }
 
     // у угадайки перед квизом — фото блюда с подписью; у обычных квизов и опросов картинки нет
-    private void sendLeadPhoto(Long chatId, PostQueue post) {
+    /**
+     * @return сообщение с фото или null — фото нет или Telegram не принял
+     */
+    private Message sendLeadPhoto(Long chatId, PostQueue post) {
         byte[] photo = getPhotoOrNull(post);
-        if (photo == null) return;
-        if (bot.sendHtmlPhoto(chatId, photo, render(post), null) == null) {
+        if (photo == null) return null;
+        Message message = bot.sendHtmlPhoto(chatId, photo, render(post), null);
+        if (message == null) {
             log.warn("Post #{}: lead photo of the poll rejected", post.getId());
         }
+        return message;
     }
 
     private Message sendPoll(Long chatId, ChannelPoll poll) {
@@ -148,7 +162,13 @@ public class PostPublisher {
         if (post.getId() == null || category == null || category.getTopicType() == null) return null;
         if (!BOT_LINK_TYPES.contains(category.getTopicType())) return null;
         if (post.getId() % ChannelFeedbackService.CTA_EVERY != 0) return null;
-        return feedbackService.getBotLink(post.getId());
+        // ссылка — приятное дополнение: не создалась UTM-запись — пост выходит без неё, а не падает
+        try {
+            return feedbackService.getBotLink(post.getId());
+        } catch (Exception e) {
+            log.warn("Post #{}: bot link not created: {}", post.getId(), e.getMessage());
+            return null;
+        }
     }
 
     /**

@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -26,6 +27,8 @@ import java.util.stream.IntStream;
 public class PollResultsService {
 
     private static final int BAR_LENGTH = 10;
+    // столько после срока итогов пробуем снова (раз в час), дальше — бросаем и пишем админам
+    static final Duration GIVE_UP_AFTER = Duration.ofHours(24);
 
     private final ChannelPollService pollService;
     private final PostQueueService postQueueService;
@@ -53,6 +56,13 @@ public class PollResultsService {
     }
 
     private boolean publishResults(ChannelPoll poll) {
+        // сутки не получалось (Telegram, AI) — сдаёмся: иначе каждый час новые попытки и новый запрос к AI
+        if (poll.getResultsDueAt() != null && poll.getResultsDueAt().isBefore(Instant.now().minus(GIVE_UP_AFTER))) {
+            pollService.markResultsSent(poll, null);
+            notifyAdmins("📊 Итоги «" + escape(poll.getQuestion()) + "» так и не вышли за сутки — бросаю попытки. "
+                    + "Подробности в логах.");
+            return false;
+        }
         if (poll.getTotalVoters() < properties.getPollResultsMinVoters()) {
             pollService.markResultsSent(poll, null);
             notifyAdmins("📊 Итоги «" + escape(poll.getQuestion()) + "» не публикую: ответили " + poll.getTotalVoters()
@@ -63,8 +73,12 @@ public class PollResultsService {
         String comment = generator.generateComment(poll, buildData(poll));
         String text = buildStats(poll) + "\n\n" + (comment != null ? comment : buildFallbackComment(poll));
         if (poll.getType() == ChannelPoll.Type.CALORIES) {
-            // угадайка показывает калорийного бота в деле — ссылка на него всегда
-            text += "\n\n" + ChannelFeedbackService.buildBotLinkLine(feedbackService.getBotLink(poll.getPostQueueId()));
+            // угадайка показывает калорийного бота в деле — ссылка на него всегда (не создалась — без неё)
+            try {
+                text += "\n\n" + ChannelFeedbackService.buildBotLinkLine(feedbackService.getBotLink(poll.getPostQueueId()));
+            } catch (Exception e) {
+                log.warn("Poll #{}: bot link not created: {}", poll.getId(), e.getMessage());
+            }
         }
         PostQueue results = new PostQueue()
                 .setCategoryId(topicCategoryService.getTopicCategoryByTopicTypeOrNull(TopicCategory.TopicType.QUIZ_ANSWER)
@@ -74,6 +88,11 @@ public class PollResultsService {
                 .setTextContent(text.trim());
 
         Integer messageId = publisher.publishReply(keys.getChannelId(), results, poll.getTgMessageId());
+        if (messageId == null && poll.getTgMessageId() != null) {
+            // опрос могли удалить из канала — тогда ответить не на что: итоги обычным постом
+            log.warn("Poll #{}: reply to the poll failed, sending results without reply", poll.getId());
+            messageId = publisher.publishReply(keys.getChannelId(), results, null);
+        }
         if (messageId == null) {
             // итоги не помечены — следующий запуск попробует снова
             log.warn("Poll #{}: Telegram didn't accept results", poll.getId());

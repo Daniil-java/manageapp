@@ -103,8 +103,14 @@ public class ChannelAutopilotService {
         Optional<PostQueue> lastSent = postQueueService.getLastSent();
 
         StringBuilder sb = new StringBuilder("📊 <b>Канал: утренний отчёт</b>\n\n");
-        sb.append(feedbackService.buildReportSection(bot.getChatMemberCountOrNull(keys.getChannelId()), saveSubscribers))
-                .append('\n');
+        // статистика — дополнение: её сбой не должен оставить админа без отчёта об очереди и источниках
+        try {
+            sb.append(feedbackService.buildReportSection(bot.getChatMemberCountOrNull(keys.getChannelId()), saveSubscribers));
+        } catch (Exception e) {
+            log.error("Report: feedback section failed", e);
+            sb.append("⚠️ Статистика канала недоступна — подробности в логах\n");
+        }
+        sb.append('\n');
 
         if (lastSent.isPresent() && lastSent.get().getSentAt() != null) {
             Instant sentAt = lastSent.get().getSentAt();

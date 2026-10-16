@@ -194,6 +194,7 @@ class PostPublisherTest {
         when(sent.getPoll()).thenReturn(tgPoll);
         when(sent.getMessageId()).thenReturn(52);
         when(bot.sendPoll(anyLong(), anyString(), anyList(), any(), any())).thenReturn(sent);
+        when(bot.sendHtmlPhoto(anyLong(), any(), anyString(), any())).thenReturn(mock(Message.class));
 
         assertThat(publisher.publish(100L, post("<b>Угадай</b>"))).isEqualTo(52);
 
@@ -201,6 +202,41 @@ class PostPublisherTest {
         order.verify(bot).sendHtmlPhoto(100L, PHOTO, "<b>Угадай</b>\n\n#миф", null);
         order.verify(bot).sendPoll(eq(100L), anyString(), anyList(), eq(0), anyString());
         verify(pollService).markPublished(poll, "tg", 52);
+    }
+
+    @Test
+    void guessWithoutPhotoIsNotPublished() {
+        when(pollService.findByPostQueueId(1L)).thenReturn(Optional.of(quiz().setType(ChannelPoll.Type.CALORIES)));
+        when(bot.sendHtmlPhoto(anyLong(), any(), anyString(), any())).thenReturn(null);
+
+        assertThat(publisher.publish(100L, post("<b>Угадай</b>"))).isNull();
+
+        verify(bot, never()).sendPoll(anyLong(), anyString(), anyList(), any(), any());
+    }
+
+    @Test
+    void rejectedQuizRemovesItsPhotoFromChannel() {
+        when(pollService.findByPostQueueId(1L)).thenReturn(Optional.of(quiz().setType(ChannelPoll.Type.CALORIES)));
+        Message lead = mock(Message.class);
+        when(lead.getMessageId()).thenReturn(51);
+        when(bot.sendHtmlPhoto(anyLong(), any(), anyString(), any())).thenReturn(lead);
+        when(bot.sendPoll(anyLong(), anyString(), anyList(), any(), any())).thenReturn(null);
+
+        assertThat(publisher.publish(100L, post("<b>Угадай</b>"))).isNull();
+
+        verify(bot).sendDeleteMessage(100L, 51);
+        verify(pollService, never()).markPublished(any(), any(), any());
+    }
+
+    @Test
+    void botLinkFailureDoesNotBreakPost() {
+        when(topicCategoryService.findById(8L)).thenReturn(Optional.of(
+                new TopicCategory().setTopicType(TopicCategory.TopicType.ARTICLE)));
+        when(feedbackService.getBotLink(3L)).thenThrow(new IllegalStateException("db down"));
+
+        publisher.send(100L, new PostQueue().setId(3L).setCategoryId(8L).setTextContent("Текст"), null, null, false);
+
+        verify(bot).sendReturnedMessage(100L, "Текст", null, null);
     }
 
     private static ChannelPoll quiz() {

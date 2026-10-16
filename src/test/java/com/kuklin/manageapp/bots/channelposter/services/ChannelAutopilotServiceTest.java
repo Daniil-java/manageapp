@@ -27,12 +27,13 @@ class ChannelAutopilotServiceTest {
     private final PostQueueService postQueueService = mock(PostQueueService.class);
     private final ChannelPosterProperties properties = new ChannelPosterProperties();
     private final TopicCategoryService topicCategoryService = mock(TopicCategoryService.class);
+    private final ChannelFeedbackService feedbackService = mock(ChannelFeedbackService.class);
     private final PostReviewService reviewService = new PostReviewService(
             bot, keys, null, null, postQueueService, null, properties, topicCategoryService,
             mock(ChannelPollService.class));
     private final ChannelAutopilotService service = new ChannelAutopilotService(
             keys, bot, postQueueService, mock(SourceItemService.class), mock(ContentSourceService.class),
-            reviewService, properties, mock(RubricTopicService.class), mock(ChannelFeedbackService.class));
+            reviewService, properties, mock(RubricTopicService.class), feedbackService);
 
     @BeforeEach
     void setUp() {
@@ -101,6 +102,18 @@ class ChannelAutopilotServiceTest {
 
         assertThat(service.expireStaleReviews()).isZero();
         verifyNoInteractions(bot);
+    }
+
+    @Test
+    void reportGoesOutEvenIfStatisticsFail() {
+        when(feedbackService.buildReportSection(any(), anyBoolean())).thenThrow(new IllegalStateException("utm db"));
+
+        String report = service.buildReport();
+
+        assertThat(report)
+                .contains("Статистика канала недоступна")
+                .contains("В очереди: 0")
+                .contains("На проверке: 0");
     }
 
     @Test
