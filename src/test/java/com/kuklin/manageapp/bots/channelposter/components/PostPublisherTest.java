@@ -1,8 +1,10 @@
 package com.kuklin.manageapp.bots.channelposter.components;
 
+import com.kuklin.manageapp.bots.channelposter.entities.ChannelPoll;
 import com.kuklin.manageapp.bots.channelposter.entities.PostImage;
 import com.kuklin.manageapp.bots.channelposter.entities.PostQueue;
 import com.kuklin.manageapp.bots.channelposter.entities.TopicCategory;
+import com.kuklin.manageapp.bots.channelposter.services.ChannelPollService;
 import com.kuklin.manageapp.bots.channelposter.services.PostImageService;
 import com.kuklin.manageapp.bots.channelposter.services.TopicCategoryService;
 import com.kuklin.manageapp.bots.channelposter.telegram.ChannelPosterTelegramBot;
@@ -10,7 +12,10 @@ import com.kuklin.manageapp.common.services.TelegramService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.telegram.telegrambots.meta.api.objects.Message;
+import org.telegram.telegrambots.meta.api.objects.polls.Poll;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -25,7 +30,8 @@ class PostPublisherTest {
     private final PostImageService postImageService = mock(PostImageService.class);
     private final TelegramService telegramService = mock(TelegramService.class);
     private final TopicCategoryService topicCategoryService = mock(TopicCategoryService.class);
-    private final PostPublisher publisher = new PostPublisher(bot, postImageService, telegramService, topicCategoryService);
+    private final ChannelPollService pollService = mock(ChannelPollService.class);
+    private final PostPublisher publisher = new PostPublisher(bot, postImageService, telegramService, topicCategoryService, pollService);
 
     @BeforeEach
     void setUp() {
@@ -102,6 +108,64 @@ class PostPublisherTest {
 
         verify(bot).sendPhotoMessage(eq(100L), eq(PHOTO), anyString(), isNull(), isNull());
         verify(bot).sendReturnedMessage(100L, "Короткий миф\n\n#миф", null, null);
+    }
+
+    @Test
+    void pollPostGoesAsTelegramQuizAndRemembersPollId() {
+        ChannelPoll quiz = quiz();
+        when(pollService.findByPostQueueId(1L)).thenReturn(Optional.of(quiz));
+        Message sent = mock(Message.class);
+        Poll tgPoll = mock(Poll.class);
+        when(tgPoll.getId()).thenReturn("tg-poll");
+        when(sent.getPoll()).thenReturn(tgPoll);
+        when(sent.getMessageId()).thenReturn(50);
+        when(bot.sendPoll(100L, "Где больше белка?", List.of("Творог", "Яблоко"), 0, "В твороге 16 г на 100 г"))
+                .thenReturn(sent);
+
+        assertThat(publisher.publish(100L, post("Где больше белка?"))).isEqualTo(50);
+
+        verify(pollService).markPublished(quiz, "tg-poll", 50);
+        verifyNoInteractions(postImageService);
+    }
+
+    @Test
+    void regularPollIsSentWithoutCorrectAnswer() {
+        ChannelPoll poll = quiz().setType(ChannelPoll.Type.REGULAR).setCorrectOptionId(null).setExplanation(null);
+        when(pollService.findByPostQueueId(1L)).thenReturn(Optional.of(poll));
+
+        assertThat(publisher.publish(100L, post("Q"))).isNull();
+
+        verify(bot).sendPoll(100L, "Где больше белка?", List.of("Творог", "Яблоко"), null, null);
+        verify(pollService, never()).markPublished(any(), any(), any());
+    }
+
+    @Test
+    void pollPreviewShowsPollThenAnswerWithButtons() {
+        when(pollService.findByPostQueueId(1L)).thenReturn(Optional.of(quiz()));
+        InlineKeyboardMarkup keyboard = new InlineKeyboardMarkup();
+
+        publisher.send(200L, post("Q"), "\n\n— футер", keyboard, true);
+
+        verify(bot).sendPoll(eq(200L), anyString(), anyList(), eq(0), anyString());
+        verify(bot).sendReturnedMessage(200L,
+                "✅ Правильный ответ: Творог\n💬 В твороге 16 г на 100 г\n\n— футер", keyboard, null);
+    }
+
+    @Test
+    void resultsReplyToPollMessage() {
+        when(topicCategoryService.findById(9L)).thenReturn(Optional.of(new TopicCategory().setHashtag("#итоги")));
+        Message sent = mock(Message.class);
+        when(sent.getMessageId()).thenReturn(61);
+        when(bot.sendReturnedMessage(100L, "Итоги\n\n#итоги", null, 50)).thenReturn(sent);
+
+        assertThat(publisher.publishReply(100L, new PostQueue().setCategoryId(9L).setTextContent("Итоги"), 50))
+                .isEqualTo(61);
+    }
+
+    private static ChannelPoll quiz() {
+        return new ChannelPoll().setId(3L).setPostQueueId(1L).setType(ChannelPoll.Type.QUIZ)
+                .setQuestion("Где больше белка?").setOptions(List.of("Творог", "Яблоко"))
+                .setCorrectOptionId(0).setExplanation("В твороге 16 г на 100 г");
     }
 
     private static PostQueue post(String text) {

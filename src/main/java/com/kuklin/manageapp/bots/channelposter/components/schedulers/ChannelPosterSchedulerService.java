@@ -1,6 +1,7 @@
 package com.kuklin.manageapp.bots.channelposter.components.schedulers;
 
 import com.kuklin.manageapp.bots.channelposter.services.ChannelAutopilotService;
+import com.kuklin.manageapp.bots.channelposter.services.PollResultsService;
 import com.kuklin.manageapp.bots.channelposter.services.source.ContentPipeline;
 import com.kuklin.manageapp.common.configurations.BotScheduler;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
@@ -13,7 +14,7 @@ import org.springframework.stereotype.Component;
  * Расписание канала (время московское):
  * сбор источников раз в 6 ч → AI-фильтр каждый час → генерация постов каждые 2 ч →
  * автопилот и снятие залежавшихся на проверке постов каждый час,
- * публикация по слотам каждые 10 мин, отчёт админам в 10:00.
+ * публикация по слотам каждые 10 мин, итоги квизов и опросов каждый час в :05, отчёт админам в 10:00.
  */
 @Slf4j
 @Component
@@ -26,6 +27,7 @@ public class ChannelPosterSchedulerService {
     private final PathImageCleanerScheduleProcessor pathImageCleanerScheduleProcessor;
     private final ContentPipeline contentPipeline;
     private final ChannelAutopilotService autopilotService;
+    private final PollResultsService pollResultsService;
 
     // 03:00, 09:00, 15:00, 21:00
     @Scheduled(cron = "0 0 3,9,15,21 * * *", zone = ZONE)
@@ -56,6 +58,16 @@ public class ChannelPosterSchedulerService {
         }
         // после автопилота: сильные посты он уже забрал, снимаем только залежавшиеся остальные
         autopilotService.expireStaleReviews();
+    }
+
+    // итоги квизов и опросов — на следующий день в channelposter.poll-results-hour, здесь проверяем каждый час
+    @Scheduled(cron = "0 5 * * * *", zone = ZONE)
+    public void pollResults() {
+        getInfo("pollResults");
+        int published = pollResultsService.publishDueResults();
+        if (published > 0) {
+            log.info("Poll results published: {}", published);
+        }
     }
 
     @Scheduled(cron = "0 0 10 * * *", zone = ZONE)

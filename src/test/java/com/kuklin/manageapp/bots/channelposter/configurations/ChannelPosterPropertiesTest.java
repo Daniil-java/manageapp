@@ -21,7 +21,9 @@ class ChannelPosterPropertiesTest {
                 "channelposter.autopilot-min-score", "8",
                 "channelposter.autopilot-after", "12h",
                 "channelposter.max-item-age", "30d",
-                "channelposter.review-ttl", "3d"
+                "channelposter.review-ttl", "3d",
+                "channelposter.poll-results-hour", "21",
+                "channelposter.poll-results-min-voters", "3"
         );
 
         ChannelPosterProperties p = new Binder(new MapConfigurationPropertySource(yaml))
@@ -36,6 +38,8 @@ class ChannelPosterPropertiesTest {
         assertThat(p.getAutopilotAfter()).isEqualTo(Duration.ofHours(12));
         assertThat(p.getMaxItemAge()).isEqualTo(Duration.ofDays(30));
         assertThat(p.getReviewTtl()).isEqualTo(Duration.ofDays(3));
+        assertThat(p.getPollResultsHour()).isEqualTo(21);
+        assertThat(p.getPollResultsMinVoters()).isEqualTo(3);
     }
 
     @Test

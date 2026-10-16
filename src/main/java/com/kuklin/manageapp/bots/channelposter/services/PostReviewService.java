@@ -45,12 +45,16 @@ public class PostReviewService {
     private final PostPublisher publisher;
     private final ChannelPosterProperties properties;
     private final TopicCategoryService topicCategoryService;
+    private final ChannelPollService pollService;
 
     /**
      * Генерирует картинку, переводит пост в REVIEW и рассылает превью.
      */
     public void prepareAndSend(PostQueue post, List<Long> chatIds) {
-        generateImage(post, chatIds.get(0));
+        // опрос выходит без картинки — не тратим генерацию
+        if (!isPoll(post)) {
+            generateImage(post, chatIds.get(0));
+        }
         PostQueue review = postQueueService.markReview(post);
         chatIds.forEach(chatId -> sendPreview(chatId, review, true));
     }
@@ -92,7 +96,12 @@ public class PostReviewService {
     }
 
     public void sendPreview(Long chatId, PostQueue post, boolean withImage) {
-        publisher.send(chatId, post, footer(post), keyboard(post.getId()), withImage);
+        InlineKeyboardMarkup buttons = isPoll(post) ? pollKeyboard(post.getId()) : keyboard(post.getId());
+        publisher.send(chatId, post, footer(post), buttons, withImage);
+    }
+
+    private boolean isPoll(PostQueue post) {
+        return pollService.findByPostQueueId(post.getId()).isPresent();
     }
 
     private String footer(PostQueue post) {
@@ -102,7 +111,7 @@ public class PostReviewService {
         if (post.getAiScore() != null) {
             sb.append(" · оценка AI ").append(post.getAiScore()).append("/10");
         }
-        if (postImageService.getByPostQueueIdOrNull(post.getId()) == null) {
+        if (postImageService.getByPostQueueIdOrNull(post.getId()) == null && !isPoll(post)) {
             sb.append(" · без картинки");
         }
         if (isAutopilotCandidate(post)) {
@@ -152,6 +161,17 @@ public class PostReviewService {
                         TelegramKeyboard.button("✂️ Короче", data(SHORT_CMD, postId)),
                         TelegramKeyboard.button("🔁 Картинка", data(IMAGE_CMD, postId)),
                         TelegramKeyboard.button("🚫 Без картинки", data(NO_IMAGE_CMD, postId))
+                )
+                .row(TelegramKeyboard.button("❌ Удалить", data(DELETE_CMD, postId)))
+                .build();
+    }
+
+    // у опроса нет текста и картинки — править нечего: в очередь, сейчас или удалить
+    public static InlineKeyboardMarkup pollKeyboard(Long postId) {
+        return new TelegramKeyboard.TelegramKeyboardBuilder()
+                .row(
+                        TelegramKeyboard.button("✅ В очередь", data(QUEUE_CMD, postId)),
+                        TelegramKeyboard.button("⚡ Сейчас", data(NOW_CMD, postId))
                 )
                 .row(TelegramKeyboard.button("❌ Удалить", data(DELETE_CMD, postId)))
                 .build();

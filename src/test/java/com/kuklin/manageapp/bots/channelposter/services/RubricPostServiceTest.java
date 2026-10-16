@@ -6,6 +6,7 @@ import com.kuklin.manageapp.bots.channelposter.entities.RubricTopic;
 import com.kuklin.manageapp.bots.channelposter.entities.ScheduleSlot;
 import com.kuklin.manageapp.bots.channelposter.entities.TopicCategory;
 import com.kuklin.manageapp.bots.channelposter.model.AiGeneratedContent;
+import com.kuklin.manageapp.bots.channelposter.model.PollContent;
 import com.kuklin.manageapp.bots.channelposter.telegram.ChannelPosterBotKeyComponent;
 import com.kuklin.manageapp.bots.channelposter.telegram.ChannelPosterTelegramBot;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,11 +27,12 @@ class RubricPostServiceTest {
     private final PostQueueService postQueueService = mock(PostQueueService.class);
     private final RubricContentGenerator generator = mock(RubricContentGenerator.class);
     private final RubricTopicService topicService = mock(RubricTopicService.class);
+    private final ChannelPollService pollService = mock(ChannelPollService.class);
     private final PostReviewService reviewService = mock(PostReviewService.class);
     private final ChannelPosterTelegramBot bot = mock(ChannelPosterTelegramBot.class);
     private final ChannelPosterBotKeyComponent keys = mock(ChannelPosterBotKeyComponent.class);
     private final RubricPostService service = new RubricPostService(
-            scheduleSlotService, postQueueService, generator, topicService, reviewService, bot, keys);
+            scheduleSlotService, postQueueService, generator, topicService, pollService, reviewService, bot, keys);
 
     private final TopicCategory myth = new TopicCategory().setId(2L).setName("Миф или правда")
             .setTopicType(TopicCategory.TopicType.MYTH);
@@ -123,6 +125,25 @@ class RubricPostServiceTest {
 
         verify(bot).sendReturnedMessage(eq(1L), contains("пуст"));
         verifyNoInteractions(generator);
+    }
+
+    @Test
+    void quizRubricMakesPollPostWithoutImageText() {
+        TopicCategory quiz = new TopicCategory().setId(4L).setName("Квиз").setTopicType(TopicCategory.TopicType.QUIZ);
+        when(topicService.getRubrics()).thenReturn(List.of(quiz));
+        when(scheduleSlotService.getSlotByTopicCategoryIdAndIsActiveTrue(4L)).thenReturn(List.of(slot(null, "14:00")));
+        when(topicService.countNew(4L)).thenReturn(30L);
+        when(topicService.findNext(4L)).thenReturn(Optional.of(topic));
+        PollContent poll = new PollContent("Где больше белка?", List.of("Творог", "Яблоко"), 0, "Так");
+        when(generator.generatePoll(TopicCategory.TopicType.QUIZ, topic)).thenReturn(poll);
+
+        assertThat(service.generateDue()).isEqualTo(1);
+
+        verify(pollService).create(77L, poll, true);
+        verify(topicService).markUsed(topic, 77L);
+        verify(reviewService).prepareAndSendToAdmins(argThat(post ->
+                post.getTitle().equals("Где больше белка?") && post.getImageDescription() == null));
+        verify(generator, never()).generate(any(), any());
     }
 
     private static AiGeneratedContent content() {

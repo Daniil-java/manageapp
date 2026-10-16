@@ -6,6 +6,7 @@ import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcesso
 import com.kuklin.manageapp.bots.channelposter.entities.RubricTopic;
 import com.kuklin.manageapp.bots.channelposter.entities.TopicCategory;
 import com.kuklin.manageapp.bots.channelposter.model.AiGeneratedContent;
+import com.kuklin.manageapp.bots.channelposter.model.PollContent;
 import com.kuklin.manageapp.bots.channelposter.telegram.ChannelPosterBotKeyComponent;
 import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
@@ -13,9 +14,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 /**
  * Рубрики без источника: «Миф или правда», «Факт».
@@ -139,11 +143,91 @@ public class RubricContentGenerator {
                             - Как это работает: механизм простыми словами, через бытовую аналогию.
                             - Что из этого следует для обычного человека — как идея на заметку, не как указание.
                             В "post_title" — суть факта одной фразой.
+                            """),
+            TopicCategory.TopicType.QUIZ, new RubricPrompts(
+                    """
+                            Рубрика «Квиз». Придумай %COUNT% новых тем — вопросов для квиза с одним бесспорно правильным ответом: сравнения продуктов («Где больше белка: в твороге или в яйце?»), загадки об организме, пищеварении, сне, тренировках.
+                            Тема — сам вопрос одной фразой.
+                            Бери только вопросы, где правильный ответ не вызывает сомнений: если сравниваешь продукты, разница должна быть большой (в разы), а не в пределах погрешности таблиц.
+                            """,
+                    """
+                            Рубрика «Квиз». Сделай по теме вопрос для квиза в Telegram.
+                            - "question": вопрос до 200 символов, без HTML и эмодзи в конце.
+                            - "options": 3–4 коротких варианта (до 60 символов), ровно один правильный, остальные — правдоподобные, но неверные. Без «все варианты верны».
+                            - "correct_option_id": индекс правильного варианта в options, с нуля.
+                            - "explanation": почему верно именно это — до 180 символов, простой текст без HTML. Telegram покажет его после ответа.
+                            Если в формулировке темы неточность — исправь вопрос, а не подгоняй ответ.
+                            """),
+            TopicCategory.TopicType.POLL, new RubricPrompts(
+                    """
+                            Рубрика «Опрос». Придумай %COUNT% новых тем — вопросов к читателям об их привычках и опыте в питании, сне, тренировках, похудении: «Как часто вы завтракаете?», «Что мешает пить больше воды?».
+                            Тема — сам вопрос одной фразой. Вопрос должен быть лёгким и не стыдным: без веса, болезней и вопросов, на которые неловко отвечать.
+                            Каждая тема должна позволять потом рассказать, что об этом говорит наука.
+                            """,
+                    """
+                            Рубрика «Опрос». Сделай по теме опрос мнений в Telegram — правильного ответа нет.
+                            - "question": вопрос до 200 символов, без HTML.
+                            - "options": 3–5 коротких вариантов (до 60 символов), покрывающих реальные ответы, последний — нейтральный («Не слежу», «По-разному»).
+                            - "correct_option_id" и "explanation" не нужны.
                             """)
     ));
 
+    private static final String POLL_TAIL =
+            """
+
+                    Вопрос и варианты — на русском, дружелюбно, без оценок и морализаторства. Варианты не повторяют друг друга.
+                    Тема (раздел «%SECTION%»): %TOPIC%
+
+                    Верни JSON: {"question": "...", "options": ["...", "..."], "correct_option_id": 0, "explanation": "..."}. Только JSON, без пояснений.
+                    """;
+
     public boolean supports(TopicCategory.TopicType type) {
         return PROMPTS.containsKey(type);
+    }
+
+    /** Рубрика выходит опросом Telegram, а не постом с картинкой. */
+    public static boolean isPoll(TopicCategory.TopicType type) {
+        return type == TopicCategory.TopicType.QUIZ || type == TopicCategory.TopicType.POLL;
+    }
+
+    /**
+     * Квиз или опрос по теме из банка. Варианты квиза перемешиваются, чтобы правильный не стоял всегда первым.
+     *
+     * @return опрос или null, если AI не ответил или опрос не пройдёт лимиты Telegram
+     */
+    public PollContent generatePoll(TopicCategory.TopicType type, RubricTopic topic) {
+        String prompt = buildPollPrompt(type, topic);
+        if (prompt == null) return null;
+
+        String raw = openAiProviderProcessor.fetchCreativeJsonResponse(
+                component.getAiKey(),
+                prompt,
+                BotIdentifier.CHANNEL_POSTER,
+                "rubric " + type.name().toLowerCase() + " poll",
+                MetricsAiInteractionRecord.AiMessageType.TEXT
+        );
+        if (raw == null) return null;
+        try {
+            PollContent content = objectMapper.readValue(ArticleContentGenerator.cleanJson(raw.trim()), PollContent.class);
+            boolean quiz = type == TopicCategory.TopicType.QUIZ;
+            if (!content.isValid(quiz)) {
+                log.warn("Rubric {}: AI poll doesn't fit Telegram limits: {}", type, raw);
+                return null;
+            }
+            return quiz ? shuffle(content, new Random()) : content;
+        } catch (Exception e) {
+            log.error("Rubric {}: can't parse poll JSON: {}", type, e.getMessage());
+            return null;
+        }
+    }
+
+    // модели почти всегда ставят правильный ответ первым или вторым
+    static PollContent shuffle(PollContent quiz, Random random) {
+        List<Integer> order = new ArrayList<>();
+        for (int i = 0; i < quiz.options().size(); i++) order.add(i);
+        Collections.shuffle(order, random);
+        List<String> options = order.stream().map(i -> quiz.options().get(i)).toList();
+        return new PollContent(quiz.question(), options, order.indexOf(quiz.correctOptionId()), quiz.explanation());
     }
 
     /**
@@ -205,8 +289,16 @@ public class RubricContentGenerator {
     // replace, а не format: в темах бывают символы %
     static String buildPostPrompt(TopicCategory.TopicType type, RubricTopic topic) {
         RubricPrompts prompts = PROMPTS.get(type);
-        if (prompts == null) return null;
+        if (prompts == null || isPoll(type)) return null;
         return POST_HEAD + prompts.post() + POST_TAIL
+                .replace("%SECTION%", topic.getSection())
+                .replace("%TOPIC%", topic.getText());
+    }
+
+    static String buildPollPrompt(TopicCategory.TopicType type, RubricTopic topic) {
+        RubricPrompts prompts = PROMPTS.get(type);
+        if (prompts == null || !isPoll(type)) return null;
+        return prompts.post() + RELIABILITY_RULES + POLL_TAIL
                 .replace("%SECTION%", topic.getSection())
                 .replace("%TOPIC%", topic.getText());
     }

@@ -107,6 +107,8 @@ channelposter:
   autopilot-after: ${CHANNELPOSTER_AUTOPILOT_AFTER:12h}  # через сколько без ответа админа; 0 — автопилот выключен
   max-item-age: ${CHANNELPOSTER_MAX_ITEM_AGE:30d}        # материалы старше не берём в работу
   review-ttl: ${CHANNELPOSTER_REVIEW_TTL:3d}             # пост на проверке дольше — снимаем с конвейера
+  poll-results-hour: ${CHANNELPOSTER_POLL_RESULTS_HOUR:21}           # итоги квиза/опроса — на следующий день в этот час (МСК)
+  poll-results-min-voters: ${CHANNELPOSTER_POLL_RESULTS_MIN_VOTERS:3} # меньше голосов — итоги не публикуем
 
 calorie:
   ai-input:

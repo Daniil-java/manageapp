@@ -30,4 +30,8 @@ public class ChannelPosterProperties {
     private Duration maxItemAge;
     /** Пост на проверке дольше — снимаем с конвейера (EXPIRED), чтобы не занимал место. */
     private Duration reviewTtl;
+    /** Час (время канала), в который на следующий день после опроса выходит пост с итогами. */
+    private int pollResultsHour;
+    /** Меньше голосов — пост с итогами не публикуем, админам — уведомление. */
+    private int pollResultsMinVoters;
 }

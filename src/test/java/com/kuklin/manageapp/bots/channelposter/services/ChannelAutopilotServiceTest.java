@@ -28,7 +28,8 @@ class ChannelAutopilotServiceTest {
     private final ChannelPosterProperties properties = new ChannelPosterProperties();
     private final TopicCategoryService topicCategoryService = mock(TopicCategoryService.class);
     private final PostReviewService reviewService = new PostReviewService(
-            bot, keys, null, null, postQueueService, null, properties, topicCategoryService);
+            bot, keys, null, null, postQueueService, null, properties, topicCategoryService,
+            mock(ChannelPollService.class));
     private final ChannelAutopilotService service = new ChannelAutopilotService(
             keys, bot, postQueueService, mock(SourceItemService.class), mock(ContentSourceService.class),
             reviewService, properties, mock(RubricTopicService.class));

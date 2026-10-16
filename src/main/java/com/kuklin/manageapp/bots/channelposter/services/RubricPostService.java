@@ -6,6 +6,7 @@ import com.kuklin.manageapp.bots.channelposter.entities.RubricTopic;
 import com.kuklin.manageapp.bots.channelposter.entities.ScheduleSlot;
 import com.kuklin.manageapp.bots.channelposter.entities.TopicCategory;
 import com.kuklin.manageapp.bots.channelposter.model.AiGeneratedContent;
+import com.kuklin.manageapp.bots.channelposter.model.PollContent;
 import com.kuklin.manageapp.bots.channelposter.telegram.ChannelPosterBotKeyComponent;
 import com.kuklin.manageapp.bots.channelposter.telegram.ChannelPosterTelegramBot;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +37,7 @@ public class RubricPostService {
     private final PostQueueService postQueueService;
     private final RubricContentGenerator generator;
     private final RubricTopicService topicService;
+    private final ChannelPollService pollService;
     private final PostReviewService reviewService;
     private final ChannelPosterTelegramBot bot;
     private final ChannelPosterBotKeyComponent keys;
@@ -75,6 +77,9 @@ public class RubricPostService {
             return null;
         }
         RubricTopic topic = next.get();
+        if (RubricContentGenerator.isPoll(category.getTopicType())) {
+            return createPollPost(category, topic);
+        }
         AiGeneratedContent content = generator.generate(category.getTopicType(), topic);
         if (content == null) {
             // тема остаётся новой — попробуем в следующий запуск
@@ -87,6 +92,25 @@ public class RubricPostService {
                 .setTextContent(content.getPostText())
                 .setImageDescription(content.getImagePrompt())
                 .setStatus(PostQueue.PostQueueStatus.TEXT_GENERATED));
+        topicService.markUsed(topic, post.getId());
+        reviewService.prepareAndSendToAdmins(post);
+        return post;
+    }
+
+    // квиз или опрос: без картинки, вопрос — заголовок поста, варианты — в channel_poll
+    private PostQueue createPollPost(TopicCategory category, RubricTopic topic) {
+        TopicCategory.TopicType type = category.getTopicType();
+        PollContent content = generator.generatePoll(type, topic);
+        if (content == null) {
+            log.warn("Rubric {}: AI didn't make a poll on topic #{}", type, topic.getId());
+            return null;
+        }
+        PostQueue post = postQueueService.save(new PostQueue()
+                .setCategoryId(category.getId())
+                .setTitle(content.question())
+                .setTextContent(content.question())
+                .setStatus(PostQueue.PostQueueStatus.TEXT_GENERATED));
+        pollService.create(post.getId(), content, type == TopicCategory.TopicType.QUIZ);
         topicService.markUsed(topic, post.getId());
         reviewService.prepareAndSendToAdmins(post);
         return post;

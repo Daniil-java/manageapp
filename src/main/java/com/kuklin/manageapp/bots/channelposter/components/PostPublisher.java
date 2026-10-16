@@ -1,8 +1,10 @@
 package com.kuklin.manageapp.bots.channelposter.components;
 
+import com.kuklin.manageapp.bots.channelposter.entities.ChannelPoll;
 import com.kuklin.manageapp.bots.channelposter.entities.PostImage;
 import com.kuklin.manageapp.bots.channelposter.entities.PostQueue;
 import com.kuklin.manageapp.bots.channelposter.entities.TopicCategory;
+import com.kuklin.manageapp.bots.channelposter.services.ChannelPollService;
 import com.kuklin.manageapp.bots.channelposter.services.PostImageService;
 import com.kuklin.manageapp.bots.channelposter.services.TopicCategoryService;
 import com.kuklin.manageapp.bots.channelposter.telegram.ChannelPosterTelegramBot;
@@ -13,6 +15,7 @@ import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -31,15 +34,38 @@ public class PostPublisher {
     private final PostImageService postImageService;
     private final TelegramService telegramService;
     private final TopicCategoryService topicCategoryService;
+    private final ChannelPollService pollService;
 
     /**
      * @return id сообщения с текстом или null, если отправить не получилось
      */
     public Integer publish(Long chatId, PostQueue post) {
+        Optional<ChannelPoll> poll = pollService.findByPostQueueId(post.getId());
+        if (poll.isPresent()) {
+            Message message = sendPoll(chatId, poll.get());
+            if (message == null) return null;
+            // по id опроса придут голоса, на сообщение ответят итоги
+            pollService.markPublished(poll.get(), message.getPoll().getId(), message.getMessageId());
+            return message.getMessageId();
+        }
         return send(chatId, post, null, null, true);
     }
 
+    /**
+     * Итоги квиза или опроса — текстом в ответ на сообщение с опросом.
+     *
+     * @return id сообщения или null, если отправить не получилось
+     */
+    public Integer publishReply(Long chatId, PostQueue post, Integer replyToMessageId) {
+        Message message = bot.sendReturnedMessage(chatId, renderText(post, getHashtagOrNull(post)), null, replyToMessageId);
+        return message == null ? null : message.getMessageId();
+    }
+
     public Integer send(Long chatId, PostQueue post, String footer, InlineKeyboardMarkup keyboard, boolean withImage) {
+        Optional<ChannelPoll> poll = pollService.findByPostQueueId(post.getId());
+        if (poll.isPresent()) {
+            return sendPollPreview(chatId, poll.get(), footer, keyboard);
+        }
         byte[] photo = withImage ? getPhotoOrNull(post) : null;
         String text = renderText(post, getHashtagOrNull(post)) + (footer == null ? "" : footer);
 
@@ -56,6 +82,29 @@ public class PostPublisher {
         }
         Message message = bot.sendReturnedMessage(chatId, text, keyboard, null);
         return message == null ? null : message.getMessageId();
+    }
+
+    private Message sendPoll(Long chatId, ChannelPoll poll) {
+        return bot.sendPoll(chatId, poll.getQuestion(), poll.getOptions(),
+                poll.isQuiz() ? poll.getCorrectOptionId() : null, poll.getExplanation());
+    }
+
+    // превью опроса: сам опрос (у админа он живой — можно ответить), под ним правильный ответ и кнопки
+    private Integer sendPollPreview(Long chatId, ChannelPoll poll, String footer, InlineKeyboardMarkup keyboard) {
+        if (sendPoll(chatId, poll) == null) {
+            log.warn("Poll #{}: Telegram didn't accept the poll", poll.getId());
+        }
+        String text = renderPollDetails(poll) + (footer == null ? "" : footer);
+        Message message = bot.sendReturnedMessage(chatId, text.trim(), keyboard, null);
+        return message == null ? null : message.getMessageId();
+    }
+
+    static String renderPollDetails(ChannelPoll poll) {
+        if (!poll.isQuiz()) {
+            return "📊 Опрос мнений — итоги выйдут на следующий день";
+        }
+        return "✅ Правильный ответ: " + escapeHtml(poll.getOptions().get(poll.getCorrectOptionId()))
+                + "\n💬 " + escapeHtml(poll.getExplanation());
     }
 
     private byte[] getPhotoOrNull(PostQueue post) {
