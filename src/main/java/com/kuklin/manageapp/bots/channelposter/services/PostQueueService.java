@@ -163,6 +163,23 @@ public class PostQueueService {
                 PostQueue.PostQueueStatus.REVIEW, PostQueue.PostQueueStatus.QUEUED));
     }
 
+    public Optional<PostQueue> findSentByTgMessageId(Integer tgMessageId) {
+        return postQueueRepository.findFirstByTgMessageIdAndStatus(tgMessageId, PostQueue.PostQueueStatus.SENT);
+    }
+
+    // посты, вышедшие за period, у которых есть реакции, — лучшие первыми
+    public List<PostQueue> getTopReacted(Duration period, int limit) {
+        return postQueueRepository.findAllByStatusAndSentAtAfterAndReactionsGreaterThanOrderByReactionsDesc(
+                PostQueue.PostQueueStatus.SENT, Instant.now().minus(period), 0, PageRequest.of(0, limit));
+    }
+
+    public List<String> getTopReactedTitles(Duration period, int limit) {
+        return getTopReacted(period, limit).stream()
+                .map(PostQueue::getTitle)
+                .filter(t -> t != null && !t.isBlank())
+                .toList();
+    }
+
     public Optional<PostQueue> getLastSent() {
         return postQueueRepository.findTopByStatusOrderBySentAtDesc(PostQueue.PostQueueStatus.SENT);
     }

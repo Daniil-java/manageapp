@@ -22,6 +22,7 @@ import com.kuklin.manageapp.bots.caloriebot.models.feature.BotFeature;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
 import com.kuklin.manageapp.common.entities.TelegramUser;
+import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import com.kuklin.manageapp.common.services.TelegramUserService;
 import lombok.RequiredArgsConstructor;
@@ -102,6 +103,38 @@ public class DishService {
                 BotIdentifier.CALORIE_BOT
         );
         return AccessResult.success(getDishListByAiResponseOrNull(userId, aiResponse));
+    }
+
+    /**
+     * Распознать еду на фото для канала («Угадай калорийность»): тот же промпт, что у пользователей,
+     * но без пользователя, лимитов и сохранения в дневник. Названия — по-русски.
+     *
+     * @param imageUrl публичная ссылка на фото
+     * @param hint     название блюда — как подпись пользователя к фото
+     * @return блюда (только съедобное) или null, если ИИ ничего не нашёл или ответ не разобрался
+     */
+    public List<DishDto> recognizePhotoForChannelOrNull(String imageUrl, String hint) {
+        String nameLanguageRule = String.format(PHOTO_NAME_LANGUAGE_FROM_CAPTION, AppLanguage.RU.getNativeName());
+        String aiResponse = openAiIntegrationService.fetchPhotoResponse(
+                telegramCaloriesBotKeyComponents.getAiKey(),
+                String.format(AI_PHOTO_REQUEST, hint == null ? "" : hint, nameLanguageRule),
+                imageUrl,
+                BotIdentifier.CHANNEL_POSTER
+        );
+        List<DishDto> dtos = parseJsonOrNull(aiResponse, new TypeReference<List<DishDto>>() {});
+        if (dtos == null) return null;
+        try {
+            List<DishDto> dishes = new ArrayList<>();
+            for (DishDto dto : dtos) {
+                if (dto.getIsDish() == null || !dto.getIsDish()) continue;
+                dto.checkValuesNotNull();
+                dishes.add(dto);
+            }
+            return dishes.isEmpty() ? null : dishes;
+        } catch (RuntimeException e) {
+            log.warn("Invalid dish data in channel photo recognition: {}", e.getMessage());
+            return null;
+        }
     }
 
     public List<DishDto> getDishDtoByDescriptionOrNull(Long userId, String text) {

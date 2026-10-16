@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
@@ -34,6 +35,8 @@ public class SourceItemFilterService {
     private static final int BATCH = 40;
     private static final int SUMMARY_CHARS = 450;
     private static final int RECENT_TITLES = 40;
+    private static final int LIKED_TITLES = 10;
+    private static final int LIKED_DAYS = 30;
     private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("dd.MM.yyyy").withZone(ZoneOffset.UTC);
 
     private static final String PROMPT = """
@@ -49,6 +52,9 @@ public class SourceItemFilterService {
             Источник подсказывает формат: PubMed — абстракт исследования (рандомизированные исследования и метаанализы — плюс), RSS — научная новость или статья, Reddit — пост сообщества (личный опыт с цифрами годится, просто вопрос — нет).
 
             Недавние посты канала (не повторяй эти темы):
+            %s
+
+            Посты, которые читателям понравились больше всего (по реакциям за месяц). Похожей теме можно добавить 1 балл, если материал в остальном хороший; повторять их тоже нельзя:
             %s
 
             ФОРМАТ ОТВЕТА — строго JSON-объект без пояснений вокруг:
@@ -88,7 +94,7 @@ public class SourceItemFilterService {
 
         Map<Long, ContentSource> sources = sourceService.getAll().stream()
                 .collect(Collectors.toMap(ContentSource::getId, Function.identity()));
-        String prompt = PROMPT.formatted(recentTitles(), buildInput(items, sources));
+        String prompt = PROMPT.formatted(recentTitles(), likedTitles(), buildInput(items, sources));
 
         String raw = openAiProviderProcessor.fetchJsonResponse(
                 keys.getAiKey(),
@@ -127,6 +133,12 @@ public class SourceItemFilterService {
 
     private String recentTitles() {
         List<String> titles = postQueueService.getRecentTitles(RECENT_TITLES);
+        return titles.isEmpty() ? "(пока нет)" : titles.stream().map(t -> "- " + t).collect(Collectors.joining("\n"));
+    }
+
+    // обратная связь читателей: темы с реакциями получают небольшой плюс
+    private String likedTitles() {
+        List<String> titles = postQueueService.getTopReactedTitles(Duration.ofDays(LIKED_DAYS), LIKED_TITLES);
         return titles.isEmpty() ? "(пока нет)" : titles.stream().map(t -> "- " + t).collect(Collectors.joining("\n"));
     }
 

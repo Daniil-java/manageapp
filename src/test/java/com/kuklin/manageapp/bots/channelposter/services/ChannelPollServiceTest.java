@@ -42,8 +42,8 @@ class ChannelPollServiceTest {
         when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         PollContent content = new PollContent(" Q? ", List.of(" a ", "b"), 1, " e ");
 
-        ChannelPoll quiz = service.create(5L, content, true);
-        ChannelPoll regular = service.create(6L, content, false);
+        ChannelPoll quiz = service.create(5L, content, ChannelPoll.Type.QUIZ);
+        ChannelPoll regular = service.create(6L, content, ChannelPoll.Type.REGULAR);
 
         assertThat(quiz.getType()).isEqualTo(ChannelPoll.Type.QUIZ);
         assertThat(quiz.getQuestion()).isEqualTo("Q?");

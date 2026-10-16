@@ -51,7 +51,16 @@ public class RubricContentGenerator {
     record TopicsResponse(List<TopicIdea> topics) {
     }
 
-    private record RubricPrompts(String topics, String post) {
+    /** Разделы банка блюд «Угадай калорийность». */
+    public static final List<String> DISH_SECTIONS = List.of(
+            "завтраки", "супы", "основные блюда", "гарниры", "салаты", "фастфуд", "выпечка и десерты",
+            "перекусы", "напитки");
+
+    // post = null — пост собирает код (угадайка), AI пишет только темы
+    private record RubricPrompts(String topics, String post, List<String> sections) {
+        RubricPrompts(String topics, String post) {
+            this(topics, post, SECTIONS);
+        }
     }
 
     private static final String RELIABILITY_RULES =
@@ -169,7 +178,15 @@ public class RubricContentGenerator {
                             - "question": вопрос до 200 символов, без HTML.
                             - "options": 3–5 коротких вариантов (до 60 символов), покрывающих реальные ответы, последний — нейтральный («Не слежу», «По-разному»).
                             - "correct_option_id" и "explanation" не нужны.
-                            """)
+                            """),
+            TopicCategory.TopicType.GUESS_CALORIES, new RubricPrompts(
+                    """
+                            Рубрика «Угадай калорийность»: фото блюда со стока и квиз «сколько тут калорий». Придумай %COUNT% новых блюд, которые часто едят в России и легко узнать на фото: «Паста карбонара», «Сырники со сметаной», «Шаурма», «Цезарь с курицей».
+                            Тема — название блюда в 1–4 слова, как его искали бы на фотостоке. Без брендов и авторских рецептов, без блюд, которые на фото не отличить от других.
+                            Чаще бери блюда, где калорийность неочевидна: салаты с заправкой, «полезные» перекусы, напитки с сиропом.
+                            """,
+                    null,
+                    DISH_SECTIONS)
     ));
 
     private static final String POLL_TAIL =
@@ -183,6 +200,12 @@ public class RubricContentGenerator {
 
     public boolean supports(TopicCategory.TopicType type) {
         return PROMPTS.containsKey(type);
+    }
+
+    /** Разделы банка тем рубрики: у угадайки — типы блюд, у остальных — темы питания. */
+    public List<String> getSections(TopicCategory.TopicType type) {
+        RubricPrompts prompts = PROMPTS.get(type);
+        return prompts == null ? SECTIONS : prompts.sections();
     }
 
     /** Рубрика выходит опросом Telegram, а не постом с картинкой. */
@@ -289,7 +312,7 @@ public class RubricContentGenerator {
     // replace, а не format: в темах бывают символы %
     static String buildPostPrompt(TopicCategory.TopicType type, RubricTopic topic) {
         RubricPrompts prompts = PROMPTS.get(type);
-        if (prompts == null || isPoll(type)) return null;
+        if (prompts == null || prompts.post() == null || isPoll(type)) return null;
         return POST_HEAD + prompts.post() + POST_TAIL
                 .replace("%SECTION%", topic.getSection())
                 .replace("%TOPIC%", topic.getText());
@@ -311,7 +334,7 @@ public class RubricContentGenerator {
         return TOPICS_HEAD
                 + prompts.topics().replace("%COUNT%", count)
                 + TOPICS_TAIL
-                .replace("%SECTIONS%", String.join(", ", SECTIONS))
+                .replace("%SECTIONS%", String.join(", ", prompts.sections()))
                 .replace("%COUNT%", count)
                 .replace("%EXISTING%", existingList);
     }

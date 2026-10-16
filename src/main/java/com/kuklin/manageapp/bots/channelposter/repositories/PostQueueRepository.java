@@ -40,6 +40,13 @@ public interface PostQueueRepository extends JpaRepository<PostQueue, Long> {
 
     long countByCategoryIdAndStatusIn(Long categoryId, Collection<PostQueue.PostQueueStatus> statuses);
 
+    // пост канала по id сообщения — для реакций
+    Optional<PostQueue> findFirstByTgMessageIdAndStatus(Integer tgMessageId, PostQueue.PostQueueStatus status);
+
+    // посты с реакциями за период, по убыванию реакций
+    List<PostQueue> findAllByStatusAndSentAtAfterAndReactionsGreaterThanOrderByReactionsDesc(
+            PostQueue.PostQueueStatus status, Instant sentAfter, int reactions, Pageable pageable);
+
     // заголовки недавних постов — AI-фильтр не пропускает повторы тем
     List<PostQueue> findAllByStatusInOrderByCreatedDesc(Collection<PostQueue.PostQueueStatus> statuses, Pageable pageable);
 

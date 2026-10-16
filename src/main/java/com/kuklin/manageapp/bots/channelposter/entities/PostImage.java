@@ -31,7 +31,8 @@ public class PostImage {
     @CreationTimestamp
     private Instant created;
 
-    public enum ImageSource { AI_GENERATED, ADMIN_UPLOAD }
+    // STOCK — фото с Pixabay («Угадай калорийность»)
+    public enum ImageSource { AI_GENERATED, ADMIN_UPLOAD, STOCK }
 
     public enum ImageStatus { GENERATING, READY, APPROVED, REJECTED }
 }

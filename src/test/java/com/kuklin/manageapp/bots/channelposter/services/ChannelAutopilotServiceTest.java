@@ -32,7 +32,7 @@ class ChannelAutopilotServiceTest {
             mock(ChannelPollService.class));
     private final ChannelAutopilotService service = new ChannelAutopilotService(
             keys, bot, postQueueService, mock(SourceItemService.class), mock(ContentSourceService.class),
-            reviewService, properties, mock(RubricTopicService.class));
+            reviewService, properties, mock(RubricTopicService.class), mock(ChannelFeedbackService.class));
 
     @BeforeEach
     void setUp() {

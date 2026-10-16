@@ -84,7 +84,7 @@ public abstract class AbstractDecimalProfileEditFieldHandler
             TelegramUser telegramUser
     ) {
         CallbackQuery query = update.getCallbackQuery();
-        Message message = query.getMessage();
+        Message message = TelegramBot.getCallbackMessage(query);
 
         Long chatId = message.getChatId();
         Integer messageId = message.getMessageId();

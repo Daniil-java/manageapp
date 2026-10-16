@@ -68,7 +68,7 @@ public class CalorieFavoriteDishAddCallbackUpdateHandler implements CalorieBotUp
 
         calorieTelegramBot.sendEditMessage(
                 chatId,
-                query.getMessage().getText(),                         // текст оставляем как был
+                TelegramBot.getCallbackMessage(query).getText(),                         // текст оставляем как был
                 query.getMessage().getMessageId(),
                 dishKeyboards.buildFavoritePortionKeyboard(dishService.getUserDishOrNull(telegramUser.getAppUserId(), dishId), telegramUser.getAppUserId())  // новая клавиатура
         );

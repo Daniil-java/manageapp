@@ -4,6 +4,7 @@ import com.kuklin.manageapp.bots.channelposter.entities.ChannelPoll;
 import com.kuklin.manageapp.bots.channelposter.entities.PostImage;
 import com.kuklin.manageapp.bots.channelposter.entities.PostQueue;
 import com.kuklin.manageapp.bots.channelposter.entities.TopicCategory;
+import com.kuklin.manageapp.bots.channelposter.services.ChannelFeedbackService;
 import com.kuklin.manageapp.bots.channelposter.services.ChannelPollService;
 import com.kuklin.manageapp.bots.channelposter.services.PostImageService;
 import com.kuklin.manageapp.bots.channelposter.services.TopicCategoryService;
@@ -31,7 +32,9 @@ class PostPublisherTest {
     private final TelegramService telegramService = mock(TelegramService.class);
     private final TopicCategoryService topicCategoryService = mock(TopicCategoryService.class);
     private final ChannelPollService pollService = mock(ChannelPollService.class);
-    private final PostPublisher publisher = new PostPublisher(bot, postImageService, telegramService, topicCategoryService, pollService);
+    private final ChannelFeedbackService feedbackService = mock(ChannelFeedbackService.class);
+    private final PostPublisher publisher = new PostPublisher(
+            bot, postImageService, telegramService, topicCategoryService, pollService, feedbackService);
 
     @BeforeEach
     void setUp() {
@@ -47,22 +50,22 @@ class PostPublisherTest {
                 .setSourceUrl("https://example.com/a?x=1&y=\"2\"")
                 .setSourceName("R&D <Lab>");
 
-        assertThat(PostPublisher.renderText(post, null)).isEqualTo(
+        assertThat(PostPublisher.renderText(post, null, null)).isEqualTo(
                 "<b>Белок</b> на завтрак\n\n"
                         + "<a href=\"https://example.com/a?x=1&amp;y=&quot;2&quot;\">Источник: R&amp;D &lt;Lab&gt;</a>");
     }
 
     @Test
     void manualPostWithoutSource() {
-        assertThat(PostPublisher.renderText(new PostQueue().setTextContent("Текст"), null)).isEqualTo("Текст");
+        assertThat(PostPublisher.renderText(new PostQueue().setTextContent("Текст"), null, null)).isEqualTo("Текст");
     }
 
     @Test
     void hashtagGoesLastAfterSourceOrText() {
         PostQueue article = new PostQueue().setTextContent("Текст").setSourceUrl("https://e.com").setSourceName("E");
-        assertThat(PostPublisher.renderText(article, "#наука"))
+        assertThat(PostPublisher.renderText(article, "#наука", null))
                 .isEqualTo("Текст\n\n<a href=\"https://e.com\">Источник: E</a>\n#наука");
-        assertThat(PostPublisher.renderText(new PostQueue().setTextContent("Текст"), "#миф"))
+        assertThat(PostPublisher.renderText(new PostQueue().setTextContent("Текст"), "#миф", null))
                 .isEqualTo("Текст\n\n#миф");
     }
 
@@ -114,6 +117,7 @@ class PostPublisherTest {
     void pollPostGoesAsTelegramQuizAndRemembersPollId() {
         ChannelPoll quiz = quiz();
         when(pollService.findByPostQueueId(1L)).thenReturn(Optional.of(quiz));
+        when(postImageService.getByPostQueueIdOrNull(1L)).thenReturn(null);
         Message sent = mock(Message.class);
         Poll tgPoll = mock(Poll.class);
         when(tgPoll.getId()).thenReturn("tg-poll");
@@ -125,7 +129,8 @@ class PostPublisherTest {
         assertThat(publisher.publish(100L, post("Где больше белка?"))).isEqualTo(50);
 
         verify(pollService).markPublished(quiz, "tg-poll", 50);
-        verifyNoInteractions(postImageService);
+        // у обычного квиза картинки нет — только опрос
+        verify(bot, never()).sendHtmlPhoto(anyLong(), any(), anyString(), any());
     }
 
     @Test
@@ -160,6 +165,42 @@ class PostPublisherTest {
 
         assertThat(publisher.publishReply(100L, new PostQueue().setCategoryId(9L).setTextContent("Итоги"), 50))
                 .isEqualTo(61);
+    }
+
+    @Test
+    void everyThirdArticleLinksToBotWithPostCode() {
+        when(topicCategoryService.findById(8L)).thenReturn(Optional.of(
+                new TopicCategory().setTopicType(TopicCategory.TopicType.ARTICLE).setHashtag("#наука")));
+        when(feedbackService.getBotLink(3L)).thenReturn("https://t.me/calorydairy_bot?start=zch3");
+        PostQueue third = new PostQueue().setId(3L).setCategoryId(8L).setTextContent("Текст");
+        PostQueue fourth = new PostQueue().setId(4L).setCategoryId(8L).setTextContent("Текст");
+
+        publisher.send(100L, third, null, null, false);
+        publisher.send(100L, fourth, null, null, false);
+
+        verify(bot).sendReturnedMessage(100L, "Текст\n\n"
+                + ChannelFeedbackService.buildBotLinkLine("https://t.me/calorydairy_bot?start=zch3") + "\n#наука", null, null);
+        verify(bot).sendReturnedMessage(100L, "Текст\n\n#наука", null, null);
+        verify(feedbackService, never()).getBotLink(4L);
+    }
+
+    @Test
+    void guessCaloriesGoesAsPhotoWithCaptionThenQuiz() {
+        ChannelPoll poll = quiz().setType(ChannelPoll.Type.CALORIES);
+        when(pollService.findByPostQueueId(1L)).thenReturn(Optional.of(poll));
+        Message sent = mock(Message.class);
+        Poll tgPoll = mock(Poll.class);
+        when(tgPoll.getId()).thenReturn("tg");
+        when(sent.getPoll()).thenReturn(tgPoll);
+        when(sent.getMessageId()).thenReturn(52);
+        when(bot.sendPoll(anyLong(), anyString(), anyList(), any(), any())).thenReturn(sent);
+
+        assertThat(publisher.publish(100L, post("<b>Угадай</b>"))).isEqualTo(52);
+
+        var order = inOrder(bot);
+        order.verify(bot).sendHtmlPhoto(100L, PHOTO, "<b>Угадай</b>\n\n#миф", null);
+        order.verify(bot).sendPoll(eq(100L), anyString(), anyList(), eq(0), anyString());
+        verify(pollService).markPublished(poll, "tg", 52);
     }
 
     private static ChannelPoll quiz() {

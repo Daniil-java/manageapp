@@ -39,6 +39,7 @@ public class ChannelAutopilotService {
     private final PostReviewService reviewService;
     private final ChannelPosterProperties properties;
     private final RubricTopicService topicService;
+    private final ChannelFeedbackService feedbackService;
 
     /**
      * @return сколько постов автопилот поставил в очередь
@@ -86,10 +87,15 @@ public class ChannelAutopilotService {
     }
 
     public void sendDailyReport() {
-        notifyAdmins(buildReport());
+        notifyAdmins(buildReport(true));
     }
 
+    // /src report: подписчиков не запоминаем — снимок раз в день, по утреннему отчёту
     public String buildReport() {
+        return buildReport(false);
+    }
+
+    private String buildReport(boolean saveSubscribers) {
         Instant now = Instant.now();
         Instant dayAgo = now.minus(Duration.ofDays(1));
         List<PostQueue> queued = postQueueService.getQueuedOrdered();
@@ -97,6 +103,8 @@ public class ChannelAutopilotService {
         Optional<PostQueue> lastSent = postQueueService.getLastSent();
 
         StringBuilder sb = new StringBuilder("📊 <b>Канал: утренний отчёт</b>\n\n");
+        sb.append(feedbackService.buildReportSection(bot.getChatMemberCountOrNull(keys.getChannelId()), saveSubscribers))
+                .append('\n');
 
         if (lastSent.isPresent() && lastSent.get().getSentAt() != null) {
             Instant sentAt = lastSent.get().getSentAt();

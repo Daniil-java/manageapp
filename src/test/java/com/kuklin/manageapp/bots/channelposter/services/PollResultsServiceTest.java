@@ -28,8 +28,10 @@ class PollResultsServiceTest {
     private final ChannelPosterProperties properties = new ChannelPosterProperties();
     private final ChannelPosterTelegramBot bot = mock(ChannelPosterTelegramBot.class);
     private final ChannelPosterBotKeyComponent keys = mock(ChannelPosterBotKeyComponent.class);
+    private final ChannelFeedbackService feedbackService = mock(ChannelFeedbackService.class);
     private final PollResultsService service = new PollResultsService(
-            pollService, postQueueService, topicCategoryService, generator, publisher, properties, bot, keys);
+            pollService, postQueueService, topicCategoryService, generator, publisher, properties, bot, keys,
+            feedbackService);
 
     @BeforeEach
     void setUp() {
@@ -127,6 +129,22 @@ class PollResultsServiceTest {
 
         verify(pollService, never()).markResultsSent(any(), any());
         verify(postQueueService, never()).save(any());
+    }
+
+    @Test
+    void guessCaloriesResultsLinkToBot() {
+        ChannelPoll poll = quiz(List.of(6, 3, 1), 10).setType(ChannelPoll.Type.CALORIES).setPostQueueId(44L);
+        when(pollService.getDueForResults()).thenReturn(List.of(poll));
+        when(generator.generateComment(any(), any())).thenReturn("Комментарий");
+        when(feedbackService.getBotLink(44L)).thenReturn("https://t.me/calorydairy_bot?start=zch44");
+        when(publisher.publishReply(any(), any(), any())).thenReturn(61);
+
+        service.publishDueResults();
+
+        verify(publisher).publishReply(any(), argThat(post ->
+                post.getTextContent().startsWith("<b>📊 Итоги «Угадай калорийность»</b>")
+                        && post.getTextContent().endsWith("Комментарий\n\n" + ChannelFeedbackService.buildBotLinkLine(
+                        "https://t.me/calorydairy_bot?start=zch44"))), eq(50));
     }
 
     private static ChannelPoll quiz(List<Integer> votes, int total) {

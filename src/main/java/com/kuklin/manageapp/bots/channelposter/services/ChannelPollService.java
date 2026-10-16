@@ -29,10 +29,11 @@ public class ChannelPollService {
     private final ChannelPollRepository repository;
     private final ChannelPosterProperties properties;
 
-    public ChannelPoll create(Long postQueueId, PollContent content, boolean quiz) {
+    public ChannelPoll create(Long postQueueId, PollContent content, ChannelPoll.Type type) {
+        boolean quiz = type != ChannelPoll.Type.REGULAR;
         return repository.save(new ChannelPoll()
                 .setPostQueueId(postQueueId)
-                .setType(quiz ? ChannelPoll.Type.QUIZ : ChannelPoll.Type.REGULAR)
+                .setType(type)
                 .setQuestion(content.question().trim())
                 .setOptions(content.options().stream().map(String::trim).toList())
                 .setCorrectOptionId(quiz ? content.correctOptionId() : null)

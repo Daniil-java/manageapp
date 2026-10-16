@@ -35,6 +35,9 @@ public class PostQueue {
     private Integer aiScore;
     // когда превью ушло админам на проверку
     private Instant reviewSentAt;
+    // реакции на пост в канале — последнее число от Telegram (апдейт message_reaction_count)
+    private int reactions;
+    private Instant reactionsUpdatedAt;
     @CreationTimestamp
     private Instant created;
     public enum PostQueueStatus {

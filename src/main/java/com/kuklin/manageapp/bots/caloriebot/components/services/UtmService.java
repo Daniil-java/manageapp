@@ -11,12 +11,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class UtmService {
+
+    public static final String CHANNEL_POST_CODE_PREFIX = "zch";
 
     private final UtmLinkRepository utmLinkRepository;
     private final UtmClickRepository utmClickRepository;
@@ -51,6 +54,27 @@ public class UtmService {
             utmLinkRepository.insertIfAbsent(code, UtmLink.OwnerType.USER.name(), userId);
         }
         return code;
+    }
+
+    /**
+     * Ссылка на бота из поста канала: код zch<id поста>. По ней в отчёте канала видно, сколько людей пришло.
+     */
+    public String getOrCreateChannelPostCode(Long postId) {
+        String code = CHANNEL_POST_CODE_PREFIX + postId;
+        if (utmLinkRepository.findByCode(code).isEmpty()) {
+            utmLinkRepository.insertIfAbsent(code, UtmLink.OwnerType.TG_CHANNEL.name(), null);
+        }
+        return code;
+    }
+
+    /** Переходы в бота по ссылкам из постов канала: всего и впервые по UTM-ссылке. */
+    public ChannelClicks countChannelClicksSince(Instant since) {
+        return new ChannelClicks(
+                utmClickRepository.countByCodePrefixSince(CHANNEL_POST_CODE_PREFIX + "%", since),
+                utmClickRepository.countNewByCodePrefixSince(CHANNEL_POST_CODE_PREFIX + "%", since));
+    }
+
+    public record ChannelClicks(long clicks, long firstTime) {
     }
 
     public UtmLink saveLink(UtmCalorieUpdateHandler.UtmDto utmDto, Long creatorId) {

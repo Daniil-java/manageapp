@@ -46,10 +46,13 @@ public class ChannelPoll {
     private Long resultsPostId;
 
     public enum Type {
-        QUIZ, REGULAR
+        QUIZ, REGULAR,
+        // «Угадай калорийность»: квиз под фото блюда, правильный ответ посчитал калорийный бот
+        CALORIES
     }
 
+    // в Telegram — квиз с правильным ответом
     public boolean isQuiz() {
-        return type == Type.QUIZ;
+        return type == Type.QUIZ || type == Type.CALORIES;
     }
 }

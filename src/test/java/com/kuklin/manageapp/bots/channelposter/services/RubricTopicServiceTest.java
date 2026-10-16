@@ -70,6 +70,7 @@ class RubricTopicServiceTest {
     @Test
     void fillSkipsDuplicatesBlankAndForeignSections() {
         TopicCategory myth = new TopicCategory().setId(2L).setTopicType(TopicCategory.TopicType.MYTH);
+        when(generator.getSections(TopicCategory.TopicType.MYTH)).thenReturn(RubricContentGenerator.SECTIONS);
         when(repository.findAllByCategoryId(2L)).thenReturn(List.of(fresh(1L, "сон").setText("Есть после шести — толстеть")));
         when(generator.generateTopics(TopicCategory.TopicType.MYTH, List.of("Есть после шести — толстеть")))
                 .thenReturn(List.of(

@@ -4,6 +4,7 @@ import com.kuklin.manageapp.bots.channelposter.entities.ChannelPoll;
 import com.kuklin.manageapp.bots.channelposter.entities.PostImage;
 import com.kuklin.manageapp.bots.channelposter.entities.PostQueue;
 import com.kuklin.manageapp.bots.channelposter.entities.TopicCategory;
+import com.kuklin.manageapp.bots.channelposter.services.ChannelFeedbackService;
 import com.kuklin.manageapp.bots.channelposter.services.ChannelPollService;
 import com.kuklin.manageapp.bots.channelposter.services.PostImageService;
 import com.kuklin.manageapp.bots.channelposter.services.TopicCategoryService;
@@ -15,7 +16,10 @@ import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -29,12 +33,15 @@ public class PostPublisher {
 
     // лимит Telegram на подпись к фото — в видимых символах, после разбора HTML
     static final int CAPTION_LIMIT = 1024;
+    private static final Set<TopicCategory.TopicType> BOT_LINK_TYPES = Set.of(
+            TopicCategory.TopicType.ARTICLE, TopicCategory.TopicType.MYTH, TopicCategory.TopicType.FACT);
 
     private final ChannelPosterTelegramBot bot;
     private final PostImageService postImageService;
     private final TelegramService telegramService;
     private final TopicCategoryService topicCategoryService;
     private final ChannelPollService pollService;
+    private final ChannelFeedbackService feedbackService;
 
     /**
      * @return id сообщения с текстом или null, если отправить не получилось
@@ -42,6 +49,7 @@ public class PostPublisher {
     public Integer publish(Long chatId, PostQueue post) {
         Optional<ChannelPoll> poll = pollService.findByPostQueueId(post.getId());
         if (poll.isPresent()) {
+            sendLeadPhoto(chatId, post);
             Message message = sendPoll(chatId, poll.get());
             if (message == null) return null;
             // по id опроса придут голоса, на сообщение ответят итоги
@@ -57,17 +65,17 @@ public class PostPublisher {
      * @return id сообщения или null, если отправить не получилось
      */
     public Integer publishReply(Long chatId, PostQueue post, Integer replyToMessageId) {
-        Message message = bot.sendReturnedMessage(chatId, renderText(post, getHashtagOrNull(post)), null, replyToMessageId);
+        Message message = bot.sendReturnedMessage(chatId, render(post), null, replyToMessageId);
         return message == null ? null : message.getMessageId();
     }
 
     public Integer send(Long chatId, PostQueue post, String footer, InlineKeyboardMarkup keyboard, boolean withImage) {
         Optional<ChannelPoll> poll = pollService.findByPostQueueId(post.getId());
         if (poll.isPresent()) {
-            return sendPollPreview(chatId, poll.get(), footer, keyboard);
+            return sendPollPreview(chatId, post, poll.get(), footer, keyboard);
         }
         byte[] photo = withImage ? getPhotoOrNull(post) : null;
-        String text = renderText(post, getHashtagOrNull(post)) + (footer == null ? "" : footer);
+        String text = render(post) + (footer == null ? "" : footer);
 
         if (photo != null && getVisibleLength(text) <= CAPTION_LIMIT) {
             Message message = bot.sendHtmlPhoto(chatId, photo, text, keyboard);
@@ -84,13 +92,24 @@ public class PostPublisher {
         return message == null ? null : message.getMessageId();
     }
 
+    // у угадайки перед квизом — фото блюда с подписью; у обычных квизов и опросов картинки нет
+    private void sendLeadPhoto(Long chatId, PostQueue post) {
+        byte[] photo = getPhotoOrNull(post);
+        if (photo == null) return;
+        if (bot.sendHtmlPhoto(chatId, photo, render(post), null) == null) {
+            log.warn("Post #{}: lead photo of the poll rejected", post.getId());
+        }
+    }
+
     private Message sendPoll(Long chatId, ChannelPoll poll) {
         return bot.sendPoll(chatId, poll.getQuestion(), poll.getOptions(),
                 poll.isQuiz() ? poll.getCorrectOptionId() : null, poll.getExplanation());
     }
 
     // превью опроса: сам опрос (у админа он живой — можно ответить), под ним правильный ответ и кнопки
-    private Integer sendPollPreview(Long chatId, ChannelPoll poll, String footer, InlineKeyboardMarkup keyboard) {
+    private Integer sendPollPreview(Long chatId, PostQueue post, ChannelPoll poll, String footer,
+                                    InlineKeyboardMarkup keyboard) {
+        sendLeadPhoto(chatId, post);
         if (sendPoll(chatId, poll) == null) {
             log.warn("Poll #{}: Telegram didn't accept the poll", poll.getId());
         }
@@ -119,28 +138,38 @@ public class PostPublisher {
         return bytes;
     }
 
-    private String getHashtagOrNull(PostQueue post) {
-        return topicCategoryService.findById(post.getCategoryId())
-                .map(TopicCategory::getHashtag)
-                .orElse(null);
+    private String render(PostQueue post) {
+        TopicCategory category = topicCategoryService.findById(post.getCategoryId()).orElse(null);
+        return renderText(post, category == null ? null : category.getHashtag(), getBotLinkOrNull(post, category));
+    }
+
+    // ссылка на калорийного бота — в каждом CTA_EVERY-м текстовом посте, чтобы не превращать канал в рекламу
+    private String getBotLinkOrNull(PostQueue post, TopicCategory category) {
+        if (post.getId() == null || category == null || category.getTopicType() == null) return null;
+        if (!BOT_LINK_TYPES.contains(category.getTopicType())) return null;
+        if (post.getId() % ChannelFeedbackService.CTA_EVERY != 0) return null;
+        return feedbackService.getBotLink(post.getId());
     }
 
     /**
-     * Текст поста + ссылка на источник + хэштег рубрики.
+     * Текст поста, затем хвост строками: ссылка на источник, ссылка на бота, хэштег рубрики.
      */
-    public static String renderText(PostQueue post, String hashtag) {
-        StringBuilder sb = new StringBuilder(post.getTextContent() == null ? "" : post.getTextContent().trim());
+    public static String renderText(PostQueue post, String hashtag, String botLink) {
+        String text = post.getTextContent() == null ? "" : post.getTextContent().trim();
+        List<String> tail = new ArrayList<>();
         if (post.getSourceUrl() != null && !post.getSourceUrl().isBlank()) {
             String name = post.getSourceName() == null || post.getSourceName().isBlank()
                     ? "Источник"
                     : "Источник: " + escapeHtml(post.getSourceName());
-            sb.append("\n\n<a href=\"").append(escapeAttr(post.getSourceUrl())).append("\">").append(name).append("</a>");
+            tail.add("<a href=\"" + escapeAttr(post.getSourceUrl()) + "\">" + name + "</a>");
+        }
+        if (botLink != null) {
+            tail.add(ChannelFeedbackService.buildBotLinkLine(botLink));
         }
         if (hashtag != null && !hashtag.isBlank()) {
-            sb.append(post.getSourceUrl() == null || post.getSourceUrl().isBlank() ? "\n\n" : "\n")
-                    .append(escapeHtml(hashtag.trim()));
+            tail.add(escapeHtml(hashtag.trim()));
         }
-        return sb.toString();
+        return tail.isEmpty() ? text : text + "\n\n" + String.join("\n", tail);
     }
 
     /**

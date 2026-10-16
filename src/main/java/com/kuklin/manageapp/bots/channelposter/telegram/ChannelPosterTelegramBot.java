@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.bots.channelposter.telegram;
 
+import com.kuklin.manageapp.bots.channelposter.services.ChannelFeedbackService;
 import com.kuklin.manageapp.bots.channelposter.services.ChannelPollService;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
@@ -7,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.methods.ParseMode;
+import org.telegram.telegrambots.meta.api.methods.groupadministration.GetChatMemberCount;
 import org.telegram.telegrambots.meta.api.methods.polls.SendPoll;
 import org.telegram.telegrambots.meta.api.methods.send.SendPhoto;
 import org.telegram.telegrambots.meta.api.objects.InputFile;
@@ -31,9 +33,28 @@ public class ChannelPosterTelegramBot extends TelegramBot {
     @Autowired
     private ChannelPollService channelPollService;
 
+    @Autowired
+    private ChannelFeedbackService channelFeedbackService;
+
+    // реакции Telegram присылает, только если их явно запросить; тогда остальные типы тоже перечисляем
+    static final List<String> ALLOWED_UPDATES = List.of("message", "callback_query", "poll", "message_reaction_count");
+
     public ChannelPosterTelegramBot(ChannelPosterBotKeyComponent components) {
         super(components.getKey());
         adminsIds = components.getAdminIds();
+        getOptions().setAllowedUpdates(ALLOWED_UPDATES);
+    }
+
+    /**
+     * @return подписчиков в чате или null, если Telegram не ответил
+     */
+    public Integer getChatMemberCountOrNull(Long chatId) {
+        try {
+            return execute(GetChatMemberCount.builder().chatId(String.valueOf(chatId)).build());
+        } catch (TelegramApiException e) {
+            log.warn("Can't get member count of {}: {}", chatId, e.getMessage());
+            return null;
+        }
     }
 
     @Override
@@ -43,6 +64,15 @@ public class ChannelPosterTelegramBot extends TelegramBot {
 
     @Override
     public void onUpdateReceived(Update update) {
+        // реакции на пост канала (анонимные — только счётчики)
+        if (update.getMessageReactionCount() != null) {
+            try {
+                channelFeedbackService.updateReactions(update.getMessageReactionCount());
+            } catch (Exception e) {
+                log.error("Can't save reactions for message {}", update.getMessageReactionCount().getMessageId(), e);
+            }
+            return;
+        }
         // новое состояние опроса, отправленного ботом (голоса в канале)
         if (update.hasPoll()) {
             try {
@@ -79,6 +109,20 @@ public class ChannelPosterTelegramBot extends TelegramBot {
             return execute(sendPhoto);
         } catch (TelegramApiException e) {
             log.warn("Can't send photo with caption to {}: {}", chatId, e.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Фото по публичной ссылке — Telegram скачает его сам.
+     *
+     * @return отправленное сообщение или null, если Telegram не принял
+     */
+    public Message sendPhotoByUrl(long chatId, String url) {
+        try {
+            return execute(SendPhoto.builder().chatId(String.valueOf(chatId)).photo(new InputFile(url)).build());
+        } catch (TelegramApiException e) {
+            log.warn("Can't send photo {} to {}: {}", url, chatId, e.getMessage());
             return null;
         }
     }

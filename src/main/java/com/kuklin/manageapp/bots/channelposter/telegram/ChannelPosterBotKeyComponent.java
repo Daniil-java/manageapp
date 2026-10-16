@@ -23,6 +23,8 @@ public class ChannelPosterBotKeyComponent {
     // ключи приложения Reddit (app-only OAuth); без них Reddit-источники почти всегда пустые
     private final String redditClientId;
     private final String redditClientSecret;
+    // фото блюд для «Угадай калорийность» (pixabay.com/api/docs); без ключа рубрика не генерируется
+    private final String pixabayApiKey;
 
     @Autowired
     public ChannelPosterBotKeyComponent(Environment environment) {
@@ -46,6 +48,13 @@ public class ChannelPosterBotKeyComponent {
         this.redditClientId = environment.getProperty("CHANNELPOSTER_REDDIT_CLIENT_ID");
         this.redditClientSecret = environment.getProperty("CHANNELPOSTER_REDDIT_CLIENT_SECRET");
         log.info("Reddit API keys {}", hasRedditCredentials() ? "initiated" : "not set — Reddit sources use public RSS");
+
+        this.pixabayApiKey = environment.getProperty("CHANNELPOSTER_PIXABAY_API_KEY");
+        log.info("Pixabay API key {}", hasPixabayKey() ? "initiated" : "not set — «Угадай калорийность» is off");
+    }
+
+    public boolean hasPixabayKey() {
+        return pixabayApiKey != null && !pixabayApiKey.isBlank();
     }
 
     public boolean hasRedditCredentials() {

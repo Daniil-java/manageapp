@@ -37,6 +37,8 @@ public class TopicCategory {
         QUIZ_ANSWER,
         // опрос мнений, без правильного ответа
         POLL,
+        // фото блюда + квиз «сколько калорий», ответ — распознавание калорийного бота
+        GUESS_CALORIES,
         CASE,
         MEME
     }

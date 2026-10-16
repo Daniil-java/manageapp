@@ -69,7 +69,7 @@ public class CalorieNutritionProfileEditCallbackUpdateHandler implements Calorie
     public void sendMainMessage(Update update, TelegramUser telegramUser) {
         UserNutritionProfile profile = userNutritionProfileService
                 .getOrCreateProfile(telegramUser.getAppUserId());
-        Message message = update.getCallbackQuery().getMessage();
+        Message message = TelegramBot.getCallbackMessage(update.getCallbackQuery());
 
         calorieTelegramBot.sendEditMessage(
                 message.getChatId(),

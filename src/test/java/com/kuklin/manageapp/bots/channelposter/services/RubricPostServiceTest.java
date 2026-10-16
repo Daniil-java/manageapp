@@ -1,6 +1,7 @@
 package com.kuklin.manageapp.bots.channelposter.services;
 
 import com.kuklin.manageapp.bots.channelposter.components.RubricContentGenerator;
+import com.kuklin.manageapp.bots.channelposter.entities.ChannelPoll;
 import com.kuklin.manageapp.bots.channelposter.entities.PostQueue;
 import com.kuklin.manageapp.bots.channelposter.entities.RubricTopic;
 import com.kuklin.manageapp.bots.channelposter.entities.ScheduleSlot;
@@ -28,11 +29,13 @@ class RubricPostServiceTest {
     private final RubricContentGenerator generator = mock(RubricContentGenerator.class);
     private final RubricTopicService topicService = mock(RubricTopicService.class);
     private final ChannelPollService pollService = mock(ChannelPollService.class);
+    private final GuessCaloriesService guessCaloriesService = mock(GuessCaloriesService.class);
     private final PostReviewService reviewService = mock(PostReviewService.class);
     private final ChannelPosterTelegramBot bot = mock(ChannelPosterTelegramBot.class);
     private final ChannelPosterBotKeyComponent keys = mock(ChannelPosterBotKeyComponent.class);
     private final RubricPostService service = new RubricPostService(
-            scheduleSlotService, postQueueService, generator, topicService, pollService, reviewService, bot, keys);
+            scheduleSlotService, postQueueService, generator, topicService, pollService, guessCaloriesService,
+            reviewService, bot, keys);
 
     private final TopicCategory myth = new TopicCategory().setId(2L).setName("Миф или правда")
             .setTopicType(TopicCategory.TopicType.MYTH);
@@ -139,11 +142,38 @@ class RubricPostServiceTest {
 
         assertThat(service.generateDue()).isEqualTo(1);
 
-        verify(pollService).create(77L, poll, true);
+        verify(pollService).create(77L, poll, ChannelPoll.Type.QUIZ);
         verify(topicService).markUsed(topic, 77L);
         verify(reviewService).prepareAndSendToAdmins(argThat(post ->
                 post.getTitle().equals("Где больше белка?") && post.getImageDescription() == null));
         verify(generator, never()).generate(any(), any());
+    }
+
+    @Test
+    void failingRubricDoesNotStopOthers() {
+        TopicCategory guess = new TopicCategory().setId(6L).setTopicType(TopicCategory.TopicType.GUESS_CALORIES);
+        when(keys.hasPixabayKey()).thenReturn(true);
+        when(topicService.getRubrics()).thenReturn(List.of(guess, myth));
+        when(scheduleSlotService.getSlotByTopicCategoryIdAndIsActiveTrue(6L)).thenReturn(List.of(slot(null, "14:00")));
+        when(topicService.countNew(6L)).thenReturn(30L);
+        when(topicService.findNext(6L)).thenReturn(Optional.of(topic));
+        when(guessCaloriesService.createPost(guess, topic)).thenThrow(new IllegalStateException("AI is down"));
+        when(generator.generate(TopicCategory.TopicType.MYTH, topic)).thenReturn(content());
+
+        assertThat(service.generateDue()).isEqualTo(1);
+
+        verify(reviewService).prepareAndSendToAdmins(argThat(post -> post.getCategoryId().equals(2L)));
+    }
+
+    @Test
+    void guessRubricIsSkippedWithoutPixabayKey() {
+        TopicCategory guess = new TopicCategory().setId(6L).setTopicType(TopicCategory.TopicType.GUESS_CALORIES);
+        when(topicService.getRubrics()).thenReturn(List.of(guess));
+
+        assertThat(service.generateDue()).isZero();
+
+        verify(topicService, never()).fill(any());
+        verifyNoInteractions(guessCaloriesService);
     }
 
     private static AiGeneratedContent content() {

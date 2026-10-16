@@ -35,6 +35,7 @@ public class PollResultsService {
     private final ChannelPosterProperties properties;
     private final ChannelPosterTelegramBot bot;
     private final ChannelPosterBotKeyComponent keys;
+    private final ChannelFeedbackService feedbackService;
 
     /**
      * @return сколько постов с итогами вышло
@@ -61,6 +62,10 @@ public class PollResultsService {
 
         String comment = generator.generateComment(poll, buildData(poll));
         String text = buildStats(poll) + "\n\n" + (comment != null ? comment : buildFallbackComment(poll));
+        if (poll.getType() == ChannelPoll.Type.CALORIES) {
+            // угадайка показывает калорийного бота в деле — ссылка на него всегда
+            text += "\n\n" + ChannelFeedbackService.buildBotLinkLine(feedbackService.getBotLink(poll.getPostQueueId()));
+        }
         PostQueue results = new PostQueue()
                 .setCategoryId(topicCategoryService.getTopicCategoryByTopicTypeOrNull(TopicCategory.TopicType.QUIZ_ANSWER)
                         .map(TopicCategory::getId)
@@ -87,7 +92,7 @@ public class PollResultsService {
      */
     static String buildStats(ChannelPoll poll) {
         List<Integer> percents = getPercents(poll);
-        StringBuilder sb = new StringBuilder("<b>📊 Итоги ").append(poll.isQuiz() ? "квиза" : "опроса").append("</b>\n")
+        StringBuilder sb = new StringBuilder("<b>📊 Итоги ").append(getTitle(poll)).append("</b>\n")
                 .append("«").append(escape(poll.getQuestion())).append("»\n");
         for (int i = 0; i < poll.getOptions().size(); i++) {
             boolean correct = poll.isQuiz() && poll.getCorrectOptionId() == i;
@@ -101,6 +106,14 @@ public class PollResultsService {
             sb.append(" · правильно — ").append(percents.get(poll.getCorrectOptionId())).append('%');
         }
         return sb.toString();
+    }
+
+    private static String getTitle(ChannelPoll poll) {
+        return switch (poll.getType()) {
+            case QUIZ -> "квиза";
+            case REGULAR -> "опроса";
+            case CALORIES -> "«Угадай калорийность»";
+        };
     }
 
     // данные для AI простым текстом

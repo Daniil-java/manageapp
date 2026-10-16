@@ -88,12 +88,12 @@
 		<dependency>
 			<groupId>org.telegram</groupId>
 			<artifactId>telegrambots-spring-boot-starter</artifactId>
-			<version>6.9.0</version>
+			<version>6.9.7.1</version>
 		</dependency>
 		<dependency>
 			<groupId>org.telegram</groupId>
 			<artifactId>telegrambots-abilities</artifactId>
-			<version>6.9.0</version>
+			<version>6.9.7.1</version>
 		</dependency>
 
 		<!-- Google Calendar API (service-specific client) -->

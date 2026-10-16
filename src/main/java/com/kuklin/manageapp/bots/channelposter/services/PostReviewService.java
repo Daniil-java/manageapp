@@ -82,17 +82,34 @@ public class PostReviewService {
                 return false;
             }
             Message message = bot.sendPhotoMessage(chatId, image, UUID.randomUUID().toString(), null, null);
-            if (message == null || message.getPhoto() == null || message.getPhoto().isEmpty()) {
-                return false;
-            }
-            String fileId = message.getPhoto().get(message.getPhoto().size() - 1).getFileId();
-            postImageService.saveNewImage(PostImage.ImageSource.AI_GENERATED, PostImage.ImageStatus.READY, fileId, post.getId());
-            bot.sendDeleteMessage(chatId, message.getMessageId());
-            return true;
+            return saveSentPhoto(post, message, PostImage.ImageSource.AI_GENERATED, chatId);
         } catch (Exception e) {
             log.error("Post #{}: image generation failed", post.getId(), e);
             return false;
         }
+    }
+
+    /**
+     * Картинка поста по публичной ссылке (фото со стока): так же через первого админа — ради file_id.
+     *
+     * @return true, если картинка сохранена
+     */
+    public boolean attachImageFromUrl(PostQueue post, String url) {
+        List<Long> admins = keys.getAdminIds();
+        if (admins.isEmpty()) return false;
+        Long chatId = admins.get(0);
+        return saveSentPhoto(post, bot.sendPhotoByUrl(chatId, url), PostImage.ImageSource.STOCK, chatId);
+    }
+
+    // file_id фото, только что отправленного в chatId, — к посту; само сообщение удаляем
+    private boolean saveSentPhoto(PostQueue post, Message message, PostImage.ImageSource source, Long chatId) {
+        if (message == null || message.getPhoto() == null || message.getPhoto().isEmpty()) {
+            return false;
+        }
+        String fileId = message.getPhoto().get(message.getPhoto().size() - 1).getFileId();
+        postImageService.saveNewImage(source, PostImage.ImageStatus.READY, fileId, post.getId());
+        bot.sendDeleteMessage(chatId, message.getMessageId());
+        return true;
     }
 
     public void sendPreview(Long chatId, PostQueue post, boolean withImage) {

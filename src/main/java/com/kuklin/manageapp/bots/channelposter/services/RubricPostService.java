@@ -1,6 +1,7 @@
 package com.kuklin.manageapp.bots.channelposter.services;
 
 import com.kuklin.manageapp.bots.channelposter.components.RubricContentGenerator;
+import com.kuklin.manageapp.bots.channelposter.entities.ChannelPoll;
 import com.kuklin.manageapp.bots.channelposter.entities.PostQueue;
 import com.kuklin.manageapp.bots.channelposter.entities.RubricTopic;
 import com.kuklin.manageapp.bots.channelposter.entities.ScheduleSlot;
@@ -38,6 +39,7 @@ public class RubricPostService {
     private final RubricContentGenerator generator;
     private final RubricTopicService topicService;
     private final ChannelPollService pollService;
+    private final GuessCaloriesService guessCaloriesService;
     private final PostReviewService reviewService;
     private final ChannelPosterTelegramBot bot;
     private final ChannelPosterBotKeyComponent keys;
@@ -51,12 +53,19 @@ public class RubricPostService {
         int created = 0;
         LocalDateTime now = LocalDateTime.now(CHANNEL_ZONE);
         for (TopicCategory category : topicService.getRubrics()) {
+            // без ключа Pixabay угадайке негде взять фото — и банк блюд не пополняем
+            if (category.getTopicType() == TopicCategory.TopicType.GUESS_CALORIES && !keys.hasPixabayKey()) continue;
             List<ScheduleSlot> slots = scheduleSlotService.getSlotByTopicCategoryIdAndIsActiveTrue(category.getId());
             long upcoming = countSlotsAhead(slots, now, LOOKAHEAD_DAYS);
             long inPipeline = postQueueService.countInPipelineByCategory(category.getId());
             if (inPipeline >= upcoming) continue;
 
-            if (createPost(category) != null) created++;
+            // сбой одной рубрики (AI, сток, Telegram) не должен останавливать остальные рубрики и статьи
+            try {
+                if (createPost(category) != null) created++;
+            } catch (Exception e) {
+                log.error("Rubric {}: post generation failed", category.getTopicType(), e);
+            }
         }
         if (created > 0) {
             log.info("Rubrics: {} posts created", created);
@@ -77,6 +86,9 @@ public class RubricPostService {
             return null;
         }
         RubricTopic topic = next.get();
+        if (category.getTopicType() == TopicCategory.TopicType.GUESS_CALORIES) {
+            return guessCaloriesService.createPost(category, topic);
+        }
         if (RubricContentGenerator.isPoll(category.getTopicType())) {
             return createPollPost(category, topic);
         }
@@ -110,7 +122,8 @@ public class RubricPostService {
                 .setTitle(content.question())
                 .setTextContent(content.question())
                 .setStatus(PostQueue.PostQueueStatus.TEXT_GENERATED));
-        pollService.create(post.getId(), content, type == TopicCategory.TopicType.QUIZ);
+        pollService.create(post.getId(), content,
+                type == TopicCategory.TopicType.QUIZ ? ChannelPoll.Type.QUIZ : ChannelPoll.Type.REGULAR);
         topicService.markUsed(topic, post.getId());
         reviewService.prepareAndSendToAdmins(post);
         return post;

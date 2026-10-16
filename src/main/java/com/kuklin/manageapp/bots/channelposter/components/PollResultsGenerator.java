@@ -40,6 +40,16 @@ public class PollResultsGenerator {
                     - без оценки читателей и морализаторства: любой вариант ответа нормален, дай идею на заметку.
                     """;
 
+    private static final String CALORIES_TASK =
+            """
+                    Ты — автор Telegram-канала о питании и здоровых привычках: приветливый эрудированный приятель. Вчера в канале была игра «Угадай калорийность»: фото блюда и варианты ответа. Правильный ответ посчитал по фото AI-бот для подсчёта калорий; цифры и КБЖУ бот уже поставил в начало поста.
+                    Напиши продолжение поста — 2–3 коротких абзаца, всего до 500 символов:
+                    - из чего складывается калорийность этого блюда: что в нём даёт больше всего калорий (соус, масло, сыр, сахар…);
+                    - как сделать порцию легче без потери вкуса — как идея на заметку, не как указание;
+                    - если многие недооценили или переоценили — почему глаз обманывается.
+                    Не утверждай, что оценка бота точная до калории: это оценка по фото.
+                    """;
+
     private static final String RULES =
             """
 
@@ -79,6 +89,11 @@ public class PollResultsGenerator {
     }
 
     static String buildPrompt(ChannelPoll poll, String data) {
-        return (poll.isQuiz() ? QUIZ_TASK : POLL_TASK) + RULES.replace("%DATA%", data);
+        String task = switch (poll.getType()) {
+            case QUIZ -> QUIZ_TASK;
+            case REGULAR -> POLL_TASK;
+            case CALORIES -> CALORIES_TASK;
+        };
+        return task + RULES.replace("%DATA%", data);
     }
 }

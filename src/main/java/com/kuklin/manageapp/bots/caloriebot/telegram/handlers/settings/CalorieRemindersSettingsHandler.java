@@ -44,7 +44,7 @@ public class CalorieRemindersSettingsHandler implements CalorieSettingsHandler{
         if (!update.hasCallbackQuery()) return;
 
         CallbackQuery query = update.getCallbackQuery();
-        Message message = query.getMessage();
+        Message message = TelegramBot.getCallbackMessage(query);
         Long chatId = message.getChatId();
         String data = query.getData();
         AppLanguage language = texts.languageOf(telegramUser.getAppUserId());

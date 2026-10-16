@@ -151,7 +151,7 @@ public class CalorieNutritionProfileRecalculate implements CalorieBotUpdateHandl
     }
 
     private void edit(Update update, String text, InlineKeyboardMarkup keyboard) {
-        Message message = update.getCallbackQuery().getMessage();
+        Message message = TelegramBot.getCallbackMessage(update.getCallbackQuery());
         calorieTelegramBot.sendEditMessage(message.getChatId(), text, message.getMessageId(), keyboard);
     }
 

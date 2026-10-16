@@ -90,6 +90,25 @@ public abstract class TelegramBot extends TelegramLongPollingBot implements Tele
         telegramUserService.deactivateUser(chatId, getBotIdentifier());
     }
 
+    /**
+     * Сообщение под нажатой кнопкой. С Bot API 7.0 (telegrambots 6.9.7) Telegram может прислать вместо него
+     * «недоступное» — удалённое или старше 48 ч, только чат и id. Тогда отдаём Message с чатом и id,
+     * как раньше делала библиотека, чтобы обработчики работали по-прежнему.
+     */
+    public static Message getCallbackMessage(CallbackQuery query) {
+        MaybeInaccessibleMessage maybe = query.getMessage();
+        if (maybe == null || maybe instanceof Message) {
+            return (Message) maybe;
+        }
+        Message message = new Message();
+        message.setMessageId(maybe.getMessageId());
+        message.setDate(maybe.getDate());
+        if (maybe instanceof InaccessibleMessage inaccessible) {
+            message.setChat(inaccessible.getChat());
+        }
+        return message;
+    }
+
     public abstract void handleUpdateDirectly(Update update);
 
     @Override

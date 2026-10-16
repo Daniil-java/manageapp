@@ -101,6 +101,7 @@ public class RubricTopicService {
         List<String> existing = all.stream().map(RubricTopic::getText).toList();
         List<RubricContentGenerator.TopicIdea> ideas = generator.generateTopics(category.getTopicType(), existing);
 
+        List<String> sections = generator.getSections(category.getTopicType());
         Set<String> seen = new HashSet<>();
         existing.forEach(text -> seen.add(normalize(text)));
         List<RubricTopic> toSave = new ArrayList<>();
@@ -110,7 +111,7 @@ public class RubricTopicService {
             if (text.length() > MAX_TEXT_LENGTH || !seen.add(normalize(text))) continue;
             String section = idea.section() == null ? "" : idea.section().trim().toLowerCase();
             toSave.add(newTopic(category.getId(),
-                    RubricContentGenerator.SECTIONS.contains(section) ? section : RubricContentGenerator.OTHER_SECTION,
+                    sections.contains(section) ? section : RubricContentGenerator.OTHER_SECTION,
                     text));
         }
         repository.saveAll(toSave);
