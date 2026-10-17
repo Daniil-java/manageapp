@@ -1,0 +1,112 @@
+package com.kuklin.manageapp.bots.caloriebot.components.services;
+
+import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
+import com.kuklin.manageapp.bots.caloriebot.entities.UserFavoriteDish;
+import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.DishDto;
+import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.UserFavoriteDishDto;
+import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
+import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
+import com.kuklin.manageapp.bots.caloriebot.models.exceptions.MissingFeatureException;
+import com.kuklin.manageapp.bots.caloriebot.models.feature.AccessResult;
+import com.kuklin.manageapp.bots.caloriebot.models.feature.BotFeature;
+import com.kuklin.manageapp.bots.caloriebot.components.RequiresFeature;
+import com.kuklin.manageapp.bots.caloriebot.components.repository.UserFavoriteDishRepository;
+import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.Instant;
+import java.util.List;
+
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class UserFavoriteDishService {
+    private final UserFavoriteDishRepository userFavoriteDishRepository;
+    private final DishService dishService;
+    private final UserFeatureUsageService userFeatureUsageService;
+    private final ObjectProvider<UserFavoriteDishService> selfProvider;
+
+    public List<UserFavoriteDishDto> getAllForUserDto(Long userId) {
+        return UserFavoriteDishDto.fromEntities(getAllForUser(userId));
+    }
+
+    public UserFavoriteDishDto saveFromDishDto(Long userId, Long dishId) {
+        try {
+            UserFavoriteDish favorite = selfProvider.getIfAvailable()
+                    .saveFromDish(userId, dishId)   // ← идёт через прокси, AOP сработает
+                    .getOrThrow();
+            return UserFavoriteDishDto.fromEntity(favorite);
+        } catch (MissingFeatureException e) {
+            throw new ErrorResponseException(ErrorStatus.MISSING_FEATURE);
+        }
+    }
+
+    public DishDto addDishFromFavoriteDto(Long userId, Long favoriteId) {
+        return DishDto.fromEntity(addDishFromFavorite(userId, favoriteId));
+    }
+
+    public List<UserFavoriteDish> getAllForUser(Long userId) {
+        return userFavoriteDishRepository.findAllByUserIdOrderByLastUsedAtDescCreatedAtDesc(userId);
+    }
+
+    /**
+     * Сохранить блюдо как избранное по уже существующему Dish.
+     */
+    @Transactional
+    @RequiresFeature(value = BotFeature.DISH_FAVORITE_LIST, botIdentifier = BotIdentifier.CALORIE_BOT)
+    public AccessResult<UserFavoriteDish> saveFromDish(Long userId, Long dishId) {
+        Dish dish = dishService.getDishByIdOrNull(dishId);
+
+        if (dish == null || !dish.getUserId().equals(userId)) {
+            throw new ErrorResponseException(ErrorStatus.DISH_NOT_FOUND);
+        }
+
+        if (userFavoriteDishRepository.existsByUserIdAndNameIgnoreCase(userId, dish.getName())) {
+            throw new ErrorResponseException(ErrorStatus.FAVORITE_DISH_ALREADY_EXISTS);
+        }
+
+        return AccessResult.success(userFavoriteDishRepository.save(UserFavoriteDish.fromDish(dish)));
+    }
+
+    /**
+     * Добавить в дневник блюдо из избранного.
+     */
+    public Dish addDishFromFavorite(Long userId, Long favoriteId) {
+        UserFavoriteDish favorite = userFavoriteDishRepository.findByIdAndUserId(favoriteId, userId)
+                .orElse(null);
+        if (favorite == null) {
+            return null;
+        }
+
+        Dish saved = dishService.addDishOrNull(favorite);
+
+        favorite.setLastUsedAt(Instant.now());
+        userFavoriteDishRepository.save(favorite);
+
+        return saved;
+    }
+
+    @Transactional
+    public void deleteFavorite(Long favoriteId, Long userId) {
+        userFavoriteDishRepository.findByIdAndUserId(favoriteId, userId)
+                .ifPresent(fav -> {
+                    // 1. Удаляем само блюдо
+                    userFavoriteDishRepository.delete(fav);
+
+                    // 2. Освобождаем слот (уменьшаем счетчик)
+                    userFeatureUsageService.decrementUsage(
+                            userId,
+                            BotIdentifier.CALORIE_BOT, // Или возьми из контекста/конфига
+                            BotFeature.DISH_FAVORITE_LIST
+                    );
+                });
+    }
+
+    public UserFavoriteDish getUserFavoriteDishByIdOrNull(Long id) {
+        return userFavoriteDishRepository.findById(id).orElse(null);
+    }
+}
