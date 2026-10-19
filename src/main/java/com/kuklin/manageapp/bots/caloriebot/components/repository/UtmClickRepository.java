@@ -11,7 +11,6 @@ import java.time.Instant;
 @Repository
 public interface UtmClickRepository extends JpaRepository<UtmClick, Long> {
     long countByUtmLinkId(Long utmLinkId);
-    boolean existsByUserId(Long userId);
 
     // переходы по ссылкам с кодом по шаблону (zch% — посты канала)
     @Query(value = """

@@ -100,6 +100,12 @@
     </div>
 
     <div class="form-group">
+        <label>Код ссылки</label>
+        <input type="text" id="code" maxlength="32" autocapitalize="off" autocomplete="off" placeholder="blogger_oleg">
+        <span class="hint">t.me/бот?start=код. 3–32 символа: латиница, цифры, _ и -. Пусто — сгенерируется partner_…</span>
+    </div>
+
+    <div class="form-group">
         <label>Ссылка/Юзернейм</label>
         <input type="text" id="sourceUrl" placeholder="@my_channel или https://...">
     </div>
@@ -153,6 +159,7 @@
     document.getElementById('submitBtn').addEventListener('click', () => {
         const data = {
             ownerType: document.getElementById('ownerType').value,
+            code: document.getElementById('code').value.trim().toLowerCase(),
             tittle: document.getElementById('tittle').value,
             sourceUrl: document.getElementById('sourceUrl').value,
             description: document.getElementById('description').value,

@@ -2,6 +2,9 @@ package com.kuklin.manageapp.bots.caloriebot.components.services.security;
 
 import jakarta.servlet.FilterChain;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 
@@ -43,6 +46,35 @@ class DomainUrlFilterTest {
         filter.doFilter(request("GET", "zefir.fit", "/calorie/privacy"), new MockHttpServletResponse(), chain(passed));
 
         assertThat(passed).isTrue();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"/resume", "/freelance"})
+    void personalPagesOnKuklinDevPass(String path) throws Exception {
+        AtomicBoolean passed = new AtomicBoolean();
+
+        filter.doFilter(request("GET", "kuklin.dev", path), new MockHttpServletResponse(), chain(passed));
+
+        assertThat(passed).isTrue();
+    }
+
+    // Резюме и фриланс-страница — только на kuklin.dev
+    @ParameterizedTest
+    @CsvSource({
+        "zefir.fit, /resume",
+        "zefir.fit, /freelance",
+        "manageapp-production.up.railway.app, /resume",
+        "manageapp-production.up.railway.app, /freelance",
+        "example.com, /resume"
+    })
+    void personalPagesOnOtherHostsAre404(String host, String path) throws Exception {
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        AtomicBoolean passed = new AtomicBoolean();
+
+        filter.doFilter(request("GET", host, path), response, chain(passed));
+
+        assertThat(passed).isFalse();
+        assertThat(response.getStatus()).isEqualTo(404);
     }
 
     private static MockHttpServletRequest request(String method, String host, String path) {

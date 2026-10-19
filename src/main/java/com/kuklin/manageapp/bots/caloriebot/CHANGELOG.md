@@ -1,3 +1,14 @@
+## 0.0.73 (19.10.2026)
+[et-101] — Атрибуция по UTM-ссылкам: откуда пришёл пользователь
+* Таблица utm_attributions (миграция 0.0.65, changeset 68; UtmAttribution, UtmAttributionRepository): у нового пользователя запоминается первая UTM-ссылка, по которой он запустил бота, а по реферальной (ref<id>) — и кто пригласил (referrer_app_user_id). Одна строка на пользователя, пишется один раз (INSERT ... ON CONFLICT DO NOTHING). Старые пользователи, перешедшие по ссылке позже, попадают только в utm_clicks. Основа для наград за приглашение и отчёта по источникам.
+* Новый пользователь — тот, кому /start только что выдал пробный период (выдаётся один раз). Раньше utm_clicks.is_new_user означал «первый переход по любой UTM-ссылке», и старый пользователь, впервые перешедший по ссылке, считался новым. StartUpdateHandler теперь выдаёт пробный период до учёта перехода.
+* Переход по своей реферальной ссылке не учитывается. Реферальной считается только ссылка ref<appUserId> типа «Пользователь»: ссылки этого типа из админской формы (например, блогера) никого не делают пригласившим.
+* Форма UTM-ссылки (/calorie/utm-form): свой код ссылки (blogger_oleg) — 3–32 символа, латиница, цифры, «_» и «-», приводится к нижнему регистру. Коды на ref, zch и p_ заняты ботом, занятый код не перезаписывается — админ получает сообщение, ссылка не создаётся (admin.utm.code-invalid / code-reserved / code-taken). Пусто — как раньше, partner_<8 символов>.
+* UtmService.saveLink берёт тип владельца из формы (раньше всегда «ТГ-канал»), в описание пишет только описание (раньше — склейку типа, названия, источника и описания).
+* Админы UTM-ссылок — в конфиге calorie.utm.admin-telegram-ids (CALORIE_UTM_ADMIN_IDS), а не в коде.
+* Индекс utm_clicks (utm_link_id) для отчётов по ссылкам.
+* Тесты: UtmServiceTest.
+
 ## 0.0.72 (16.10.2026)
 [et-99] — Библиотека Telegram 6.9.7.1, распознавание фото и UTM для канала
 * telegrambots-spring-boot-starter и telegrambots-abilities 6.9.0 → 6.9.7.1 (Bot API 7.0): нужны реакции на посты канала. Общее для всех ботов: CallbackQuery.getMessage() теперь MaybeInaccessibleMessage — для удалённых и старых сообщений Telegram присылает только чат и id. TelegramBot.getCallbackMessage отдаёт Message, как раньше делала библиотека (у недоступного — с чатом и id). Переведены 8 мест: обработчики редактирования профиля питания (CalorieNutritionProfileEditCallbackUpdateHandler, CalorieNutritionProfileRecalculate, Abstract{Enum,Decimal,Numeric}ProfileEditFieldHandler), CalorieRemindersSettingsHandler, CalorieFavoriteDishAddCallbackUpdateHandler и PomidoroTelegramFacade помидоро-таймера. Остальные места берут у сообщения только чат и id — они есть у обоих типов.

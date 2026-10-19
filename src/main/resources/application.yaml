@@ -142,6 +142,9 @@ calorie:
   i18n:
     default-language: ru                                   # язык тех, кто не выбирал, и запасной словарь
     dev-telegram-ids: ${CALORIE_I18N_DEV_IDS:425120436}    # через запятую
+  # UTM-ссылки: кто создаёт их через форму /calorie/utm-form (в /utm вместо реферальной ссылки — кнопка создания)
+  utm:
+    admin-telegram-ids: ${CALORIE_UTM_ADMIN_IDS:425120436,420478432}    # через запятую
   # Лендинг zefir.fit: код UTM-ссылки (создаётся в /calorie/utm-form) для кнопок «Открыть в Telegram».
   # Пусто — ссылка на бота без метки.
   landing:

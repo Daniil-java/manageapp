@@ -78,6 +78,9 @@ public final class BotTextKeys {
     public static final String REFERRAL_BUTTON_SHARE = "referral.button.share";
     public static final String ADMIN_UTM_BUTTON_CREATE = "admin.utm.button.create";
     public static final String ADMIN_UTM_CREATED = "admin.utm.created";
+    public static final String ADMIN_UTM_CODE_INVALID = "admin.utm.code-invalid";
+    public static final String ADMIN_UTM_CODE_RESERVED = "admin.utm.code-reserved";
+    public static final String ADMIN_UTM_CODE_TAKEN = "admin.utm.code-taken";
 
     // ── Длительность ───────────────────────────────────────────────
     public static final String COMMON_DURATION_MINUTES = "common.duration.minutes";

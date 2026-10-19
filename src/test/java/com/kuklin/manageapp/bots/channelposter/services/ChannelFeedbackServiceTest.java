@@ -77,7 +77,7 @@ class ChannelFeedbackServiceTest {
 
         assertThat(section)
                 .contains("👥 Подписчики: 120 (+5 за сутки)")
-                .contains("🔗 Из постов в бота: за сутки 4 (впервые 3), за неделю 4")
+                .contains("🔗 Из постов в бота: за сутки 4 (новых 3), за неделю 4 (новых 3)")
                 .contains("• #3 Белок &lt;утром&gt; — 12");
         verify(statsRepository).save(any(ChannelDailyStats.class));
     }

@@ -9,10 +9,12 @@ import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieSiteLinks;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
+import com.kuklin.manageapp.bots.caloriebot.utils.ReportHtml;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
@@ -38,7 +40,9 @@ public class UtmCalorieUpdateHandler implements CalorieBotUpdateHandler {
 
     // Константы конфигурации
     private static final String WEB_APP_URL = CalorieSiteLinks.UTM_FORM_URL;
-    private static final Set<Long> ADMIN_IDS = Set.of(425120436L, 420478432L);
+    /** Кто создаёт UTM-ссылки (calorie.utm.admin-telegram-ids). */
+    @Value("${calorie.utm.admin-telegram-ids}")
+    private Set<Long> adminTelegramIds;
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
@@ -46,7 +50,7 @@ public class UtmCalorieUpdateHandler implements CalorieBotUpdateHandler {
         Long chatId = update.hasMessage() ?
                 update.getMessage().getChatId() :
                 update.getCallbackQuery().getMessage().getChatId();
-        boolean isAdmin = ADMIN_IDS.contains(telegramUser.getTelegramId());
+        boolean isAdmin = adminTelegramIds.contains(telegramUser.getTelegramId());
 
         // 1. Обработка создания через WebApp (только админы)
         if (isAdmin && update.hasMessage() && update.getMessage().getWebAppData() != null) {
@@ -74,6 +78,15 @@ public class UtmCalorieUpdateHandler implements CalorieBotUpdateHandler {
             String jsonData = update.getMessage().getWebAppData().getData();
             UtmDto dto = objectMapper.readValue(jsonData, UtmDto.class);
 
+            String code = UtmService.normalizeCode(dto.code());
+            UtmService.CodeProblem problem = code == null ? null : utmService.getCodeProblemOrNull(code);
+            if (problem != null) {
+                calorieTelegramBot.sendReturnedMessage(update.getMessage().getChatId(),
+                        texts.get(telegramUser.getAppUserId(), getCodeProblemTextKey(problem), ReportHtml.escapeHtml(code),
+                                UtmService.CODE_MIN_LENGTH, UtmService.CODE_MAX_LENGTH));
+                return;
+            }
+
             UtmLink link = utmService.saveLink(dto, telegramUser.getAppUserId());
             String fullBotLink = buildBotLink(link.getCode());
 
@@ -90,6 +103,14 @@ public class UtmCalorieUpdateHandler implements CalorieBotUpdateHandler {
         } catch (JsonProcessingException e) {
             log.error("Failed to parse WebApp JSON: {}", e.getMessage());
         }
+    }
+
+    private static String getCodeProblemTextKey(UtmService.CodeProblem problem) {
+        return switch (problem) {
+            case INVALID -> BotTextKeys.ADMIN_UTM_CODE_INVALID;
+            case RESERVED -> BotTextKeys.ADMIN_UTM_CODE_RESERVED;
+            case TAKEN -> BotTextKeys.ADMIN_UTM_CODE_TAKEN;
+        };
     }
 
     /**
@@ -125,6 +146,7 @@ public class UtmCalorieUpdateHandler implements CalorieBotUpdateHandler {
     @JsonIgnoreProperties(ignoreUnknown = true)
     public record UtmDto(
             String ownerType,
+            String code,          // свой код ссылки, пусто — сгенерируется partner_...
             String tittle,
             String sourceUrl,
             String description,

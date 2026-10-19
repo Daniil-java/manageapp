@@ -68,13 +68,14 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
         Long appUserId = telegramUser.getAppUserId();
 
         CalculatorStartParam param = parseStartParam(update);
-        // UTM засчитываем сразу — не теряем переход, даже если язык так и не выберут
-        if (param.utmCode() != null) {
-            utmService.processClick(param.utmCode(), appUserId);
-        }
         //Пробный период. Если null - значит пробный период уже был у пользователя
         UserSubscription trial = userSubscriptionService
                 .createSubscriptionByFreePlanOrNull(appUserId, BotIdentifier.CALORIE_BOT);
+        // UTM засчитываем сразу — не теряем переход, даже если язык так и не выберут.
+        // Пробный период выдаётся только при первом /start — по нему и узнаём нового пользователя
+        if (param.utmCode() != null) {
+            utmService.processClick(param.utmCode(), appUserId, trial != null);
+        }
 
         if (!texts.hasChosenLanguage(appUserId)) {
             pendingStarts.put(appUserId, new PendingStart(param.calculator(), trial));

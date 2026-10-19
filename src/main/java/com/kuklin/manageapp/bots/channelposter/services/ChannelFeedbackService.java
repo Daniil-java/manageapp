@@ -93,8 +93,8 @@ public class ChannelFeedbackService {
         UtmService.ChannelClicks dayClicks = utmService.countChannelClicksSince(now.minus(Duration.ofDays(1)));
         UtmService.ChannelClicks weekClicks = utmService.countChannelClicksSince(now.minus(Duration.ofDays(7)));
         sb.append("🔗 Из постов в бота: за сутки ").append(dayClicks.clicks())
-                .append(" (впервые ").append(dayClicks.firstTime()).append("), за неделю ")
-                .append(weekClicks.clicks()).append('\n');
+                .append(" (новых ").append(dayClicks.newUsers()).append("), за неделю ")
+                .append(weekClicks.clicks()).append(" (новых ").append(weekClicks.newUsers()).append(")\n");
 
         List<PostQueue> top = postQueueService.getTopReacted(Duration.ofDays(7), TOP_POSTS);
         if (!top.isEmpty()) {
