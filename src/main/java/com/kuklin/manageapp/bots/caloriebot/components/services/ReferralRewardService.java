@@ -187,6 +187,10 @@ public class ReferralRewardService {
         return plan == null || plan.getDurationDays() == null ? 0 : plan.getDurationDays();
     }
 
+    public int getActivationWindowDays() {
+        return activationWindowDays;
+    }
+
     public int getActivationDays() {
         return activationDays;
     }

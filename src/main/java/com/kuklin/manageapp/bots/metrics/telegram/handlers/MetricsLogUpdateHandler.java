@@ -9,7 +9,9 @@ import com.kuklin.manageapp.bots.metrics.services.MetricsAiLogService;
 import com.kuklin.manageapp.bots.metrics.telegram.MetricsTelegramBot;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgutils.Command;
+import com.kuklin.manageapp.bots.caloriebot.components.services.UtmReportService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Update;
@@ -21,6 +23,7 @@ import java.time.ZonedDateTime;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 @BotScheduler(BotIdentifier.METRICS)
 public class MetricsLogUpdateHandler implements MetricsUpdateHandler {
     private static final ZoneId ZONE = ZoneId.of("Asia/Ho_Chi_Minh");
@@ -28,6 +31,7 @@ public class MetricsLogUpdateHandler implements MetricsUpdateHandler {
     private final MetricsAiLogService metricsAiLogService;
     private final MetricsAiInteractionRecordService metricsAiInteractionRecordService;
     private final MetricsBotKeyComponents metricsBotKeyComponents;
+    private final UtmReportService utmReportService;
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
         Long chatId = update.getMessage().getChatId();
@@ -52,18 +56,25 @@ public class MetricsLogUpdateHandler implements MetricsUpdateHandler {
     }
 
     private void send(Long chatId, LocalDate day) {
-        MetricsAiLog log = metricsAiLogService.getLog(day);
+        MetricsAiLog aiLog = metricsAiLogService.getLog(day);
         String aiInteractionRecords = metricsAiInteractionRecordService.buildStatistics(day);
 
         telegramBot.sendReturnedMessage(
                 chatId,
-                log.getStringForTelegram()
+                aiLog.getStringForTelegram()
         );
 
         telegramBot.sendReturnedMessage(
                 chatId,
                 aiInteractionRecords
         );
+
+        // Источники — дополнение: сбой отчёта не должен оставить без остальных метрик
+        try {
+            telegramBot.sendReturnedMessage(chatId, utmReportService.buildDailyLine(day, ZONE));
+        } catch (Exception e) {
+            log.error("UTM daily line failed for {}", day, e);
+        }
     }
 
     @Override
