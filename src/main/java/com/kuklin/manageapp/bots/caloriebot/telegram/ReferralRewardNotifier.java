@@ -12,6 +12,7 @@ import com.kuklin.manageapp.payment.models.SubscriptionPurchasedEvent;
 import com.kuklin.manageapp.payment.models.SubscriptionRefundedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.event.TransactionalEventListener;
 
@@ -19,11 +20,15 @@ import java.util.List;
 
 /**
  * Блюдо добавлено, подписка куплена или за неё вернули деньги — выдать или отменить награды за приглашение
- * (ReferralRewardService) и сообщить
- * о них получателям на их языке.
+ * (ReferralRewardService) и сообщить о них получателям на их языке.
  * <p>
  * После коммита блюда или платежа: их откат не должен оставить выданную награду. fallbackExecution — событие
  * могли опубликовать и вне транзакции. Сбой награды или отправки только логируется: блюдо и платёж уже записаны.
+ * <p>
+ * @Async — в общем пуле Spring, не в потоке апдейта. В потоке апдейта слушатель после коммита ещё держит
+ * соединение транзакции блюда (Hibernate отдаёт его только при закрытии EntityManager), а награда открывает
+ * свою транзакцию (REQUIRES_NEW) — второе соединение на каждое блюдо. 16 потоков апдейтов против 10 соединений
+ * пула могли повиснуть, ожидая друг друга. Заодно пользователь не ждёт выдачи наград и сообщений другу.
  */
 @Component
 @RequiredArgsConstructor
@@ -35,6 +40,7 @@ public class ReferralRewardNotifier {
     private final CalorieTelegramBot calorieTelegramBot;
     private final CalorieTexts texts;
 
+    @Async
     @TransactionalEventListener(fallbackExecution = true)
     public void onDishAdded(DishAddedEvent event) {
         List<ReferralReward> rewards;
@@ -47,6 +53,7 @@ public class ReferralRewardNotifier {
         rewards.forEach(this::notify);
     }
 
+    @Async
     @TransactionalEventListener(fallbackExecution = true)
     public void onSubscriptionPurchased(SubscriptionPurchasedEvent event) {
         if (event.botIdentifier() != BotIdentifier.CALORIE_BOT) {
@@ -65,6 +72,7 @@ public class ReferralRewardNotifier {
     }
 
     /** Другу вернули деньги за подписку — отменить награду пригласившего за эту оплату. */
+    @Async
     @TransactionalEventListener(fallbackExecution = true)
     public void onSubscriptionRefunded(SubscriptionRefundedEvent event) {
         if (event.botIdentifier() != BotIdentifier.CALORIE_BOT) {
