@@ -406,6 +406,18 @@ public class PaymentService {
         return paymentRepository.save(payment.setProviderPaymentId(providerOrderId));
     }
 
+    /**
+     * Платёж звёздами, который можно вернуть (оплачен и ещё не возвращён), или null.
+     * Возврат: сначала refundStarPayment в Telegram, и только если он прошёл — refundTelegramPayment.
+     */
+    @Transactional(readOnly = true)
+    public Payment getRefundableTelegramPaymentOrNull(String paymentChargeId) {
+        return paymentRepository.findByProviderPaymentId(paymentChargeId)
+                .filter(payment -> Currency.XTR.equals(payment.getCurrency()))
+                .filter(payment -> Payment.PaymentStatus.SUCCESS.equals(payment.getStatus()))
+                .orElse(null);
+    }
+
     @Transactional
     public boolean refundTelegramPayment(String paymentChargeId) {
         Payment payment = paymentRepository.findByProviderPaymentId(paymentChargeId).orElse(null);

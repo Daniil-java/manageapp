@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
@@ -41,16 +42,28 @@ public class StreakService {
         return getStreak(userId).current();
     }
 
+    /** Сколько разных дней (в таймзоне пользователя) есть блюда за [from, to). Вода не считается. */
+    @Transactional(readOnly = true)
+    public long countDishDaysBetween(Long userId, Instant from, Instant to) {
+        ZoneId zone = userSettingsService.getZoneId(userId);
+        return dishRepository.countDishDaysByUserIdBetween(userId, getSqlZoneName(zone), getSqlOffsetSeconds(zone), from, to);
+    }
+
     private Set<LocalDate> findActiveDays(Long userId, ZoneId zone) {
         Set<LocalDate> days = new HashSet<>(waterEntryRepository.findWaterDatesByUserId(userId));
-        // Фиксированное смещение (+03:00, GMT+3) — числом поверх UTC, зона с переходами — по имени IANA
-        boolean fixedOffset = zone.normalized() instanceof ZoneOffset;
-        String zoneName = fixedOffset ? "UTC" : zone.getId();
-        int offsetSeconds = fixedOffset ? ((ZoneOffset) zone.normalized()).getTotalSeconds() : 0;
-        for (Integer epochDay : dishRepository.findDishEpochDaysByUserId(userId, zoneName, offsetSeconds)) {
+        for (Integer epochDay : dishRepository.findDishEpochDaysByUserId(userId, getSqlZoneName(zone), getSqlOffsetSeconds(zone))) {
             days.add(LocalDate.ofEpochDay(epochDay));
         }
         return days;
+    }
+
+    // Фиксированное смещение (+03:00, GMT+3) — числом поверх UTC, зона с переходами — по имени IANA
+    private static String getSqlZoneName(ZoneId zone) {
+        return zone.normalized() instanceof ZoneOffset ? "UTC" : zone.getId();
+    }
+
+    private static int getSqlOffsetSeconds(ZoneId zone) {
+        return zone.normalized() instanceof ZoneOffset offset ? offset.getTotalSeconds() : 0;
     }
 
     static StreakDto buildStreak(Set<LocalDate> activeDays, LocalDate today) {

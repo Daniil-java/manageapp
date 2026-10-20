@@ -15,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.util.Optional;
 
@@ -47,7 +48,8 @@ class DishServiceOwnershipTest {
                 mock(TelegramCaloriesBotKeyComponents.class), new ObjectMapper(),
                 mock(UserSettingsService.class), mock(CalorieAccessService.class),
                 mock(TelegramUserService.class), mock(ObjectProvider.class), mock(AiInputValidator.class),
-                mock(AiRateLimiter.class), mock(DishLimitsProperties.class), mock(CalorieTexts.class));
+                mock(AiRateLimiter.class), mock(DishLimitsProperties.class), mock(CalorieTexts.class),
+                mock(ApplicationEventPublisher.class));
 
         Dish dish = new Dish().setId(DISH_ID).setUserId(OWNER).setName("Омлет")
                 .setCalories(250).setProteins(15).setFats(18).setCarbohydrates(2)

@@ -145,6 +145,13 @@ calorie:
   # UTM-ссылки: кто создаёт их через форму /calorie/utm-form (в /utm вместо реферальной ссылки — кнопка создания)
   utm:
     admin-telegram-ids: ${CALORIE_UTM_ADMIN_IDS:425120436,420478432}    # через запятую
+  # Награды за приглашение (ReferralRewardService): другу +3 дня Premium за первое блюдо, пригласившему +7 —
+  # когда друг вёл дневник activation-days дней за первые activation-window-days, и +30 — за первую оплату друга.
+  # Сроки — у тарифов CALORIE_REFERRAL_INVITED / _INVITER / _FRIEND_PAID в pricing_plans
+  referral:
+    activation-days: 3               # разных дней с блюдами у друга
+    activation-window-days: 7        # за столько первых дней после прихода
+    inviter-limit-days: 14           # максимум дней за активных друзей за последние 30 дней (за оплату — без лимита)
   # Лендинг zefir.fit: код UTM-ссылки (создаётся в /calorie/utm-form) для кнопок «Открыть в Telegram».
   # Пусто — ссылка на бота без метки.
   landing:
@@ -152,6 +159,10 @@ calorie:
     # Закрытый доступ: если задан — лендинг открывается только по ссылке https://zefir.fit/?key=<значение>
     # (дальше 30 дней по cookie), без ключа — 404. Пусто — лендинг открыт всем.
     access-key: ${CALORIE_LANDING_ACCESS_KEY:}
+
+# Платежи. /refund <charge_id> в платёжном боте — только эти Telegram id, остальным бот не отвечает
+payment:
+  admin-telegram-ids: ${PAYMENT_ADMIN_IDS:425120436}    # через запятую
 
 # Вход на сайт (/auth/*). Мини-аппу не затрагивает — там авторизация через initData.
 auth:

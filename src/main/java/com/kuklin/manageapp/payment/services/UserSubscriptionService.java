@@ -5,6 +5,8 @@ import com.kuklin.manageapp.payment.entities.Payment;
 import com.kuklin.manageapp.payment.entities.PricingPlan;
 import com.kuklin.manageapp.payment.entities.UserSubscription;
 import com.kuklin.manageapp.payment.handlers.AdminPaymentUpdateHandler;
+import com.kuklin.manageapp.payment.models.SubscriptionPurchasedEvent;
+import com.kuklin.manageapp.payment.models.SubscriptionRefundedEvent;
 import com.kuklin.manageapp.payment.repositories.UserSubscriptionRepository;
 import com.kuklin.manageapp.payment.services.exceptions.PricingPlanNotFoundException;
 import com.kuklin.manageapp.payment.services.exceptions.subscription.SubscriptionInvalidDataException;
@@ -12,6 +14,7 @@ import com.kuklin.manageapp.payment.services.exceptions.subscription.Subscriptio
 import com.kuklin.manageapp.payment.services.exceptions.subscription.SubscriptionNotSubscribeException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.Sort;
@@ -32,6 +35,7 @@ public class UserSubscriptionService {
     private final PricingPlanService pricingPlanService;
     //TODO разработать нормальный метод для отправки сообщений
     private final AdminPaymentUpdateHandler adminPaymentUpdateHandler;
+    private final ApplicationEventPublisher eventPublisher;
 
 
     /**
@@ -145,6 +149,7 @@ public class UserSubscriptionService {
                         : UserSubscription.Status.ACTIVE);
 
         UserSubscription userSubscription = userSubscriptionRepository.save(sub);
+        eventPublisher.publishEvent(new SubscriptionPurchasedEvent(appUserId, botIdentifier, payment.getId()));
 
         try {
             adminPaymentUpdateHandler.sendSubMessageToAdmin(userSubscription);
@@ -203,6 +208,45 @@ public class UserSubscriptionService {
                 // Важно: endAt рассчитываем от startAt, который мы вычислили выше
                 .setEndAt(startAt.plus(plan.getDurationDays(), ChronoUnit.DAYS))
                 .setStatus(status);
+
+        return userSubscriptionRepository.save(sub);
+    }
+
+    /**
+     * Бонусная подписка (награда за приглашение) на days дней: стартует сейчас или встаёт в очередь
+     * после последней активной/запланированной. Выдаётся сколько угодно раз — проверять, положена ли награда,
+     * должен вызывающий.
+     */
+    @Transactional
+    public UserSubscription createBonusSubscription(Long appUserId, BotIdentifier botIdentifier,
+                                                    PricingPlan plan, int days) {
+        if (days <= 0) {
+            throw new IllegalArgumentException("Bonus days must be positive: " + days);
+        }
+        refreshStatuses(appUserId, botIdentifier);
+        Instant now = Instant.now();
+
+        // Блокируем очередь, как при покупке: две награды подряд не должны встать на одно время
+        List<UserSubscription> queue =
+                userSubscriptionRepository.findAllByAppUserIdAndBotIdentifierAndStatusInForUpdate(
+                        appUserId, botIdentifier, WORKING_STATUSES);
+
+        Instant startAt = queue.stream()
+                .map(UserSubscription::getEndAt)
+                .filter(end -> end.isAfter(now))
+                .max(Instant::compareTo)
+                .orElse(now);
+
+        UserSubscription sub = new UserSubscription()
+                .setAppUserId(appUserId)
+                .setPricingPlanId(plan.getId())
+                .setPaymentId(-1L)
+                .setBotIdentifier(botIdentifier)
+                .setStartAt(startAt)
+                .setEndAt(startAt.plus(days, ChronoUnit.DAYS))
+                .setStatus(startAt.isAfter(now)
+                        ? UserSubscription.Status.SCHEDULED
+                        : UserSubscription.Status.ACTIVE);
 
         return userSubscriptionRepository.save(sub);
     }
@@ -272,26 +316,52 @@ public class UserSubscriptionService {
         Instant now = Instant.now();
 
         for (UserSubscription sub : toCancel) {
-            sub.setStatus(UserSubscription.Status.CANCELLED);
-            userSubscriptionRepository.save(sub);
-
-            if (!sub.getEndAt().isAfter(now)) {
-                continue;
-            }
-
-            Instant anchor = now.isAfter(sub.getStartAt())
-                    ? now
-                    : sub.getStartAt();
-
-            shiftFutureSubscriptions(appUserId, sub, anchor, botIdentifier);
+            cancelAndShiftQueue(sub, now);
         }
 
         refreshStatuses(appUserId, botIdentifier);
+        eventPublisher.publishEvent(new SubscriptionRefundedEvent(appUserId, botIdentifier, payment.getId()));
     }
 
     /**
-     * Сдвиг будущих подписок после отмены
-     * Используется ТОЛЬКО из cancelByPayment
+     * Отменить бонусную подписку (createBonusSubscription) — например, награду за оплату друга, который
+     * вернул деньги. Остаток срока сгорает, запланированные после неё подписки сдвигаются раньше.
+     *
+     * @return true — отменена; false — её нет или она уже закончилась/отменена (отменять нечего)
+     */
+    @Transactional
+    public boolean cancelBonusSubscription(Long subscriptionId) {
+        UserSubscription sub = userSubscriptionRepository.findById(subscriptionId).orElse(null);
+        if (sub == null || !WORKING_STATUSES.contains(sub.getStatus())) {
+            return false;
+        }
+        refreshStatuses(sub.getAppUserId(), sub.getBotIdentifier());
+        if (!WORKING_STATUSES.contains(sub.getStatus())) {
+            return false;
+        }
+        cancelAndShiftQueue(sub, Instant.now());
+        refreshStatuses(sub.getAppUserId(), sub.getBotIdentifier());
+        return true;
+    }
+
+    /** Отменить подписку и сдвинуть следующие за ней в очереди на освободившееся время. */
+    private void cancelAndShiftQueue(UserSubscription sub, Instant now) {
+        sub.setStatus(UserSubscription.Status.CANCELLED);
+        userSubscriptionRepository.save(sub);
+
+        if (!sub.getEndAt().isAfter(now)) {
+            return;
+        }
+
+        Instant anchor = now.isAfter(sub.getStartAt())
+                ? now
+                : sub.getStartAt();
+
+        shiftFutureSubscriptions(sub.getAppUserId(), sub, anchor, sub.getBotIdentifier());
+    }
+
+    /**
+     * Сдвиг будущих подписок после отмены (cancelAndShiftQueue)
      */
     private void shiftFutureSubscriptions(Long appUserId,
                                           UserSubscription cancelled,

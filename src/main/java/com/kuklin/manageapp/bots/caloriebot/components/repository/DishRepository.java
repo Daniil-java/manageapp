@@ -44,5 +44,17 @@ public interface DishRepository extends JpaRepository<Dish, Long> {
                                             @Param("zoneName") String zoneName,
                                             @Param("offsetSeconds") int offsetSeconds);
 
+    /** Сколько разных дней (в таймзоне пользователя, как findDishEpochDaysByUserId) есть блюда за [from, to). */
+    @Query(value = """
+            select count(distinct cast((d.created at time zone :zoneName) + make_interval(secs => :offsetSeconds) as date))
+            from dishes d
+            where d.user_id = :userId and d.created >= :from and d.created < :to
+            """, nativeQuery = true)
+    long countDishDaysByUserIdBetween(@Param("userId") Long userId,
+                                      @Param("zoneName") String zoneName,
+                                      @Param("offsetSeconds") int offsetSeconds,
+                                      @Param("from") Instant from,
+                                      @Param("to") Instant to);
+
 }
 

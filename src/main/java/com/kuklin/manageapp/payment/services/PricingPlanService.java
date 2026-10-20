@@ -34,6 +34,11 @@ public class PricingPlanService {
 
     //Выдает бесплатный системный план (предназначенный для пробного периода)
     //planStatus - SYSTEM_FREE
+    /** Тариф по коду (code_for_order_id) или null. */
+    public PricingPlan getPricingPlanByCodeOrNull(String code) {
+        return pricingPlanRepository.findPricingPlanByCodeForOrderId(code).orElse(null);
+    }
+
     public PricingPlan getFreePricingPlanOrNull(BotIdentifier botIdentifier) {
         Optional<PricingPlan> pricingPlan = pricingPlanRepository
                 .findFirstByBotIdentifierAndPlanStatus(botIdentifier, SYSTEM_FREE);

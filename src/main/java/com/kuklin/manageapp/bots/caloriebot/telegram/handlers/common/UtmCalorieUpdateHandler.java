@@ -3,6 +3,7 @@ package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.kuklin.manageapp.bots.caloriebot.components.services.ReferralRewardService;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UtmService;
 import com.kuklin.manageapp.bots.caloriebot.entities.utm.UtmLink;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
@@ -35,6 +36,7 @@ public class UtmCalorieUpdateHandler implements CalorieBotUpdateHandler {
 
     private final CalorieTelegramBot calorieTelegramBot;
     private final UtmService utmService;
+    private final ReferralRewardService referralRewardService;
     private final ObjectMapper objectMapper; // Инжектится из контекста
     private final CalorieTexts texts;
 
@@ -62,12 +64,22 @@ public class UtmCalorieUpdateHandler implements CalorieBotUpdateHandler {
         String userCode = utmService.getOrCreateReferralLink(appUserId);
         String botUrl = buildBotLink(userCode);
 
+        int invitedDays = referralRewardService.getPlanDays(ReferralRewardService.INVITED_PLAN_CODE);
+        int inviterDays = referralRewardService.getPlanDays(ReferralRewardService.INVITER_PLAN_CODE);
+        int friendPaidDays = referralRewardService.getPlanDays(ReferralRewardService.FRIEND_PAID_PLAN_CODE);
+        ReferralRewardService.ReferralStats stats = referralRewardService.getStats(appUserId);
+
         // Админу даем кнопку создания, юзеру — кнопку "Переслать"
-        ReplyKeyboard keyboard = isAdmin ? getAdminReplyKeyboard(appUserId) : getReferralButtons(appUserId, botUrl);
+        ReplyKeyboard keyboard = isAdmin
+                ? getAdminReplyKeyboard(appUserId)
+                : getReferralButtons(appUserId, botUrl, invitedDays);
 
         calorieTelegramBot.sendReturnedMessage(
                 chatId,
-                texts.get(appUserId, BotTextKeys.REFERRAL_TEXT, botUrl),
+                texts.get(appUserId, BotTextKeys.REFERRAL_TEXT, botUrl,
+                        invitedDays, inviterDays, referralRewardService.getActivationDays(),
+                        referralRewardService.getInviterLimitDays(), friendPaidDays,
+                        stats.invited(), stats.activated(), stats.paid(), stats.receivedDays()),
                 keyboard,
                 null
         );
@@ -121,10 +133,10 @@ public class UtmCalorieUpdateHandler implements CalorieBotUpdateHandler {
         return "https://t.me/" + botUserName + "?start=" + code;
     }
 
-    private InlineKeyboardMarkup getReferralButtons(Long appUserId, String botUrl) {
+    private InlineKeyboardMarkup getReferralButtons(Long appUserId, String botUrl, int invitedDays) {
         InlineKeyboardButton shareBtn = new InlineKeyboardButton();
         shareBtn.setText(texts.get(appUserId, BotTextKeys.REFERRAL_BUTTON_SHARE));
-        shareBtn.setSwitchInlineQuery(texts.get(appUserId, BotTextKeys.REFERRAL_SHARE_TEXT, botUrl));
+        shareBtn.setSwitchInlineQuery(texts.get(appUserId, BotTextKeys.REFERRAL_SHARE_TEXT, botUrl, invitedDays));
 
         return new InlineKeyboardMarkup(List.of(List.of(shareBtn)));
     }

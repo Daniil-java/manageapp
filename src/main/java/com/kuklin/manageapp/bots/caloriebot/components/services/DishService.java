@@ -12,6 +12,7 @@ import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserFavoriteDish;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.models.ManualDishRequest;
+import com.kuklin.manageapp.bots.caloriebot.models.events.DishAddedEvent;
 import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.DishDto;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorParams;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
@@ -28,6 +29,7 @@ import com.kuklin.manageapp.common.services.TelegramUserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -58,6 +60,7 @@ public class DishService {
     private final AiRateLimiter aiRateLimiter;
     private final DishLimitsProperties dishLimits;
     private final CalorieTexts calorieTexts;
+    private final ApplicationEventPublisher eventPublisher;
 
     // --- Public Methods ---
 
@@ -253,7 +256,7 @@ public class DishService {
                 .setPortionWeight(Math.max(1, Math.round((float) weight / portions)))
                 .setAiConfidence(0);
 
-        userSettingsService.updateMealLastReminder(userId);
+        markDishAdded(userId);
         return DishDto.fromEntity(dishRepository.save(dish));
     }
 
@@ -276,6 +279,15 @@ public class DishService {
         return false;
     }
 
+    /**
+     * Блюдо добавлено в дневник: сдвинуть напоминание о еде и сообщить слушателям (награда за приглашение —
+     * ReferralRewardNotifier). Все пути добавления блюд — ИИ, вручную, из избранного — идут через этот метод.
+     */
+    private void markDishAdded(Long userId) {
+        userSettingsService.updateMealLastReminder(userId);
+        eventPublisher.publishEvent(new DishAddedEvent(userId));
+    }
+
     private static int nvl(Integer value) {
         return value != null ? value : 0;
     }
@@ -286,7 +298,7 @@ public class DishService {
         // Бот покажет «Не удалось добавить блюдо»; API проверяет лимит раньше и отвечает 429
         if (isDailyDishLimitReached(userFavoriteDish.getUserId())) return null;
         Dish dish = UserFavoriteDish.toDish(userFavoriteDish);
-        userSettingsService.updateMealLastReminder(dish.getUserId());
+        markDishAdded(dish.getUserId());
         return dishRepository.save(dish);
     }
 
@@ -358,7 +370,7 @@ public class DishService {
     @Transactional
     public List<Dish> saveDishes(Long userId, List<Dish> dishes) {
         List<Dish> saved = dishRepository.saveAll(dishes);
-        userSettingsService.updateMealLastReminder(userId);
+        markDishAdded(userId);
         return saved;
     }
 

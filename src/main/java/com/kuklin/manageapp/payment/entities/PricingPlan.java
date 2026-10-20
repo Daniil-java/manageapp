@@ -47,6 +47,8 @@ public class PricingPlan {
     }
 
     public enum PlanStatus {
-        AVAILABLE, DISABLED, SYSTEM_FREE, ARCHIVED, ARCHIVED_SYSTEM_FREE;
+        AVAILABLE, DISABLED, SYSTEM_FREE, ARCHIVED, ARCHIVED_SYSTEM_FREE,
+        // Выдаётся системой как награда (приглашение друга), не продаётся
+        SYSTEM_BONUS;
     }
 }

@@ -15,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataAccessResourceFailureException;
 
 import java.util.List;
@@ -61,7 +62,8 @@ class DishServiceAiResponseTest {
                 mock(TelegramCaloriesBotKeyComponents.class), new ObjectMapper(),
                 mock(UserSettingsService.class), mock(CalorieAccessService.class),
                 mock(TelegramUserService.class), selfProvider, mock(AiInputValidator.class),
-                mock(AiRateLimiter.class), mock(DishLimitsProperties.class), texts);
+                mock(AiRateLimiter.class), mock(DishLimitsProperties.class), texts,
+                mock(ApplicationEventPublisher.class));
     }
 
     private void aiAnswers(String json) {

@@ -76,6 +76,11 @@ public final class BotTextKeys {
     public static final String REFERRAL_TEXT = "referral.text";
     public static final String REFERRAL_SHARE_TEXT = "referral.share-text";
     public static final String REFERRAL_BUTTON_SHARE = "referral.button.share";
+    public static final String REFERRAL_REWARD_INVITED = "referral.reward.invited";
+    public static final String REFERRAL_REWARD_INVITER = "referral.reward.inviter";
+    public static final String REFERRAL_REWARD_INVITER_LIMIT = "referral.reward.inviter-limit";
+    public static final String REFERRAL_REWARD_FRIEND_PAID = "referral.reward.friend-paid";
+    public static final String REFERRAL_REWARD_FRIEND_PAID_REVOKED = "referral.reward.friend-paid-revoked";
     public static final String ADMIN_UTM_BUTTON_CREATE = "admin.utm.button.create";
     public static final String ADMIN_UTM_CREATED = "admin.utm.created";
     public static final String ADMIN_UTM_CODE_INVALID = "admin.utm.code-invalid";
