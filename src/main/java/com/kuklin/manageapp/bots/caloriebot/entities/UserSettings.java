@@ -80,6 +80,11 @@ public class UserSettings {
     @Column(name = "language")
     private String language;
 
+    // Когда последний раз предлагали пригласить друга (InvitePromptService). Пишется только запросом
+    // UserSettingsRepository.claimInvitePrompt, поэтому при сохранении всей сущности не трогается
+    @Column(name = "invite_prompt_last_at", insertable = false, updatable = false)
+    private Instant invitePromptLastAt;
+
     // --- Служебные поля ---
     @CreationTimestamp
     @Column(name = "created_at", updatable = false, nullable = false)

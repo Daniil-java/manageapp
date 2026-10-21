@@ -40,6 +40,8 @@ public enum Command {
     CALORIE_SUB_STATUS("\uD83D\uDD0DSTATUS", BotIdentifier.CALORIE_BOT),
     CALORIE_MENU("/menu", BotIdentifier.CALORIE_BOT),
     CALORIE_UTM("\uD83D\uDC8EПригласить", BotIdentifier.CALORIE_BOT),
+    CALORIE_UTM_STATS("/utmstats", BotIdentifier.CALORIE_BOT),
+    CALORIE_DAY_CARD("daycard", BotIdentifier.CALORIE_BOT),
     CALORIE_SUPPORT("/support", BotIdentifier.CALORIE_BOT),
     CALORIE_KEYBOARD("/keyboard", BotIdentifier.CALORIE_BOT),
     CALORIE_TERMS("/terms", BotIdentifier.CALORIE_BOT),

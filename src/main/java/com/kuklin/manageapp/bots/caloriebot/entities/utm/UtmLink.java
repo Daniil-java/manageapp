@@ -35,6 +35,9 @@ public class UtmLink {
 
     private String description;
 
+    // Сколько дней Premium получает новый пользователь, пришедший по ссылке (кроме реферальных). 0 — без бонуса
+    private int bonusDays;
+
     @Getter
     @RequiredArgsConstructor
     public enum OwnerType {

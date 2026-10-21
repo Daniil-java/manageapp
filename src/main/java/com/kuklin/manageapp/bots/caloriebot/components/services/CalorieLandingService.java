@@ -73,8 +73,16 @@ public class CalorieLandingService {
                 presentedKey.getBytes(StandardCharsets.UTF_8));
     }
 
-    /** Данные лендинга на языке страницы: тарифы, таблица лимитов, ссылка на бота. */
+    /** Данные лендинга на языке страницы: тарифы, таблица лимитов, ссылка на бота с кодом из конфига. */
     public LandingPage getLandingPage(AppLanguage language) {
+        return getLandingPage(language, null);
+    }
+
+    /**
+     * То же, но кнопки «Открыть в Telegram» ведут по коду кампании (zefir.fit/?utm=код, уже проверен —
+     * UtmService.findLandingCodeOrNull). null — по коду из конфига calorie.landing.start-code.
+     */
+    public LandingPage getLandingPage(AppLanguage language, String campaignCode) {
         List<PricingPlan> plans = pricingPlanService.getAllPlansByBotIdentifierAndPlanStatusAvailable(BOT).stream()
                 .filter(plan -> plan.getPayloadType() == PricingPlan.PricingPlanType.SUBSCRIPTION)
                 .filter(plan -> plan.getDurationDays() != null && plan.getDurationDays() > 0)
@@ -100,7 +108,7 @@ public class CalorieLandingService {
                     describeLimit(premium.get(feature), language)));
         }
 
-        return new LandingPage(toPlanCards(plans, language), features, botUrl());
+        return new LandingPage(toPlanCards(plans, language), features, botUrl(campaignCode));
     }
 
     private Map<BotFeature, PlanFeature> featuresByPlan(String planCode) {
@@ -204,9 +212,10 @@ public class CalorieLandingService {
         return percent > 0 ? percent : null;
     }
 
-    private String botUrl() {
+    private String botUrl(String campaignCode) {
         String url = "https://t.me/" + BOT.getBotUsername().replace("@", "");
-        return startCode == null || startCode.isBlank() ? url : url + "?start=" + startCode;
+        String code = campaignCode != null ? campaignCode : startCode;
+        return code == null || code.isBlank() ? url : url + "?start=" + code;
     }
 
     public record LandingPage(List<PlanCard> plans, List<FeatureRow> features, String botUrl) { }

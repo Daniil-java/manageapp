@@ -40,6 +40,8 @@ public class ReferralRewardService {
     public static final String INVITED_PLAN_CODE = "CALORIE_REFERRAL_INVITED";
     public static final String INVITER_PLAN_CODE = "CALORIE_REFERRAL_INVITER";
     public static final String FRIEND_PAID_PLAN_CODE = "CALORIE_REFERRAL_FRIEND_PAID";
+    /** Бонус по партнёрской ссылке; срок выдачи — utm_links.bonus_days. */
+    public static final String PARTNER_BONUS_PLAN_CODE = "CALORIE_PARTNER_BONUS";
     static final Duration INVITER_LIMIT_PERIOD = Duration.ofDays(30);
 
     private final UtmAttributionRepository utmAttributionRepository;
@@ -179,6 +181,27 @@ public class ReferralRewardService {
 
     private record Grant(int days, Long subscriptionId) {
         static final Grant NONE = new Grant(0, null);
+    }
+
+    /**
+     * Бонус по партнёрской ссылке (utm_links.bonus_days): новичок получает столько дней Premium, они встают в очередь
+     * за пробным периодом. Положен ли — решает UtmService.processClick, выдача — здесь: в UtmService зависимость
+     * от подписок замкнула бы круг бинов (подписки → бот-реестр → бот канала → UtmService).
+     *
+     * @return сколько дней выдано: 0 — не положено или тарифа CALORIE_PARTNER_BONUS нет в БД
+     */
+    @Transactional
+    public int grantPartnerBonusOrZero(Long appUserId, int days) {
+        if (days <= 0) {
+            return 0;
+        }
+        PricingPlan plan = pricingPlanService.getPricingPlanByCodeOrNull(PARTNER_BONUS_PLAN_CODE);
+        if (plan == null) {
+            log.error("Partner bonus plan {} not found", PARTNER_BONUS_PLAN_CODE);
+            return 0;
+        }
+        userSubscriptionService.createBonusSubscription(appUserId, BotIdentifier.CALORIE_BOT, plan, days);
+        return days;
     }
 
     /** Срок бонусного тарифа в днях, 0 — тарифа нет в БД. */

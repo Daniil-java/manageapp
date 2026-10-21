@@ -195,4 +195,14 @@ class CalorieLandingServiceTest {
         ReflectionTestUtils.setField(service, "startCode", "landing");
         assertThat(service.getLandingPage(AppLanguage.RU).botUrl()).isEqualTo("https://t.me/calorydairy_bot?start=landing");
     }
+
+    @Test
+    void campaignCodeOverridesConfiguredCode() {
+        ReflectionTestUtils.setField(service, "startCode", "landing");
+
+        assertThat(service.getLandingPage(AppLanguage.RU, "vk_ads").botUrl())
+                .isEqualTo("https://t.me/calorydairy_bot?start=vk_ads");
+        assertThat(service.getLandingPage(AppLanguage.RU, null).botUrl())
+                .isEqualTo("https://t.me/calorydairy_bot?start=landing");
+    }
 }

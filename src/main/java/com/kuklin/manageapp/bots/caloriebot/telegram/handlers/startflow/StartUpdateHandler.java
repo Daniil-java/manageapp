@@ -1,6 +1,7 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.startflow;
 
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserNutritionProfileService;
+import com.kuklin.manageapp.bots.caloriebot.components.services.ReferralRewardService;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UtmService;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
 import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
@@ -49,6 +50,7 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
     private final UserNutritionProfileService userNutritionProfileService;
     private final CalorieNutritionProfileUpdateHandler calorieNutritionProfileUpdateHandler;
     private final UtmService utmService;
+    private final ReferralRewardService referralRewardService;
     private final KeyboardCalorieUpdateHandler keyboardCalorieUpdateHandler;
     private final CalculatorProfileUpdateHandler calculatorProfileUpdateHandler;
     private final CalorieTexts texts;
@@ -59,7 +61,8 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
      */
     private final Map<Long, PendingStart> pendingStarts = new ConcurrentHashMap<>();
 
-    private record PendingStart(CalculatorStartParam.Calculator calculator, UserSubscription trial) {
+    /** @param partnerBonusDays дней Premium по партнёрской ссылке (UtmService.processClick), 0 — не было */
+    private record PendingStart(CalculatorStartParam.Calculator calculator, UserSubscription trial, int partnerBonusDays) {
     }
 
     @Override
@@ -73,24 +76,24 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
                 .createSubscriptionByFreePlanOrNull(appUserId, BotIdentifier.CALORIE_BOT);
         // UTM засчитываем сразу — не теряем переход, даже если язык так и не выберут.
         // Пробный период выдаётся только при первом /start — по нему и узнаём нового пользователя
-        if (param.utmCode() != null) {
-            utmService.processClick(param.utmCode(), appUserId, trial != null);
-        }
+        int partnerBonusDaysDue = param.utmCode() == null
+                ? 0
+                : utmService.processClick(param.utmCode(), appUserId, trial != null);
+        int partnerBonusDays = referralRewardService.grantPartnerBonusOrZero(appUserId, partnerBonusDaysDue);
 
+        PendingStart start = new PendingStart(param.calculator(), trial, partnerBonusDays);
         if (!texts.hasChosenLanguage(appUserId)) {
-            pendingStarts.put(appUserId, new PendingStart(param.calculator(), trial));
+            pendingStarts.put(appUserId, start);
             sendLanguageQuestion(chatId, update.getMessage().getFrom().getLanguageCode());
             return;
         }
-        sendWelcome(chatId, appUserId, param.calculator(), trial);
+        sendWelcome(chatId, appUserId, start);
     }
 
     /** Язык выбран в ответ на вопрос из /start — показываем то, что /start отложил. */
     public void continueStart(Long chatId, Long appUserId) {
         PendingStart pending = pendingStarts.remove(appUserId);
-        sendWelcome(chatId, appUserId,
-                pending == null ? null : pending.calculator(),
-                pending == null ? null : pending.trial());
+        sendWelcome(chatId, appUserId, pending == null ? new PendingStart(null, null, 0) : pending);
     }
 
     /**
@@ -115,8 +118,9 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
         calorieTelegramBot.sendReturnedMessage(chatId, text, TelegramKeyboard.builder().row(buttons).build(), null);
     }
 
-    private void sendWelcome(Long chatId, Long appUserId,
-                             CalculatorStartParam.Calculator calculator, UserSubscription trial) {
+    private void sendWelcome(Long chatId, Long appUserId, PendingStart start) {
+        CalculatorStartParam.Calculator calculator = start.calculator();
+        UserSubscription trial = start.trial();
         AppLanguage language = texts.languageOf(appUserId);
         keyboardCalorieUpdateHandler.updateKeyboard(chatId, appUserId);
         calorieTelegramBot.sendReturnedMessage(
@@ -135,6 +139,10 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
 
         if (trial != null) {
             calorieTelegramBot.sendReturnedMessage(chatId, subscriptionTexts.buildSubscriptionEntryText(appUserId, trial));
+        }
+        if (start.partnerBonusDays() > 0) {
+            calorieTelegramBot.sendReturnedMessage(chatId,
+                    texts.get(language, BotTextKeys.START_PARTNER_BONUS, start.partnerBonusDays()));
         }
     }
 

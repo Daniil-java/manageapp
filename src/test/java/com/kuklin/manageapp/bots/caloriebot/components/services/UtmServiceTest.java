@@ -127,21 +127,62 @@ class UtmServiceTest {
         when(linkRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         UtmLink link = service.saveLink(
-                new UtmDto("WEB", "Blogger_Oleg", "Олег", "https://oleg.example", " ", null), 1L);
+                new UtmDto("WEB", "Blogger_Oleg", "Олег", "https://oleg.example", " ", null, 14), 1L);
 
         assertThat(link.getCode()).isEqualTo("blogger_oleg");
         assertThat(link.getOwnerType()).isEqualTo(UtmLink.OwnerType.WEB);
         assertThat(link.getDescription()).isNull();
+        assertThat(link.getBonusDays()).isEqualTo(14);
     }
 
     @Test
     void saveLinkGeneratesCodeAndFallsBackToChannel() {
         when(linkRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        UtmLink link = service.saveLink(new UtmDto("???", "", "Канал", "@chan", "опт", null), 1L);
+        UtmLink link = service.saveLink(new UtmDto("???", "", "Канал", "@chan", "опт", null, null), 1L);
 
         assertThat(link.getCode()).startsWith("partner_").hasSize("partner_".length() + 8);
         assertThat(link.getOwnerType()).isEqualTo(UtmLink.OwnerType.TG_CHANNEL);
         assertThat(link.getDescription()).isEqualTo("опт");
+        // Бонус в форме не задан — 7 дней
+        assertThat(link.getBonusDays()).isEqualTo(UtmService.DEFAULT_PARTNER_BONUS_DAYS);
+    }
+
+    @Test
+    void newUserByPartnerLinkIsDueBonus() {
+        givenLink(6, "blogger_oleg", UtmLink.OwnerType.TG_CHANNEL, 1L).setBonusDays(7);
+        when(attributionRepository.insertIfAbsent(100L, 6L, null)).thenReturn(1);
+
+        assertThat(service.processClick("blogger_oleg", 100L, true)).isEqualTo(7);
+    }
+
+    @Test
+    void partnerBonusOnlyForFirstAttributionOfNewUser() {
+        givenLink(6, "blogger_oleg", UtmLink.OwnerType.TG_CHANNEL, 1L).setBonusDays(7);
+        // Источник уже был (повтор того же /start) и старый пользователь — бонуса нет
+        when(attributionRepository.insertIfAbsent(100L, 6L, null)).thenReturn(0);
+
+        assertThat(service.processClick("blogger_oleg", 100L, true)).isZero();
+        assertThat(service.processClick("blogger_oleg", 100L, false)).isZero();
+    }
+
+    @Test
+    void referralLinkGivesNoPartnerBonus() {
+        givenLink(5, "ref7", UtmLink.OwnerType.USER, 7L).setBonusDays(7);
+        when(attributionRepository.insertIfAbsent(100L, 5L, 7L)).thenReturn(1);
+
+        assertThat(service.processClick("ref7", 100L, true)).isZero();
+    }
+
+    @Test
+    void landingCodeMustExistAndBeValid() {
+        when(linkRepository.findByCode(anyString())).thenReturn(Optional.empty());
+        givenLink(6, "vk_ads", UtmLink.OwnerType.WEB, 1L);
+
+        assertThat(service.findLandingCodeOrNull(" VK_Ads ")).isEqualTo("vk_ads");
+        assertThat(service.findLandingCodeOrNull("unknown")).isNull();
+        assertThat(service.findLandingCodeOrNull("<script>")).isNull();
+        assertThat(service.findLandingCodeOrNull(null)).isNull();
+        assertThat(service.findLandingCodeOrNull("a".repeat(33))).isNull();
     }
 }

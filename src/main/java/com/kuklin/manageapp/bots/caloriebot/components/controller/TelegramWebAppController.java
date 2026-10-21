@@ -1,6 +1,7 @@
 package com.kuklin.manageapp.bots.caloriebot.components.controller;
 
 import com.kuklin.manageapp.bots.caloriebot.components.services.CalorieLandingService;
+import com.kuklin.manageapp.bots.caloriebot.components.services.UtmService;
 import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import com.kuklin.manageapp.bots.caloriebot.texts.LandingTexts;
 import io.swagger.v3.oas.annotations.Hidden;
@@ -29,9 +30,13 @@ import java.util.Optional;
 public class TelegramWebAppController {
     private static final String LANDING_ACCESS_COOKIE = "zefir_landing";
     private static final Duration LANDING_ACCESS_TTL = Duration.ofDays(30);
+    /** Код кампании с ?utm= — пока человек ходит по сайту и возвращается, кнопки ведут по нему. */
+    private static final String LANDING_UTM_COOKIE = "zefir_utm";
+    private static final Duration LANDING_UTM_TTL = Duration.ofDays(30);
 
     private final CalorieLandingService calorieLandingService;
     private final LandingTexts landingTexts;
+    private final UtmService utmService;
 
     /**
      * Лендинг. На zefir.fit он же открывается по корню — см. WebController.
@@ -43,6 +48,8 @@ public class TelegramWebAppController {
                               @RequestParam(name = "lang", required = false) String lang,
                               @RequestHeader(name = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage,
                               @CookieValue(name = LANDING_ACCESS_COOKIE, required = false) String cookieKey,
+                              @RequestParam(name = "utm", required = false) String utm,
+                              @CookieValue(name = LANDING_UTM_COOKIE, required = false) String cookieUtm,
                               HttpServletResponse response,
                               Model model) {
         if (calorieLandingService.isClosed()) {
@@ -65,7 +72,8 @@ public class TelegramWebAppController {
         AppLanguage language = getPageLanguage(lang, acceptLanguage);
         // Без ?lang= язык зависит от заголовка — кэши не должны отдавать одну версию всем
         response.addHeader(HttpHeaders.VARY, HttpHeaders.ACCEPT_LANGUAGE);
-        model.addAttribute("page", calorieLandingService.getLandingPage(language));
+        model.addAttribute("page", calorieLandingService.getLandingPage(language,
+                getCampaignCodeOrNull(utm, cookieUtm, response)));
         model.addAttribute("lang", language.getCode());
         model.addAttribute("languages", AppLanguage.values());
         model.addAttribute("t", landingTexts.getPageTexts(language));
@@ -107,6 +115,26 @@ public class TelegramWebAppController {
     public String showTerms(@RequestParam(name = "lang", required = false) String lang,
                             @RequestHeader(name = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
         return "calorieterms_" + getPageLanguage(lang, acceptLanguage).getCode();
+    }
+
+    /**
+     * Код кампании для кнопок лендинга: ?utm= (если такая UTM-ссылка есть — запоминаем в cookie на 30 дней),
+     * иначе из cookie прошлого визита, иначе null — код из конфига. Неизвестная метка игнорируется.
+     */
+    private String getCampaignCodeOrNull(String utm, String cookieUtm, HttpServletResponse response) {
+        String code = utmService.findLandingCodeOrNull(utm);
+        if (code != null) {
+            response.addHeader(HttpHeaders.SET_COOKIE, ResponseCookie.from(LANDING_UTM_COOKIE, code)
+                    .path("/")
+                    .httpOnly(true)
+                    .secure(true)
+                    .sameSite("Lax")
+                    .maxAge(LANDING_UTM_TTL)
+                    .build()
+                    .toString());
+            return code;
+        }
+        return utmService.findLandingCodeOrNull(cookieUtm);
     }
 
     /**

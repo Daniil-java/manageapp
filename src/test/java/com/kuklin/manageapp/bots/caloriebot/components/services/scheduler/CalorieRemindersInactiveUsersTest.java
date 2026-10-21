@@ -7,6 +7,7 @@ import com.kuklin.manageapp.bots.caloriebot.entities.UserSettings;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.i18n.I18nProperties;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.AccessResult;
+import com.kuklin.manageapp.bots.caloriebot.telegram.InvitePromptSender;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.history.TodayUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
@@ -55,7 +56,8 @@ class CalorieRemindersInactiveUsersTest {
         private final TodayUpdateHandler todayUpdateHandler = mock(TodayUpdateHandler.class);
         private final ReportService reportService = mock(ReportService.class);
         private final DailySummarySchedulerProcessor processor = new DailySummarySchedulerProcessor(
-                userSettingsService, todayUpdateHandler, reportService, bot, telegramUserService, dishService);
+                userSettingsService, todayUpdateHandler, reportService, bot, telegramUserService, dishService,
+                mock(InvitePromptSender.class));
 
         @BeforeEach
         void settings() {

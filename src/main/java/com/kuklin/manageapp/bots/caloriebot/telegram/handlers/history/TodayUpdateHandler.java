@@ -181,6 +181,8 @@ public class TodayUpdateHandler implements CalorieBotUpdateHandler {
                 .forEach(bar -> builder.row(TelegramKeyboard.button(bar, DUMMY_CALLBACK)));
 
         builder.row(TelegramKeyboard.button(texts.get(userId, BotTextKeys.TODAY_BUTTON_GO_TO_REMOVE), REMOVE_CMD));
+        // Карточка «мой день» для сторис и чатов (DayCardCalorieUpdateHandler)
+        builder.row(TelegramKeyboard.button(texts.get(userId, BotTextKeys.CARD_BUTTON), Command.CALORIE_DAY_CARD.getCommandText()));
         builder.row(TelegramKeyboard.button(texts.get(userId, BotTextKeys.COMMON_BUTTON_CLOSE), CLOSE_CMD));
 
         return builder.build();

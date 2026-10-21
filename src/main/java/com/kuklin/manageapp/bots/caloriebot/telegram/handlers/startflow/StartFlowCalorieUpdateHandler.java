@@ -4,6 +4,7 @@ import com.kuklin.manageapp.bots.caloriebot.components.services.UserNutritionPro
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
+import com.kuklin.manageapp.bots.caloriebot.telegram.InvitePromptSender;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgutils.Command;
@@ -23,6 +24,7 @@ public class StartFlowCalorieUpdateHandler implements CalorieBotUpdateHandler {
     private final CalorieTelegramBot calorieTelegramBot;
     private final UserNutritionProfileService userNutritionProfileService;
     private final CalorieTexts texts;
+    private final InvitePromptSender invitePromptSender;
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
@@ -41,6 +43,10 @@ public class StartFlowCalorieUpdateHandler implements CalorieBotUpdateHandler {
 
         calorieTelegramBot.sendReturnedMessage(chatId,
                 texts.get(appUserId, BotTextKeys.START_FLOW_INTRO), getStartFlowKeyboard(appUserId), null);
+
+        // Что дают приглашения — один раз, в начале; дальше напоминание не чаще раза в неделю (InvitePromptSender).
+        // Перед шагом профиля: он — главное действие и должен остаться последним сообщением
+        invitePromptSender.sendStartFlowInvite(chatId, appUserId);
 
         // Пришёл с лендинга с данными калькулятора — профиль уже заполнен, шаг не нужен.
         // Отдельным сообщением: анкета профиля редактирует сообщение с кнопкой — инструкция выше остаётся в чате

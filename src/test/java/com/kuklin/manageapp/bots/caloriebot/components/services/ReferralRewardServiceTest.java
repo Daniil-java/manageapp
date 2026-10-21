@@ -224,4 +224,19 @@ class ReferralRewardServiceTest {
         assertThat(service.getPlanDays(ReferralRewardService.FRIEND_PAID_PLAN_CODE)).isEqualTo(30);
         assertThat(service.getPlanDays("UNKNOWN")).isZero();
     }
+
+    @Test
+    void partnerBonusUsesLinkDaysNotPlanDuration() {
+        PricingPlan partnerPlan = plan(5L, ReferralRewardService.PARTNER_BONUS_PLAN_CODE, 7);
+        when(pricingPlanService.getPricingPlanByCodeOrNull(ReferralRewardService.PARTNER_BONUS_PLAN_CODE)).thenReturn(partnerPlan);
+
+        assertThat(service.grantPartnerBonusOrZero(INVITED, 14)).isEqualTo(14);
+        verify(subscriptionService).createBonusSubscription(INVITED, BotIdentifier.CALORIE_BOT, partnerPlan, 14);
+    }
+
+    @Test
+    void noPartnerBonusWhenNotDue() {
+        assertThat(service.grantPartnerBonusOrZero(INVITED, 0)).isZero();
+        verify(subscriptionService, never()).createBonusSubscription(anyLong(), any(), any(), anyInt());
+    }
 }

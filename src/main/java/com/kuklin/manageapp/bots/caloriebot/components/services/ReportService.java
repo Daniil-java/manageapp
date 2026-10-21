@@ -26,30 +26,22 @@ import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
 import com.kuklin.manageapp.bots.caloriebot.utils.DayReportPrompt;
 import com.kuklin.manageapp.bots.caloriebot.utils.GoalPromptRules;
 import com.kuklin.manageapp.bots.caloriebot.utils.ReportPrompts;
+import com.kuklin.manageapp.bots.caloriebot.utils.HtmlPdfRenderer;
 import com.kuklin.manageapp.bots.caloriebot.utils.ReportHtml;
 import com.kuklin.manageapp.bots.caloriebot.utils.ReportStatsCalculator;
 import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
-import com.openhtmltopdf.extend.FSStream;
-import com.openhtmltopdf.outputdevice.helper.BaseRendererBuilder;
-import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
-import com.openhtmltopdf.svgsupport.BatikSVGDrawer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -66,21 +58,6 @@ public class ReportService {
     private static final String REPORT_TEMPLATE_PATH = "templates/report.html";
     private static final String MASCOT_PATH = "static/calorie/landing/zefirka.svg";
     private static final String IMAGES_BASE_URL = "/static/images";
-    private static final String CLASSPATH_PROTOCOL = "classpath";
-
-    /**
-     * Шрифты PDF. Nunito — как в мини-приложении (для SVG-графиков он же подключён в шаблоне через @font-face).
-     * Noto Emoji (монохромные эмодзи: цветные рендерер не умеет) и DejaVu Sans (стрелки и символы,
-     * которых нет в Nunito) — запасные: подставляются для недостающих символов.
-     */
-    private static final List<ReportFont> FONTS = List.of(
-            new ReportFont("/fonts/Nunito-Regular.ttf", "Nunito", 400, false),
-            new ReportFont("/fonts/Nunito-Bold.ttf", "Nunito", 700, false),
-            new ReportFont("/fonts/Nunito-ExtraBold.ttf", "Nunito", 800, false),
-            new ReportFont("/fonts/Nunito-Black.ttf", "Nunito", 900, false),
-            new ReportFont("/fonts/NotoEmoji-Regular.ttf", "Noto Emoji", 400, true),
-            new ReportFont("/fonts/DejaVuSans.ttf", "DejaVu Sans", 400, true)
-    );
 
     // --- Плейсхолдеры данных в HTML-шаблоне ---
     private static final String VAR_TITLE = "{{TITLE}}";
@@ -124,23 +101,6 @@ public class ReportService {
             .registerModule(new JavaTimeModule())
             .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
 
-    /** Ресурс приложения по адресу classpath:/путь из HTML-шаблона. */
-    private record ClasspathStream(String url) implements FSStream {
-        @Override
-        public InputStream getStream() {
-            return ReportService.class.getResourceAsStream(url.substring(CLASSPATH_PROTOCOL.length() + 1));
-        }
-
-        @Override
-        public Reader getReader() {
-            InputStream stream = getStream();
-            return stream != null ? new InputStreamReader(stream, StandardCharsets.UTF_8) : null;
-        }
-    }
-
-    /** Шрифт PDF; fallback — подставляется только для символов, которых нет в основном шрифте. */
-    private record ReportFont(String path, String family, int weight, boolean fallback) {
-    }
 
     /**
      * Данные пользователя за период для ИИ-инсайтов, загруженные одним заходом.
@@ -248,7 +208,7 @@ public class ReportService {
             ReportAiResponse ai = stats.hasFood() ? fetchReportAiOrEmpty(stats, source, texts) : ReportAiResponse.empty();
 
             String html = fillTemplateOrNull(source, stats, ai, texts, now);
-            return html != null ? renderPdfOrNull(html) : null;
+            return html != null ? HtmlPdfRenderer.renderPdfOrNull(html, getClass().getResource(IMAGES_BASE_URL).toString()) : null;
         } catch (Exception e) {
             log.error("Failed to build {} PDF report for user {}", kind, userId, e);
             return null;
@@ -323,32 +283,6 @@ public class ReportService {
         return svg.replace("<svg ", "<svg width=\"" + width + "\" height=\"" + height + "\" ");
     }
 
-    /**
-     * Рендерит XHTML в PDF: SVG-графики через Batik, шрифты из ресурсов.
-     */
-    private byte[] renderPdfOrNull(String html) {
-        try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
-            PdfRendererBuilder builder = new PdfRendererBuilder();
-            builder.useSVGDrawer(new BatikSVGDrawer());
-            builder.withHtmlContent(html, getClass().getResource(IMAGES_BASE_URL).toString());
-            // classpath:/fonts/… в @font-face шаблона — шрифты для текста SVG-графиков (их Batik берёт только оттуда)
-            builder.useProtocolsStreamImplementation(ClasspathStream::new, CLASSPATH_PROTOCOL);
-            for (ReportFont font : FONTS) {
-                Set<BaseRendererBuilder.FSFontUseCase> useCases = font.fallback()
-                        ? EnumSet.of(BaseRendererBuilder.FSFontUseCase.DOCUMENT, BaseRendererBuilder.FSFontUseCase.FALLBACK_FINAL)
-                        : EnumSet.of(BaseRendererBuilder.FSFontUseCase.DOCUMENT);
-                builder.useFont(() -> getClass().getResourceAsStream(font.path()), font.family(), font.weight(),
-                        BaseRendererBuilder.FontStyle.NORMAL, true, useCases);
-            }
-            builder.toStream(os);
-            builder.run();
-
-            return os.toByteArray();
-        } catch (Exception e) {
-            log.error("PDF rendering failed", e);
-            return null;
-        }
-    }
 
     // --- УТИЛИТЫ ---
 

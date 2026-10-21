@@ -31,6 +31,10 @@ public class UtmService {
     private static final List<String> RESERVED_CODE_PREFIXES =
             List.of(REFERRAL_CODE_PREFIX, CHANNEL_POST_CODE_PREFIX, CalculatorStartParam.PREFIX + "_");
 
+    /** Бонус у ссылок из админской формы, если в форме не задан другой. */
+    public static final int DEFAULT_PARTNER_BONUS_DAYS = 7;
+    public static final int MAX_PARTNER_BONUS_DAYS = 30;
+
     private final UtmLinkRepository utmLinkRepository;
     private final UtmClickRepository utmClickRepository;
     private final UtmAttributionRepository utmAttributionRepository;
@@ -38,32 +42,55 @@ public class UtmService {
     /**
      * Переход в бота по UTM-ссылке (/start с кодом).
      * <p>
-     * Новому пользователю ссылка запоминается как источник (utm_attributions), по реферальной — и кто пригласил.
+     * Новому пользователю ссылка запоминается как источник (utm_attributions), по реферальной — и кто пригласил,
+     * по партнёрской с bonus_days — сообщается, сколько дней Premium ему положено (выдаёт StartUpdateHandler через
+     * ReferralRewardService: здесь зависимость от подписок замкнула бы круг бинов через бота канала).
      * Переход по своей реферальной ссылке не учитывается.
      *
      * @param newUser пользователь впервые запустил бота (StartUpdateHandler: ему только что выдан пробный период)
+     * @return сколько дней Premium положено по партнёрской ссылке, 0 — не положено
      */
     @Transactional
-    public void processClick(String code, Long appUserId, boolean newUser) {
+    public int processClick(String code, Long appUserId, boolean newUser) {
         UtmLink link = utmLinkRepository.findByCode(code).orElse(null);
         if (link == null) {
             log.info("Unknown UTM code: {}, user: {}", code, appUserId);
-            return;
+            return 0;
         }
         Long referrerAppUserId = getReferrerAppUserIdOrNull(link);
         if (appUserId.equals(referrerAppUserId)) {
             log.info("Own referral link ignored: {}, user: {}", code, appUserId);
-            return;
+            return 0;
         }
 
         utmClickRepository.save(new UtmClick()
                 .setUtmLinkId(link.getId())
                 .setUserId(appUserId)
                 .setNewUser(newUser));
+        int bonusDays = 0;
         if (newUser) {
-            utmAttributionRepository.insertIfAbsent(appUserId, link.getId(), referrerAppUserId);
+            // Строка источника пишется один раз: повторная обработка того же /start бонус не повторит
+            boolean firstAttribution = utmAttributionRepository.insertIfAbsent(appUserId, link.getId(), referrerAppUserId) > 0;
+            if (firstAttribution && referrerAppUserId == null) {
+                bonusDays = link.getBonusDays();
+            }
         }
-        log.info("Registered click for link: {}, user: {}, newUser: {}", code, appUserId, newUser);
+        log.info("Registered click for link: {}, user: {}, newUser: {}, partner bonus days due: {}", code, appUserId, newUser, bonusDays);
+        return bonusDays;
+    }
+
+    /**
+     * Код метки с лендинга (zefir.fit/?utm=код): после normalizeCode, только допустимые символы и только
+     * существующая ссылка. Иначе null — кнопки лендинга ведут по коду из конфига: неизвестная метка не засчиталась
+     * бы всё равно, а автосоздание дало бы любому мусорить в utm_links.
+     */
+    @Transactional(readOnly = true)
+    public String findLandingCodeOrNull(String rawCode) {
+        String code = normalizeCode(rawCode);
+        if (code == null || code.length() > CODE_MAX_LENGTH || !hasValidCodeChars(code)) {
+            return null;
+        }
+        return utmLinkRepository.findByCode(code).isPresent() ? code : null;
     }
 
     /**
@@ -118,9 +145,7 @@ public class UtmService {
 
     /** Чем плох код ссылки из админской формы (уже после normalizeCode), или null — годится. */
     public CodeProblem getCodeProblemOrNull(String code) {
-        boolean validChars = code.chars()
-                .allMatch(c -> (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_' || c == '-');
-        if (!validChars || code.length() < CODE_MIN_LENGTH || code.length() > CODE_MAX_LENGTH) {
+        if (!hasValidCodeChars(code) || code.length() < CODE_MIN_LENGTH || code.length() > CODE_MAX_LENGTH) {
             return CodeProblem.INVALID;
         }
         if (RESERVED_CODE_PREFIXES.stream().anyMatch(code::startsWith)) {
@@ -132,25 +157,34 @@ public class UtmService {
         return null;
     }
 
+    /** Только латиница в нижнем регистре, цифры, «_» и «-» — то, что Telegram пропускает в start. */
+    private static boolean hasValidCodeChars(String code) {
+        return code.chars().allMatch(c -> (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_' || c == '-');
+    }
+
     public enum CodeProblem {
         INVALID, RESERVED, TAKEN
     }
 
     /**
      * Ссылка из админской формы. Код — свой (проверен getCodeProblemOrNull) или partner_<8 символов UUID>.
-     * Тип не из списка — «ТГ-канал».
+     * Тип не из списка — «ТГ-канал». Бонус новым по ссылке — из формы (0–30 дней), не указан — 7.
      */
     public UtmLink saveLink(UtmCalorieUpdateHandler.UtmDto utmDto, Long creatorId) {
         String code = normalizeCode(utmDto.code());
         String description = utmDto.description() == null || utmDto.description().isBlank()
                 ? null
                 : utmDto.description();
+        int bonusDays = utmDto.bonusDays() == null
+                ? DEFAULT_PARTNER_BONUS_DAYS
+                : Math.max(0, Math.min(MAX_PARTNER_BONUS_DAYS, utmDto.bonusDays()));
         UtmLink utmLink = new UtmLink()
                 .setOwnerType(getOwnerType(utmDto.ownerType()))
                 .setTittle(utmDto.tittle())
                 .setSourceUrl(utmDto.sourceUrl())
                 .setDescription(description)
                 .setCreatorId(creatorId)
+                .setBonusDays(bonusDays)
                 .setCode(code != null ? code : "partner_" + UUID.randomUUID().toString().substring(0, 8));
 
         return utmLinkRepository.save(utmLink);

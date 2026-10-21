@@ -6,6 +6,7 @@ import com.kuklin.manageapp.bots.caloriebot.entities.UserSettings;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.MissingFeatureException;
 import com.kuklin.manageapp.bots.caloriebot.components.services.ReportService;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
+import com.kuklin.manageapp.bots.caloriebot.telegram.InvitePromptSender;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.history.TodayUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.ScheduleProcessor;
@@ -44,6 +45,7 @@ public class DailySummarySchedulerProcessor implements ScheduleProcessor {
     private final CalorieTelegramBot calorieTelegramBot;
     private final TelegramUserService telegramUserService;
     private final DishService dishService;
+    private final InvitePromptSender invitePromptSender;
 
     @Value("${calorie.daily-summary.parallelism:5}")
     private int parallelism = 5;
@@ -162,6 +164,9 @@ public class DailySummarySchedulerProcessor implements ScheduleProcessor {
             try {
                 String dayReport = reportService.getDayAiReport(appUserId).getOrThrow();
                 calorieTelegramBot.sendReturnedMessage(chatId, dayReport);
+                // День с блюдами записан — удачный момент предложить поделиться днём или позвать друга
+                // (не чаще раза в неделю, сбой отчёту не мешает)
+                invitePromptSender.sendAfterDailyReportIfDue(chatId, appUserId);
             } catch (MissingFeatureException e) {
                 throw e;
             } catch (Exception e) {

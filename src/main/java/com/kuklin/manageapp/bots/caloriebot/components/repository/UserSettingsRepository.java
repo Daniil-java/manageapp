@@ -27,6 +27,36 @@ public interface UserSettingsRepository extends JpaRepository<UserSettings, Long
     int updateMealLastReminder(@Param("userId") Long userId, @Param("now") Instant now);
     List<UserSettings> findAllByDailySummaryEnabled(boolean enabled);
 
+    /**
+     * Занять право предложить пригласить друга: только если пользователь с нами дольше joinedBefore и последнее
+     * предложение было раньше promptedBefore (или не было). Проверка и отметка — одним UPDATE: два параллельных
+     * отчёта не предложат дважды.
+     *
+     * @return 1 — можно предлагать (время отмечено), 0 — рано
+     */
+    @Transactional
+    @Modifying
+    @Query("""
+            update UserSettings s set s.invitePromptLastAt = :now
+            where s.userId = :userId and s.createdAt < :joinedBefore
+              and (s.invitePromptLastAt is null or s.invitePromptLastAt < :promptedBefore)
+            """)
+    int claimInvitePrompt(@Param("userId") Long userId,
+                          @Param("now") Instant now,
+                          @Param("joinedBefore") Instant joinedBefore,
+                          @Param("promptedBefore") Instant promptedBefore);
+
+    /**
+     * Первое предложение пригласить (старт-флоу): только если ещё ни разу не предлагали — «Далее» есть в каждом /start,
+     * и без этого старые пользователи получали бы его заново. Следующее — не раньше чем через неделю.
+     *
+     * @return 1 — первое (время отмечено), 0 — уже предлагали
+     */
+    @Transactional
+    @Modifying
+    @Query("update UserSettings s set s.invitePromptLastAt = :now where s.userId = :userId and s.invitePromptLastAt is null")
+    int claimFirstInvitePrompt(@Param("userId") Long userId, @Param("now") Instant now);
+
     @Query("""
                 SELECT DISTINCT us FROM UserSettings us
                 JOIN TelegramUser tu 

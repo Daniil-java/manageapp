@@ -115,6 +115,12 @@
         <textarea id="description" rows="2" placeholder="Доп. информация (необязательно)"></textarea>
     </div>
 
+    <div class="form-group">
+        <label>Бонус новым, дней Premium</label>
+        <input type="number" id="bonusDays" min="0" max="30" value="7">
+        <span class="hint">Сколько дней Premium получит новый пользователь по этой ссылке (поверх пробного). 0 — без бонуса.</span>
+    </div>
+
     <button id="submitBtn">Создать и сохранить</button>
 </div>
 
@@ -163,6 +169,7 @@
             tittle: document.getElementById('tittle').value,
             sourceUrl: document.getElementById('sourceUrl').value,
             description: document.getElementById('description').value,
+            bonusDays: parseInt(document.getElementById('bonusDays').value, 10) || 0,
             creatorId: tg.initDataUnsafe?.user?.id || 0
         };
 

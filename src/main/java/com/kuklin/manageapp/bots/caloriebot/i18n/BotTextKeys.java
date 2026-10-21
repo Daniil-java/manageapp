@@ -81,6 +81,24 @@ public final class BotTextKeys {
     public static final String REFERRAL_REWARD_INVITER_LIMIT = "referral.reward.inviter-limit";
     public static final String REFERRAL_REWARD_FRIEND_PAID = "referral.reward.friend-paid";
     public static final String REFERRAL_REWARD_FRIEND_PAID_REVOKED = "referral.reward.friend-paid-revoked";
+    // Бонус по партнёрской ссылке на /start (StartUpdateHandler)
+    public static final String START_PARTNER_BONUS = "start.partner-bonus";
+    // Предложение пригласить друга: в старт-флоу и после вечернего отчёта (InvitePromptService)
+    public static final String INVITE_START_FLOW = "invite.start-flow";
+    public static final String INVITE_PROMPT = "invite.prompt";
+    public static final String INVITE_BUTTON_DETAILS = "invite.button.details";
+    // Карточка «мой день» (DayCardService, DayCardCalorieUpdateHandler)
+    public static final String CARD_BUTTON = "card.button";
+    public static final String CARD_CAPTION = "card.caption";
+    public static final String CARD_EMPTY = "card.empty";
+    public static final String CARD_FAILED = "card.failed";
+    public static final String CARD_TITLE = "card.title";
+    public static final String CARD_OF_NORM = "card.of-norm";
+    public static final String CARD_NO_NORM = "card.no-norm";
+    public static final String CARD_STREAK = "card.streak";
+    public static final String CARD_DISHES = "card.dishes";
+    public static final String CARD_FOOTER = "card.footer";
+    public static final String CARD_FOOTER_BONUS = "card.footer-bonus";
     public static final String ADMIN_UTM_BUTTON_CREATE = "admin.utm.button.create";
     public static final String ADMIN_UTM_CREATED = "admin.utm.created";
     public static final String ADMIN_UTM_CODE_INVALID = "admin.utm.code-invalid";
