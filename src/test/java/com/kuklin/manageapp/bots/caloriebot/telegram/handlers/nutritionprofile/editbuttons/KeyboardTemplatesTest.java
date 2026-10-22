@@ -61,7 +61,7 @@ class KeyboardTemplatesTest {
     void noOverflowNearIntMax() {
         InlineKeyboardMarkup markup = KeyboardTemplates.buildNumericKeyboard(
                 Command.CALORIE_PROFILE_EDIT, ProfileEditAction.CALORIE_NORM, Integer.MAX_VALUE - 10, 2000,
-                0, Integer.MAX_VALUE, 50, 100, 500, v -> v, "Сохранить", "Назад");
+                0, Integer.MAX_VALUE, 50, 100, 500, v -> v, "Сохранить", "← Назад");
 
         assertThat(getCallbacks(markup.getKeyboard().get(2)))
                 .containsOnly("/profileedit CALORIES ADJ " + Integer.MAX_VALUE);
@@ -73,7 +73,7 @@ class KeyboardTemplatesTest {
                 Command.CALORIE_PROFILE_EDIT, ProfileEditAction.CURRENT_WEIGHT, new BigDecimal("70.0"), new BigDecimal("70.0"),
                 new BigDecimal("30.0"), new BigDecimal("300.0"),
                 new BigDecimal("0.1"), new BigDecimal("1.0"), new BigDecimal("5.0"),
-                v -> "Вес: " + v, "Сохранить", "Назад");
+                v -> "Вес: " + v, "Сохранить", "← Назад");
 
         assertThat(getTexts(markup).get(1)).containsExactly("−5", "−1", "−0.1");
         assertThat(getTexts(markup).get(2)).containsExactly("+0.1", "+1", "+5");
@@ -93,7 +93,7 @@ class KeyboardTemplatesTest {
     void enumMarksCurrentAndHasBack() {
         InlineKeyboardMarkup markup = KeyboardTemplates.buildEnumKeyboard(
                 Command.CALORIE_PROFILE_EDIT, ProfileEditAction.SEX, EnumSet.allOf(UserNutritionProfile.Sex.class), 2,
-                value -> ((UserNutritionProfile.Sex) value).name(), UserNutritionProfile.Sex.FEMALE, "Назад");
+                value -> ((UserNutritionProfile.Sex) value).name(), UserNutritionProfile.Sex.FEMALE, "← Назад");
 
         assertThat(getTexts(markup)).containsExactly(List.of("MALE", "✅ FEMALE"), List.of("← Назад"));
         assertThat(markup.getKeyboard().get(1).get(0).getCallbackData()).isEqualTo("/profileedit");
@@ -103,14 +103,14 @@ class KeyboardTemplatesTest {
     void enumWithoutValueHasNoMark() {
         InlineKeyboardMarkup markup = KeyboardTemplates.buildEnumKeyboard(
                 Command.CALORIE_PROFILE_EDIT, ProfileEditAction.SEX, EnumSet.allOf(UserNutritionProfile.Sex.class), 2,
-                value -> ((UserNutritionProfile.Sex) value).name(), null, "Назад");
+                value -> ((UserNutritionProfile.Sex) value).name(), null, "← Назад");
 
         assertThat(getTexts(markup).get(0)).containsExactly("MALE", "FEMALE");
     }
 
     private static InlineKeyboardMarkup buildAge(int value, int min, int max) {
         return KeyboardTemplates.buildNumericKeyboard(Command.CALORIE_PROFILE_EDIT, ProfileEditAction.AGE, value, 20,
-                min, max, 1, 5, 10, v -> "Возраст: " + v, "Сохранить", "Назад");
+                min, max, 1, 5, 10, v -> "Возраст: " + v, "Сохранить", "← Назад");
     }
 
     private static List<List<String>> getTexts(InlineKeyboardMarkup markup) {

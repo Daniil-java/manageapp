@@ -4,6 +4,7 @@ import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieLanguageSwitcher;
+import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieMenuButtons;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
@@ -32,6 +33,7 @@ public class CalorieLanguageSettingsHandler implements CalorieSettingsHandler {
     private final CalorieTelegramBot calorieTelegramBot;
     private final CalorieTexts texts;
     private final CalorieLanguageSwitcher languageSwitcher;
+    private final CalorieMenuButtons menuButtons;
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
@@ -85,8 +87,7 @@ public class CalorieLanguageSettingsHandler implements CalorieSettingsHandler {
         builder.row(withBackToSettings
                 ? TelegramKeyboard.button(texts.get(current, BotTextKeys.SETTINGS_BUTTON_BACK_TO_SETTINGS),
                         Command.CALORIE_SETTINGS.getCommandText())
-                : TelegramKeyboard.button(texts.get(current, BotTextKeys.COMMON_BUTTON_CLOSE),
-                        Command.CALORIE_CLOSE.getCommandText()));
+                : menuButtons.buildCloseButton(current));
         return builder.build();
     }
 

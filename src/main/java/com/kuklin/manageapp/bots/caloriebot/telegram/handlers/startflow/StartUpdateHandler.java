@@ -8,6 +8,7 @@ import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.models.landing.CalculatorStartParam;
+import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieMenuButtons;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieSiteLinks;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.KeyboardCalorieUpdateHandler;
@@ -54,6 +55,7 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
     private final ReferralRewardService referralRewardService;
     private final KeyboardCalorieUpdateHandler keyboardCalorieUpdateHandler;
     private final CalculatorProfileUpdateHandler calculatorProfileUpdateHandler;
+    private final CalorieMenuButtons menuButtons;
     private final CalorieTexts texts;
 
     /**
@@ -148,16 +150,13 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
     }
 
     private InlineKeyboardMarkup getStartFlowKeyboard(Long appUserId) {
-        return new TelegramKeyboard.TelegramKeyboardBuilder()
+        return TelegramKeyboard.builder()
                 .row(TelegramKeyboard.button(
                         texts.get(appUserId, BotTextKeys.COMMON_BUTTON_NEXT),
                         Command.CALORIE_START_FLOW_1.getCommandText(),
-                        ButtonStyle.PRIMARY)
-                ).row(TelegramKeyboard.button(
-                        texts.get(appUserId, BotTextKeys.COMMON_BUTTON_CLOSE),
-                        Command.CALORIE_CLOSE.getCommandText()
-                        )
-                ).build();
+                        ButtonStyle.PRIMARY))
+                .row(menuButtons.buildCloseButton(appUserId))
+                .build();
     }
 
     /**

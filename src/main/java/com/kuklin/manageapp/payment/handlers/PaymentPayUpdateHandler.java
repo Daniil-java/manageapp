@@ -105,16 +105,9 @@ public class PaymentPayUpdateHandler implements PaymentUpdateHandler {
     }
 
     private InlineKeyboardMarkup createSubscriptionKeyboard(String url, String buttonText) {
-        org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton payButton =
-                new org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton();
-        payButton.setText(buttonText);
-        payButton.setUrl(url);
-
-        org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup markup =
-                new org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup();
-        markup.setKeyboard(java.util.List.of(java.util.List.of(TelegramKeyboard.withStyle(payButton, ButtonStyle.SUCCESS))));
-
-        return markup;
+        return TelegramKeyboard.builder()
+                .row(TelegramKeyboard.urlButton(buttonText, url, ButtonStyle.SUCCESS))
+                .build();
     }
 
     // Извлекает провайдера из callback-data вида:

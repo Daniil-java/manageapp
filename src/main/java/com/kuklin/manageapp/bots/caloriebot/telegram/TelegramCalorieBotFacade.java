@@ -7,6 +7,7 @@ import com.kuklin.manageapp.common.library.tgmodels.TelegramFacade;
 import com.kuklin.manageapp.common.library.tgmodels.UpdateHandler;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import com.kuklin.manageapp.common.library.tgutils.Command;
+import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;
 import com.kuklin.manageapp.common.services.TelegramUserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,7 +23,7 @@ import java.util.Optional;
 @Slf4j
 public class TelegramCalorieBotFacade extends TelegramFacade {
     /** callback_data кнопок-подписей, которые ничего не делают («Вес порции», шкалы на экране «Сегодня»). */
-    public static final String NO_ACTION_CALLBACK = "temp";
+    public static final String NO_ACTION_CALLBACK = TelegramKeyboard.NO_ACTION;
 
     @Autowired
     private TelegramUserService telegramUserService;

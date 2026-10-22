@@ -4,7 +4,6 @@ import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
-import com.kuklin.manageapp.bots.caloriebot.telegram.TelegramCalorieBotFacade;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.ButtonStyle;
 import com.kuklin.manageapp.common.library.tgutils.Command;
@@ -14,8 +13,6 @@ import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
-import java.util.Collections;
-
 /**
  * Кнопки под карточкой блюда на языке пользователя: вес и число порций, избранное, удаление.
  */
@@ -23,10 +20,6 @@ import java.util.Collections;
 @RequiredArgsConstructor
 public class DishKeyboards {
     private static final String PORTION_COUNT_CMD = "PC";
-    // Заглушка для кнопок-подписей, которые ничего не делают
-    private static final String NO_ACTION = TelegramCalorieBotFacade.NO_ACTION_CALLBACK;
-    // Пустое место вместо «➖» при одной порции — чтобы ряд не сдвигался, когда «➖» появится
-    private static final String PLACEHOLDER_TEXT = "·";
 
     private final CalorieTexts texts;
 
@@ -42,13 +35,9 @@ public class DishKeyboards {
 
     /** Блюдо удалено из дневника: вместо кнопок одна неактивная «НЕ УЧИТЫВАЕТСЯ». */
     public InlineKeyboardMarkup buildNotCountedKeyboard(Long appUserId) {
-        InlineKeyboardButton button = new InlineKeyboardButton();
-        button.setText(texts.get(appUserId, BotTextKeys.DISH_BUTTON_NOT_COUNTED));
-        button.setCallbackData(NO_ACTION);
-
-        InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
-        markup.setKeyboard(Collections.singletonList(Collections.singletonList(button)));
-        return markup;
+        return TelegramKeyboard.builder()
+                .row(TelegramKeyboard.noActionButton(texts.get(appUserId, BotTextKeys.DISH_BUTTON_NOT_COUNTED)))
+                .build();
     }
 
     /**
@@ -69,22 +58,23 @@ public class DishKeyboards {
         //<scale_command>delim<dishId>delim<+-scale>
         InlineKeyboardButton portionMinus = portions > 1
                 ? TelegramKeyboard.button("➖", base + PORTION_COUNT_CMD + TelegramBot.DEFAULT_DELIMETER + (portions - 1))
-                : TelegramKeyboard.button(PLACEHOLDER_TEXT, NO_ACTION);
+                // Пустое место вместо «➖» при одной порции — ряд не сдвинется, когда «➖» появится
+                : TelegramKeyboard.placeholderButton();
 
         InlineKeyboardButton favorite = inFavorites
-                ? TelegramKeyboard.button(texts.get(language, BotTextKeys.DISH_BUTTON_IN_FAVORITES), NO_ACTION)
+                ? TelegramKeyboard.noActionButton(texts.get(language, BotTextKeys.DISH_BUTTON_IN_FAVORITES))
                 : TelegramKeyboard.button(texts.get(language, BotTextKeys.DISH_BUTTON_SAVE_FAVORITE),
                         Command.CALORIE_FAVORITE_ADD.getCommandText() + TelegramBot.DEFAULT_DELIMETER + dish.getId());
 
         return TelegramKeyboard.builder()
                 .row(
                         TelegramKeyboard.button("−10%", base + "-10"),
-                        TelegramKeyboard.button(getWeightLabel(dish, language), NO_ACTION),
+                        TelegramKeyboard.noActionButton(getWeightLabel(dish, language)),
                         TelegramKeyboard.button("+10%", base + "10")
                 )
                 .row(
                         portionMinus,
-                        TelegramKeyboard.button(texts.get(language, BotTextKeys.DISH_BUTTON_PORTIONS_VALUE, portions), NO_ACTION),
+                        TelegramKeyboard.noActionButton(texts.get(language, BotTextKeys.DISH_BUTTON_PORTIONS_VALUE, portions)),
                         TelegramKeyboard.button("➕", base + PORTION_COUNT_CMD + TelegramBot.DEFAULT_DELIMETER + (portions + 1))
                 )
                 .row(

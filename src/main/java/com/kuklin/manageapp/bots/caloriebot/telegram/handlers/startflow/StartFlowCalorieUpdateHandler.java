@@ -3,6 +3,7 @@ package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.startflow;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserNutritionProfileService;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
+import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieMenuButtons;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.InvitePromptSender;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
@@ -14,8 +15,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
-import org.telegram.telegrambots.meta.api.objects.webapp.WebAppInfo;
 
 import static com.kuklin.manageapp.bots.caloriebot.telegram.handlers.welcome.WelcomeCalorieUpdateHandler.INSTR_URL;
 
@@ -26,6 +25,7 @@ public class StartFlowCalorieUpdateHandler implements CalorieBotUpdateHandler {
     private final UserNutritionProfileService userNutritionProfileService;
     private final CalorieTexts texts;
     private final InvitePromptSender invitePromptSender;
+    private final CalorieMenuButtons menuButtons;
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
@@ -67,19 +67,12 @@ public class StartFlowCalorieUpdateHandler implements CalorieBotUpdateHandler {
     }
 
     private InlineKeyboardMarkup getStartFlowKeyboard(Long appUserId) {
-        TelegramKeyboard.TelegramKeyboardBuilder keyboard = new TelegramKeyboard.TelegramKeyboardBuilder();
-
-        InlineKeyboardButton button = new InlineKeyboardButton();
-        button.setText(texts.get(appUserId, BotTextKeys.COMMON_BUTTON_INSTRUCTION));
-        button.setWebApp(new WebAppInfo(INSTR_URL));
-
-        keyboard.row(TelegramKeyboard.button(
-                texts.get(appUserId, BotTextKeys.COMMON_BUTTON_NEXT), Command.CALORIE_MENU.getCommandText(),
-                ButtonStyle.PRIMARY));
-
-        return keyboard.row(button)
+        return TelegramKeyboard.builder()
                 .row(TelegramKeyboard.button(
-                        texts.get(appUserId, BotTextKeys.COMMON_BUTTON_CLOSE), Command.CALORIE_CLOSE.getCommandText()))
+                        texts.get(appUserId, BotTextKeys.COMMON_BUTTON_NEXT), Command.CALORIE_MENU.getCommandText(),
+                        ButtonStyle.PRIMARY))
+                .row(TelegramKeyboard.webAppButton(texts.get(appUserId, BotTextKeys.COMMON_BUTTON_INSTRUCTION), INSTR_URL))
+                .row(menuButtons.buildCloseButton(appUserId))
                 .build();
     }
 

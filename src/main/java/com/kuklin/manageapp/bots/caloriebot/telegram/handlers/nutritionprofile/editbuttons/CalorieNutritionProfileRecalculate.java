@@ -147,7 +147,7 @@ public class CalorieNutritionProfileRecalculate implements CalorieBotUpdateHandl
 
     private void editWithBackButton(Update update, String text, AppLanguage language) {
         edit(update, text, TelegramKeyboard.builder().row(
-                TelegramKeyboard.button(texts.get(language, BotTextKeys.COMMON_BUTTON_RETURN),
+                TelegramKeyboard.button(texts.get(language, BotTextKeys.PROFILE_BUTTON_BACK),
                         Command.CALORIE_PROFILE_EDIT.getCommandText())
         ).build());
     }

@@ -12,7 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
 @RequiredArgsConstructor
 @Component
@@ -38,15 +37,9 @@ public class SupportCalorieUpdateHandler implements CalorieBotUpdateHandler {
     }
 
     private InlineKeyboardMarkup getKeyboard(Long appUserId) {
-        TelegramKeyboard.TelegramKeyboardBuilder keyboard =
-                new TelegramKeyboard.TelegramKeyboardBuilder();
-
-        InlineKeyboardButton linkButton = new InlineKeyboardButton();
-        linkButton.setText(texts.get(appUserId, BotTextKeys.SUPPORT_BUTTON));
-        linkButton.setUrl(SUPPORT_URL);
-
-        keyboard.row(TelegramKeyboard.withStyle(linkButton, ButtonStyle.PRIMARY));
-        return keyboard.build();
+        return TelegramKeyboard.builder()
+                .row(TelegramKeyboard.urlButton(texts.get(appUserId, BotTextKeys.SUPPORT_BUTTON), SUPPORT_URL, ButtonStyle.PRIMARY))
+                .build();
     }
 
     @Override

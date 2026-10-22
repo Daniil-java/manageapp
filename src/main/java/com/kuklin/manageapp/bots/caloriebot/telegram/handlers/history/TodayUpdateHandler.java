@@ -10,7 +10,6 @@ import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieMenuButtons;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
-import com.kuklin.manageapp.bots.caloriebot.telegram.TelegramCalorieBotFacade;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.dish.DishKeyboards;
 import com.kuklin.manageapp.bots.caloriebot.texts.DishTexts;
@@ -53,11 +52,8 @@ public class TodayUpdateHandler implements CalorieBotUpdateHandler {
     private static final String DELIMITER = TelegramBot.DEFAULT_DELIMETER;
     private static final String REMOVE_CMD = Command.CALORIE_TODAY_LIST.getCommandText() + DELIMITER + "r";
     private static final String GET_DISH_CMD = REMOVE_CMD + DELIMITER;
-    private static final String DUMMY_CALLBACK = TelegramCalorieBotFacade.NO_ACTION_CALLBACK;
     // Прошлый день: "📊СЕГОДНЯ d 2026-10-21"
     private static final String DAY_CMD = Command.CALORIE_TODAY_LIST.getCommandText() + DELIMITER + "d" + DELIMITER;
-    // Пустое место вместо «◀» на самом раннем дне и «▶» на сегодня — ряд не сдвигается
-    private static final String PLACEHOLDER_TEXT = "·";
 
     /** Сколько дней назад можно листать. */
     static final int MAX_DAYS_BACK = 30;
@@ -218,7 +214,7 @@ public class TodayUpdateHandler implements CalorieBotUpdateHandler {
         for (Dish dish : dishes) {
             builder.row(TelegramKeyboard.button(dish.getName(), GET_DISH_CMD + dish.getId()));
         }
-        builder.row(TelegramKeyboard.button(texts.get(userId, BotTextKeys.COMMON_BUTTON_BACK), getHandlerListName()));
+        builder.row(menuButtons.buildBackButton(userId, getHandlerListName()));
 
         return builder.build();
     }
@@ -234,7 +230,7 @@ public class TodayUpdateHandler implements CalorieBotUpdateHandler {
 
         // Шкалы без нормы AnalyticsService не возвращает
         analyticsService.buildTodayBars(userId)
-                .forEach(bar -> builder.row(TelegramKeyboard.button(bar, DUMMY_CALLBACK)));
+                .forEach(bar -> builder.row(TelegramKeyboard.noActionButton(bar)));
 
         builder.row(
                 TelegramKeyboard.button(texts.get(userId, BotTextKeys.TODAY_BUTTON_GO_TO_REMOVE), REMOVE_CMD, ButtonStyle.DANGER),
@@ -253,7 +249,7 @@ public class TodayUpdateHandler implements CalorieBotUpdateHandler {
                 .row(buildDayNavRow(userId, date, today));
 
         analyticsService.buildDayBars(userId, date)
-                .forEach(bar -> builder.row(TelegramKeyboard.button(bar, DUMMY_CALLBACK)));
+                .forEach(bar -> builder.row(TelegramKeyboard.noActionButton(bar)));
 
         builder.row(menuButtons.buildBackToMenuButton(userId));
         return builder.build();
@@ -266,13 +262,13 @@ public class TodayUpdateHandler implements CalorieBotUpdateHandler {
     private List<InlineKeyboardButton> buildDayNavRow(Long userId, LocalDate date, LocalDate today) {
         LocalDate previous = date.minusDays(1);
         InlineKeyboardButton back = previous.isBefore(today.minusDays(MAX_DAYS_BACK))
-                ? TelegramKeyboard.button(PLACEHOLDER_TEXT, DUMMY_CALLBACK)
+                ? TelegramKeyboard.placeholderButton()
                 : TelegramKeyboard.button("◀", DAY_CMD + previous);
 
         LocalDate next = date.plusDays(1);
         InlineKeyboardButton forward;
         if (date.equals(today)) {
-            forward = TelegramKeyboard.button(PLACEHOLDER_TEXT, DUMMY_CALLBACK);
+            forward = TelegramKeyboard.placeholderButton();
         } else if (next.equals(today)) {
             forward = TelegramKeyboard.button("▶", getHandlerListName());
         } else {

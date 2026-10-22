@@ -147,7 +147,7 @@ public class CalorieNutritionProfileEditCallbackUpdateHandler implements Calorie
                                 (manual ? "✅ " : "") + texts.get(language, BotTextKeys.PROFILE_EDIT_BUTTON_MANUAL),
                                 CalorieNutritionProfileRecalculate.callback(CalorieNutritionProfileRecalculate.MANUAL))
                 ).row(
-                        TelegramKeyboard.button(texts.get(language, BotTextKeys.COMMON_BUTTON_RETURN),
+                        TelegramKeyboard.button(texts.get(language, BotTextKeys.PROFILE_BUTTON_BACK),
                                 Command.CALORIE_PROFILE.getCommandText())
                 )
                 .build();

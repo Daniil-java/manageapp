@@ -1,7 +1,6 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.editbuttons;
 
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
-import com.kuklin.manageapp.bots.caloriebot.telegram.TelegramCalorieBotFacade;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.ButtonStyle;
 import com.kuklin.manageapp.common.library.tgutils.Command;
@@ -20,7 +19,7 @@ public class KeyboardTemplates {
     public static final String SET_CMD = "SET";
     public static final String ADJ_CMD = "ADJ";
     // Кнопка-подпись (текущее значение) и шаг, упёршийся в границу, — ничего не делают
-    private static final String NO_ACTION = TelegramCalorieBotFacade.NO_ACTION_CALLBACK;
+    private static final String NO_ACTION = TelegramKeyboard.NO_ACTION;
 
     /**
      * «← Назад» без сохранения: в редакторе профиля — к списку полей,
@@ -181,6 +180,6 @@ public class KeyboardTemplates {
     }
 
     private static InlineKeyboardButton buildBackButton(Command command, String backLabel) {
-        return TelegramKeyboard.button("← " + backLabel, getBackData(command));
+        return TelegramKeyboard.button(backLabel, getBackData(command));
     }
 }

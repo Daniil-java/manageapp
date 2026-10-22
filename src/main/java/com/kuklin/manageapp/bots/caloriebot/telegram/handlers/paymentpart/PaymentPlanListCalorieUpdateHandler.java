@@ -88,10 +88,7 @@ public class PaymentPlanListCalorieUpdateHandler implements CalorieBotUpdateHand
                 TelegramKeyboard.button(menuButtons.getLabel(CalorieMenuButtons.Button.SUBSCRIPTION, language),
                         Command.CALORIE_PAYMENT_PAYLOAD_PLAN.getCommandText(), ButtonStyle.PRIMARY)
         );
-        builder.row(
-                TelegramKeyboard.button("❌" + texts.get(language, BotTextKeys.COMMON_BUTTON_CLOSE),
-                        Command.CALORIE_CLOSE.getCommandText())
-        );
+        builder.row(menuButtons.buildCloseButton(language));
         return builder.build();
     }
 

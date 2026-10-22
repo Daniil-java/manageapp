@@ -45,10 +45,8 @@ public class InviteLinks {
     public InlineKeyboardButton buildShareButton(Long appUserId) {
         String shareText = texts.get(appUserId, BotTextKeys.REFERRAL_SHARE_TEXT,
                 referralRewardService.getPlanDays(ReferralRewardService.INVITED_PLAN_CODE));
-        InlineKeyboardButton button = new InlineKeyboardButton();
-        button.setText(texts.get(appUserId, BotTextKeys.REFERRAL_BUTTON_SHARE));
-        button.setUrl(SHARE_URL + encode(getReferralUrl(appUserId)) + "&text=" + encode(shareText));
-        return TelegramKeyboard.withStyle(button, ButtonStyle.PRIMARY);
+        return TelegramKeyboard.urlButton(texts.get(appUserId, BotTextKeys.REFERRAL_BUTTON_SHARE),
+                SHARE_URL + encode(getReferralUrl(appUserId)) + "&text=" + encode(shareText), ButtonStyle.PRIMARY);
     }
 
     /** «💎 Подробнее» — экран приглашения (UtmCalorieUpdateHandler) с условиями и счётчиками. */

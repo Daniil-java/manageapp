@@ -182,7 +182,8 @@ public class CalorieRemindersSettingsHandler implements CalorieSettingsHandler{
 
         b.row(TelegramKeyboard.button(texts.get(language, BotTextKeys.SETTINGS_BUTTON_DAILY), cb + DAILY));
         b.row(TelegramKeyboard.button(texts.get(language, BotTextKeys.SETTINGS_BUTTON_MEAL), cb + MEAL));
-        b.row(TelegramKeyboard.button(getBackLabel(language), Command.CALORIE_SETTINGS.getCommandText()));
+        b.row(TelegramKeyboard.button(texts.get(language, BotTextKeys.SETTINGS_BUTTON_BACK_TO_SETTINGS),
+                Command.CALORIE_SETTINGS.getCommandText()));
 
         return b.build();
     }
@@ -226,9 +227,9 @@ public class CalorieRemindersSettingsHandler implements CalorieSettingsHandler{
         return b.build();
     }
 
-    /** «⬅ Назад» / «⬅ Back». */
+    /** «← Назад» / «← Back» — к списку напоминаний. */
     private String getBackLabel(AppLanguage language) {
-        return "⬅ " + texts.get(language, BotTextKeys.COMMON_BUTTON_BACK);
+        return texts.get(language, BotTextKeys.COMMON_BUTTON_BACK);
     }
 
     @Override

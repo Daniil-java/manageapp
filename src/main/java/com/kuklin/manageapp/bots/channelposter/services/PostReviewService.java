@@ -169,7 +169,7 @@ public class PostReviewService {
     }
 
     public static InlineKeyboardMarkup keyboard(Long postId) {
-        return new TelegramKeyboard.TelegramKeyboardBuilder()
+        return TelegramKeyboard.builder()
                 .row(
                         TelegramKeyboard.button("✅ В очередь", data(QUEUE_CMD, postId)),
                         TelegramKeyboard.button("⚡ Сейчас", data(NOW_CMD, postId))
@@ -185,7 +185,7 @@ public class PostReviewService {
 
     // у опроса нет текста и картинки — править нечего: в очередь, сейчас или удалить
     public static InlineKeyboardMarkup pollKeyboard(Long postId) {
-        return new TelegramKeyboard.TelegramKeyboardBuilder()
+        return TelegramKeyboard.builder()
                 .row(
                         TelegramKeyboard.button("✅ В очередь", data(QUEUE_CMD, postId)),
                         TelegramKeyboard.button("⚡ Сейчас", data(NOW_CMD, postId))

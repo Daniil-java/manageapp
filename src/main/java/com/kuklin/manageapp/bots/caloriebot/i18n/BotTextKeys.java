@@ -201,7 +201,6 @@ public final class BotTextKeys {
     public static final String WEIGHT_HISTORY_TOTAL = "weight.history.total";
 
     // ── Общие кнопки и единицы ─────────────────────────────────────
-    public static final String COMMON_BUTTON_RETURN = "common.button.return";
     public static final String COMMON_BUTTON_SAVE = "common.button.save";
     public static final String COMMON_BUTTON_NO = "common.button.no";
     public static final String COMMON_BUTTON_ON = "common.button.on";
@@ -241,6 +240,7 @@ public final class BotTextKeys {
     public static final String PROFILE_EMPTY = "profile.empty";
     public static final String PROFILE_BUTTON_FILL = "profile.button.fill";
     public static final String PROFILE_BUTTON_EDIT = "profile.button.edit";
+    public static final String PROFILE_BUTTON_BACK = "profile.button.back";
     public static final String PROFILE_EDIT_QUESTION = "profile.edit.question";
     public static final String PROFILE_EDIT_BUTTON_AUTO = "profile.edit.button.auto";
     public static final String PROFILE_EDIT_BUTTON_MANUAL = "profile.edit.button.manual";

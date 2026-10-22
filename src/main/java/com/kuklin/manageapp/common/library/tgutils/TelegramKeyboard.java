@@ -2,6 +2,7 @@ package com.kuklin.manageapp.common.library.tgutils;
 
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
+import org.telegram.telegrambots.meta.api.objects.webapp.WebAppInfo;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -26,14 +27,15 @@ public class TelegramKeyboard {
     public static class TelegramKeyboardBuilder {
         private List<List<InlineKeyboardButton>> keyboard = new ArrayList<>();
 
+        // Пустой ряд не добавляем: удобно для необязательных кнопок (например, «Отменить» у воды)
         public TelegramKeyboardBuilder row(InlineKeyboardButton... buttons) {
-            keyboard.add(Arrays.asList(buttons));
+            if (buttons.length > 0) keyboard.add(Arrays.asList(buttons));
             return this;
         }
 
         // Добавляем уже готовую строку
         public TelegramKeyboardBuilder row(List<InlineKeyboardButton> row) {
-            keyboard.add(row);
+            if (!row.isEmpty()) keyboard.add(row);
             return this;
         }
 
@@ -69,6 +71,13 @@ public class TelegramKeyboard {
         return new TelegramKeyboardBuilder();
     }
 
+    /** callbackData кнопки, которая ничего не делает (подпись, шкала, заглушка). Значение не менять — оно в старых сообщениях. */
+    public static final String NO_ACTION = "temp";
+    /** Текст заглушки, которая держит место в ряду, чтобы кнопки не сдвигались. */
+    public static final String PLACEHOLDER_TEXT = "·";
+
+    // Все кнопки собираются здесь: общая правка (цвет, новое поле Bot API) делается в одном месте
+
     public static InlineKeyboardButton button(String text, String callbackData) {
         InlineKeyboardButton button = new InlineKeyboardButton();
         button.setText(text);
@@ -81,7 +90,41 @@ public class TelegramKeyboard {
         return StyledInlineKeyboardButton.of(button(text, callbackData), style);
     }
 
-    /** Та же кнопка в цвете — для кнопок с url, webApp и т.п., собранных не через button(). */
+    /** Кнопка-ссылка: открывает url в браузере Telegram. */
+    public static InlineKeyboardButton urlButton(String text, String url) {
+        InlineKeyboardButton button = new InlineKeyboardButton();
+        button.setText(text);
+        button.setUrl(url);
+        return button;
+    }
+
+    public static InlineKeyboardButton urlButton(String text, String url, ButtonStyle style) {
+        return withStyle(urlButton(text, url), style);
+    }
+
+    /** Кнопка открытия мини-аппа. */
+    public static InlineKeyboardButton webAppButton(String text, String url) {
+        InlineKeyboardButton button = new InlineKeyboardButton();
+        button.setText(text);
+        button.setWebApp(new WebAppInfo(url));
+        return button;
+    }
+
+    public static InlineKeyboardButton webAppButton(String text, String url, ButtonStyle style) {
+        return withStyle(webAppButton(text, url), style);
+    }
+
+    /** Кнопка-подпись: показывает значение, нажатие ничего не делает. */
+    public static InlineKeyboardButton noActionButton(String text) {
+        return button(text, NO_ACTION);
+    }
+
+    /** Заглушка «·» на месте скрытой кнопки — ряд не сдвигается. */
+    public static InlineKeyboardButton placeholderButton() {
+        return noActionButton(PLACEHOLDER_TEXT);
+    }
+
+    /** Та же кнопка в цвете — для готовых кнопок, собранных не здесь. */
     public static InlineKeyboardButton withStyle(InlineKeyboardButton button, ButtonStyle style) {
         return StyledInlineKeyboardButton.of(button, style);
     }

@@ -15,6 +15,7 @@ import com.kuklin.manageapp.bots.caloriebot.telegram.InviteLinks;
 import com.kuklin.manageapp.bots.caloriebot.utils.ReportHtml;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgutils.Command;
+import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -132,9 +133,10 @@ public class UtmCalorieUpdateHandler implements CalorieBotUpdateHandler {
     }
 
     private InlineKeyboardMarkup getReferralButtons(Long appUserId) {
-        return new InlineKeyboardMarkup(List.of(
-                List.of(inviteLinks.buildShareButton(appUserId)),
-                List.of(menuButtons.buildBackToMenuButton(appUserId))));
+        return TelegramKeyboard.builder()
+                .row(inviteLinks.buildShareButton(appUserId))
+                .row(menuButtons.buildBackToMenuButton(appUserId))
+                .build();
     }
 
     private ReplyKeyboardMarkup getAdminReplyKeyboard(Long appUserId) {

@@ -1,6 +1,7 @@
 ## 0.0.5 (22.10.2026)
 [et-105] — Цветные кнопки оплаты
 * Кнопка оплаты по ссылке (PaymentPayUpdateHandler) и кнопки тарифов (PaymentPlanListUpdateHandler) — зелёные (ButtonStyle.SUCCESS, StyledInlineKeyboardButton из common/library/tgutils). Выбор провайдера — без цвета.
+* PaymentPayUpdateHandler: кнопка оплаты собирается через TelegramKeyboard.urlButton вместо ручного InlineKeyboardButton / InlineKeyboardMarkup.
 
 ## 0.0.4 (19.10.2026)
 [et-102] — Бонусные подписки, события покупки и возврата, /refund только для админов

@@ -17,7 +17,6 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMar
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -142,19 +141,32 @@ public class CalorieMenuButtons {
     /** То же меню кнопками под сообщением: подпись на языке пользователя, в callbackData — команда. Внизу «Закрыть». */
     public InlineKeyboardMarkup buildInlineMenu(Long appUserId) {
         AppLanguage language = texts.languageOf(appUserId);
-        List<List<InlineKeyboardButton>> rows = new ArrayList<>(INLINE_MENU_LAYOUT.stream().map(row -> row.stream()
-                .map(button -> {
-                    InlineKeyboardButton inline = InlineKeyboardButton.builder()
-                            .text(getLabel(button, language))
-                            .callbackData(button.getCommand().getCommandText())
-                            .build();
-                    // Подписка — синим: единственная кнопка меню, которая ведёт к оплате
-                    return button == Button.SUBSCRIPTION ? TelegramKeyboard.withStyle(inline, ButtonStyle.PRIMARY) : inline;
-                })
-                .toList()).toList());
-        rows.add(List.of(TelegramKeyboard.button(
-                texts.get(language, BotTextKeys.COMMON_BUTTON_CLOSE), Command.CALORIE_CLOSE.getCommandText())));
-        return new InlineKeyboardMarkup(rows);
+        TelegramKeyboard.TelegramKeyboardBuilder builder = TelegramKeyboard.builder();
+        INLINE_MENU_LAYOUT.forEach(row -> builder.row(row.stream()
+                .map(button -> button == Button.SUBSCRIPTION
+                        // Подписка — синим: единственная кнопка меню, которая ведёт к оплате
+                        ? TelegramKeyboard.button(getLabel(button, language), button.getCommand().getCommandText(), ButtonStyle.PRIMARY)
+                        : TelegramKeyboard.button(getLabel(button, language), button.getCommand().getCommandText()))
+                .toList()));
+        return builder.row(buildCloseButton(language)).build();
+    }
+
+    /** «Закрыть» — удаляет сообщение. У меню и у сообщений без родителя (старт-флоу, уведомления). */
+    public InlineKeyboardButton buildCloseButton(Long appUserId) {
+        return buildCloseButton(texts.languageOf(appUserId));
+    }
+
+    public InlineKeyboardButton buildCloseButton(AppLanguage language) {
+        return TelegramKeyboard.button(texts.get(language, BotTextKeys.COMMON_BUTTON_CLOSE), Command.CALORIE_CLOSE.getCommandText());
+    }
+
+    /** «← Назад» туда, куда ведёт data, — когда цель понятна из экрана (список блюд, подменю настроек). */
+    public InlineKeyboardButton buildBackButton(Long appUserId, String data) {
+        return buildBackButton(texts.languageOf(appUserId), data);
+    }
+
+    public InlineKeyboardButton buildBackButton(AppLanguage language, String data) {
+        return TelegramKeyboard.button(texts.get(language, BotTextKeys.COMMON_BUTTON_BACK), data);
     }
 
     /** Последний ряд экрана раздела: «← Меню». */
