@@ -19,10 +19,9 @@ public class HeightProfileEditFieldHandler
                 170,    // default
                 50,     // min
                 250,    // max
-                -10,    // bigNeg
-                -1,     // neg
-                1,      // pos
-                10      // bigPos
+                1,      // small
+                5,      // mid
+                10      // big
         );
     }
 

@@ -25,8 +25,7 @@ public class WaterTargetProfileEditFieldHandler
                 2000,
                 UserNutritionProfile.WATER_NORM_MIN,
                 UserNutritionProfile.WATER_NORM_MAX,
-                -500,
-                -100,
+                50,
                 100,
                 500
         );

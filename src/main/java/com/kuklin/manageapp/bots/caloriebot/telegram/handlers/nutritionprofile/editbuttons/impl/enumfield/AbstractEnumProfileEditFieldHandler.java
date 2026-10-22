@@ -94,7 +94,9 @@ public abstract class AbstractEnumProfileEditFieldHandler<
                             action,
                             EnumSet.allOf(getEnumClass()),
                             ELEMENT_PER_ROW,
-                            value -> texts.get(language, value.getTextKey())
+                            value -> texts.get(language, value.getTextKey()),
+                            getCurrentValue(profile),
+                            texts.get(language, BotTextKeys.COMMON_BUTTON_BACK)
                     )
             );
         }
@@ -102,6 +104,9 @@ public abstract class AbstractEnumProfileEditFieldHandler<
 
     /** Enum класс */
     protected abstract Class<E> getEnumClass();
+
+    /** Текущее значение — отмечается ✅; null — ещё не выбрано */
+    protected abstract E getCurrentValue(UserNutritionProfile profile);
 
     /** Применение значения */
     protected abstract UserNutritionProfile applyValue(UserNutritionProfile profile, E value);

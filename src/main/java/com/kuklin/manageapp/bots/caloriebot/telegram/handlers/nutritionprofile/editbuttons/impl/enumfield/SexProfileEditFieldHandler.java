@@ -23,6 +23,11 @@ public class SexProfileEditFieldHandler
     }
 
     @Override
+    protected UserNutritionProfile.Sex getCurrentValue(UserNutritionProfile profile) {
+        return profile.getSex();
+    }
+
+    @Override
     protected UserNutritionProfile applyValue(UserNutritionProfile profile, UserNutritionProfile.Sex value) {
         return profile.setSex(value);
     }

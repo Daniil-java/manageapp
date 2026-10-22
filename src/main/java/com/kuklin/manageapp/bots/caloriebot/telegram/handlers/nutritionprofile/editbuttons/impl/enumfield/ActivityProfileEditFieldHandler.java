@@ -23,6 +23,11 @@ public class ActivityProfileEditFieldHandler
     }
 
     @Override
+    protected UserNutritionProfile.ActivityLevel getCurrentValue(UserNutritionProfile profile) {
+        return profile.getActivityLevel();
+    }
+
+    @Override
     protected UserNutritionProfile applyValue(
             UserNutritionProfile profile,
             UserNutritionProfile.ActivityLevel value

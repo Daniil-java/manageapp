@@ -23,6 +23,11 @@ public class GoalProfileEditFieldHandler
     }
 
     @Override
+    protected UserNutritionProfile.Goal getCurrentValue(UserNutritionProfile profile) {
+        return profile.getGoal();
+    }
+
+    @Override
     protected UserNutritionProfile applyValue(UserNutritionProfile profile, UserNutritionProfile.Goal value) {
         return profile.setGoal(value);
     }

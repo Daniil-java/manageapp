@@ -48,10 +48,10 @@ public abstract class AbstractDecimalProfileEditFieldHandler
     protected final BigDecimal defaultValue;
     protected final BigDecimal min;
     protected final BigDecimal max;
-    protected final BigDecimal bigNeg;
-    protected final BigDecimal neg;
-    protected final BigDecimal pos;
-    protected final BigDecimal bigPos;
+    // Шаги счётчика (положительные, со scale значения): кнопки ±small, ±mid, ±big
+    protected final BigDecimal small;
+    protected final BigDecimal mid;
+    protected final BigDecimal big;
 
     protected AbstractDecimalProfileEditFieldHandler(
             UserNutritionProfileService profileService,
@@ -59,20 +59,18 @@ public abstract class AbstractDecimalProfileEditFieldHandler
             BigDecimal defaultValue,
             BigDecimal min,
             BigDecimal max,
-            BigDecimal bigNeg,
-            BigDecimal neg,
-            BigDecimal pos,
-            BigDecimal bigPos
+            BigDecimal small,
+            BigDecimal mid,
+            BigDecimal big
     ) {
         this.profileService = profileService;
         this.callbackHandler = callbackHandler;
         this.defaultValue = defaultValue;
         this.min = min;
         this.max = max;
-        this.bigNeg = bigNeg;
-        this.neg = neg;
-        this.pos = pos;
-        this.bigPos = bigPos;
+        this.small = small;
+        this.mid = mid;
+        this.big = big;
     }
 
     @Override
@@ -134,12 +132,12 @@ public abstract class AbstractDecimalProfileEditFieldHandler
                         defaultValue,
                         min,
                         max,
-                        bigNeg,
-                        neg,
-                        pos,
-                        bigPos,
+                        small,
+                        mid,
+                        big,
                         value -> texts.get(telegramUser.getAppUserId(), action.getValueKey(), value),
-                        texts.get(telegramUser.getAppUserId(), BotTextKeys.COMMON_BUTTON_SAVE)
+                        texts.get(telegramUser.getAppUserId(), BotTextKeys.COMMON_BUTTON_SAVE),
+                        texts.get(telegramUser.getAppUserId(), BotTextKeys.COMMON_BUTTON_BACK)
                 )
         );
     }

@@ -49,10 +49,10 @@ public abstract class AbstractNumericProfileEditFieldHandler
     protected final Integer defaultValue;
     protected final int min;
     protected final int max;
-    protected final int bigNeg;
-    protected final int neg;
-    protected final int pos;
-    protected final int bigPos;
+    // Шаги счётчика (положительные): кнопки ±small, ±mid, ±big
+    protected final int small;
+    protected final int mid;
+    protected final int big;
 
     protected AbstractNumericProfileEditFieldHandler(
             UserNutritionProfileService profileService,
@@ -60,20 +60,18 @@ public abstract class AbstractNumericProfileEditFieldHandler
             Integer defaultValue,
             int min,
             int max,
-            int bigNeg,
-            int neg,
-            int pos,
-            int bigPos
+            int small,
+            int mid,
+            int big
     ) {
         this.profileService = profileService;
         this.callbackHandler = callbackHandler;
         this.defaultValue = defaultValue;
         this.min = min;
         this.max = max;
-        this.bigNeg = bigNeg;
-        this.neg = neg;
-        this.pos = pos;
-        this.bigPos = bigPos;
+        this.small = small;
+        this.mid = mid;
+        this.big = big;
     }
 
     @Override
@@ -130,16 +128,17 @@ public abstract class AbstractNumericProfileEditFieldHandler
                 defaultValue,
                 min,
                 max,
-                bigNeg,
-                neg,
-                pos,
-                bigPos,
+                small,
+                mid,
+                big,
                 value -> texts.get(telegramUser.getAppUserId(), action.getValueKey(), value),
-                texts.get(telegramUser.getAppUserId(), BotTextKeys.COMMON_BUTTON_SAVE)
+                texts.get(telegramUser.getAppUserId(), BotTextKeys.COMMON_BUTTON_SAVE),
+                texts.get(telegramUser.getAppUserId(), BotTextKeys.COMMON_BUTTON_BACK)
         );
         List<InlineKeyboardButton> extra = extraRow(profile);
         if (!extra.isEmpty()) {
-            keyboard.getKeyboard().add(extra);
+            // Над «← Назад / Сохранить»
+            keyboard.getKeyboard().add(keyboard.getKeyboard().size() - 1, extra);
         }
 
         telegramBot.sendEditMessage(chatId, buildText(profile), messageId, keyboard);

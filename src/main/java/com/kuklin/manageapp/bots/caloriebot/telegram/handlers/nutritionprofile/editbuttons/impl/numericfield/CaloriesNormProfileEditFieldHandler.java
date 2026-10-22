@@ -20,8 +20,7 @@ public class CaloriesNormProfileEditFieldHandler
                 2000,
                 UserNutritionProfile.CALORIES_NORM_MIN,
                 UserNutritionProfile.CALORIES_NORM_MAX,
-                -500,
-                -100,
+                50,
                 100,
                 500
         );

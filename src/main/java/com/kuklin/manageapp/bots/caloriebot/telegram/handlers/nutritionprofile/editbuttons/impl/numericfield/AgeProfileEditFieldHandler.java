@@ -21,10 +21,9 @@ public class AgeProfileEditFieldHandler
                 20,     // default
                 1,      // min
                 130,    // max
-                -5,     // bigNeg
-                -1,     // neg
-                1,      // pos
-                5       // bigPos
+                1,      // small
+                5,      // mid
+                10      // big
         );
     }
 

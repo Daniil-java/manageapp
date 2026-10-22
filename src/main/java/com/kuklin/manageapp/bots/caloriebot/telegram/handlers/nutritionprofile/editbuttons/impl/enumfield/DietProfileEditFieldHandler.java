@@ -23,6 +23,11 @@ public class DietProfileEditFieldHandler
     }
 
     @Override
+    protected UserNutritionProfile.DietType getCurrentValue(UserNutritionProfile profile) {
+        return profile.getDietType();
+    }
+
+    @Override
     protected UserNutritionProfile applyValue(
             UserNutritionProfile profile,
             UserNutritionProfile.DietType value
