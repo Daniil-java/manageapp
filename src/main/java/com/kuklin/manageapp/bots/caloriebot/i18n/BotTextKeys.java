@@ -127,8 +127,8 @@ public final class BotTextKeys {
     public static final String DISH_CARD_PORTIONS = "dish.card.portions";
     public static final String DISH_CARD_CALORIES_PROGRESS = "dish.card.calories-progress";
     public static final String DISH_CARD_TODAY_TOTAL = "dish.card.today-total";
-    public static final String DISH_BUTTON_PORTION_WEIGHT = "dish.button.portion-weight";
-    public static final String DISH_BUTTON_PORTIONS = "dish.button.portions";
+    public static final String DISH_BUTTON_WEIGHT_VALUE = "dish.button.weight-value";
+    public static final String DISH_BUTTON_PORTIONS_VALUE = "dish.button.portions-value";
     public static final String DISH_BUTTON_SAVE_FAVORITE = "dish.button.save-favorite";
     public static final String DISH_BUTTON_IN_FAVORITES = "dish.button.in-favorites";
     public static final String DISH_BUTTON_DELETE = "dish.button.delete";
