@@ -193,9 +193,15 @@ public class DishService {
     @Transactional(readOnly = true)
     public List<Dish> getTodayDishes(Long userId) {
         ZoneId userZone = userSettingsService.getZoneId(userId);
+        return getDishesForDate(userId, LocalDate.now(userZone));
+    }
 
-        ZonedDateTime userNow = ZonedDateTime.now(userZone);
-        ZonedDateTime startOfDayUser = userNow.toLocalDate().atStartOfDay(userZone);
+    /** Блюда за календарный день пользователя (по его таймзоне) — экран «Сегодня» листает прошлые дни. */
+    @Transactional(readOnly = true)
+    public List<Dish> getDishesForDate(Long userId, LocalDate date) {
+        ZoneId userZone = userSettingsService.getZoneId(userId);
+
+        ZonedDateTime startOfDayUser = date.atStartOfDay(userZone);
         ZonedDateTime endOfDayUser = startOfDayUser.plusDays(1);
 
         return dishRepository.findAllByUserIdAndCreatedBetween(

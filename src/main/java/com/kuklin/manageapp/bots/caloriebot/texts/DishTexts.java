@@ -10,6 +10,7 @@ import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -110,8 +111,16 @@ public class DishTexts extends AbstractBotTexts {
      * date — заголовок дня, уже на языке пользователя («12 ОКТЯБРЯ 2026»).
      */
     public String buildTodayDiaryText(Long userId, String date) {
+        return buildDiaryText(userId, dishService.getTodayDishes(userId), date);
+    }
+
+    /** Дневник за прошлый день (листание на экране «Сегодня»). title — заголовок дня на языке пользователя. */
+    public String buildDayDiaryText(Long userId, LocalDate date, String title) {
+        return buildDiaryText(userId, dishService.getDishesForDate(userId, date), title);
+    }
+
+    private String buildDiaryText(Long userId, List<Dish> dishes, String date) {
         AppLanguage language = languageOf(userId);
-        List<Dish> dishes = dishService.getTodayDishes(userId);
         UserNutritionProfile profile = userNutritionProfileService.getOrCreateProfile(userId);
 
         StringBuilder sb = new StringBuilder();

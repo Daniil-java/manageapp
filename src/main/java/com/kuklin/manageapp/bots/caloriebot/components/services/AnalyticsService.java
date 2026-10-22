@@ -8,6 +8,7 @@ import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
@@ -39,8 +40,16 @@ public class AnalyticsService {
      * Нормы нет (профиль не заполнен) — этой шкалы нет.
      */
     public List<String> buildTodayBars(Long userId) {
+        return buildBars(userId, dishService.getTodayDishes(userId), getTodayWaterMl(userId));
+    }
+
+    /** Те же шкалы за прошлый день. Норма — текущая из профиля: истории норм нет. */
+    public List<String> buildDayBars(Long userId, LocalDate date) {
+        return buildBars(userId, dishService.getDishesForDate(userId, date), waterEntryService.getTotalForDate(userId, date));
+    }
+
+    private List<String> buildBars(Long userId, List<Dish> dishes, int waterMl) {
         UserNutritionProfile profile = userNutritionProfileService.getOrCreateProfile(userId);
-        List<Dish> dishes = dishService.getTodayDishes(userId);
         AppLanguage language = texts.languageOf(userId);
         Integer waterTarget = profile.getWaterTargetMlPerDay();
 
@@ -53,7 +62,7 @@ public class AnalyticsService {
                 profile.getFatsNormGramsPerDay(), "🟨");
         addBar(bars, language, BotTextKeys.MACRO_LABEL_CARBS, sum(dishes, Dish::getCarbohydrates),
                 profile.getCarbsNormGramsPerDay(), "🟩");
-        addBar(bars, language, BotTextKeys.MACRO_LABEL_WATER, getTodayWaterMl(userId),
+        addBar(bars, language, BotTextKeys.MACRO_LABEL_WATER, waterMl,
                 waterTarget == null ? DEFAULT_WATER_TARGET_ML : waterTarget, "🟦");
         return bars;
     }

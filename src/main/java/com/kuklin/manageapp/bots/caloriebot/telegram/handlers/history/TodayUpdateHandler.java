@@ -23,14 +23,17 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 
 /**
  * Обработчик для отображения статистики и списка блюд пользователя за текущий день.
+ * Кнопками ◀ ▶ листаются прошлые дни (не дальше MAX_DAYS_BACK) — только просмотр, без удаления и карточки.
  */
 @Component
 @RequiredArgsConstructor
@@ -50,6 +53,13 @@ public class TodayUpdateHandler implements CalorieBotUpdateHandler {
     private static final String REMOVE_CMD = Command.CALORIE_TODAY_LIST.getCommandText() + DELIMITER + "r";
     private static final String GET_DISH_CMD = REMOVE_CMD + DELIMITER;
     private static final String DUMMY_CALLBACK = TelegramCalorieBotFacade.NO_ACTION_CALLBACK;
+    // Прошлый день: "📊СЕГОДНЯ d 2026-10-21"
+    private static final String DAY_CMD = Command.CALORIE_TODAY_LIST.getCommandText() + DELIMITER + "d" + DELIMITER;
+    // Пустое место вместо «◀» на самом раннем дне и «▶» на сегодня — ряд не сдвигается
+    private static final String PLACEHOLDER_TEXT = "·";
+
+    /** Сколько дней назад можно листать. */
+    static final int MAX_DAYS_BACK = 30;
 
     /**
      * Основная точка входа для обработки обновлений.
@@ -79,6 +89,10 @@ public class TodayUpdateHandler implements CalorieBotUpdateHandler {
         // Если выбрано конкретное блюдо из списка на удаление
         else if (data.startsWith(GET_DISH_CMD)) {
             handleDishDetailCallback(update, userId, data);
+        }
+        // Листание по дням
+        else if (data.startsWith(DAY_CMD)) {
+            showDay(chatId, messageId, userId, parseDayOrNull(data));
         }
         // В остальных случаях (например, переход к режиму удаления)
         else {
@@ -114,14 +128,51 @@ public class TodayUpdateHandler implements CalorieBotUpdateHandler {
         }
     }
 
-    /** Сегодняшняя дата пользователя для заголовка дневника: «12 ОКТЯБРЯ 2026» / «12 OCTOBER 2026». */
-    private String getUserTime(Long userId) {
-        LocalDate date = Instant.now().atZone(userSettingsService.getZoneId(userId)).toLocalDate();
+    /**
+     * Прошлый день — только просмотр: блюда, итоги, шкалы. Сегодня (или дата вне окна листания) — обычный экран «Сегодня».
+     */
+    private void showDay(Long chatId, Integer messageId, Long userId, LocalDate requested) {
+        LocalDate today = getUserToday(userId);
+        LocalDate date = getDayInRange(requested, today);
+        if (date.equals(today)) {
+            calorieTelegramBot.sendEditMessage(chatId, getTodaySummaryText(userId), messageId, getStatsKeyboard(userId));
+            return;
+        }
+        calorieTelegramBot.sendEditMessage(
+                chatId,
+                dishTexts.buildDayDiaryText(userId, date, getDayTitle(userId, date)),
+                messageId,
+                buildPastDayKeyboard(userId, date, today)
+        );
+    }
+
+    /** null или дата из будущего — сегодня; дальше MAX_DAYS_BACK — самый ранний доступный день. */
+    static LocalDate getDayInRange(LocalDate requested, LocalDate today) {
+        if (requested == null || requested.isAfter(today)) return today;
+        LocalDate earliest = today.minusDays(MAX_DAYS_BACK);
+        return requested.isBefore(earliest) ? earliest : requested;
+    }
+
+    private static LocalDate parseDayOrNull(String data) {
+        try {
+            return LocalDate.parse(data.substring(DAY_CMD.length()));
+        } catch (DateTimeParseException e) {
+            return null;
+        }
+    }
+
+    private LocalDate getUserToday(Long userId) {
+        return Instant.now().atZone(userSettingsService.getZoneId(userId)).toLocalDate();
+    }
+
+    /** Заголовок дневника: «12 ОКТЯБРЯ 2026» / «12 OCTOBER 2026». */
+    private String getDayTitle(Long userId, LocalDate date) {
         AppLanguage language = texts.languageOf(userId);
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd MMMM yyyy", language.getLocale());
         return date.format(formatter).toUpperCase(language.getLocale());
     }
+
 
     /**
      * Обновляет текущее сообщение, заменяя клавиатуру статистики на список блюд для удаления.
@@ -154,7 +205,7 @@ public class TodayUpdateHandler implements CalorieBotUpdateHandler {
      * Генерирует текстовый отчет по блюдам и КБЖУ профиля пользователя.
      */
     private String getTodaySummaryText(Long userId) {
-        return dishTexts.buildTodayDiaryText(userId, getUserTime(userId));
+        return dishTexts.buildTodayDiaryText(userId, getDayTitle(userId, getUserToday(userId)));
     }
 
     /**
@@ -174,19 +225,63 @@ public class TodayUpdateHandler implements CalorieBotUpdateHandler {
     /**
      * Строит клавиатуру с визуальными индикаторами (барами) прогресса по калориям, БЖУ и воде.
      */
+    /** Сегодня: [ ◀ ] [ Сегодня ] [ · ], шкалы, [ 🗑 Удалить ] [ 📸 Поделиться днём ], «← Меню». */
     public InlineKeyboardMarkup getStatsKeyboard(Long userId) {
-        TelegramKeyboard.TelegramKeyboardBuilder builder = TelegramKeyboard.builder();
+        LocalDate today = getUserToday(userId);
+        TelegramKeyboard.TelegramKeyboardBuilder builder = TelegramKeyboard.builder()
+                .row(buildDayNavRow(userId, today, today));
 
         // Шкалы без нормы AnalyticsService не возвращает
         analyticsService.buildTodayBars(userId)
                 .forEach(bar -> builder.row(TelegramKeyboard.button(bar, DUMMY_CALLBACK)));
 
-        builder.row(TelegramKeyboard.button(texts.get(userId, BotTextKeys.TODAY_BUTTON_GO_TO_REMOVE), REMOVE_CMD));
-        // Карточка «мой день» для сторис и чатов (DayCardCalorieUpdateHandler)
-        builder.row(TelegramKeyboard.button(texts.get(userId, BotTextKeys.CARD_BUTTON), Command.CALORIE_DAY_CARD.getCommandText()));
+        builder.row(
+                TelegramKeyboard.button(texts.get(userId, BotTextKeys.TODAY_BUTTON_GO_TO_REMOVE), REMOVE_CMD),
+                // Карточка «мой день» для сторис и чатов (DayCardCalorieUpdateHandler)
+                TelegramKeyboard.button(texts.get(userId, BotTextKeys.CARD_BUTTON), Command.CALORIE_DAY_CARD.getCommandText())
+        );
         builder.row(menuButtons.buildBackToMenuButton(userId));
 
         return builder.build();
+    }
+
+    /** Прошлый день: [ ◀ ] [ Сегодня ] [ ▶ ], шкалы за тот день, «← Меню». */
+    private InlineKeyboardMarkup buildPastDayKeyboard(Long userId, LocalDate date, LocalDate today) {
+        TelegramKeyboard.TelegramKeyboardBuilder builder = TelegramKeyboard.builder()
+                .row(buildDayNavRow(userId, date, today));
+
+        analyticsService.buildDayBars(userId, date)
+                .forEach(bar -> builder.row(TelegramKeyboard.button(bar, DUMMY_CALLBACK)));
+
+        builder.row(menuButtons.buildBackToMenuButton(userId));
+        return builder.build();
+    }
+
+    /**
+     * [ ◀ ] [ Сегодня ] [ ▶ ] — одинаково на всех днях. Какой день открыт — в заголовке дневника.
+     * На самом раннем дне вместо «◀», на сегодня вместо «▶» — заглушка; накануне сегодня «▶» ведёт на сегодня.
+     */
+    private List<InlineKeyboardButton> buildDayNavRow(Long userId, LocalDate date, LocalDate today) {
+        LocalDate previous = date.minusDays(1);
+        InlineKeyboardButton back = previous.isBefore(today.minusDays(MAX_DAYS_BACK))
+                ? TelegramKeyboard.button(PLACEHOLDER_TEXT, DUMMY_CALLBACK)
+                : TelegramKeyboard.button("◀", DAY_CMD + previous);
+
+        LocalDate next = date.plusDays(1);
+        InlineKeyboardButton forward;
+        if (date.equals(today)) {
+            forward = TelegramKeyboard.button(PLACEHOLDER_TEXT, DUMMY_CALLBACK);
+        } else if (next.equals(today)) {
+            forward = TelegramKeyboard.button("▶", getHandlerListName());
+        } else {
+            forward = TelegramKeyboard.button("▶", DAY_CMD + next);
+        }
+
+        return List.of(
+                back,
+                TelegramKeyboard.button(texts.get(userId, BotTextKeys.TODAY_BUTTON_TODAY), getHandlerListName()),
+                forward
+        );
     }
 
     @Override

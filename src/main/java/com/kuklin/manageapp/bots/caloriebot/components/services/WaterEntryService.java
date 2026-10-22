@@ -46,8 +46,12 @@ public class WaterEntryService {
     // Получить общее количество воды за сегодня
     public Integer getTodayTotal(Long userId) {
         ZoneId userZone = userSettingsService.getZoneId(userId);
+        return getTotalForDate(userId, LocalDate.now(userZone));
+    }
 
-        return waterEntryRepository.findAllByUserIdAndEntryDate(userId, LocalDate.now(userZone))
+    // Общее количество воды за день (дата — по таймзоне пользователя)
+    public Integer getTotalForDate(Long userId, LocalDate date) {
+        return waterEntryRepository.findAllByUserIdAndEntryDate(userId, date)
                 .stream()
                 .mapToInt(WaterEntry::getAmount)
                 .sum();

@@ -168,6 +168,7 @@ public final class BotTextKeys {
     public static final String TODAY_DISH_AI_CONFIDENCE = "today.dish.ai-confidence";
     public static final String TODAY_TOTAL_TITLE = "today.total-title";
     public static final String TODAY_BUTTON_GO_TO_REMOVE = "today.button.go-to-remove";
+    public static final String TODAY_BUTTON_TODAY = "today.button.today";
 
     // ── Неделя ─────────────────────────────────────────────────────
     public static final String WEEK_TITLE = "week.title";
