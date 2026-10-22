@@ -34,17 +34,27 @@ class CalorieMenuButtonsTest {
         buttons = new CalorieMenuButtons(new CalorieTexts(new I18nProperties(), settings));
     }
 
-    /**
-     * Русские подписи = старые тексты команд: клавиатуры, которые уже висят в чатах, выглядят и работают как раньше.
-     * MENU — новая кнопка, у её команды текст /menu.
-     */
+    /** Подписи до смены стиля — из клавиатур, которые уже висят в чатах: русские = тексты команд, английские — алиасы. */
     @Test
-    void russianLabelsAreOldCommandTexts() {
+    void oldLabelsStillResolve() {
         for (Button button : Button.values()) {
-            if (button == Button.MENU) continue;
-            assertThat(buttons.getLabel(button, AppLanguage.RU)).as(button.name())
-                    .isEqualTo(button.getCommand().getCommandText());
+            assertThat(buttons.findCommand(button.getCommand().getCommandText())).as(button.name())
+                    .contains(button.getCommand());
         }
+        assertThat(buttons.findCommand("📊TODAY")).contains(Command.CALORIE_TODAY_LIST);
+        assertThat(buttons.findCommand("🌟 FAVORITE DISHES")).contains(Command.CALORIE_FAVORITE);
+        assertThat(buttons.findCommand("⚙Settings")).contains(Command.CALORIE_SETTINGS);
+        assertThat(buttons.findCommand("👤My profile")).contains(Command.CALORIE_PROFILE);
+        assertThat(buttons.findCommand("📄ANALYTICS")).contains(Command.CALORIE_REPORT);
+        assertThat(buttons.findCommand("💳SUBSCRIPTION")).contains(Command.CALORIE_PAYMENT_PAYLOAD_PLAN);
+        assertThat(buttons.findCommand("💎Invite")).contains(Command.CALORIE_UTM);
+    }
+
+    /** Тексты команд не меняются: они префиксы в callbackData, по ним фасад ищет обработчик. */
+    @Test
+    void labelsAreNotCommandTexts() {
+        assertThat(buttons.getLabel(Button.SETTINGS, AppLanguage.RU)).isEqualTo("⚙️ Настройки");
+        assertThat(Command.CALORIE_SETTINGS.getCommandText()).isEqualTo("⚙Настройки");
     }
 
     @Test
@@ -60,9 +70,9 @@ class CalorieMenuButtonsTest {
 
     @Test
     void englishLabelIsTranslated() {
-        assertThat(buttons.getLabel(Button.SETTINGS, AppLanguage.EN)).isEqualTo("⚙Settings");
-        assertThat(buttons.findCommand("⚙Settings")).contains(Command.CALORIE_SETTINGS);
-        assertThat(buttons.findCommand("  ⚙Settings ")).contains(Command.CALORIE_SETTINGS);
+        assertThat(buttons.getLabel(Button.SETTINGS, AppLanguage.EN)).isEqualTo("⚙️ Settings");
+        assertThat(buttons.findCommand("⚙️ Settings")).contains(Command.CALORIE_SETTINGS);
+        assertThat(buttons.findCommand("  ⚙️ Settings ")).contains(Command.CALORIE_SETTINGS);
     }
 
     @Test
@@ -75,23 +85,26 @@ class CalorieMenuButtonsTest {
     @Test
     void keyboardIsInUserLanguage() {
         assertThat(labels(buttons.buildKeyboard(EN_USER))).containsExactly(
-                List.of("📊TODAY"),
-                List.of("💧", "🌟 FAVORITE DISHES"),
-                List.of("📄ANALYTICS", "☰MENU"));
-        assertThat(labels(buttons.buildKeyboard(RU_USER)).get(2)).containsExactly("📄АНАЛИТИКА", "☰МЕНЮ");
+                List.of("📊 Today"),
+                List.of("💧 Water", "⭐ Favorites"),
+                List.of("📄 Analytics", "☰ Menu"));
+        assertThat(labels(buttons.buildKeyboard(RU_USER))).containsExactly(
+                List.of("📊 Сегодня"),
+                List.of("💧 Вода", "⭐ Избранное"),
+                List.of("📄 Аналитика", "☰ Меню"));
     }
 
     @Test
     void menuButtonOpensMenu() {
-        assertThat(buttons.findCommand("☰МЕНЮ")).contains(Command.CALORIE_MENU);
-        assertThat(buttons.findCommand("☰MENU")).contains(Command.CALORIE_MENU);
+        assertThat(buttons.findCommand("☰ Меню")).contains(Command.CALORIE_MENU);
+        assertThat(buttons.findCommand("☰ Menu")).contains(Command.CALORIE_MENU);
     }
 
     /** Кнопки, убранные с нижней клавиатуры, нажимаются из старых клавиатур в чатах. */
     @Test
     void removedKeyboardButtonsStillResolve() {
-        assertThat(buttons.findCommand("⚙Настройки")).contains(Command.CALORIE_SETTINGS);
-        assertThat(buttons.findCommand("💎Пригласить")).contains(Command.CALORIE_UTM);
+        assertThat(buttons.findCommand("⚙️ Настройки")).contains(Command.CALORIE_SETTINGS);
+        assertThat(buttons.findCommand("💎 Пригласить")).contains(Command.CALORIE_UTM);
     }
 
     /** В /menu — все разделы, но без кнопки самого меню. */
@@ -100,7 +113,7 @@ class CalorieMenuButtonsTest {
         List<String> texts = buttons.buildInlineMenu(EN_USER).getKeyboard().stream()
                 .flatMap(List::stream).map(InlineKeyboardButton::getText).toList();
 
-        assertThat(texts).hasSize(Button.values().length - 1).doesNotContain("☰MENU");
+        assertThat(texts).hasSize(Button.values().length - 1).doesNotContain("☰ Menu");
     }
 
     /** В кнопках под сообщением подпись переведена, а callbackData — прежний текст команды. */
@@ -109,7 +122,7 @@ class CalorieMenuButtonsTest {
         InlineKeyboardMarkup menu = buttons.buildInlineMenu(EN_USER);
         InlineKeyboardButton settings = menu.getKeyboard().get(2).get(0);
 
-        assertThat(settings.getText()).isEqualTo("⚙Settings");
+        assertThat(settings.getText()).isEqualTo("⚙️ Settings");
         assertThat(settings.getCallbackData()).isEqualTo(Command.CALORIE_SETTINGS.getCommandText());
     }
 

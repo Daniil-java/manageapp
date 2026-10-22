@@ -24,6 +24,7 @@ import java.util.Optional;
  * он же уходит в callbackData. Пользователь видит подпись из словаря bot_*.
  * Нажатие кнопки нижней клавиатуры приходит обычным сообщением с подписью — findCommand() по ней находит команду
  * на любом языке, так что работают и старые клавиатуры, оставшиеся в чатах после смены языка.
+ * Подписи — только для показа: тексты команд не меняются, они префиксы в callbackData (через пробел).
  */
 @Component
 public class CalorieMenuButtons {
@@ -63,6 +64,20 @@ public class CalorieMenuButtons {
             List.of(Button.SETTINGS, Button.PROFILE),
             List.of(Button.REPORT, Button.FAQ),
             List.of(Button.SUBSCRIPTION, Button.INVITE)
+    );
+
+    /**
+     * Прежние английские подписи — нажатия из клавиатур, оставшихся в чатах до смены стиля.
+     * Прежние русские подписи совпадают с текстами команд и распознаются без этого списка.
+     */
+    private static final Map<String, Button> LEGACY_LABELS = Map.of(
+            "📊TODAY", Button.TODAY,
+            "🌟 FAVORITE DISHES", Button.FAVORITES,
+            "⚙Settings", Button.SETTINGS,
+            "👤My profile", Button.PROFILE,
+            "📄ANALYTICS", Button.REPORT,
+            "💳SUBSCRIPTION", Button.SUBSCRIPTION,
+            "💎Invite", Button.INVITE
     );
 
     private final CalorieTexts texts;
@@ -121,6 +136,7 @@ public class CalorieMenuButtons {
                 putUnique(map, texts.get(language, button.getTextKey()).strip(), button.getCommand());
             }
         }
+        LEGACY_LABELS.forEach((label, button) -> putUnique(map, label, button.getCommand()));
         return Map.copyOf(map);
     }
 
