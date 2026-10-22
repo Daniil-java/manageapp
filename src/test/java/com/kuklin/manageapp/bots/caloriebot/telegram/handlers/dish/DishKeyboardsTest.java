@@ -5,6 +5,7 @@ import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.i18n.I18nProperties;
 import com.kuklin.manageapp.bots.caloriebot.telegram.TelegramCalorieBotFacade;
+import com.kuklin.manageapp.common.library.tgutils.StyledInlineKeyboardButton;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
@@ -67,6 +68,15 @@ class DishKeyboardsTest {
                 .containsExactly("/deleteDish 42", "/favoriteadd 42");
     }
 
+    /** Красная только «Удалить», остальные кнопки карточки — без цвета. */
+    @Test
+    void onlyDeleteIsRed() {
+        InlineKeyboardMarkup markup = keyboards.buildPortionKeyboard(buildDish(150, 2), RU_USER);
+
+        assertThat(markup.getKeyboard()).flatExtracting(row -> row.stream().map(DishKeyboardsTest::getStyle).toList())
+                .containsExactly(null, null, null, null, null, null, "danger", null);
+    }
+
     @Test
     void inFavoritesReplacesSaveButton() {
         List<InlineKeyboardButton> lastRow = keyboards.buildFavoritePortionKeyboard(buildDish(150, 2), RU_USER)
@@ -109,5 +119,8 @@ class DishKeyboardsTest {
         return markup.getKeyboard().stream()
                 .map(row -> row.stream().map(InlineKeyboardButton::getText).toList())
                 .toList();
+    }
+    private static String getStyle(InlineKeyboardButton button) {
+        return button instanceof StyledInlineKeyboardButton styled ? styled.getStyle() : null;
     }
 }

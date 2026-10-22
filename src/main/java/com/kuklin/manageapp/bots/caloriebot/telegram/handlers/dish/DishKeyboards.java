@@ -6,6 +6,7 @@ import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.telegram.TelegramCalorieBotFacade;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
+import com.kuklin.manageapp.common.library.tgutils.ButtonStyle;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;
 import lombok.RequiredArgsConstructor;
@@ -88,7 +89,8 @@ public class DishKeyboards {
                 )
                 .row(
                         TelegramKeyboard.button(texts.get(language, BotTextKeys.DISH_BUTTON_DELETE),
-                                Command.CALORIE_DELETE.getCommandText() + TelegramBot.DEFAULT_DELIMETER + dish.getId()),
+                                Command.CALORIE_DELETE.getCommandText() + TelegramBot.DEFAULT_DELIMETER + dish.getId(),
+                                ButtonStyle.DANGER),
                         favorite
                 )
                 .build();

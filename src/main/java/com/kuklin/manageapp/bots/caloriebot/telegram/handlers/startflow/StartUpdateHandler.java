@@ -18,6 +18,7 @@ import com.kuklin.manageapp.bots.caloriebot.texts.SubscriptionTexts;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.library.tgutils.ButtonStyle;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;
 import com.kuklin.manageapp.payment.entities.UserSubscription;
@@ -150,7 +151,8 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
         return new TelegramKeyboard.TelegramKeyboardBuilder()
                 .row(TelegramKeyboard.button(
                         texts.get(appUserId, BotTextKeys.COMMON_BUTTON_NEXT),
-                        Command.CALORIE_START_FLOW_1.getCommandText())
+                        Command.CALORIE_START_FLOW_1.getCommandText(),
+                        ButtonStyle.PRIMARY)
                 ).row(TelegramKeyboard.button(
                         texts.get(appUserId, BotTextKeys.COMMON_BUTTON_CLOSE),
                         Command.CALORIE_CLOSE.getCommandText()

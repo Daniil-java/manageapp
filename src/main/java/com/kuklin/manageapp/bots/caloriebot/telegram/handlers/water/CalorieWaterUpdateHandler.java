@@ -13,6 +13,7 @@ import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
+import com.kuklin.manageapp.common.library.tgutils.ButtonStyle;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;
 import lombok.RequiredArgsConstructor;
@@ -173,7 +174,7 @@ public class CalorieWaterUpdateHandler implements CalorieBotUpdateHandler {
             String sign = lastAmount > 0 ? "+" : "";
             row0.add(TelegramKeyboard.button(
                     texts.get(appUserId, BotTextKeys.WATER_BUTTON_UNDO, sign + lastAmount),
-                    callbackBase + UNDO_CMD));
+                    callbackBase + UNDO_CMD, ButtonStyle.DANGER));
         }
 
         row2.add(menuButtons.buildBackToMenuButton(appUserId));

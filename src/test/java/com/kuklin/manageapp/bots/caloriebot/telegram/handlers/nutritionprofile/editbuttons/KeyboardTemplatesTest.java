@@ -3,6 +3,7 @@ package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
 import com.kuklin.manageapp.bots.caloriebot.telegram.TelegramCalorieBotFacade;
 import com.kuklin.manageapp.common.library.tgutils.Command;
+import com.kuklin.manageapp.common.library.tgutils.StyledInlineKeyboardButton;
 import org.junit.jupiter.api.Test;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
@@ -32,6 +33,9 @@ class KeyboardTemplatesTest {
                 .containsExactly(AGE_BASE + "ADJ 31", AGE_BASE + "ADJ 35", AGE_BASE + "ADJ 40");
         assertThat(getCallbacks(markup.getKeyboard().get(3)))
                 .containsExactly("/profileedit", AGE_BASE + "SET 30");
+        // Зелёная только «Сохранить»
+        assertThat(((StyledInlineKeyboardButton) markup.getKeyboard().get(3).get(1)).getStyle()).isEqualTo("success");
+        assertThat(markup.getKeyboard().get(3).get(0)).isNotInstanceOf(StyledInlineKeyboardButton.class);
     }
 
     /** Шаг за границу ставит границу, кнопки на месте. */

@@ -4,6 +4,7 @@ import com.kuklin.manageapp.bots.caloriebot.components.repository.UserSettingsRe
 import com.kuklin.manageapp.bots.caloriebot.components.services.ReferralRewardService;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
+import com.kuklin.manageapp.common.library.tgutils.ButtonStyle;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;
 import lombok.RequiredArgsConstructor;
@@ -71,7 +72,7 @@ public class InvitePromptSender {
                     referralRewardService.getPlanDays(ReferralRewardService.INVITER_PLAN_CODE));
             InlineKeyboardMarkup keyboard = TelegramKeyboard.builder()
                     .row(TelegramKeyboard.button(texts.get(appUserId, BotTextKeys.CARD_BUTTON),
-                            Command.CALORIE_DAY_CARD.getCommandText()))
+                            Command.CALORIE_DAY_CARD.getCommandText(), ButtonStyle.PRIMARY))
                     .row(inviteLinks.buildShareButton(appUserId))
                     .build();
             calorieTelegramBot.sendReturnedMessage(chatId, text, keyboard, null);

@@ -7,7 +7,9 @@ import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieSiteLinks;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
+import com.kuklin.manageapp.common.library.tgutils.ButtonStyle;
 import com.kuklin.manageapp.common.library.tgutils.Command;
+import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Update;
@@ -60,7 +62,9 @@ public class WelcomeCalorieUpdateHandler implements CalorieBotUpdateHandler {
         button.setWebApp(new WebAppInfo(INSTR_URL));
 
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
-        markup.setKeyboard(List.of(List.of(button), List.of(menuButtons.buildBackToMenuButton(appUserId))));
+        markup.setKeyboard(List.of(
+                List.of(TelegramKeyboard.withStyle(button, ButtonStyle.PRIMARY)),
+                List.of(menuButtons.buildBackToMenuButton(appUserId))));
 
         return markup;
     }

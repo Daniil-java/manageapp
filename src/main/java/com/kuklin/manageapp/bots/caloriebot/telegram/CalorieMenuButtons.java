@@ -4,6 +4,7 @@ import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
+import com.kuklin.manageapp.common.library.tgutils.ButtonStyle;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;
 import lombok.Getter;
@@ -142,10 +143,14 @@ public class CalorieMenuButtons {
     public InlineKeyboardMarkup buildInlineMenu(Long appUserId) {
         AppLanguage language = texts.languageOf(appUserId);
         List<List<InlineKeyboardButton>> rows = new ArrayList<>(INLINE_MENU_LAYOUT.stream().map(row -> row.stream()
-                .map(button -> InlineKeyboardButton.builder()
-                        .text(getLabel(button, language))
-                        .callbackData(button.getCommand().getCommandText())
-                        .build())
+                .map(button -> {
+                    InlineKeyboardButton inline = InlineKeyboardButton.builder()
+                            .text(getLabel(button, language))
+                            .callbackData(button.getCommand().getCommandText())
+                            .build();
+                    // Подписка — синим: единственная кнопка меню, которая ведёт к оплате
+                    return button == Button.SUBSCRIPTION ? TelegramKeyboard.withStyle(inline, ButtonStyle.PRIMARY) : inline;
+                })
                 .toList()).toList());
         rows.add(List.of(TelegramKeyboard.button(
                 texts.get(language, BotTextKeys.COMMON_BUTTON_CLOSE), Command.CALORIE_CLOSE.getCommandText())));

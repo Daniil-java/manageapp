@@ -11,6 +11,7 @@ import com.kuklin.manageapp.bots.caloriebot.telegram.TelegramCalorieBotFacade;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.dish.DishKeyboards;
 import com.kuklin.manageapp.bots.caloriebot.texts.DishTexts;
 import com.kuklin.manageapp.common.entities.TelegramUser;
+import com.kuklin.manageapp.common.library.tgutils.StyledInlineKeyboardButton;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -77,6 +78,7 @@ class TodayUpdateHandlerDaysTest {
         assertThat(rows.get(0)).extracting(InlineKeyboardButton::getCallbackData)
                 .containsExactly(DAY_PREFIX + today.minusDays(1), "📊СЕГОДНЯ", NO_ACTION);
         assertThat(rows.get(1)).extracting(InlineKeyboardButton::getText).containsExactly("🗑 Удалить", "📸 Поделиться днём");
+        assertThat(rows.get(1)).extracting(b -> ((StyledInlineKeyboardButton) b).getStyle()).containsExactly("danger", "primary");
         assertThat(rows.get(2)).extracting(InlineKeyboardButton::getText).containsExactly("← Меню");
     }
 

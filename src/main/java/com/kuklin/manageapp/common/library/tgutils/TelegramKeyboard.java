@@ -76,6 +76,16 @@ public class TelegramKeyboard {
         return button;
     }
 
+    /** Цветная кнопка (ButtonStyle): зелёная — подтверждение, красная — удаление, синяя — главный призыв. */
+    public static InlineKeyboardButton button(String text, String callbackData, ButtonStyle style) {
+        return StyledInlineKeyboardButton.of(button(text, callbackData), style);
+    }
+
+    /** Та же кнопка в цвете — для кнопок с url, webApp и т.п., собранных не через button(). */
+    public static InlineKeyboardButton withStyle(InlineKeyboardButton button, ButtonStyle style) {
+        return StyledInlineKeyboardButton.of(button, style);
+    }
+
     /*
         Настройка и создание календаря
         В параметры передаются месяц и год, для навигации по календарю.

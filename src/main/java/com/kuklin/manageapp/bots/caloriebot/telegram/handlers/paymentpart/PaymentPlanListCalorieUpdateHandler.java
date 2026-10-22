@@ -10,6 +10,7 @@ import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotU
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.library.tgutils.ButtonStyle;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;
 import com.kuklin.manageapp.common.services.TelegramUserService;
@@ -85,7 +86,7 @@ public class PaymentPlanListCalorieUpdateHandler implements CalorieBotUpdateHand
 
         builder.row(
                 TelegramKeyboard.button(menuButtons.getLabel(CalorieMenuButtons.Button.SUBSCRIPTION, language),
-                        Command.CALORIE_PAYMENT_PAYLOAD_PLAN.getCommandText())
+                        Command.CALORIE_PAYMENT_PAYLOAD_PLAN.getCommandText(), ButtonStyle.PRIMARY)
         );
         builder.row(
                 TelegramKeyboard.button("❌" + texts.get(language, BotTextKeys.COMMON_BUTTON_CLOSE),
@@ -148,7 +149,8 @@ public class PaymentPlanListCalorieUpdateHandler implements CalorieBotUpdateHand
         for (PricingPlan plan : planList) {
             builder.row(TelegramKeyboard.button(
                     planTexts.getTitle(plan, language),
-                    nextHandler.getHandlerListName() + TelegramBot.DEFAULT_DELIMETER + plan.getId()
+                    nextHandler.getHandlerListName() + TelegramBot.DEFAULT_DELIMETER + plan.getId(),
+                    ButtonStyle.SUCCESS
             ));
         }
         builder.row(

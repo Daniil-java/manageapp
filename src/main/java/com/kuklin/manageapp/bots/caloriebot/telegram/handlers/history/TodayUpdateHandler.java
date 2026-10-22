@@ -16,6 +16,7 @@ import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.dish.DishKeyboards
 import com.kuklin.manageapp.bots.caloriebot.texts.DishTexts;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
+import com.kuklin.manageapp.common.library.tgutils.ButtonStyle;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;
 import lombok.RequiredArgsConstructor;
@@ -236,9 +237,10 @@ public class TodayUpdateHandler implements CalorieBotUpdateHandler {
                 .forEach(bar -> builder.row(TelegramKeyboard.button(bar, DUMMY_CALLBACK)));
 
         builder.row(
-                TelegramKeyboard.button(texts.get(userId, BotTextKeys.TODAY_BUTTON_GO_TO_REMOVE), REMOVE_CMD),
+                TelegramKeyboard.button(texts.get(userId, BotTextKeys.TODAY_BUTTON_GO_TO_REMOVE), REMOVE_CMD, ButtonStyle.DANGER),
                 // Карточка «мой день» для сторис и чатов (DayCardCalorieUpdateHandler)
-                TelegramKeyboard.button(texts.get(userId, BotTextKeys.CARD_BUTTON), Command.CALORIE_DAY_CARD.getCommandText())
+                TelegramKeyboard.button(texts.get(userId, BotTextKeys.CARD_BUTTON), Command.CALORIE_DAY_CARD.getCommandText(),
+                        ButtonStyle.PRIMARY)
         );
         builder.row(menuButtons.buildBackToMenuButton(userId));
 

@@ -9,6 +9,7 @@ import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.bots.caloriebot.texts.NutritionProfileTexts;
 import com.kuklin.manageapp.common.entities.TelegramUser;
+import com.kuklin.manageapp.common.library.tgutils.ButtonStyle;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;
 import lombok.RequiredArgsConstructor;
@@ -83,7 +84,7 @@ public class CalorieNutritionProfileUpdateHandler implements CalorieBotUpdateHan
 
         builder.row(
                 TelegramKeyboard.button(
-                        texts.get(appUserId, BotTextKeys.PROFILE_BUTTON_FILL), DIALOGUE_HANDLER_CMD
+                        texts.get(appUserId, BotTextKeys.PROFILE_BUTTON_FILL), DIALOGUE_HANDLER_CMD, ButtonStyle.PRIMARY
                 )
         ).row(menuButtons.buildBackToMenuButton(appUserId));
 
@@ -95,7 +96,7 @@ public class CalorieNutritionProfileUpdateHandler implements CalorieBotUpdateHan
 
         builder.row(
                 TelegramKeyboard.button(
-                        texts.get(appUserId, BotTextKeys.PROFILE_BUTTON_EDIT), EDIT_HANDLER_CMD
+                        texts.get(appUserId, BotTextKeys.PROFILE_BUTTON_EDIT), EDIT_HANDLER_CMD, ButtonStyle.PRIMARY
                 )
         ).row(
                 TelegramKeyboard.button(

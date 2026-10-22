@@ -7,6 +7,7 @@ import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.InvitePromptSender;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
+import com.kuklin.manageapp.common.library.tgutils.ButtonStyle;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;
 import lombok.RequiredArgsConstructor;
@@ -60,7 +61,8 @@ public class StartFlowCalorieUpdateHandler implements CalorieBotUpdateHandler {
         return TelegramKeyboard.builder()
                 .row(TelegramKeyboard.button(
                         texts.get(appUserId, BotTextKeys.START_FLOW_BUTTON_FILL_PROFILE),
-                        Command.CALORIE_PROFILE_DIALOGUE.getCommandText()))
+                        Command.CALORIE_PROFILE_DIALOGUE.getCommandText(),
+                        ButtonStyle.PRIMARY))
                 .build();
     }
 
@@ -72,7 +74,8 @@ public class StartFlowCalorieUpdateHandler implements CalorieBotUpdateHandler {
         button.setWebApp(new WebAppInfo(INSTR_URL));
 
         keyboard.row(TelegramKeyboard.button(
-                texts.get(appUserId, BotTextKeys.COMMON_BUTTON_NEXT), Command.CALORIE_MENU.getCommandText()));
+                texts.get(appUserId, BotTextKeys.COMMON_BUTTON_NEXT), Command.CALORIE_MENU.getCommandText(),
+                ButtonStyle.PRIMARY));
 
         return keyboard.row(button)
                 .row(TelegramKeyboard.button(

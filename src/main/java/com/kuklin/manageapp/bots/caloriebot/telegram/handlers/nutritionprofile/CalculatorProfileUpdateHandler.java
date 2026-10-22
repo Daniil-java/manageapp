@@ -12,6 +12,7 @@ import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
+import com.kuklin.manageapp.common.library.tgutils.ButtonStyle;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;
 import lombok.RequiredArgsConstructor;
@@ -146,7 +147,8 @@ public class CalculatorProfileUpdateHandler implements CalorieBotUpdateHandler {
 
     private InlineKeyboardMarkup questionKeyboard(Calculator calculator, AppLanguage language) {
         return TelegramKeyboard.builder()
-                .row(TelegramKeyboard.button(texts.get(language, BotTextKeys.CALC_BUTTON_UPDATE), callback(calculator.encode())))
+                .row(TelegramKeyboard.button(texts.get(language, BotTextKeys.CALC_BUTTON_UPDATE), callback(calculator.encode()),
+                        ButtonStyle.SUCCESS))
                 .row(TelegramKeyboard.button(texts.get(language, BotTextKeys.CALC_BUTTON_KEEP), callback(SKIP)))
                 .build();
     }
@@ -154,7 +156,7 @@ public class CalculatorProfileUpdateHandler implements CalorieBotUpdateHandler {
     private InlineKeyboardMarkup profileKeyboard(AppLanguage language) {
         return TelegramKeyboard.builder()
                 .row(TelegramKeyboard.button(texts.get(language, BotTextKeys.PROFILE_BUTTON_EDIT),
-                        Command.CALORIE_PROFILE_EDIT.getCommandText()))
+                        Command.CALORIE_PROFILE_EDIT.getCommandText(), ButtonStyle.PRIMARY))
                 .build();
     }
 

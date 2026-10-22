@@ -4,6 +4,7 @@ import com.kuklin.manageapp.bots.caloriebot.components.services.ReferralRewardSe
 import com.kuklin.manageapp.bots.caloriebot.components.services.UtmService;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
+import com.kuklin.manageapp.common.library.tgutils.ButtonStyle;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;
 import lombok.RequiredArgsConstructor;
@@ -47,7 +48,7 @@ public class InviteLinks {
         InlineKeyboardButton button = new InlineKeyboardButton();
         button.setText(texts.get(appUserId, BotTextKeys.REFERRAL_BUTTON_SHARE));
         button.setUrl(SHARE_URL + encode(getReferralUrl(appUserId)) + "&text=" + encode(shareText));
-        return button;
+        return TelegramKeyboard.withStyle(button, ButtonStyle.PRIMARY);
     }
 
     /** «💎 Подробнее» — экран приглашения (UtmCalorieUpdateHandler) с условиями и счётчиками. */

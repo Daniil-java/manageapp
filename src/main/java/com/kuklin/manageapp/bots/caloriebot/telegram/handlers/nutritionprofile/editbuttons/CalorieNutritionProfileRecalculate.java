@@ -13,6 +13,7 @@ import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotU
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.CalorieNutritionProfileEditCallbackUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
+import com.kuklin.manageapp.common.library.tgutils.ButtonStyle;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;
 import lombok.RequiredArgsConstructor;
@@ -107,7 +108,7 @@ public class CalorieNutritionProfileRecalculate implements CalorieBotUpdateHandl
                 + diffLine(language, BotTextKeys.PROFILE_LABEL_CARBS, profile.getCarbsNormGramsPerDay(), formula.getCarbsNormGramsPerDay(), gram);
 
         InlineKeyboardMarkup keyboard = TelegramKeyboard.builder().row(
-                TelegramKeyboard.button(texts.get(language, BotTextKeys.PROFILE_RECALC_BUTTON_YES), callback(AUTO_YES)),
+                TelegramKeyboard.button(texts.get(language, BotTextKeys.PROFILE_RECALC_BUTTON_YES), callback(AUTO_YES), ButtonStyle.SUCCESS),
                 TelegramKeyboard.button(texts.get(language, BotTextKeys.COMMON_BUTTON_NO), Command.CALORIE_PROFILE_EDIT.getCommandText())
         ).build();
 
@@ -128,7 +129,8 @@ public class CalorieNutritionProfileRecalculate implements CalorieBotUpdateHandl
                 texts.get(language, BotTextKeys.COMMON_UNIT_ML));
 
         InlineKeyboardMarkup keyboard = TelegramKeyboard.builder().row(
-                TelegramKeyboard.button(texts.get(language, BotTextKeys.PROFILE_RECALC_BUTTON_YES_WATER), callback(WATER_AUTO_YES)),
+                TelegramKeyboard.button(texts.get(language, BotTextKeys.PROFILE_RECALC_BUTTON_YES_WATER), callback(WATER_AUTO_YES),
+                        ButtonStyle.SUCCESS),
                 TelegramKeyboard.button(texts.get(language, BotTextKeys.COMMON_BUTTON_NO), Command.CALORIE_PROFILE_EDIT.getCommandText()
                         + TelegramBot.DEFAULT_DELIMETER + ProfileEditAction.WATER_TARGET.getCode())
         ).build();

@@ -3,6 +3,7 @@ package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
 import com.kuklin.manageapp.bots.caloriebot.telegram.TelegramCalorieBotFacade;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
+import com.kuklin.manageapp.common.library.tgutils.ButtonStyle;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
@@ -175,7 +176,8 @@ public class KeyboardTemplates {
     }
 
     private static InlineKeyboardButton buildSaveButton(String saveLabel, String callbackBase, String value) {
-        return TelegramKeyboard.button("✅ " + saveLabel, callbackBase + SET_CMD + TelegramBot.DEFAULT_DELIMETER + value);
+        return TelegramKeyboard.button("✅ " + saveLabel, callbackBase + SET_CMD + TelegramBot.DEFAULT_DELIMETER + value,
+                ButtonStyle.SUCCESS);
     }
 
     private static InlineKeyboardButton buildBackButton(Command command, String backLabel) {

@@ -12,6 +12,7 @@ import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotU
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.dish.DishKeyboards;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
+import com.kuklin.manageapp.common.library.tgutils.ButtonStyle;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;
 import lombok.RequiredArgsConstructor;
@@ -241,7 +242,8 @@ public class CalorieFavoriteDishUpdateHandler implements CalorieBotUpdateHandler
                         texts.get(appUserId, BotTextKeys.FAVORITES_BUTTON_DELETE_MODE),
                         Command.CALORIE_FAVORITE_DELETE.getCommandText()
                                 + TelegramBot.DEFAULT_DELIMETER + PAGE_CMD
-                                + TelegramBot.DEFAULT_DELIMETER + page
+                                + TelegramBot.DEFAULT_DELIMETER + page,
+                        ButtonStyle.DANGER
                 ));
 
         builder.row(menuButtons.buildBackToMenuButton(appUserId));

@@ -6,6 +6,7 @@ import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.i18n.I18nProperties;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieMenuButtons.Button;
 import com.kuklin.manageapp.common.library.tgutils.Command;
+import com.kuklin.manageapp.common.library.tgutils.StyledInlineKeyboardButton;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.telegram.telegrambots.meta.api.objects.InaccessibleMessage;
@@ -128,6 +129,19 @@ class CalorieMenuButtonsTest {
 
         assertThat(texts).hasSize(Button.values().length).doesNotContain("☰ Menu");
         assertThat(rows.get(rows.size() - 1).get(0).getCallbackData()).isEqualTo(Command.CALORIE_CLOSE.getCommandText());
+    }
+
+    /** В меню синяя только «Подписка». */
+    @Test
+    void onlySubscriptionIsBlue() {
+        List<InlineKeyboardButton> styled = buttons.buildInlineMenu(RU_USER).getKeyboard().stream()
+                .flatMap(List::stream).filter(b -> b instanceof StyledInlineKeyboardButton).toList();
+
+        assertThat(styled).hasSize(1);
+        assertThat(styled.get(0).getCallbackData()).isEqualTo(Command.CALORIE_PAYMENT_PAYLOAD_PLAN.getCommandText());
+        assertThat(((StyledInlineKeyboardButton) styled.get(0)).getStyle()).isEqualTo("primary");
+        // Клавиатуру с цветной кнопкой по-прежнему узнаём как меню
+        assertThat(buttons.isMenuKeyboard(buildMessage(buttons.buildInlineMenu(RU_USER)))).isTrue();
     }
 
     /** «← Меню» уходит в MenuCalorieUpdateHandler: фасад берёт первое слово callbackData. */

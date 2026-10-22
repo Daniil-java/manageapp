@@ -10,6 +10,7 @@ import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorParams;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.BotFeature;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.library.tgutils.ButtonStyle;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;
 import lombok.RequiredArgsConstructor;
@@ -93,7 +94,7 @@ public class FeatureLimitNotifier {
         return TelegramKeyboard.builder()
                 .row(TelegramKeyboard.button(
                         menuButtons.getLabel(CalorieMenuButtons.Button.SUBSCRIPTION, language),
-                        Command.CALORIE_PAYMENT_PAYLOAD_PLAN.getCommandText()))
+                        Command.CALORIE_PAYMENT_PAYLOAD_PLAN.getCommandText(), ButtonStyle.PRIMARY))
                 .build();
     }
 }

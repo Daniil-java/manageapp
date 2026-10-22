@@ -3,7 +3,9 @@ package com.kuklin.manageapp.payment.handlers;
 import com.kuklin.manageapp.common.components.TelegramBotRegistry;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
+import com.kuklin.manageapp.common.library.tgutils.ButtonStyle;
 import com.kuklin.manageapp.common.library.tgutils.Command;
+import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;
 import com.kuklin.manageapp.payment.components.texts.PaymentText;
 import com.kuklin.manageapp.payment.components.texts.PaymentTextResolver;
 import com.kuklin.manageapp.payment.components.paymentfacades.CommonPaymentFacade;
@@ -110,7 +112,7 @@ public class PaymentPayUpdateHandler implements PaymentUpdateHandler {
 
         org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup markup =
                 new org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup();
-        markup.setKeyboard(java.util.List.of(java.util.List.of(payButton)));
+        markup.setKeyboard(java.util.List.of(java.util.List.of(TelegramKeyboard.withStyle(payButton, ButtonStyle.SUCCESS))));
 
         return markup;
     }

@@ -10,6 +10,7 @@ import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
+import com.kuklin.manageapp.common.library.tgutils.ButtonStyle;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;
 import lombok.RequiredArgsConstructor;
@@ -139,7 +140,8 @@ public class CalorieFavoriteDishDeleteCallbackUpdateHandler implements CalorieBo
                         Command.CALORIE_FAVORITE_DELETE.getCommandText()
                                 + TelegramBot.DEFAULT_DELIMETER + DEL_CMD
                                 + TelegramBot.DEFAULT_DELIMETER + page
-                                + TelegramBot.DEFAULT_DELIMETER + favoriteId
+                                + TelegramBot.DEFAULT_DELIMETER + favoriteId,
+                        ButtonStyle.DANGER
                 ),
                 TelegramKeyboard.button(
                         "❌ " + texts.get(appUserId, BotTextKeys.COMMON_BUTTON_NO),
@@ -215,8 +217,9 @@ public class CalorieFavoriteDishDeleteCallbackUpdateHandler implements CalorieBo
                             + TelegramBot.DEFAULT_DELIMETER + page
                             + TelegramBot.DEFAULT_DELIMETER + fav.getId();
 
+            // Режим удаления: нажатие на блюдо — удалить (с подтверждением), поэтому красные
             builder.row(
-                    TelegramKeyboard.button(fav.getName(), callbackData)
+                    TelegramKeyboard.button(fav.getName(), callbackData, ButtonStyle.DANGER)
             );
         }
 

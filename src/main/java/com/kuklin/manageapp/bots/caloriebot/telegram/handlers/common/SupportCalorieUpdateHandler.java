@@ -4,6 +4,7 @@ import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.common.entities.TelegramUser;
+import com.kuklin.manageapp.common.library.tgutils.ButtonStyle;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;
 import lombok.RequiredArgsConstructor;
@@ -44,7 +45,7 @@ public class SupportCalorieUpdateHandler implements CalorieBotUpdateHandler {
         linkButton.setText(texts.get(appUserId, BotTextKeys.SUPPORT_BUTTON));
         linkButton.setUrl(SUPPORT_URL);
 
-        keyboard.row(linkButton);
+        keyboard.row(TelegramKeyboard.withStyle(linkButton, ButtonStyle.PRIMARY));
         return keyboard.build();
     }
 

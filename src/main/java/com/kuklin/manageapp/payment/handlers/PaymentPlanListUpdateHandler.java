@@ -6,6 +6,7 @@ import com.kuklin.manageapp.payment.entities.PricingPlan;
 import com.kuklin.manageapp.common.components.TelegramBotRegistry;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
+import com.kuklin.manageapp.common.library.tgutils.ButtonStyle;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;
 import com.kuklin.manageapp.payment.components.paymentfacades.CommonPaymentFacade;
@@ -58,7 +59,8 @@ public class PaymentPlanListUpdateHandler implements PaymentUpdateHandler {
         for (PricingPlan plan : planList) {
             builder.row(TelegramKeyboard.button(
                     textResolver.getPlanTitle(plan, appUserId),
-                    nextHandler.getHandlerListName() + TelegramBot.DEFAULT_DELIMETER + plan.getId()
+                    nextHandler.getHandlerListName() + TelegramBot.DEFAULT_DELIMETER + plan.getId(),
+                    ButtonStyle.SUCCESS
             ));
         }
         return builder.build();
