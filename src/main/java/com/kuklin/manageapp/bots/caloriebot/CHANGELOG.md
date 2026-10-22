@@ -3,6 +3,10 @@
 * OpenAI и DeepSeek: Usage (models/openai) не разбирал prompt_tokens / completion_tokens из ответа — поля оставались null, saveInteractionRecord писал 0. Добавлен @JsonNaming(SnakeCaseStrategy).
 * Gemini: input писался как null, а в output шёл totalTokenCount. Теперь promptTokenCount и candidatesTokenCount.
 
+[et-105] — Переработка интерфейса бота
+* Нижняя клавиатура — 3 ряда вместо 5: «Сегодня» / «Вода | Избранное» / «Аналитика | Меню». Новая кнопка ☰МЕНЮ (button.menu, ru/en) открывает /menu со всеми разделами. Раскладки клавиатуры и /menu разделены (KEYBOARD_LAYOUT, INLINE_MENU_LAYOUT в CalorieMenuButtons); Настройки, Профиль, FAQ, Подписка, Пригласить остались в /menu, а их подписи по-прежнему распознаются — старые клавиатуры в чатах работают.
+* Тесты: CalorieMenuButtonsTest — новая раскладка, кнопка меню, старые подписи, состав /menu.
+
 ## 0.0.76 (20.10.2026)
 [et-104] — Виральность и партнёры: бонус по ссылке партнёра, метка кампании на лендинге, приглашения без спама, карточка «мой день»
 * Бонус по партнёрской ссылке (миграция 0.0.67, changeset 70): utm_links.bonus_days — сколько дней Premium получает новичок, пришедший по ссылке (кроме реферальных), поверх пробного периода. В форме создания ссылки — поле «Бонус новым» (0–30, по умолчанию 7), в сообщении админу о созданной ссылке — бонус. Тариф CALORIE_PARTNER_BONUS (SYSTEM_BONUS, лимиты — копия премиума, названия в plans_ru/en), срок выдачи — bonus_days ссылки. UtmService.processClick сообщает, сколько дней положено (только при первой записи источника — повтор /start бонус не повторит), выдаёт ReferralRewardService.grantPartnerBonusOrZero из StartUpdateHandler, новичку — сообщение start.partner-bonus после пробного периода. Выдача не в UtmService: зависимость от подписок замкнула бы круг бинов (подписки → реестр ботов → бот канала → UtmService) — контекст не поднимался.

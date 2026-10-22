@@ -39,14 +39,25 @@ public class CalorieMenuButtons {
         REPORT(BotTextKeys.BUTTON_REPORT, Command.CALORIE_REPORT),
         FAQ(BotTextKeys.BUTTON_FAQ, Command.CALORIE_WELCOME),
         SUBSCRIPTION(BotTextKeys.BUTTON_SUBSCRIPTION, Command.CALORIE_PAYMENT_PAYLOAD_PLAN),
-        INVITE(BotTextKeys.BUTTON_INVITE, Command.CALORIE_UTM);
+        INVITE(BotTextKeys.BUTTON_INVITE, Command.CALORIE_UTM),
+        MENU(BotTextKeys.BUTTON_MENU, Command.CALORIE_MENU);
 
         private final String textKey;
         private final Command command;
     }
 
-    /** Порядок кнопок в меню — одинаковый у нижней клавиатуры и у кнопок в сообщении /menu. */
-    private static final List<List<Button>> LAYOUT = List.of(
+    /**
+     * Нижняя клавиатура — только частые действия, остальное в «Меню».
+     * Убранные отсюда кнопки остаются в Button: старые клавиатуры в чатах по-прежнему работают.
+     */
+    private static final List<List<Button>> KEYBOARD_LAYOUT = List.of(
+            List.of(Button.TODAY),
+            List.of(Button.WATER, Button.FAVORITES),
+            List.of(Button.REPORT, Button.MENU)
+    );
+
+    /** Полное меню кнопками в сообщении /menu. */
+    private static final List<List<Button>> INLINE_MENU_LAYOUT = List.of(
             List.of(Button.TODAY),
             List.of(Button.WATER, Button.FAVORITES),
             List.of(Button.SETTINGS, Button.PROFILE),
@@ -83,7 +94,7 @@ public class CalorieMenuButtons {
         ReplyKeyboardMarkup markup = new ReplyKeyboardMarkup();
         markup.setResizeKeyboard(true);
         markup.setOneTimeKeyboard(false);
-        markup.setKeyboard(LAYOUT.stream().map(row -> {
+        markup.setKeyboard(KEYBOARD_LAYOUT.stream().map(row -> {
             KeyboardRow keyboardRow = new KeyboardRow();
             row.forEach(button -> keyboardRow.add(getLabel(button, language)));
             return keyboardRow;
@@ -94,7 +105,7 @@ public class CalorieMenuButtons {
     /** То же меню кнопками под сообщением: подпись на языке пользователя, в callbackData — команда. */
     public InlineKeyboardMarkup buildInlineMenu(Long appUserId) {
         AppLanguage language = texts.languageOf(appUserId);
-        return new InlineKeyboardMarkup(LAYOUT.stream().map(row -> row.stream()
+        return new InlineKeyboardMarkup(INLINE_MENU_LAYOUT.stream().map(row -> row.stream()
                 .map(button -> InlineKeyboardButton.builder()
                         .text(getLabel(button, language))
                         .callbackData(button.getCommand().getCommandText())

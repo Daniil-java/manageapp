@@ -48,6 +48,7 @@ public final class BotTextKeys {
     public static final String BUTTON_FAQ = "button.faq";
     public static final String BUTTON_SUBSCRIPTION = "button.subscription";
     public static final String BUTTON_INVITE = "button.invite";
+    public static final String BUTTON_MENU = "button.menu";
 
     // ── Общие подписи кнопок ───────────────────────────────────────
     public static final String COMMON_BUTTON_CLOSE = "common.button.close";

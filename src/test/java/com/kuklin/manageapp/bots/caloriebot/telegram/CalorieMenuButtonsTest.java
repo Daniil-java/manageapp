@@ -34,10 +34,14 @@ class CalorieMenuButtonsTest {
         buttons = new CalorieMenuButtons(new CalorieTexts(new I18nProperties(), settings));
     }
 
-    /** Русские подписи = старые тексты команд: клавиатуры, которые уже висят в чатах, выглядят и работают как раньше. */
+    /**
+     * Русские подписи = старые тексты команд: клавиатуры, которые уже висят в чатах, выглядят и работают как раньше.
+     * MENU — новая кнопка, у её команды текст /menu.
+     */
     @Test
     void russianLabelsAreOldCommandTexts() {
         for (Button button : Button.values()) {
+            if (button == Button.MENU) continue;
             assertThat(buttons.getLabel(button, AppLanguage.RU)).as(button.name())
                     .isEqualTo(button.getCommand().getCommandText());
         }
@@ -73,10 +77,30 @@ class CalorieMenuButtonsTest {
         assertThat(labels(buttons.buildKeyboard(EN_USER))).containsExactly(
                 List.of("📊TODAY"),
                 List.of("💧", "🌟 FAVORITE DISHES"),
-                List.of("⚙Settings", "👤My profile"),
-                List.of("📄ANALYTICS", "📖FAQ"),
-                List.of("💳SUBSCRIPTION", "💎Invite"));
-        assertThat(labels(buttons.buildKeyboard(RU_USER)).get(2)).containsExactly("⚙Настройки", "👤Мой профиль");
+                List.of("📄ANALYTICS", "☰MENU"));
+        assertThat(labels(buttons.buildKeyboard(RU_USER)).get(2)).containsExactly("📄АНАЛИТИКА", "☰МЕНЮ");
+    }
+
+    @Test
+    void menuButtonOpensMenu() {
+        assertThat(buttons.findCommand("☰МЕНЮ")).contains(Command.CALORIE_MENU);
+        assertThat(buttons.findCommand("☰MENU")).contains(Command.CALORIE_MENU);
+    }
+
+    /** Кнопки, убранные с нижней клавиатуры, нажимаются из старых клавиатур в чатах. */
+    @Test
+    void removedKeyboardButtonsStillResolve() {
+        assertThat(buttons.findCommand("⚙Настройки")).contains(Command.CALORIE_SETTINGS);
+        assertThat(buttons.findCommand("💎Пригласить")).contains(Command.CALORIE_UTM);
+    }
+
+    /** В /menu — все разделы, но без кнопки самого меню. */
+    @Test
+    void inlineMenuHasAllSectionsExceptMenu() {
+        List<String> texts = buttons.buildInlineMenu(EN_USER).getKeyboard().stream()
+                .flatMap(List::stream).map(InlineKeyboardButton::getText).toList();
+
+        assertThat(texts).hasSize(Button.values().length - 1).doesNotContain("☰MENU");
     }
 
     /** В кнопках под сообщением подпись переведена, а callbackData — прежний текст команды. */
