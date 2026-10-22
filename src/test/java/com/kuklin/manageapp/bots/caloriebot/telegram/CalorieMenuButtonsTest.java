@@ -96,6 +96,17 @@ class CalorieMenuButtonsTest {
                 List.of("📄 Аналитика", "☰ Меню"));
     }
 
+    /** Подсказка в пустом поле ввода — на языке пользователя, в лимит Telegram (64 символа). */
+    @Test
+    void keyboardHasInputPlaceholder() {
+        String ru = buttons.buildKeyboard(RU_USER).getInputFieldPlaceholder();
+        String en = buttons.buildKeyboard(EN_USER).getInputFieldPlaceholder();
+
+        assertThat(ru).isEqualTo("Напиши, что съел, или пришли фото 🍽");
+        assertThat(en).isEqualTo("Type what you ate or send a photo 🍽");
+        assertThat(List.of(ru, en)).allMatch(text -> text.codePointCount(0, text.length()) <= 64);
+    }
+
     @Test
     void menuButtonOpensMenu() {
         assertThat(buttons.findCommand("☰ Меню")).contains(Command.CALORIE_MENU);

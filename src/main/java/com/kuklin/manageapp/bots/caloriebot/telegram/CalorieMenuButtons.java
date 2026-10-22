@@ -127,6 +127,8 @@ public class CalorieMenuButtons {
     public ReplyKeyboardMarkup buildKeyboard(AppLanguage language) {
         ReplyKeyboardMarkup markup = new ReplyKeyboardMarkup();
         markup.setResizeKeyboard(true);
+        // Серый текст в пустом поле ввода: бот понимает текст и фото, кнопки — не единственный способ
+        markup.setInputFieldPlaceholder(texts.get(language, BotTextKeys.KEYBOARD_PLACEHOLDER));
         markup.setOneTimeKeyboard(false);
         markup.setKeyboard(KEYBOARD_LAYOUT.stream().map(row -> {
             KeyboardRow keyboardRow = new KeyboardRow();
