@@ -76,8 +76,8 @@ public class GeminiProviderProcessor implements ProviderProcessor {
                         MetricsAiInteractionRecord.AiMessageType.PHOTO,
                         response.firstTextOrEmpty(),
                         MetricsAiInteractionRecord.AiMessageType.TEXT,
-                        null,          // inputTokens неизвестны
-                        response.getUsageMetadata().getTotalTokenCount()          // считаем как output / total
+                        response.getUsageMetadata().getPromptTokenCount(),
+                        response.getUsageMetadata().getCandidatesTokenCount()
                 );
             }
 

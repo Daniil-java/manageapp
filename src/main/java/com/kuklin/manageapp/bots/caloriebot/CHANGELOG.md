@@ -1,3 +1,8 @@
+## 0.0.77 (22.10.2026)
+[et-105] — Учёт токенов ИИ: в metrics_ai_interaction_record больше не нули
+* OpenAI и DeepSeek: Usage (models/openai) не разбирал prompt_tokens / completion_tokens из ответа — поля оставались null, saveInteractionRecord писал 0. Добавлен @JsonNaming(SnakeCaseStrategy).
+* Gemini: input писался как null, а в output шёл totalTokenCount. Теперь promptTokenCount и candidatesTokenCount.
+
 ## 0.0.76 (20.10.2026)
 [et-104] — Виральность и партнёры: бонус по ссылке партнёра, метка кампании на лендинге, приглашения без спама, карточка «мой день»
 * Бонус по партнёрской ссылке (миграция 0.0.67, changeset 70): utm_links.bonus_days — сколько дней Premium получает новичок, пришедший по ссылке (кроме реферальных), поверх пробного периода. В форме создания ссылки — поле «Бонус новым» (0–30, по умолчанию 7), в сообщении админу о созданной ссылке — бонус. Тариф CALORIE_PARTNER_BONUS (SYSTEM_BONUS, лимиты — копия премиума, названия в plans_ru/en), срок выдачи — bonus_days ссылки. UtmService.processClick сообщает, сколько дней положено (только при первой записи источника — повтор /start бонус не повторит), выдаёт ReferralRewardService.grantPartnerBonusOrZero из StartUpdateHandler, новичку — сообщение start.partner-bonus после пробного периода. Выдача не в UtmService: зависимость от подписок замкнула бы круг бинов (подписки → реестр ботов → бот канала → UtmService) — контекст не поднимался.
