@@ -2,6 +2,7 @@ package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.welcome;
 
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
+import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieMenuButtons;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieSiteLinks;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
@@ -21,6 +22,7 @@ import java.util.List;
 public class WelcomeCalorieUpdateHandler implements CalorieBotUpdateHandler {
     private final CalorieTelegramBot calorieTelegramBot;
     private final CalorieTexts texts;
+    private final CalorieMenuButtons menuButtons;
     public static final String INSTR_URL = CalorieSiteLinks.INSTRUCTION_URL;
 
     @Override
@@ -57,12 +59,8 @@ public class WelcomeCalorieUpdateHandler implements CalorieBotUpdateHandler {
         button.setText(texts.get(appUserId, BotTextKeys.COMMON_BUTTON_INSTRUCTION));
         button.setWebApp(new WebAppInfo(INSTR_URL));
 
-        InlineKeyboardButton close = new InlineKeyboardButton();
-        close.setText(texts.get(appUserId, BotTextKeys.COMMON_BUTTON_CLOSE));
-        close.setCallbackData(Command.CALORIE_CLOSE.getCommandText());
-
         InlineKeyboardMarkup markup = new InlineKeyboardMarkup();
-        markup.setKeyboard(List.of(List.of(button), List.of(close)));
+        markup.setKeyboard(List.of(List.of(button), List.of(menuButtons.buildBackToMenuButton(appUserId))));
 
         return markup;
     }

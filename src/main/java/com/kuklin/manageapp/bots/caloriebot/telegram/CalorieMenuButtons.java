@@ -3,19 +3,26 @@ package com.kuklin.manageapp.bots.caloriebot.telegram;
 import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
+import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgutils.Command;
+import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import org.telegram.telegrambots.meta.api.objects.MaybeInaccessibleMessage;
+import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Кнопки главного меню на языке пользователя.
@@ -25,6 +32,9 @@ import java.util.Optional;
  * Нажатие кнопки нижней клавиатуры приходит обычным сообщением с подписью — findCommand() по ней находит команду
  * на любом языке, так что работают и старые клавиатуры, оставшиеся в чатах после смены языка.
  * Подписи — только для показа: тексты команд не меняются, они префиксы в callbackData (через пробел).
+ * <p>
+ * Навигация без состояния: у экрана раздела внизу всегда «← Меню» — она превращает это сообщение в меню,
+ * «Закрыть» — только у самого меню. Открыт ли раздел из меню, видно по клавиатуре сообщения (isMenuKeyboard).
  */
 @Component
 public class CalorieMenuButtons {
@@ -65,6 +75,15 @@ public class CalorieMenuButtons {
             List.of(Button.REPORT, Button.FAQ),
             List.of(Button.SUBSCRIPTION, Button.INVITE)
     );
+
+    /** callbackData кнопок меню — по ним узнаём сообщение с меню. */
+    private static final Set<String> INLINE_MENU_CALLBACKS = INLINE_MENU_LAYOUT.stream()
+            .flatMap(List::stream)
+            .map(button -> button.getCommand().getCommandText())
+            .collect(Collectors.toUnmodifiableSet());
+
+    /** «← Меню»: MenuCalorieUpdateHandler показывает меню в этом же сообщении. Обычный /menu присылает новое. */
+    public static final String BACK_TO_MENU_DATA = Command.CALORIE_MENU.getCommandText() + TelegramBot.DEFAULT_DELIMETER + "back";
 
     /**
      * Прежние английские подписи — нажатия из клавиатур, оставшихся в чатах до смены стиля.
@@ -117,15 +136,46 @@ public class CalorieMenuButtons {
         return markup;
     }
 
-    /** То же меню кнопками под сообщением: подпись на языке пользователя, в callbackData — команда. */
+    /** То же меню кнопками под сообщением: подпись на языке пользователя, в callbackData — команда. Внизу «Закрыть». */
     public InlineKeyboardMarkup buildInlineMenu(Long appUserId) {
         AppLanguage language = texts.languageOf(appUserId);
-        return new InlineKeyboardMarkup(INLINE_MENU_LAYOUT.stream().map(row -> row.stream()
+        List<List<InlineKeyboardButton>> rows = new ArrayList<>(INLINE_MENU_LAYOUT.stream().map(row -> row.stream()
                 .map(button -> InlineKeyboardButton.builder()
                         .text(getLabel(button, language))
                         .callbackData(button.getCommand().getCommandText())
                         .build())
                 .toList()).toList());
+        rows.add(List.of(TelegramKeyboard.button(
+                texts.get(language, BotTextKeys.COMMON_BUTTON_CLOSE), Command.CALORIE_CLOSE.getCommandText())));
+        return new InlineKeyboardMarkup(rows);
+    }
+
+    /** Последний ряд экрана раздела: «← Меню». */
+    public InlineKeyboardButton buildBackToMenuButton(Long appUserId) {
+        return buildBackToMenuButton(texts.languageOf(appUserId));
+    }
+
+    public InlineKeyboardButton buildBackToMenuButton(AppLanguage language) {
+        return TelegramKeyboard.button(texts.get(language, BotTextKeys.COMMON_BUTTON_TO_MENU), BACK_TO_MENU_DATA);
+    }
+
+    /** Клавиатура из одной «← Меню» — для экрана без своих кнопок (например, «список пуст»). */
+    public InlineKeyboardMarkup buildBackToMenuKeyboard(Long appUserId) {
+        return TelegramKeyboard.builder().row(buildBackToMenuButton(appUserId)).build();
+    }
+
+    /**
+     * Кнопку нажали в сообщении с меню: раздел показываем на его месте, а не новым сообщением.
+     * Telegram присылает сообщение вместе с текущей клавиатурой — на ней все кнопки меню.
+     */
+    public boolean isMenuKeyboard(MaybeInaccessibleMessage message) {
+        if (!(message instanceof Message withContent) || withContent.getReplyMarkup() == null) return false;
+        Set<String> callbacks = withContent.getReplyMarkup().getKeyboard().stream()
+                .flatMap(List::stream)
+                .map(InlineKeyboardButton::getCallbackData)
+                .filter(data -> data != null)
+                .collect(Collectors.toSet());
+        return callbacks.containsAll(INLINE_MENU_CALLBACKS);
     }
 
     private static Map<String, Command> buildCommandsByLabel(CalorieTexts texts) {

@@ -8,6 +8,8 @@ import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieMenuButtons.Button;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.telegram.telegrambots.meta.api.objects.InaccessibleMessage;
+import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
@@ -107,13 +109,45 @@ class CalorieMenuButtonsTest {
         assertThat(buttons.findCommand("💎 Пригласить")).contains(Command.CALORIE_UTM);
     }
 
-    /** В /menu — все разделы, но без кнопки самого меню. */
+    /** В /menu — все разделы без кнопки самого меню, внизу «Закрыть». */
     @Test
-    void inlineMenuHasAllSectionsExceptMenu() {
-        List<String> texts = buttons.buildInlineMenu(EN_USER).getKeyboard().stream()
-                .flatMap(List::stream).map(InlineKeyboardButton::getText).toList();
+    void inlineMenuHasAllSectionsAndClose() {
+        List<List<InlineKeyboardButton>> rows = buttons.buildInlineMenu(EN_USER).getKeyboard();
+        List<String> texts = rows.stream().flatMap(List::stream).map(InlineKeyboardButton::getText).toList();
 
-        assertThat(texts).hasSize(Button.values().length - 1).doesNotContain("☰ Menu");
+        assertThat(texts).hasSize(Button.values().length).doesNotContain("☰ Menu");
+        assertThat(rows.get(rows.size() - 1).get(0).getCallbackData()).isEqualTo(Command.CALORIE_CLOSE.getCommandText());
+    }
+
+    /** «← Меню» уходит в MenuCalorieUpdateHandler: фасад берёт первое слово callbackData. */
+    @Test
+    void backToMenuButtonOpensMenu() {
+        InlineKeyboardButton back = buttons.buildBackToMenuButton(RU_USER);
+
+        assertThat(back.getText()).isEqualTo("← Меню");
+        assertThat(back.getCallbackData()).isEqualTo(CalorieMenuButtons.BACK_TO_MENU_DATA);
+        assertThat(back.getCallbackData().split(" ")[0]).isEqualTo(Command.CALORIE_MENU.getCommandText());
+    }
+
+    @Test
+    void menuKeyboardIsRecognized() {
+        assertThat(buttons.isMenuKeyboard(buildMessage(buttons.buildInlineMenu(RU_USER)))).isTrue();
+        assertThat(buttons.isMenuKeyboard(buildMessage(buttons.buildInlineMenu(EN_USER)))).isTrue();
+    }
+
+    /** Экран раздела, сообщение без кнопок и недоступное сообщение — не меню: раздел приходит новым сообщением. */
+    @Test
+    void otherKeyboardsAreNotMenu() {
+        assertThat(buttons.isMenuKeyboard(buildMessage(buttons.buildBackToMenuKeyboard(RU_USER)))).isFalse();
+        assertThat(buttons.isMenuKeyboard(buildMessage(null))).isFalse();
+        assertThat(buttons.isMenuKeyboard(new InaccessibleMessage())).isFalse();
+        assertThat(buttons.isMenuKeyboard(null)).isFalse();
+    }
+
+    private static Message buildMessage(InlineKeyboardMarkup markup) {
+        Message message = new Message();
+        message.setReplyMarkup(markup);
+        return message;
     }
 
     /** В кнопках под сообщением подпись переведена, а callbackData — прежний текст команды. */

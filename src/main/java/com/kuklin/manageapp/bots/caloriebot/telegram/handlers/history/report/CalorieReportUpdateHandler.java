@@ -6,6 +6,7 @@ import com.kuklin.manageapp.bots.caloriebot.components.services.ReportService;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.i18n.PdfTextKeys;
+import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieMenuButtons;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.FeatureLimitNotifier;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
@@ -40,6 +41,7 @@ public class CalorieReportUpdateHandler implements CalorieBotUpdateHandler {
     private final FeatureLimitNotifier featureLimitNotifier;
     private final AiRateLimiter aiRateLimiter;
     private final CalorieTexts calorieTexts;
+    private final CalorieMenuButtons menuButtons;
 
 
     @Override
@@ -175,8 +177,7 @@ public class CalorieReportUpdateHandler implements CalorieBotUpdateHandler {
             builder.row(TelegramKeyboard.button(calorieTexts.get(appUserId, type.getButtonKey()), base + type.name()));
         }
 
-        builder.row(TelegramKeyboard.button(
-                calorieTexts.get(appUserId, BotTextKeys.COMMON_BUTTON_CLOSE), Command.CALORIE_CLOSE.getCommandText()));
+        builder.row(menuButtons.buildBackToMenuButton(appUserId));
         return builder.build();
     }
 

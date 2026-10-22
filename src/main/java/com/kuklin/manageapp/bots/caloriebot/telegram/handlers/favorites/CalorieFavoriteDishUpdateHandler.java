@@ -6,6 +6,7 @@ import com.kuklin.manageapp.bots.caloriebot.texts.DishTexts;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserFavoriteDishService;
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserFavoriteDish;
+import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieMenuButtons;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.dish.DishKeyboards;
@@ -31,11 +32,11 @@ public class CalorieFavoriteDishUpdateHandler implements CalorieBotUpdateHandler
     private final DishTexts dishTexts;
     private final DishKeyboards dishKeyboards;
     private final CalorieTexts texts;
+    private final CalorieMenuButtons menuButtons;
     private static final Integer PAGE_SIZE = 5;
 
     private static final String ADD_CMD = "ADD";
     private static final String PAGE_CMD = "PAGE";
-    private static final String CLOSE_CMD = Command.CALORIE_CLOSE.getCommandText();
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
         if (update.hasMessage()) {
@@ -47,7 +48,7 @@ public class CalorieFavoriteDishUpdateHandler implements CalorieBotUpdateHandler
 
     private void processMessage(Update update, TelegramUser telegramUser) {
         Long chatId = update.getMessage().getChatId();
-        showFavorites(chatId, telegramUser);
+        showFavorites(chatId, null, telegramUser);
     }
 
     private String buildListTitle(int total, int page, Long appUserId) {
@@ -66,7 +67,10 @@ public class CalorieFavoriteDishUpdateHandler implements CalorieBotUpdateHandler
 
         String action = extractCommandOrNull(data);
         if (action == null) {
-            showFavorites(callback.getMessage().getChatId(), telegramUser);
+            // Из меню — список на месте меню, из другого сообщения — новым сообщением
+            Integer editMessageId = menuButtons.isMenuKeyboard(callback.getMessage())
+                    ? callback.getMessage().getMessageId() : null;
+            showFavorites(callback.getMessage().getChatId(), editMessageId, telegramUser);
             return;
         }
 
@@ -77,27 +81,28 @@ public class CalorieFavoriteDishUpdateHandler implements CalorieBotUpdateHandler
         }
     }
 
-    private void showFavorites(Long chatId, TelegramUser telegramUser) {
+    /** editMessageId — сообщение меню, на месте которого показать список; null — новым сообщением. */
+    private void showFavorites(Long chatId, Integer editMessageId, TelegramUser telegramUser) {
         Long appUserId = telegramUser.getAppUserId();
         List<UserFavoriteDish> favoriteDishes =
                 userFavoriteDishService.getAllForUser(appUserId);
 
+        String text;
+        InlineKeyboardMarkup keyboard;
         if (favoriteDishes == null || favoriteDishes.isEmpty()) {
-            calorieTelegramBot.sendReturnedMessage(
-                    chatId,
-                    texts.get(appUserId, BotTextKeys.FAVORITES_EMPTY_HINT)
-            );
-            return;
+            text = texts.get(appUserId, BotTextKeys.FAVORITES_EMPTY_HINT);
+            keyboard = menuButtons.buildBackToMenuKeyboard(appUserId);
+        } else {
+            int page = 0;
+            text = buildListTitle(favoriteDishes.size(), page, appUserId);
+            keyboard = buildFavoritesKeyboard(favoriteDishes, page, appUserId);
         }
 
-        int page = 0;
-
-        InlineKeyboardMarkup keyboard =
-                buildFavoritesKeyboard(favoriteDishes, page, appUserId);
-
-        String text = buildListTitle(favoriteDishes.size(), page, appUserId);
-
-        calorieTelegramBot.sendReturnedMessage(chatId, text, keyboard, null);
+        if (editMessageId != null) {
+            calorieTelegramBot.sendEditMessage(chatId, text, editMessageId, keyboard);
+        } else {
+            calorieTelegramBot.sendReturnedMessage(chatId, text, keyboard, null);
+        }
     }
 
 
@@ -116,7 +121,7 @@ public class CalorieFavoriteDishUpdateHandler implements CalorieBotUpdateHandler
                     chatId,
                     texts.get(appUserId, BotTextKeys.FAVORITES_EMPTY),
                     query.getMessage().getMessageId(),
-                    null
+                    menuButtons.buildBackToMenuKeyboard(appUserId)
             );
             return;
         }
@@ -239,9 +244,7 @@ public class CalorieFavoriteDishUpdateHandler implements CalorieBotUpdateHandler
                                 + TelegramBot.DEFAULT_DELIMETER + page
                 ));
 
-        builder.row(
-                TelegramKeyboard.button("❌ " + texts.get(appUserId, BotTextKeys.COMMON_BUTTON_CLOSE), CLOSE_CMD)
-        );
+        builder.row(menuButtons.buildBackToMenuButton(appUserId));
 
         return builder.build();
     }

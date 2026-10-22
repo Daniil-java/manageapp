@@ -21,6 +21,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StreamUtils;
+import org.telegram.telegrambots.meta.api.objects.MaybeInaccessibleMessage;
+import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 
@@ -50,7 +52,16 @@ public class PaymentPlanListCalorieUpdateHandler implements CalorieBotUpdateHand
                 ? update.getCallbackQuery().getMessage().getChatId()
                 : update.getMessage().getChatId();
 
-        sendSubListMessage(chatId, telegramUser.getAppUserId());
+        Message plansMessage = sendSubListMessage(chatId, telegramUser.getAppUserId());
+
+        // Из меню: тарифы — сообщение с картинкой, текстовое меню в него не превратить.
+        // Тарифы пришли новым сообщением — меню убираем, чтобы экран был один
+        if (plansMessage != null && update.hasCallbackQuery()) {
+            MaybeInaccessibleMessage pressedIn = update.getCallbackQuery().getMessage();
+            if (menuButtons.isMenuKeyboard(pressedIn)) {
+                calorieTelegramBot.sendDeleteMessage(chatId, pressedIn.getMessageId());
+            }
+        }
     }
 
     /**
@@ -83,7 +94,8 @@ public class PaymentPlanListCalorieUpdateHandler implements CalorieBotUpdateHand
         return builder.build();
     }
 
-    public void sendSubListMessage(Long chatId, Long appUserId) {
+    /** Сообщение с тарифами; null — не ушло (нет картинки, ошибка Telegram). */
+    private Message sendSubListMessage(Long chatId, Long appUserId) {
         AppLanguage language = texts.languageOf(appUserId);
         List<PricingPlan> planList = commonPaymentFacade
                 .getPricingPlans(calorieTelegramBot.getBotIdentifier());
@@ -96,10 +108,10 @@ public class PaymentPlanListCalorieUpdateHandler implements CalorieBotUpdateHand
         if (photoBytes == null) {
             log.error("Error returning message!");
             calorieTelegramBot.sendReturnedMessage(chatId, texts.get(language, BotTextKeys.PAYMENT_IMAGE_ERROR));
-            return;
+            return null;
         }
 
-        calorieTelegramBot.sendPhotoMessage(
+        return calorieTelegramBot.sendPhotoMessage(
                 chatId,
                 photoBytes,
                 "tarif.png",
@@ -143,10 +155,7 @@ public class PaymentPlanListCalorieUpdateHandler implements CalorieBotUpdateHand
                 TelegramKeyboard.button(texts.get(language, BotTextKeys.PAYMENT_BUTTON_STATUS),
                         Command.PAYMENT_BALANCE.getCommandText())
         );
-        builder.row(
-                TelegramKeyboard.button("❌" + texts.get(language, BotTextKeys.COMMON_BUTTON_CLOSE),
-                        Command.CALORIE_CLOSE.getCommandText())
-        );
+        builder.row(menuButtons.buildBackToMenuButton(language));
         return builder.build();
     }
 

@@ -8,6 +8,7 @@ import com.kuklin.manageapp.bots.caloriebot.entities.WaterEntry;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.texts.WaterTexts;
+import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieMenuButtons;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
@@ -35,6 +36,7 @@ public class CalorieWaterUpdateHandler implements CalorieBotUpdateHandler {
     private final UserNutritionProfileService userNutritionProfileService;
     private final WaterTexts waterTexts;
     private final CalorieTexts texts;
+    private final CalorieMenuButtons menuButtons;
 
     private static final Command CMD = Command.CALORIE_WATER;
     // Отменить последнюю отметку за сегодня
@@ -174,7 +176,7 @@ public class CalorieWaterUpdateHandler implements CalorieBotUpdateHandler {
                     callbackBase + UNDO_CMD));
         }
 
-        row2.add(TelegramKeyboard.button(texts.get(appUserId, BotTextKeys.COMMON_BUTTON_CLOSE), Command.CALORIE_CLOSE.getCommandText()));
+        row2.add(menuButtons.buildBackToMenuButton(appUserId));
 
 //        <handlecmd><action><set|adj><value>
 

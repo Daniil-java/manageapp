@@ -8,6 +8,7 @@ import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
+import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieMenuButtons;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.TelegramCalorieBotFacade;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
@@ -42,12 +43,12 @@ public class TodayUpdateHandler implements CalorieBotUpdateHandler {
     private final DishTexts dishTexts;
     private final DishKeyboards dishKeyboards;
     private final CalorieTexts texts;
+    private final CalorieMenuButtons menuButtons;
 
     // Константы для формирования callback-данных
     private static final String DELIMITER = TelegramBot.DEFAULT_DELIMETER;
     private static final String REMOVE_CMD = Command.CALORIE_TODAY_LIST.getCommandText() + DELIMITER + "r";
     private static final String GET_DISH_CMD = REMOVE_CMD + DELIMITER;
-    private static final String CLOSE_CMD = Command.CALORIE_CLOSE.getCommandText();
     private static final String DUMMY_CALLBACK = TelegramCalorieBotFacade.NO_ACTION_CALLBACK;
 
     /**
@@ -183,7 +184,7 @@ public class TodayUpdateHandler implements CalorieBotUpdateHandler {
         builder.row(TelegramKeyboard.button(texts.get(userId, BotTextKeys.TODAY_BUTTON_GO_TO_REMOVE), REMOVE_CMD));
         // Карточка «мой день» для сторис и чатов (DayCardCalorieUpdateHandler)
         builder.row(TelegramKeyboard.button(texts.get(userId, BotTextKeys.CARD_BUTTON), Command.CALORIE_DAY_CARD.getCommandText()));
-        builder.row(TelegramKeyboard.button(texts.get(userId, BotTextKeys.COMMON_BUTTON_CLOSE), CLOSE_CMD));
+        builder.row(menuButtons.buildBackToMenuButton(userId));
 
         return builder.build();
     }

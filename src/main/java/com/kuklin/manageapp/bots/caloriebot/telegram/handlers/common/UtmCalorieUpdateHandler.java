@@ -8,6 +8,7 @@ import com.kuklin.manageapp.bots.caloriebot.components.services.UtmService;
 import com.kuklin.manageapp.bots.caloriebot.entities.utm.UtmLink;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
+import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieMenuButtons;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieSiteLinks;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.InviteLinks;
@@ -20,7 +21,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboard;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.KeyboardRow;
@@ -40,6 +40,7 @@ public class UtmCalorieUpdateHandler implements CalorieBotUpdateHandler {
     private final InviteLinks inviteLinks;
     private final ObjectMapper objectMapper; // Инжектится из контекста
     private final CalorieTexts texts;
+    private final CalorieMenuButtons menuButtons;
 
     // Константы конфигурации
     private static final String WEB_APP_URL = CalorieSiteLinks.UTM_FORM_URL;
@@ -69,20 +70,24 @@ public class UtmCalorieUpdateHandler implements CalorieBotUpdateHandler {
         int friendPaidDays = referralRewardService.getPlanDays(ReferralRewardService.FRIEND_PAID_PLAN_CODE);
         ReferralRewardService.ReferralStats stats = referralRewardService.getStats(appUserId);
 
-        // Админу даем кнопку создания, юзеру — кнопку "Переслать"
-        ReplyKeyboard keyboard = isAdmin
-                ? getAdminReplyKeyboard(appUserId)
-                : getReferralButtons(appUserId);
+        String text = texts.get(appUserId, BotTextKeys.REFERRAL_TEXT, botUrl,
+                invitedDays, inviterDays, referralRewardService.getActivationDays(),
+                referralRewardService.getInviterLimitDays(), friendPaidDays,
+                stats.invited(), stats.activated(), stats.paid(), stats.receivedDays());
 
-        calorieTelegramBot.sendReturnedMessage(
-                chatId,
-                texts.get(appUserId, BotTextKeys.REFERRAL_TEXT, botUrl,
-                        invitedDays, inviterDays, referralRewardService.getActivationDays(),
-                        referralRewardService.getInviterLimitDays(), friendPaidDays,
-                        stats.invited(), stats.activated(), stats.paid(), stats.receivedDays()),
-                keyboard,
-                null
-        );
+        // Админу — нижняя клавиатура с формой создания ссылки: её не прикрепить к редактируемому сообщению
+        if (isAdmin) {
+            calorieTelegramBot.sendReturnedMessage(chatId, text, getAdminReplyKeyboard(appUserId), null);
+            return;
+        }
+
+        // Юзеру — кнопка "Переслать"; из меню экран встаёт на место меню
+        InlineKeyboardMarkup keyboard = getReferralButtons(appUserId);
+        if (update.hasCallbackQuery() && menuButtons.isMenuKeyboard(update.getCallbackQuery().getMessage())) {
+            calorieTelegramBot.sendEditMessage(chatId, text, update.getCallbackQuery().getMessage().getMessageId(), keyboard);
+        } else {
+            calorieTelegramBot.sendReturnedMessage(chatId, text, keyboard, null);
+        }
     }
 
     private void processUtmCreation(Update update, TelegramUser telegramUser) {
@@ -127,7 +132,9 @@ public class UtmCalorieUpdateHandler implements CalorieBotUpdateHandler {
     }
 
     private InlineKeyboardMarkup getReferralButtons(Long appUserId) {
-        return new InlineKeyboardMarkup(List.of(List.of(inviteLinks.buildShareButton(appUserId))));
+        return new InlineKeyboardMarkup(List.of(
+                List.of(inviteLinks.buildShareButton(appUserId)),
+                List.of(menuButtons.buildBackToMenuButton(appUserId))));
     }
 
     private ReplyKeyboardMarkup getAdminReplyKeyboard(Long appUserId) {

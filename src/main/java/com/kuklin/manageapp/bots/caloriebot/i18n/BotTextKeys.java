@@ -52,6 +52,7 @@ public final class BotTextKeys {
 
     // ── Общие подписи кнопок ───────────────────────────────────────
     public static final String COMMON_BUTTON_CLOSE = "common.button.close";
+    public static final String COMMON_BUTTON_TO_MENU = "common.button.to-menu";
     public static final String COMMON_BUTTON_NEXT = "common.button.next";
     public static final String COMMON_BUTTON_INSTRUCTION = "common.button.instruction";
     public static final String COMMON_ALREADY_IN_PROCESS = "common.already-in-process";

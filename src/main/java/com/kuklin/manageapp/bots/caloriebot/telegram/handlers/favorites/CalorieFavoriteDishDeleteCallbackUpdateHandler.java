@@ -5,6 +5,7 @@ import com.kuklin.manageapp.bots.caloriebot.components.services.UserFavoriteDish
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
+import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieMenuButtons;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
@@ -27,12 +28,12 @@ public class CalorieFavoriteDishDeleteCallbackUpdateHandler implements CalorieBo
     private final CalorieTelegramBot calorieTelegramBot;
     private final UserFavoriteDishService userFavoriteDishService;
     private final CalorieTexts texts;
+    private final CalorieMenuButtons menuButtons;
     private static final Integer PAGE_SIZE = 5;
 
     private static final String DEL_CMD = "DEL";
     private static final String PAGE_CMD = "PAGE";
     private static final String CONFIRM_CMD = "CONFIRM";
-    private static final String CLOSE_CMD = Command.CALORIE_CLOSE.getCommandText();
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
@@ -81,7 +82,7 @@ public class CalorieFavoriteDishDeleteCallbackUpdateHandler implements CalorieBo
                     chatId,
                     texts.get(telegramUser.getAppUserId(), BotTextKeys.FAVORITES_EMPTY),
                     query.getMessage().getMessageId(),
-                    null
+                    menuButtons.buildBackToMenuKeyboard(telegramUser.getAppUserId())
             );
             return;
         }
@@ -172,7 +173,7 @@ public class CalorieFavoriteDishDeleteCallbackUpdateHandler implements CalorieBo
                     chatId,
                     texts.get(telegramUser.getAppUserId(), BotTextKeys.FAVORITES_EMPTY),
                     query.getMessage().getMessageId(),
-                    null
+                    menuButtons.buildBackToMenuKeyboard(telegramUser.getAppUserId())
             );
             return;
         }
@@ -249,9 +250,7 @@ public class CalorieFavoriteDishDeleteCallbackUpdateHandler implements CalorieBo
                                 + TelegramBot.DEFAULT_DELIMETER + PAGE_CMD
                                 + TelegramBot.DEFAULT_DELIMETER + page
                 ));
-        builder.row(
-                TelegramKeyboard.button("❌ " + texts.get(appUserId, BotTextKeys.COMMON_BUTTON_CLOSE), CLOSE_CMD)
-        );
+        builder.row(menuButtons.buildBackToMenuButton(appUserId));
 
         return builder.build();
     }

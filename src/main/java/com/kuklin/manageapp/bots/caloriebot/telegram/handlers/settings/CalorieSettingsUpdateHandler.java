@@ -4,6 +4,7 @@ import com.kuklin.manageapp.bots.caloriebot.components.services.UserSettingsServ
 import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
+import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieMenuButtons;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.bots.caloriebot.texts.SettingsTexts;
@@ -23,6 +24,7 @@ public class CalorieSettingsUpdateHandler implements CalorieBotUpdateHandler {
     private final UserSettingsService userSettingsService;
     private final CalorieTexts texts;
     private final SettingsTexts settingsTexts;
+    private final CalorieMenuButtons menuButtons;
     //Собираем в лист, все реализации интерфеса, который отвечает за параметр настройки
     private final List<CalorieSettingsHandler> calorieSettingsHandlers;
     @Override
@@ -68,8 +70,7 @@ public class CalorieSettingsUpdateHandler implements CalorieBotUpdateHandler {
                     )
             );
         }
-        builder.row(TelegramKeyboard.button(
-                texts.get(language, BotTextKeys.COMMON_BUTTON_CLOSE), Command.CALORIE_CLOSE.getCommandText()));
+        builder.row(menuButtons.buildBackToMenuButton(language));
         return builder.build();
     }
 

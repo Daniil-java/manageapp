@@ -4,6 +4,7 @@ import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserNutritionProfileService;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
+import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieMenuButtons;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.bots.caloriebot.texts.NutritionProfileTexts;
@@ -29,6 +30,7 @@ public class CalorieNutritionProfileUpdateHandler implements CalorieBotUpdateHan
     private final UserNutritionProfileService userNutritionProfileService;
     private final NutritionProfileTexts profileTexts;
     private final CalorieTexts texts;
+    private final CalorieMenuButtons menuButtons;
     private static final String EDIT_HANDLER_CMD =
             Command.CALORIE_PROFILE_EDIT.getCommandText();
 
@@ -83,7 +85,7 @@ public class CalorieNutritionProfileUpdateHandler implements CalorieBotUpdateHan
                 TelegramKeyboard.button(
                         texts.get(appUserId, BotTextKeys.PROFILE_BUTTON_FILL), DIALOGUE_HANDLER_CMD
                 )
-        );
+        ).row(menuButtons.buildBackToMenuButton(appUserId));
 
         return builder.build();
     }
@@ -99,8 +101,7 @@ public class CalorieNutritionProfileUpdateHandler implements CalorieBotUpdateHan
                 TelegramKeyboard.button(
                         texts.get(appUserId, BotTextKeys.PROFILE_BUTTON_FILL), DIALOGUE_HANDLER_CMD
                 )
-        )
-        ;
+        ).row(menuButtons.buildBackToMenuButton(appUserId));
 
         return builder.build();
     }
