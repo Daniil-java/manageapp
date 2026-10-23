@@ -1,8 +1,8 @@
 package com.kuklin.manageapp.bots.deparrbot.processors;
 
+import com.kuklin.manageapp.bots.deparrbot.models.FlightDto;
 import com.kuklin.manageapp.bots.deparrbot.entities.Flight;
 import com.kuklin.manageapp.bots.deparrbot.entities.UserFlight;
-import com.kuklin.manageapp.bots.deparrbot.models.FlightDto;
 import com.kuklin.manageapp.bots.deparrbot.providers.FlightStatsComFlightInfoProvider;
 import com.kuklin.manageapp.bots.deparrbot.services.FlightService;
 import com.kuklin.manageapp.bots.deparrbot.services.UserFlightService;
