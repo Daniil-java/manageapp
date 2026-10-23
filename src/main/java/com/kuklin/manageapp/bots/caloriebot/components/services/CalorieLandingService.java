@@ -186,8 +186,11 @@ public class CalorieLandingService {
         return (language == AppLanguage.RU ? amount.replace('.', ',') : amount) + " ₽";
     }
 
-    /** «1 месяц», «3 месяца», «45 дней» — месяцы, если делится на 30. */
+    /** «1 месяц», «3 месяца», «45 дней» — месяцы, если делится на 30; год (365 дней) — «12 месяцев». */
     String describeDuration(int days, AppLanguage language) {
+        if (days % 365 == 0) {
+            return texts.get(language, LandingTextKeys.PLAN_DURATION_MONTHS, days / 365 * 12);
+        }
         return days % 30 == 0
                 ? texts.get(language, LandingTextKeys.PLAN_DURATION_MONTHS, days / 30)
                 : texts.get(language, LandingTextKeys.PLAN_DURATION_DAYS, days);

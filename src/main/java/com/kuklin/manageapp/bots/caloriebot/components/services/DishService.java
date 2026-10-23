@@ -3,6 +3,8 @@ package com.kuklin.manageapp.bots.caloriebot.components.services;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.kuklin.manageapp.aiconversation.models.AiUsageContext;
+import com.kuklin.manageapp.aiconversation.models.enums.AiOperation;
 import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcessor;
 import com.kuklin.manageapp.bots.caloriebot.components.RequiresFeature;
 import com.kuklin.manageapp.bots.caloriebot.components.repository.DishRepository;
@@ -99,12 +101,15 @@ public class DishService {
         String nameLanguageRule = String.format(
                 hasCaption ? PHOTO_NAME_LANGUAGE_FROM_CAPTION : PHOTO_NAME_LANGUAGE_NO_CAPTION, aiLanguageOf(userId));
         String aiPhotoPrompt = String.format(AI_PHOTO_REQUEST, hasCaption ? message : "", nameLanguageRule);
-        String aiResponse = openAiIntegrationService.fetchPhotoResponse(
-                telegramCaloriesBotKeyComponents.getAiKey(),
-                aiPhotoPrompt,
-                photoBase64,
-                BotIdentifier.CALORIE_BOT
-        );
+        String aiResponse;
+        try (var ignored = AiUsageContext.open(userId, AiOperation.DISH_PHOTO)) {
+            aiResponse = openAiIntegrationService.fetchPhotoResponse(
+                    telegramCaloriesBotKeyComponents.getAiKey(),
+                    aiPhotoPrompt,
+                    photoBase64,
+                    BotIdentifier.CALORIE_BOT
+            );
+        }
         return AccessResult.success(getDishListByAiResponseOrNull(userId, aiResponse));
     }
 
@@ -118,12 +123,15 @@ public class DishService {
      */
     public List<DishDto> recognizePhotoForChannelOrNull(String imageUrl, String hint) {
         String nameLanguageRule = String.format(PHOTO_NAME_LANGUAGE_FROM_CAPTION, AppLanguage.RU.getNativeName());
-        String aiResponse = openAiIntegrationService.fetchPhotoResponse(
-                telegramCaloriesBotKeyComponents.getAiKey(),
-                String.format(AI_PHOTO_REQUEST, hint == null ? "" : hint, nameLanguageRule),
-                imageUrl,
-                BotIdentifier.CHANNEL_POSTER
-        );
+        String aiResponse;
+        try (var ignored = AiUsageContext.open(null, AiOperation.CHANNEL_PHOTO)) {
+            aiResponse = openAiIntegrationService.fetchPhotoResponse(
+                    telegramCaloriesBotKeyComponents.getAiKey(),
+                    String.format(AI_PHOTO_REQUEST, hint == null ? "" : hint, nameLanguageRule),
+                    imageUrl,
+                    BotIdentifier.CHANNEL_POSTER
+            );
+        }
         List<DishDto> dtos = parseJsonOrNull(aiResponse, new TypeReference<List<DishDto>>() {});
         if (dtos == null) return null;
         try {
@@ -147,13 +155,17 @@ public class DishService {
     }
 
     public List<Dish> getDishByDescriptionOrNull(Long userId, String text) {
-        String aiResponse = openAiIntegrationService.fetchResponse(
-                telegramCaloriesBotKeyComponents.getAiKey(),
-                String.format(AI_REQUEST, text, aiLanguageOf(userId)),
-                CalorieTelegramBot.BOT_IDENTIFIER,
-                this.getClass().getSimpleName(),
-                MetricsAiInteractionRecord.AiMessageType.TEXT
-        );
+        String aiResponse;
+        // Из голосового — уже открыт DISH_VOICE, он и запишется
+        try (var ignored = AiUsageContext.open(userId, AiOperation.DISH_TEXT)) {
+            aiResponse = openAiIntegrationService.fetchResponse(
+                    telegramCaloriesBotKeyComponents.getAiKey(),
+                    String.format(AI_REQUEST, text, aiLanguageOf(userId)),
+                    CalorieTelegramBot.BOT_IDENTIFIER,
+                    this.getClass().getSimpleName(),
+                    MetricsAiInteractionRecord.AiMessageType.TEXT
+            );
+        }
         return getDishListByAiResponseOrNull(userId, aiResponse);
     }
 
@@ -514,18 +526,20 @@ public class DishService {
         AiInputValidator.VoiceInput voice = aiInputValidator.toVoiceInput(base64Audio, format);
         // Одно обращение на голосовое, хотя ИИ вызывается дважды (расшифровка + анализ)
         aiRateLimiter.acquireOrThrow(tgUserId);
-        String request = openAiIntegrationService.fetchAudioResponse(
-                telegramCaloriesBotKeyComponents.getAiKey(),
-                voice.bytes(),
-                voice.fileName(),
-                voice.mimeType(),
-                AI_VOICE_TRANSCRIPTION_PROMPT,
-                BotIdentifier.CALORIE_BOT,
-                getClass().getSimpleName() + ": processVoice!"
-        );
+        try (var ignored = AiUsageContext.open(tgUserId, AiOperation.DISH_VOICE)) {
+            String request = openAiIntegrationService.fetchAudioResponse(
+                    telegramCaloriesBotKeyComponents.getAiKey(),
+                    voice.bytes(),
+                    voice.fileName(),
+                    voice.mimeType(),
+                    AI_VOICE_TRANSCRIPTION_PROMPT,
+                    BotIdentifier.CALORIE_BOT,
+                    getClass().getSimpleName() + ": processVoice!"
+            );
 
-        // Расшифровку не проверяем лимитом текста: длину голоса уже ограничили
-        return DishDto.fromEntities(getDishByDescriptionOrNull(tgUserId, request));
+            // Расшифровку не проверяем лимитом текста: длину голоса уже ограничили
+            return DishDto.fromEntities(getDishByDescriptionOrNull(tgUserId, request));
+        }
     }
 
     // --- Commented Methods ---

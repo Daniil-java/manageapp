@@ -51,4 +51,12 @@ public class PricingPlan {
         // Выдаётся системой как награда (приглашение друга), не продаётся
         SYSTEM_BONUS;
     }
+
+    /**
+     * Тариф снят с продажи (ARCHIVED / DISABLED): новые счета по нему не выставляются и старые не оплачиваются.
+     * Уже купленные подписки на него работают до конца срока.
+     */
+    public boolean isWithdrawnFromSale() {
+        return planStatus == PlanStatus.ARCHIVED || planStatus == PlanStatus.DISABLED;
+    }
 }

@@ -1,3 +1,29 @@
+## 0.0.78 (23.10.2026)
+[et-106] — ИИ не ответил — говорим пользователю
+* Fix: при ошибке OpenAI (401 — ключ, 429 — лимиты или баланс, 5xx, таймаут) бот молчал: FeignException уходил в пул обработки апдейтов и только логировался. В API — голый 500 без текста.
+* OpenAiProviderProcessor: ошибка провайдера, обрыв сети и ответ без текста (чат и расшифровка голоса) — AiUnavailableException с HTTP-кодом (0 — ответа не было). Другие боты на OpenAI получают её вместо FeignException — тоже RuntimeException.
+* Бот (TelegramCalorieBotFacade): AiUnavailableException из любого обработчика — фото, текст, голос, отчёт за день — сообщение error.AI_UNAVAILABLE «⚠️ ИИ сейчас не отвечает — сбой на нашей стороне. Попробуйте ещё раз через пару минут» с клавиатурой. Попытку фото по тарифу уже возвращает FeatureAccessAspect.
+* API (GlobalExceptionHandler): 503 AI_UNAVAILABLE с тем же текстом. Инсайты — как раньше AI_INSIGHT_FAILED, PDF — собирается без блоков ИИ, вечерняя сводка — день помечается отправленным.
+* Тесты: OpenAiProviderProcessorErrorsTest — 401 / 429 / 500 / пустой ответ / ошибка расшифровки.
+
+[et-106] — Новые тарифы и лимит ИИ для Premium
+* Тарифы: Premium Месяц — 299 ⭐ (30 дней), 3 месяца — 699 ⭐ (90, выгода 22%), Год — 1990 ⭐ (365, выгода 45%). Коды CALORIE_PREMIUM_V2_MONTH / _THREE_MONTH / _YEAR, доступ к функциям — копия CALORIE_PREMIUM_MONTH (миграция 0.0.69, changeset 72).
+* Все тарифы бота, что были в продаже (AVAILABLE), — в ARCHIVED: месяц 150 ⭐, 3 месяца 350 ⭐, 9 месяцев, тестовый за 1 ⭐. Купленные подписки на них работают до конца срока. Пробный период и бонусы не тронуты.
+* Суточный лимит обращений к ИИ с подпиской — 150 вместо 300 (calorie.ai-rate-limit.per-day-premium). У подписок на старые тарифы — прежние 300 (per-day-by-plan), пока у пользователя есть неистёкшая подписка на такой тариф (идущая или в очереди): берётся наибольший лимит по его подпискам (AiRateLimiter.getPremiumDailyLimit). Без подписки — 50 вместо 100 (per-day).
+* Описания тарифов (plans_ru/en): пункт «ℹ️ До 150 обращений к ИИ в сутки. Условия — на zefir.fit». Подпись к тарифам в боте (payment.plans) и «Premium закончился» (payment.premium-expired): «без ограничений / безлимит / без стопов» заменены, добавлена строка про лимит. Условия (calorieterms_ru/en): лимит 150 в сутки и прежние условия для подписок, купленных до 23.10.2026. Лендинг показывает лимит из конфига сам.
+* Тексты ошибок оплаты: PLAN_NOT_FOUND — «тариф больше не продаётся», PRE_CHECKOUT_ERROR — «счёт больше не действует», оба отправляют в «💳 Подписка».
+* Картинки тарифов (static/images/caloriescreens/price/tarif_ru/en.png): 299 / 699 ⭐, «Фото еды каждый день» вместо «без лимита», плашка «12 месяцев — 1990 ⭐ · выгода 45%», мелкая строка про лимит 150 и zefir.fit.
+* Лендинг: 365 дней — «12 месяцев» (CalorieLandingService.describeDuration).
+* Тесты: AiRateLimiterTest — старый тариф сохраняет свой лимит, пока подписка не истекла (даже в очереди за бонусом); без списка подписок — лимит по умолчанию. CalorieLandingServiceTest — 365 дней.
+
+[et-106] — Расходы на ИИ по пользователям
+* metrics_ai_interaction_record: новые колонки model, app_user_id, operation, cached_input_tokens, cost_usd (миграция 0.0.68, changeset 71) и индекс (app_user_id, created). Старые записи — без пользователя и стоимости.
+* Кто вызвал ИИ и зачем — AiUsageContext (ThreadLocal, try-with-resources вокруг вызова). Операции AiOperation: DISH_PHOTO, DISH_TEXT, DISH_VOICE (расшифровка и разбор пишутся как голос — внешний контекст главнее вложенного), DAY_REPORT, PDF_REPORT, INSIGHT, CHANNEL_PHOTO (без пользователя).
+* Стоимость — по прайсу AiModelPrice в момент вызова ($ за 1 млн токенов: gpt-5.1 / gpt-5 — 1.25 / 0.125 кэш / 10, gpt-4o, gpt-4o-mini-transcribe). Модели нет в прайсе — cost_usd пустой. Поменялся прайс — обновить enum, старые записи не пересчитываются.
+* OpenAI: из usage читаются cached_tokens (prompt_tokens_details) — они в 10 раз дешевле. Расшифровка голоса больше не пишет 0 токенов: TranscriptionResponse разбирает usage (input_tokens / output_tokens).
+* Метрики за день (MetricsLogUpdateHandler): у каждого провайдера — сумма в долларах.
+* Тесты: AiUsageAccountingTest — цена с кэшем, контекст и вложенность, разбор usage чата и расшифровки.
+
 ## 0.0.77 (22.10.2026)
 [et-105] — Учёт токенов ИИ: в metrics_ai_interaction_record больше не нули
 * OpenAI и DeepSeek: Usage (models/openai) не разбирал prompt_tokens / completion_tokens из ответа — поля оставались null, saveInteractionRecord писал 0. Добавлен @JsonNaming(SnakeCaseStrategy).

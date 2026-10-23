@@ -1,6 +1,9 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram;
 
+import com.kuklin.manageapp.aiconversation.models.AiUnavailableException;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserSettingsService;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
+import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramFacade;
@@ -11,6 +14,7 @@ import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;
 import com.kuklin.manageapp.common.services.TelegramUserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Message;
@@ -31,6 +35,12 @@ public class TelegramCalorieBotFacade extends TelegramFacade {
     private CalorieMenuButtons menuButtons;
     @Autowired
     private UserSettingsService userSettingsService;
+    @Autowired
+    private CalorieTexts texts;
+    // Бот сам зависит от фасада — берём его лениво
+    @Lazy
+    @Autowired
+    private CalorieTelegramBot calorieTelegramBot;
 
     @Override
     public void handleUpdate(Update update) {
@@ -55,8 +65,34 @@ public class TelegramCalorieBotFacade extends TelegramFacade {
         if (updateHandler == null) {
             log.debug("No suitable handler found, no reply will be sent");
         } else {
-            updateHandler.handle(update, telegramUser);
+            handleOrNotifyAiUnavailable(updateHandler, update, telegramUser);
         }
+    }
+
+    /**
+     * ИИ не ответил (401, 429, 5xx, таймаут) в любом обработчике — фото, текст, голос, отчёт за день.
+     * Раньше исключение уходило в пул обработки апдейтов и только логировалось, пользователь ждал впустую.
+     * Попытку фото к этому моменту уже вернул FeatureAccessAspect.
+     */
+    private void handleOrNotifyAiUnavailable(UpdateHandler updateHandler, Update update, TelegramUser telegramUser) {
+        try {
+            updateHandler.handle(update, telegramUser);
+        } catch (AiUnavailableException e) {
+            log.warn("AI unavailable for user {}: {}", telegramUser.getAppUserId(), e.getMessage());
+            Long chatId = getChatIdOrNull(update);
+            if (chatId == null) return;
+            Long appUserId = telegramUser.getAppUserId();
+            calorieTelegramBot.sendReturnedMessage(chatId, texts.error(appUserId, ErrorStatus.AI_UNAVAILABLE),
+                    menuButtons.buildKeyboard(appUserId), null);
+        }
+    }
+
+    private static Long getChatIdOrNull(Update update) {
+        if (update.hasMessage()) return update.getMessage().getChatId();
+        if (update.hasCallbackQuery() && update.getCallbackQuery().getMessage() != null) {
+            return update.getCallbackQuery().getMessage().getChatId();
+        }
+        return null;
     }
 
     public UpdateHandler processInputUpdate(Update update) {

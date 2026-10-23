@@ -28,12 +28,13 @@ class PaymentServicePreCheckoutTest {
     private static final String PAYLOAD = "premium-3-1";
 
     private PaymentRepository paymentRepository;
+    private PricingPlanService pricingPlanService;
     private PaymentService service;
 
     @BeforeEach
     void setUp() throws Exception {
         paymentRepository = mock(PaymentRepository.class);
-        PricingPlanService pricingPlanService = mock(PricingPlanService.class);
+        pricingPlanService = mock(PricingPlanService.class);
         service = new PaymentService(paymentRepository, mock(GenerationBalanceOperationService.class),
                 pricingPlanService, mock(UserSubscriptionService.class), mock(PaymentFailedLogService.class));
         when(pricingPlanService.getPricingPlanById(PLAN_ID)).thenReturn(new PricingPlan()
@@ -55,6 +56,32 @@ class PaymentServicePreCheckoutTest {
         givenPayment(status);
 
         assertThat(service.checkPreCheckoutQuery(query(), USER_ID)).isFalse();
+    }
+
+    // Счёт выставили до смены цен, тариф уже в архиве — по старой цене не продаём
+    @ParameterizedTest
+    @EnumSource(value = PricingPlan.PlanStatus.class, names = {"ARCHIVED", "DISABLED"})
+    void invoiceForWithdrawnPlanIsRejected(PricingPlan.PlanStatus planStatus) throws Exception {
+        givenPayment(Payment.PaymentStatus.CREATED);
+        when(pricingPlanService.getPricingPlanById(PLAN_ID)).thenReturn(new PricingPlan()
+                .setId(PLAN_ID)
+                .setCurrency(Currency.XTR)
+                .setPriceMinor(STARS)
+                .setPlanStatus(planStatus));
+
+        assertThat(service.checkPreCheckoutQuery(query(), USER_ID)).isFalse();
+    }
+
+    @Test
+    void invoiceForAvailablePlanPasses() throws Exception {
+        givenPayment(Payment.PaymentStatus.CREATED);
+        when(pricingPlanService.getPricingPlanById(PLAN_ID)).thenReturn(new PricingPlan()
+                .setId(PLAN_ID)
+                .setCurrency(Currency.XTR)
+                .setPriceMinor(STARS)
+                .setPlanStatus(PricingPlan.PlanStatus.AVAILABLE));
+
+        assertThat(service.checkPreCheckoutQuery(query(), USER_ID)).isTrue();
     }
 
     private void givenPayment(Payment.PaymentStatus status) {

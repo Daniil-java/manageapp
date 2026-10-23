@@ -7,7 +7,10 @@ import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorParams;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.payment.entities.UserSubscription;
+import com.kuklin.manageapp.payment.services.PricingPlanService;
 import com.kuklin.manageapp.payment.services.UserSubscriptionService;
+import com.kuklin.manageapp.payment.services.exceptions.PricingPlanNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -24,7 +27,7 @@ import java.time.Instant;
  * Ограничивает, как часто один пользователь может обращаться к ИИ: текст, фото, голос, отчёты, инсайты.
  * Лимиты — {@link AiRateLimitProperties} (application.yaml, calorie.ai-rate-limit):
  * не больше per-minute за последние 60 секунд и не больше per-day за последние 24 часа
- * (per-day-premium — с активной подпиской).
+ * (per-day-premium — с активной подпиской; у тарифов, купленных на прежних условиях, — свой, per-day-by-plan).
  *
  * Как устроено: каждое разрешённое обращение — строка в calorie_ai_request. При новом обращении считаем строки
  * пользователя за минуту и за сутки и либо разрешаем (добавляем строку), либо отказываем.
@@ -47,20 +50,23 @@ public class AiRateLimiter {
 
     private final AiRateLimitProperties limits;
     private final UserSubscriptionService userSubscriptionService;
+    private final PricingPlanService pricingPlanService;
     private final CalorieAiRequestRepository calorieAiRequestRepository;
     private final Clock clock;
 
     @Autowired
     public AiRateLimiter(AiRateLimitProperties limits, UserSubscriptionService userSubscriptionService,
-                         CalorieAiRequestRepository calorieAiRequestRepository) {
-        this(limits, userSubscriptionService, calorieAiRequestRepository, Clock.systemUTC());
+                         PricingPlanService pricingPlanService, CalorieAiRequestRepository calorieAiRequestRepository) {
+        this(limits, userSubscriptionService, pricingPlanService, calorieAiRequestRepository, Clock.systemUTC());
     }
 
     // Для тестов — подменяем часы
     AiRateLimiter(AiRateLimitProperties limits, UserSubscriptionService userSubscriptionService,
-                  CalorieAiRequestRepository calorieAiRequestRepository, Clock clock) {
+                  PricingPlanService pricingPlanService, CalorieAiRequestRepository calorieAiRequestRepository,
+                  Clock clock) {
         this.limits = limits;
         this.userSubscriptionService = userSubscriptionService;
+        this.pricingPlanService = pricingPlanService;
         this.calorieAiRequestRepository = calorieAiRequestRepository;
         this.clock = clock;
     }
@@ -109,7 +115,7 @@ public class AiRateLimiter {
         if (callsToday >= dailyLimit) {
             premium = userSubscriptionService.hasActiveSubscription(appUserId, BotIdentifier.CALORIE_BOT);
             if (premium) {
-                dailyLimit = limits.getPerDayPremium();
+                dailyLimit = getPremiumDailyLimit(appUserId);
             }
         }
         if (callsToday >= dailyLimit) {
@@ -152,6 +158,29 @@ public class AiRateLimiter {
     }
 
     // --- Private ---
+
+    /**
+     * Суточный лимит подписчика — наибольший по его неистёкшим подпискам (идущей и запланированным).
+     * Купивший тариф на прежних условиях сохраняет прежний лимит до конца той подписки,
+     * даже если сейчас у него идёт бонус за друга, а купленная — в очереди.
+     */
+    private int getPremiumDailyLimit(Long appUserId) {
+        return userSubscriptionService.getActiveAndScheduledSubscriptions(appUserId, BotIdentifier.CALORIE_BOT).stream()
+                .map(UserSubscription::getPricingPlanId)
+                .map(this::findPlanCodeOrNull)
+                .mapToInt(limits::getPerDayForPlan)
+                .max()
+                .orElse(limits.getPerDayPremium());
+    }
+
+    private String findPlanCodeOrNull(Long pricingPlanId) {
+        try {
+            return pricingPlanService.getPricingPlanById(pricingPlanId).getCodeForOrderId();
+        } catch (PricingPlanNotFoundException e) {
+            log.warn("Pricing plan {} not found, using the default premium AI limit", pricingPlanId);
+            return null;
+        }
+    }
 
     /** Время n-го с конца обращения позже since (n = 1 — самое последнее). */
     private Instant findNthLatestRequestTime(Long appUserId, Instant since, int n) {

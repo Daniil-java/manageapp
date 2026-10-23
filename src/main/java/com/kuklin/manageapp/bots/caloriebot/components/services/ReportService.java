@@ -3,6 +3,8 @@ package com.kuklin.manageapp.bots.caloriebot.components.services;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.kuklin.manageapp.aiconversation.models.AiUsageContext;
+import com.kuklin.manageapp.aiconversation.models.enums.AiOperation;
 import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcessor;
 import com.kuklin.manageapp.bots.caloriebot.configurations.TelegramCaloriesBotKeyComponents;
 import com.kuklin.manageapp.bots.caloriebot.entities.*;
@@ -149,7 +151,7 @@ public class ReportService {
             throw new ErrorResponseException(ErrorStatus.AI_INSIGHT_NOT_ENOUGH_DATA);
         }
 
-        try {
+        try (var ignored = AiUsageContext.open(userId, AiOperation.INSIGHT)) {
             var payload = InsightPayloadRecord.of(data.profile(), data.dishes(), data.weights(), data.zoneId(),
                     aiInputLimits.getInsightMaxDishes());
             String jsonContext = mapper.writeValueAsString(payload);
@@ -191,7 +193,9 @@ public class ReportService {
         String prompt = DayReportPrompt.buildPrompt(profile, dishes, userTime,
                 calorieTexts.languageOf(userId), ThreadLocalRandom.current());
 
-        return AccessResult.success(fetchCreativeAiResponse(prompt, "AI DAY REPORT"));
+        try (var ignored = AiUsageContext.open(userId, AiOperation.DAY_REPORT)) {
+            return AccessResult.success(fetchCreativeAiResponse(prompt, "AI DAY REPORT"));
+        }
     }
 
     // --- PDF-ОТЧЁТ ---
@@ -201,7 +205,7 @@ public class ReportService {
      * ИИ не ответил — отчёт всё равно собирается, без блоков ИИ. null — не получилось отрендерить.
      */
     byte[] buildPdfReportOrNull(ReportKind kind, Instant now, Long userId) {
-        try {
+        try (var ignored = AiUsageContext.open(userId, AiOperation.PDF_REPORT)) {
             ReportSource source = reportSourceLoader.loadLastDays(kind, now, userId);
             ReportStats stats = ReportStatsCalculator.buildStats(source);
             PdfTexts texts = new PdfTexts(calorieTexts, calorieTexts.languageOf(userId));

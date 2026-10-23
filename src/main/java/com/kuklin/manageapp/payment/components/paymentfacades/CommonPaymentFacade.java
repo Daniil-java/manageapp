@@ -71,6 +71,10 @@ public class CommonPaymentFacade implements PaymentFacade {
 
         // 1. Тариф
         PricingPlan plan = pricingPlanService.getPricingPlanById(pricingPlanId);
+        // Кнопки старых тарифов остаются в чатах — по снятому с продажи тарифу счёт не выставляем
+        if (plan.isWithdrawnFromSale()) {
+            throw new PricingPlanNotFoundException();
+        }
 
         // 2. Платёж
         Payment payment = paymentService.createNewPayment(

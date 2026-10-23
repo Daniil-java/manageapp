@@ -108,6 +108,12 @@ public class PaymentService {
                         payment.getId(), payment.getStatus(), query.getInvoicePayload());
                 return false;
             }
+            // Счёт, выставленный до того, как тариф сняли с продажи (смена цен), — по старой цене не продаём
+            if (pricingPlanService.getPricingPlanById(payment.getPricingPlanId()).isWithdrawnFromSale()) {
+                log.warn("Pre-checkout rejected: plan {} is withdrawn from sale, payment {}",
+                        payment.getPricingPlanId(), payment.getId());
+                return false;
+            }
             return true;
         } catch (PaymentValidationDataException e) {
             return false;

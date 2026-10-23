@@ -159,6 +159,8 @@ class CalorieLandingServiceTest {
         assertThat(service.describeDuration(180, AppLanguage.RU)).isEqualTo("6 месяцев");
         assertThat(service.describeDuration(2, AppLanguage.RU)).isEqualTo("2 дня");
         assertThat(service.describeDuration(45, AppLanguage.RU)).isEqualTo("45 дней");
+        assertThat(service.describeDuration(365, AppLanguage.RU)).isEqualTo("12 месяцев");
+        assertThat(service.describeDuration(365, AppLanguage.EN)).isEqualTo("12 months");
     }
 
     @Test

@@ -1,3 +1,10 @@
+## 0.0.6 (23.10.2026)
+[et-106] — Снятые с продажи тарифы не продаются
+* PricingPlan.isWithdrawnFromSale(): ARCHIVED / DISABLED.
+* CommonPaymentFacade.startPlanPayment: по снятому с продажи тарифу (кнопка старого тарифа в чате) счёт не выставляется — PricingPlanNotFoundException, бот отвечает PLAN_NOT_FOUND.
+* PaymentService.checkPreCheckoutQuery: счёт, выставленный до того, как тариф сняли с продажи, отклоняется на pre_checkout — до списания звёзд. Уже купленные подписки на такие тарифы не затронуты.
+* Тесты: PaymentServicePreCheckoutTest — счёт по ARCHIVED / DISABLED тарифу отклоняется, по AVAILABLE проходит.
+
 ## 0.0.5 (22.10.2026)
 [et-105] — Цветные кнопки оплаты
 * Кнопка оплаты по ссылке (PaymentPayUpdateHandler) и кнопки тарифов (PaymentPlanListUpdateHandler) — зелёные (ButtonStyle.SUCCESS, StyledInlineKeyboardButton из common/library/tgutils). Выбор провайдера — без цвета.

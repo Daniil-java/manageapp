@@ -3,6 +3,8 @@ package com.kuklin.manageapp.aiconversation.providers.impl;
 import com.kuklin.manageapp.aiconversation.integrations.OpenAiFeignClient;
 import com.kuklin.manageapp.aiconversation.models.AiProcessorException;
 import com.kuklin.manageapp.aiconversation.models.AiResponse;
+import com.kuklin.manageapp.aiconversation.models.AiUnavailableException;
+import feign.FeignException;
 import com.kuklin.manageapp.aiconversation.models.enums.ChatModel;
 import com.kuklin.manageapp.aiconversation.models.enums.ProviderVariant;
 import com.kuklin.manageapp.aiconversation.models.openai.OpenAiChatCompletionRequest;
@@ -51,18 +53,19 @@ public class OpenAiProviderProcessor implements ProviderProcessor, AiTextClient 
                 OpenAiChatCompletionRequest.makeDefaultImgRequest(content, imagerUrl, chatModel);
         increaseMetricsLog();
 
-        OpenAiChatCompletionResponse response =
-                openAiFeignClient.generate("Bearer " + aiKey, request);
+        OpenAiChatCompletionResponse response = generateOrThrow(aiKey, request);
 
-        if (response != null && response.getUsage() != null) {
+        if (response.getUsage() != null) {
             metricsAiInteractionRecordService.saveInteractionRecord(
                     getProviderName(),
                     botIdentifier,
+                    request.getModel(),
                     content,
                     MetricsAiInteractionRecord.AiMessageType.PHOTO,
                     response.getContent(),
                     MetricsAiInteractionRecord.AiMessageType.TEXT,
                     response.getUsage().getPromptTokens(),
+                    response.getUsage().getCachedTokensOrZero(),
                     response.getUsage().getCompletionTokens()
             );
         }
@@ -87,18 +90,19 @@ public class OpenAiProviderProcessor implements ProviderProcessor, AiTextClient 
             MetricsAiInteractionRecord.AiMessageType messageType
     ) {
         increaseMetricsLog();
-        OpenAiChatCompletionResponse response =
-                openAiFeignClient.generate("Bearer " + aiKey, request);
+        OpenAiChatCompletionResponse response = generateOrThrow(aiKey, request);
 
-        if (response != null && response.getUsage() != null) {
+        if (response.getUsage() != null) {
             metricsAiInteractionRecordService.saveInteractionRecord(
                     getProviderName(),
                     botIdentifier,
+                    request.getModel(),
                     request.getMessages().get(0).getContent().get(0).getText(),
                     messageType,
                     response.getContent(),
                     MetricsAiInteractionRecord.AiMessageType.TEXT,
                     response.getUsage().getPromptTokens(),
+                    response.getUsage().getCachedTokensOrZero(),
                     response.getUsage().getCompletionTokens()
             );
         }
@@ -209,19 +213,30 @@ public class OpenAiProviderProcessor implements ProviderProcessor, AiTextClient 
         );
 
         increaseMetricsLog();
-        TranscriptionResponse response = prompt == null || prompt.isBlank()
-                ? openAiFeignClient.transcribeAudio("Bearer " + aiKey, multipartFile, TRANSCRIPTION_MODEL)
-                : openAiFeignClient.transcribeAudioWithPrompt("Bearer " + aiKey, multipartFile, TRANSCRIPTION_MODEL, prompt);
+        TranscriptionResponse response;
+        try {
+            response = prompt == null || prompt.isBlank()
+                    ? openAiFeignClient.transcribeAudio("Bearer " + aiKey, multipartFile, TRANSCRIPTION_MODEL)
+                    : openAiFeignClient.transcribeAudioWithPrompt("Bearer " + aiKey, multipartFile, TRANSCRIPTION_MODEL, prompt);
+        } catch (FeignException e) {
+            throw buildUnavailable("transcription", e);
+        }
+        if (response == null || response.getText() == null) {
+            throw new AiUnavailableException("OpenAI transcription: empty response", 0, null);
+        }
 
+        TranscriptionResponse.TranscriptionUsage usage = response.getUsage();
         metricsAiInteractionRecordService.saveInteractionRecord(
                 getProviderName(),
                 botIdentifier,
+                TRANSCRIPTION_MODEL,
                 "[VOICE]",
                 MetricsAiInteractionRecord.AiMessageType.VOICE,
                 response.getText(),
                 MetricsAiInteractionRecord.AiMessageType.TEXT,
-                null,
-                null
+                usage != null ? usage.getInputTokens() : null,
+                0L,
+                usage != null ? usage.getOutputTokens() : null
         );
 
         return response.getText();
@@ -268,6 +283,31 @@ public class OpenAiProviderProcessor implements ProviderProcessor, AiTextClient 
         }
 
         throw new AiProcessorException("Image response has no usable data");
+    }
+
+    /**
+     * Запрос к chat/completions. Ошибка провайдера (401, 429, 5xx), таймаут, обрыв сети или ответ без текста —
+     * AiUnavailableException: вызывающий код отличает «ИИ не ответил» от «ИИ ответил, но не то».
+     */
+    private OpenAiChatCompletionResponse generateOrThrow(String aiKey, OpenAiChatCompletionRequest request) {
+        OpenAiChatCompletionResponse response;
+        try {
+            response = openAiFeignClient.generate("Bearer " + aiKey, request);
+        } catch (FeignException e) {
+            throw buildUnavailable("chat " + request.getModel(), e);
+        }
+        if (response == null || response.getChoices() == null || response.getChoices().isEmpty()
+                || response.getChoices().get(0).getMessage() == null) {
+            throw new AiUnavailableException("OpenAI chat " + request.getModel() + ": empty response", 0, null);
+        }
+        return response;
+    }
+
+    // RetryableException (таймаут, сеть) — тоже FeignException, у неё status() = -1
+    private static AiUnavailableException buildUnavailable(String what, FeignException e) {
+        int status = Math.max(e.status(), 0);
+        log.error("OpenAI {} failed: HTTP {} {}", what, status, e.getMessage());
+        return new AiUnavailableException("OpenAI " + what + " failed: HTTP " + status, status, e);
     }
 
     private void increaseMetricsLog() {

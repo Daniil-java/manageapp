@@ -1,6 +1,7 @@
 package com.kuklin.manageapp.bots.metrics.entities;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.kuklin.manageapp.aiconversation.models.enums.AiOperation;
 import com.kuklin.manageapp.aiconversation.models.enums.ProviderVariant;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import jakarta.persistence.*;
@@ -9,6 +10,7 @@ import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.CreationTimestamp;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 
 @Entity
@@ -33,6 +35,15 @@ public class MetricsAiInteractionRecord {
     private AiMessageType responseMessageType;
     private Long inputTokens;
     private Long outputTokens;
+    // Часть inputTokens, взятая из кэша OpenAI (в 10 раз дешевле)
+    private Long cachedInputTokens;
+    private String model;
+    // Чей вызов и зачем — из AiUsageContext; null у старых записей и у вызовов без контекста
+    private Long appUserId;
+    @Enumerated(EnumType.STRING)
+    private AiOperation operation;
+    // null — модели нет в AiModelPrice
+    private BigDecimal costUsd;
     @CreationTimestamp
     private Instant created;
 

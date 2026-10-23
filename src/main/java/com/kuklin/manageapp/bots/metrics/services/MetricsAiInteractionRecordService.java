@@ -1,5 +1,7 @@
 package com.kuklin.manageapp.bots.metrics.services;
 
+import com.kuklin.manageapp.aiconversation.models.AiUsageContext;
+import com.kuklin.manageapp.aiconversation.models.enums.AiModelPrice;
 import com.kuklin.manageapp.aiconversation.models.enums.ProviderVariant;
 import com.kuklin.manageapp.bots.metrics.repositories.MetricsAiInteractionRecordRepository;
 import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
@@ -8,11 +10,14 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -32,29 +37,69 @@ public class MetricsAiInteractionRecordService {
             Long inputTokens,
             Long outputTokens
     ) {
+        saveInteractionRecord(providerVariant, botIdentifier, null, request, requestMessageType,
+                response, responseMessageType, inputTokens, 0L, outputTokens);
+    }
+
+    /**
+     * Запись вызова ИИ со стоимостью. Пользователь и цель вызова — из {@link AiUsageContext} текущего потока,
+     * стоимость — по {@link AiModelPrice} (модели нет в прайсе — cost_usd пустой).
+     */
+    public void saveInteractionRecord(
+            ProviderVariant providerVariant,
+            BotIdentifier botIdentifier,
+            String model,
+            String request,
+            MetricsAiInteractionRecord.AiMessageType requestMessageType,
+            String response,
+            MetricsAiInteractionRecord.AiMessageType responseMessageType,
+            Long inputTokens,
+            Long cachedInputTokens,
+            Long outputTokens
+    ) {
+        long input = inputTokens != null ? inputTokens : 0L;
+        long cached = cachedInputTokens != null ? cachedInputTokens : 0L;
+        long output = outputTokens != null ? outputTokens : 0L;
+        BigDecimal costUsd = AiModelPrice.findByModel(model)
+                .map(price -> price.getCostUsd(input, cached, output))
+                .orElse(null);
+
         MetricsAiInteractionRecord record = metricsAiInteractionRecordRepository.save(
                 new MetricsAiInteractionRecord()
                         .setProviderVariant(providerVariant)
                         .setBotIdentifier(botIdentifier)
+                        .setModel(model)
+                        .setAppUserId(AiUsageContext.getCurrentAppUserIdOrNull())
+                        .setOperation(AiUsageContext.getCurrentOperationOrNull())
                         .setRequest(request)
                         .setRequestMessageType(requestMessageType)
                         .setResponse(response)
                         .setResponseMessageType(responseMessageType)
-                        .setInputTokens(inputTokens != null ? inputTokens : 0L)
-                        .setOutputTokens(outputTokens != null ? outputTokens : 0L)
+                        .setInputTokens(input)
+                        .setCachedInputTokens(cached)
+                        .setOutputTokens(output)
+                        .setCostUsd(costUsd)
         );
 
         log.info(BotIdentifier.METRICS + ": AI interaction saved! " +
                 "ID {}, " +
                 "Provider : {}, " +
                 "BotId {}, " +
+                "Model {}, " +
+                "User {}, " +
+                "Operation {}, " +
                 "InputTokens {}, " +
-                "OutputTokens {}",
+                "OutputTokens {}, " +
+                "CostUsd {}",
                 record.getId(),
                 providerVariant,
                 botIdentifier,
-                inputTokens,
-                outputTokens
+                model,
+                record.getAppUserId(),
+                record.getOperation(),
+                input,
+                output,
+                costUsd
         );
     }
 
@@ -74,7 +119,7 @@ public class MetricsAiInteractionRecordService {
         }
 
         StringBuilder sb = new StringBuilder();
-        sb.append("COUNT, INP, OUT, TOTAL\n\n");
+        sb.append("COUNT, INP, OUT, TOTAL, $\n\n");
 
         records.stream()
                 .collect(Collectors.groupingBy(MetricsAiInteractionRecord::getBotIdentifier))
@@ -93,6 +138,12 @@ public class MetricsAiInteractionRecordService {
                                 long output = providerRecords.stream()
                                         .mapToLong(r -> r.getOutputTokens() != null ? r.getOutputTokens() : 0L)
                                         .sum();
+                                // Без цены (старые записи, модель не из прайса) — не входит в сумму
+                                BigDecimal costUsd = providerRecords.stream()
+                                        .map(MetricsAiInteractionRecord::getCostUsd)
+                                        .filter(Objects::nonNull)
+                                        .reduce(BigDecimal.ZERO, BigDecimal::add)
+                                        .setScale(2, RoundingMode.HALF_UP);
 
                                 sb.append("---")
                                         .append(provider)
@@ -104,6 +155,8 @@ public class MetricsAiInteractionRecordService {
                                         .append(output)
                                         .append(", ")
                                         .append(input + output)
+                                        .append(", ")
+                                        .append(costUsd)
                                         .append("\n");
                             });
 

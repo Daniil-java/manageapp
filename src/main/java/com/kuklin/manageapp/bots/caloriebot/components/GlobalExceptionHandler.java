@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.bots.caloriebot.components;
 
+import com.kuklin.manageapp.aiconversation.models.AiUnavailableException;
 import com.kuklin.manageapp.bots.caloriebot.components.services.security.RequestSizeLimitFilter;
 import com.kuklin.manageapp.bots.caloriebot.configurations.AiInputLimitsProperties;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
@@ -39,6 +40,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler
     public ResponseEntity<ErrorResponse> catchAErrorResponseException(ErrorResponseException e, WebRequest request) {
         return new ResponseEntity<>(new ErrorResponse(e, texts.errorForApi(e), request), e.getErrorStatus().getHttpStatus());
+    }
+
+    // ИИ не ответил (401, 429, 5xx, таймаут) — 503 AI_UNAVAILABLE с текстом «попробуйте позже», а не голый 500
+    @ExceptionHandler(AiUnavailableException.class)
+    public ResponseEntity<ErrorResponse> handleAiUnavailable(AiUnavailableException e, WebRequest request) {
+        return catchAErrorResponseException(new ErrorResponseException(ErrorStatus.AI_UNAVAILABLE), request);
     }
 
     @Nullable

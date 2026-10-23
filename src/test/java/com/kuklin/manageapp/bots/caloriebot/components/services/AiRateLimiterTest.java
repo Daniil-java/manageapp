@@ -7,7 +7,11 @@ import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorParams;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.payment.entities.PricingPlan;
+import com.kuklin.manageapp.payment.entities.UserSubscription;
+import com.kuklin.manageapp.payment.services.PricingPlanService;
 import com.kuklin.manageapp.payment.services.UserSubscriptionService;
+import com.kuklin.manageapp.payment.services.exceptions.PricingPlanNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
@@ -21,6 +25,7 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -36,6 +41,10 @@ class AiRateLimiterTest {
 
     private static final Long USER = 1L;
     private static final Long PREMIUM_USER = 2L;
+    private static final Long LEGACY_USER = 4L;
+    private static final Long NEW_PLAN_ID = 10L;
+    private static final Long LEGACY_PLAN_ID = 20L;
+    private static final String LEGACY_PLAN_CODE = "OLD_PLAN";
 
     private MutableClock clock;
     private UserSubscriptionService subscriptions;
@@ -51,13 +60,30 @@ class AiRateLimiterTest {
         limits.setPerDay(5);
         limits.setPerDayPremium(8);
 
+        limits.setPerDayByPlan(Map.of(LEGACY_PLAN_CODE, 12));
+
         subscriptions = mock(UserSubscriptionService.class);
         when(subscriptions.hasActiveSubscription(PREMIUM_USER, BotIdentifier.CALORIE_BOT)).thenReturn(true);
+        when(subscriptions.getActiveAndScheduledSubscriptions(PREMIUM_USER, BotIdentifier.CALORIE_BOT))
+                .thenReturn(List.of(new UserSubscription().setPricingPlanId(NEW_PLAN_ID)));
+        when(subscriptions.hasActiveSubscription(LEGACY_USER, BotIdentifier.CALORIE_BOT)).thenReturn(true);
+        // Сейчас идёт бонус (новые условия), купленный по старым условиям тариф — в очереди
+        when(subscriptions.getActiveAndScheduledSubscriptions(LEGACY_USER, BotIdentifier.CALORIE_BOT))
+                .thenReturn(List.of(new UserSubscription().setPricingPlanId(NEW_PLAN_ID),
+                        new UserSubscription().setPricingPlanId(LEGACY_PLAN_ID)));
+
+        PricingPlanService plans = mock(PricingPlanService.class);
+        try {
+            when(plans.getPricingPlanById(NEW_PLAN_ID)).thenReturn(new PricingPlan().setCodeForOrderId("NEW_PLAN"));
+            when(plans.getPricingPlanById(LEGACY_PLAN_ID)).thenReturn(new PricingPlan().setCodeForOrderId(LEGACY_PLAN_CODE));
+        } catch (PricingPlanNotFoundException e) {
+            throw new IllegalStateException(e);
+        }
 
         clock = new MutableClock(Instant.parse("2026-10-05T10:00:00Z"));
         rows = new ArrayList<>();
         repository = buildFakeRepository(rows);
-        limiter = new AiRateLimiter(limits, subscriptions, repository, clock);
+        limiter = new AiRateLimiter(limits, subscriptions, plans, repository, clock);
     }
 
     // ── Минутный лимит ─────────────────────────────────────────────
@@ -124,6 +150,26 @@ class AiRateLimiterTest {
         assertThat(decision.allowed()).isFalse();
         assertThat(decision.premium()).isTrue();
         assertThat(decision.dailyLimit()).isEqualTo(8);
+    }
+
+    @Test
+    void legacyPlanKeepsItsOwnDailyLimitWhileNotExpired() {
+        acquireSpread(LEGACY_USER, 12);
+
+        AiRateLimiter.Decision decision = limiter.tryAcquire(LEGACY_USER);
+
+        assertThat(decision.allowed()).isFalse();
+        assertThat(decision.premium()).isTrue();
+        assertThat(decision.dailyLimit()).isEqualTo(12);
+    }
+
+    @Test
+    void premiumWithoutSubscriptionsListFallsBackToDefault() {
+        when(subscriptions.getActiveAndScheduledSubscriptions(PREMIUM_USER, BotIdentifier.CALORIE_BOT))
+                .thenReturn(List.of());
+        acquireSpread(PREMIUM_USER, 8);
+
+        assertThat(limiter.tryAcquire(PREMIUM_USER).dailyLimit()).isEqualTo(8);
     }
 
     @Test

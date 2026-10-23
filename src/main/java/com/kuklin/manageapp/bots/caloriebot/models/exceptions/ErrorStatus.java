@@ -51,6 +51,8 @@ public enum ErrorStatus {
     PHOTO_NOT_RECOGNIZED_COUNTED(HttpStatus.UNPROCESSABLE_ENTITY),
     // ИИ распознал блюда, но сохранить не вышло (сбой БД) — попытку фото возвращаем
     DISH_SAVE_FAILED(HttpStatus.SERVICE_UNAVAILABLE),
+    // ИИ не ответил (ошибка провайдера, таймаут) — AiUnavailableException. Попытку фото аспект уже вернул
+    AI_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE),
     // Блюда без ИИ (вручную, из избранного) — calorie.dish-limits.per-day
     DISH_DAILY_LIMIT(HttpStatus.TOO_MANY_REQUESTS),
     // Вход на сайт (auth.*): лимиты по IP и неверным паролям; email + пароль выключен до подтверждения email
