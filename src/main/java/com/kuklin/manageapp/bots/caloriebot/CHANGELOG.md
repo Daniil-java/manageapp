@@ -1,3 +1,13 @@
+## 0.0.79 (23.10.2026)
+[et-107] — Алерт админам: кончились кредиты ИИ
+* OpenAiProviderProcessor: 429 с кодом insufficient_quota или billing_hard_limit_reached — событие AiQuotaExhaustedEvent. Обычный 429 (частота запросов) — как раньше. Для исчерпанной квоты log.warn вместо log.error: общий алерт об ошибке заменяет отдельный.
+* AiQuotaAlertService (metrics): админам метрикс-бота (METRICS_ADMIN_IDS) — «💸 OPENAI: кончились кредиты», ответ провайдера и статистика по metrics_ai_interaction_record. За час — вызовы, токены, $, число пользователей и топ-5 по вызовам. За 24 часа — то же и топ-5 по расходам. Пользователь — #appUserId и @username (или tg id) из калорийного бота.
+* Подозрительно: больше 30 вызовов за час от одного пользователя или больше 50% всех вызовов за час (если их набралось от 20). Иначе — «✅ Подозрительных расходов не видно».
+* Пока счёт пуст, падает каждый вызов — алерт не чаще раза в 30 минут. Статистика только по успешным вызовам: упавшие не пишутся.
+* Репозиторий: findUsageByUserSince — агрегат по app_user_id (AiUsageByUser).
+* Fix: вес из профиля (CurrentWeightProfileEditFieldHandler) писался в журнал до валидации профиля — подделанный callback мог записать недопустимый вес. Теперь, как в logWeight, сначала профиль.
+* Тесты: OpenAiProviderProcessorErrorsTest — insufficient_quota публикует событие, rate_limit_exceeded — нет. AiQuotaAlertServiceTest — подозрительные по числу и доле, топ за сутки по расходам, кулдаун. CurrentWeightProfileEditFieldHandlerTest — недопустимый вес не попадает в журнал.
+
 ## 0.0.78 (23.10.2026)
 [et-106] — Условия и политика под оплату в Stars, /paysupport
 * Команда /paysupport (обязательна по правилам Telegram для ботов с оплатой) — тот же ответ, что /support. В меню команд не публикуется: SupportCalorieUpdateHandler регистрирует себя второй раз под Command.CALORIE_PAY_SUPPORT.

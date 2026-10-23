@@ -1,7 +1,9 @@
 package com.kuklin.manageapp.aiconversation.providers.impl;
 
 import com.kuklin.manageapp.aiconversation.integrations.OpenAiFeignClient;
+import com.kuklin.manageapp.aiconversation.models.AiQuotaExhaustedEvent;
 import com.kuklin.manageapp.aiconversation.models.AiUnavailableException;
+import com.kuklin.manageapp.aiconversation.models.enums.ProviderVariant;
 import com.kuklin.manageapp.aiconversation.models.openai.OpenAiChatCompletionResponse;
 import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
 import com.kuklin.manageapp.bots.metrics.services.MetricsAiInteractionRecordService;
@@ -12,6 +14,8 @@ import feign.FeignException;
 import feign.Request;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -22,6 +26,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -34,13 +40,41 @@ class OpenAiProviderProcessorErrorsTest {
             Map.of(), null, StandardCharsets.UTF_8, null);
 
     private OpenAiFeignClient client;
+    private ApplicationEventPublisher eventPublisher;
     private OpenAiProviderProcessor processor;
 
     @BeforeEach
     void setUp() {
         client = mock(OpenAiFeignClient.class);
+        eventPublisher = mock(ApplicationEventPublisher.class);
         processor = new OpenAiProviderProcessor(client, mock(MetricsAiLogService.class),
-                mock(MetricsAiInteractionRecordService.class));
+                mock(MetricsAiInteractionRecordService.class), eventPublisher);
+    }
+
+    @Test
+    void insufficientQuotaPublishesQuotaEvent() {
+        byte[] body = "{\"error\":{\"message\":\"You exceeded your current quota\",\"type\":\"insufficient_quota\",\"code\":\"insufficient_quota\"}}"
+                .getBytes(StandardCharsets.UTF_8);
+        when(client.generate(anyString(), any())).thenThrow(
+                new FeignException.TooManyRequests("quota", REQUEST, body, null));
+
+        assertThatThrownBy(this::fetchText).isInstanceOf(AiUnavailableException.class);
+
+        ArgumentCaptor<AiQuotaExhaustedEvent> captor = ArgumentCaptor.forClass(AiQuotaExhaustedEvent.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        assertThat(captor.getValue().provider()).isEqualTo(ProviderVariant.OPENAI);
+    }
+
+    @Test
+    void rateLimit429DoesNotPublishQuotaEvent() {
+        byte[] body = "{\"error\":{\"message\":\"Rate limit reached\",\"type\":\"requests\",\"code\":\"rate_limit_exceeded\"}}"
+                .getBytes(StandardCharsets.UTF_8);
+        when(client.generate(anyString(), any())).thenThrow(
+                new FeignException.TooManyRequests("rate", REQUEST, body, null));
+
+        assertThatThrownBy(this::fetchText).isInstanceOf(AiUnavailableException.class);
+
+        verify(eventPublisher, never()).publishEvent(any(Object.class));
     }
 
     @Test

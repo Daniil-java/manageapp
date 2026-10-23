@@ -2,6 +2,7 @@ package com.kuklin.manageapp.aiconversation.providers.impl;
 
 import com.kuklin.manageapp.aiconversation.integrations.OpenAiFeignClient;
 import com.kuklin.manageapp.aiconversation.models.AiProcessorException;
+import com.kuklin.manageapp.aiconversation.models.AiQuotaExhaustedEvent;
 import com.kuklin.manageapp.aiconversation.models.AiResponse;
 import com.kuklin.manageapp.aiconversation.models.AiUnavailableException;
 import feign.FeignException;
@@ -22,6 +23,7 @@ import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import com.kuklin.manageapp.common.library.utils.FilesUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -39,6 +41,7 @@ public class OpenAiProviderProcessor implements ProviderProcessor, AiTextClient 
     private final OpenAiFeignClient openAiFeignClient;
     private final MetricsAiLogService metricsAiLogService;
     private final MetricsAiInteractionRecordService metricsAiInteractionRecordService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Override
     public AiResponse fetchResponsePhotoOrNull(
@@ -304,10 +307,27 @@ public class OpenAiProviderProcessor implements ProviderProcessor, AiTextClient 
     }
 
     // RetryableException (таймаут, сеть) — тоже FeignException, у неё status() = -1
-    private static AiUnavailableException buildUnavailable(String what, FeignException e) {
+    private AiUnavailableException buildUnavailable(String what, FeignException e) {
         int status = Math.max(e.status(), 0);
-        log.error("OpenAI {} failed: HTTP {} {}", what, status, e.getMessage());
+        if (isQuotaExhausted(e)) {
+            // Не log.error: общий алерт об ошибке заменяет отдельный, со статистикой расходов
+            log.warn("OpenAI {} failed: quota exhausted, HTTP {} {}", what, status, e.getMessage());
+            eventPublisher.publishEvent(new AiQuotaExhaustedEvent(getProviderName(), "HTTP " + status + " " + e.getMessage()));
+        } else {
+            log.error("OpenAI {} failed: HTTP {} {}", what, status, e.getMessage());
+        }
         return new AiUnavailableException("OpenAI " + what + " failed: HTTP " + status, status, e);
+    }
+
+    /**
+     * Кончились деньги на счёте: 429 с кодом insufficient_quota (обычный 429 — превышена частота, пройдёт сам)
+     * или достигнут жёсткий лимит расходов из панели OpenAI.
+     */
+    static boolean isQuotaExhausted(FeignException e) {
+        String body = e.contentUTF8();
+        if (body == null) return false;
+        return (e.status() == 429 && body.contains("insufficient_quota"))
+                || body.contains("billing_hard_limit_reached");
     }
 
     private void increaseMetricsLog() {

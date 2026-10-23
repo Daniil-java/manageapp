@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.editbuttons.impl.numericfield;
 
+import com.kuklin.manageapp.bots.caloriebot.components.services.exceptions.validation.UserNutritionProfileValidationException;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserNutritionProfileService;
@@ -38,8 +39,15 @@ public class CurrentWeightProfileEditFieldHandler
 
     @Override
     protected UserNutritionProfile applyValue(UserNutritionProfile profile, BigDecimal value) {
-        profileService.updateCurrentWeight(profile.getUserId(), value);
         return profile.setCurrentWeightKg(value);
+    }
+
+    // Как в logWeight: сначала профиль — недопустимый вес (подделанный callback) отклоняется до записи в журнал
+    @Override
+    protected UserNutritionProfile patchProfile(UserNutritionProfile profile) throws UserNutritionProfileValidationException {
+        UserNutritionProfile patched = super.patchProfile(profile);
+        profileService.updateCurrentWeight(profile.getUserId(), profile.getCurrentWeightKg());
+        return patched;
     }
 
     @Override
