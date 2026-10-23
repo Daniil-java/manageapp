@@ -18,7 +18,7 @@ public class AssistantHelpUpdateHandler implements AssistantUpdateHandler {
                     <b>ИНСТРУКЦИЯ ПО РУЧНОЙ УСТАНОВКЕ КАЛЕНДАРЯ</b>
                                
                     1) Дай боту доступ на изменение событий. В настройках календаря, в разделе "Имеют доступ", добавь этот адрес:
-                    tgbot-calendar-assistante@tg-bot-assistent-calendar.iam.gserviceaccount.com
+                    calendar-bot@calendar-bot-512507.iam.gserviceaccount.com
                                 
                     2) Найди идентификатор календаря. Найти его можно в настройках Google Календаря → вкладка «Интеграция календаря».
                     
