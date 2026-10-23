@@ -1,6 +1,7 @@
 package com.kuklin.manageapp.bots.payment.telegram;
 
 import com.kuklin.manageapp.common.entities.TelegramUser;
+import com.kuklin.manageapp.common.library.tgmodels.RefundedPaymentCapture;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramFacade;
 import com.kuklin.manageapp.common.library.tgmodels.UpdateHandler;
@@ -50,6 +51,10 @@ public class PaymentTelegramFacade extends TelegramFacade {
 
         if (update.hasMessage() && update.getMessage().hasSuccessfulPayment()) {
             return getUpdateHandlerMap().get(Command.PAYMENT_SUCCESS.getCommandText());
+        }
+
+        if (RefundedPaymentCapture.findOrNull(update) != null) {
+            return getUpdateHandlerMap().get(Command.PAYMENT_REFUNDED.getCommandText());
         }
 
         if (update.hasCallbackQuery()) {

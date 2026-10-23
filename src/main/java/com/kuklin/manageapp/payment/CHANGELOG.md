@@ -1,4 +1,11 @@
 ## 0.0.6 (23.10.2026)
+[et-106] — Возврат звёзд без нашего участия отменяет покупку
+* Fix: при возврате (наш /refund, вебхук ЮKassa) платёж оставался SUCCESS — менялся только providerStatus. Теперь status = REFUNDED: повторное уведомление о возврате больше не отменяет подписку второй раз и не сдвигает очередь. Отчёт по UTM (status = 'SUCCESS') перестаёт считать возвращённые платежи выручкой.
+* refunded_payment: telegrambots 6.9 не знает поля и выбрасывал его. RefundedPaymentCapture встраивается в ObjectMapper библиотеки (PartialBotApiMethod.OBJECT_MAPPER, ставится в TelegramBotConfiguration до регистрации ботов): десериализатор Update достаёт message.refunded_payment и запоминает по update_id. Раньше такое сообщение уходило в CALORIE_GENERAL как пустой текст, в платёжном боте — NPE на getText().
+* RefundedPaymentUpdateHandler (Command.PAYMENT_REFUNDED, калорийный и платёжный боты) → PaymentService.cancelRefundedTelegramPayment: платёж в звёздах ещё SUCCESS и оплачен этим пользователем — отмена покупки как при /refund. Уже возвращённый (в том числе нашим /refund) не трогаем. TelegramBot.isPaymentUpdate учитывает возврат — обрабатывается, даже когда пользователь занят или пул полон.
+* Сверка раз в сутки (StarRefundScheduleProcessor, запуск в SubscriptionSchedulerService в 04:00): getStarTransactions по каждому боту с оплатами в звёздах (StarTransactionsClient). Исходящая транзакция с id платежа — возврат; ещё SUCCESS — отменяем. Подстраховка, если апдейт потерялся.
+* Тесты: RefundedPaymentCaptureTest — разбор настоящим GetUpdates. PaymentServiceTelegramRefundTest — отмена один раз, чужой пользователь, неизвестный платёж. StarTransactionsClientTest — исходящие транзакции и страницы.
+
 [et-106] — Снятые с продажи тарифы не продаются
 * PricingPlan.isWithdrawnFromSale(): ARCHIVED / DISABLED.
 * CommonPaymentFacade.startPlanPayment: по снятому с продажи тарифу (кнопка старого тарифа в чате) счёт не выставляется — PricingPlanNotFoundException, бот отвечает PLAN_NOT_FOUND.

@@ -101,8 +101,7 @@ public class CalorieTelegramBot extends TelegramBot {
         );
 
         if (!result) {
-            if (update.hasPreCheckoutQuery()
-                    || (update.hasMessage() && update.getMessage().hasSuccessfulPayment())) {
+            if (isPaymentUpdate(update)) {
                 telegramCalorieBotFacade.handleUpdate(update);
             } else {
                 notifyAlreadyInProcess(update);

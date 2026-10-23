@@ -5,6 +5,7 @@ import com.kuklin.manageapp.bots.caloriebot.components.services.UserSettingsServ
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
 import com.kuklin.manageapp.common.entities.TelegramUser;
+import com.kuklin.manageapp.common.library.tgmodels.RefundedPaymentCapture;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramFacade;
 import com.kuklin.manageapp.common.library.tgmodels.UpdateHandler;
@@ -103,6 +104,10 @@ public class TelegramCalorieBotFacade extends TelegramFacade {
 
         if (update.hasMessage() && update.getMessage().hasSuccessfulPayment()) {
             return getHandler(Command.PAYMENT_SUCCESS);
+        }
+
+        if (RefundedPaymentCapture.findOrNull(update) != null) {
+            return getHandler(Command.PAYMENT_REFUNDED);
         }
 
         // 2. Распределяем по типам контента

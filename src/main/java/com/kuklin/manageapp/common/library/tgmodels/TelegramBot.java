@@ -310,9 +310,11 @@ public abstract class TelegramBot extends TelegramLongPollingBot implements Tele
                 : update.getMessage().getChatId();
     }
 
-    /** Оплата: подтверждение до списания (на ответ у бота 10 с) и сообщение об успешном платеже. */
-    private static boolean isPaymentUpdate(Update update) {
-        return update.hasPreCheckoutQuery() || (update.hasMessage() && update.getMessage().hasSuccessfulPayment());
+    /** Оплата: подтверждение до списания (на ответ у бота 10 с), сообщение об успешном платеже и о возврате. */
+    protected static boolean isPaymentUpdate(Update update) {
+        return update.hasPreCheckoutQuery()
+                || (update.hasMessage() && update.getMessage().hasSuccessfulPayment())
+                || RefundedPaymentCapture.findOrNull(update) != null;
     }
 
     public void notifyAsyncDone(Update update) {

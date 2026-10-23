@@ -3,12 +3,14 @@ package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
+import com.kuklin.manageapp.bots.caloriebot.telegram.TelegramCalorieBotFacade;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgutils.ButtonStyle;
 import com.kuklin.manageapp.common.library.tgutils.Command;
 import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
@@ -40,6 +42,12 @@ public class SupportCalorieUpdateHandler implements CalorieBotUpdateHandler {
         return TelegramKeyboard.builder()
                 .row(TelegramKeyboard.urlButton(texts.get(appUserId, BotTextKeys.SUPPORT_BUTTON), SUPPORT_URL, ButtonStyle.PRIMARY))
                 .build();
+    }
+
+    // /paysupport обязателен по правилам Telegram для ботов с оплатой; в меню команд не публикуется
+    @Autowired
+    public void registerPaySupport(TelegramCalorieBotFacade messageFacade) {
+        messageFacade.register(Command.CALORIE_PAY_SUPPORT.getCommandText(), this);
     }
 
     @Override

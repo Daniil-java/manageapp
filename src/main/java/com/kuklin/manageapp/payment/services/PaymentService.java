@@ -352,8 +352,11 @@ public class PaymentService {
             GenerationBalanceNotFoundException,
             GenerationBalanceIllegalOperationDataException,
             GenerationBalanceNotEnoughBalanceException {
-        payment = paymentRepository.save(
-                payment.setProviderStatus(Payment.ProviderStatus.REFUND_SUCCEEDED));
+        // Статус REFUNDED: без него платёж оставался SUCCESS, и повторное уведомление о возврате
+        // (refunded_payment после нашего же /refund, сверка) отменяло подписку ещё раз и снова сдвигало очередь
+        payment = paymentRepository.save(payment
+                .setProviderStatus(Payment.ProviderStatus.REFUND_SUCCEEDED)
+                .setStatus(Payment.PaymentStatus.REFUNDED));
 
         //Получение тарифного плана
         PricingPlan plan = pricingPlanService.getPricingPlanById(payment.getPricingPlanId());
@@ -440,5 +443,26 @@ public class PaymentService {
             }
         }
         return false;
+    }
+
+    /**
+     * Звёзды за платёж уже вернулись без нашего /refund (refunded_payment, сверка getStarTransactions) —
+     * отменяем покупку. Уже возвращённый платёж (в том числе нашим /refund) не трогаем.
+     *
+     * @param appUserId плательщик из апдейта; null — сверка, сравнивать не с чем
+     * @return true — покупка отменена сейчас
+     */
+    @Transactional
+    public boolean cancelRefundedTelegramPayment(String paymentChargeId, Long appUserId) {
+        Payment payment = getRefundableTelegramPaymentOrNull(paymentChargeId);
+        if (payment == null) return false;
+        if (appUserId != null && !appUserId.equals(payment.getAppUserId())) {
+            log.error("Refund of payment {} came from user {}, but it was paid by {}",
+                    payment.getId(), appUserId, payment.getAppUserId());
+            return false;
+        }
+        log.warn("Stars returned by Telegram for payment {} ({} ⭐, user {}), cancelling purchase",
+                payment.getId(), payment.getStarsAmount(), payment.getAppUserId());
+        return refundTelegramPayment(paymentChargeId);
     }
 }
