@@ -1,27 +1,44 @@
 package com.kuklin.manageapp.common.library.tgmodels;
 
+import com.kuklin.manageapp.common.services.AsyncService;
+import com.kuklin.manageapp.common.services.TelegramUserService;
+import com.kuklin.manageapp.payment.entities.Payment;
+import com.kuklin.manageapp.payment.models.common.Currency;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.task.TaskRejectedException;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
+import org.telegram.telegrambots.meta.api.methods.ActionType;
+import org.telegram.telegrambots.meta.api.methods.AnswerCallbackQuery;
 import org.telegram.telegrambots.meta.api.methods.BotApiMethod;
 import org.telegram.telegrambots.meta.api.methods.ParseMode;
-import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
-import org.telegram.telegrambots.meta.api.methods.send.SendVoice;
+import org.telegram.telegrambots.meta.api.methods.invoices.CreateInvoiceLink;
+import org.telegram.telegrambots.meta.api.methods.invoices.SendInvoice;
+import org.telegram.telegrambots.meta.api.methods.send.*;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.DeleteMessage;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageReplyMarkup;
 import org.telegram.telegrambots.meta.api.methods.updatingmessages.EditMessageText;
-import org.telegram.telegrambots.meta.api.objects.InputFile;
-import org.telegram.telegrambots.meta.api.objects.Message;
-import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.objects.*;
+import org.telegram.telegrambots.meta.api.objects.payments.LabeledPrice;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboard;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
 @Slf4j
 public abstract class TelegramBot extends TelegramLongPollingBot implements TelegramBotClient {
     private String botToken;
     public static final String DEFAULT_DELIMETER = " ";
+    private final Set<Long> inProcess;
+    @Autowired
+    private TelegramUserService telegramUserService;
 
     @Override
     public String getToken() {
@@ -31,10 +48,119 @@ public abstract class TelegramBot extends TelegramLongPollingBot implements Tele
     public TelegramBot(String key) {
         super(key);
         botToken = key;
+        // add — в потоке приёма апдейтов, remove — в @Async-потоках (notifyAsyncDone): обычный HashSet
+        // мог потерять remove, и пользователь навсегда получал «предыдущее сообщение обрабатывается»
+        inProcess = ConcurrentHashMap.newKeySet();
     }
+
+    public Message sendPhotoMessage(Long chatId, String path, String caption, ReplyKeyboard replyKeyboard) {
+        SendPhoto sendPhoto = new SendPhoto();
+        sendPhoto.setChatId(chatId.toString());
+
+        File file = new File(path);
+        sendPhoto.setPhoto(new InputFile(file));
+        sendPhoto.setReplyMarkup(replyKeyboard);
+        sendPhoto.setCaption(caption);
+
+        try {
+            return execute(sendPhoto);
+        } catch (TelegramApiException e) {
+            log.warn("Telegram send photo error!");
+            handleApiError(e, chatId);
+            return null;
+        }
+    }
+
+    public void sendSubExpiredMessage(Long chatId, String text) {
+        sendReturnedMessage(chatId, text);
+    }
+
+    private void handleApiError(TelegramApiException e, Long chatId) {
+        if (e instanceof TelegramApiRequestException apiEx) {
+            if (apiEx.getErrorCode() == 403) {
+                log.warn("Bot blocked by user: {}", chatId);
+                onBotBlocked(chatId);
+                return; // Выходим, чтобы не плодить лишние логи ошибок
+            }
+        }
+        log.error("Telegram API Error for bot {},  chat {}: {}", getBotIdentifier(), chatId, e.getMessage());
+    }
+
+    protected void onBotBlocked(Long chatId) {
+        telegramUserService.deactivateUser(chatId, getBotIdentifier());
+    }
+
+    /**
+     * Сообщение под нажатой кнопкой. С Bot API 7.0 (telegrambots 6.9.7) Telegram может прислать вместо него
+     * «недоступное» — удалённое или старше 48 ч, только чат и id. Тогда отдаём Message с чатом и id,
+     * как раньше делала библиотека, чтобы обработчики работали по-прежнему.
+     */
+    public static Message getCallbackMessage(CallbackQuery query) {
+        MaybeInaccessibleMessage maybe = query.getMessage();
+        if (maybe == null || maybe instanceof Message) {
+            return (Message) maybe;
+        }
+        Message message = new Message();
+        message.setMessageId(maybe.getMessageId());
+        message.setDate(maybe.getDate());
+        if (maybe instanceof InaccessibleMessage inaccessible) {
+            message.setChat(inaccessible.getChat());
+        }
+        return message;
+    }
+
+    public abstract void handleUpdateDirectly(Update update);
 
     @Override
     public abstract void onUpdateReceived(Update update);
+
+    public Message sendDocument(Long chatId, byte[] doc, String name, String caption) {
+        InputFile inputFile = new InputFile(
+                new ByteArrayInputStream(doc),
+                name
+        );
+
+        SendDocument document = SendDocument.builder()
+                .chatId(chatId)
+                .document(inputFile)
+                .caption(caption)
+                .build();
+
+        try {
+            return execute(document);
+        } catch (TelegramApiException e) {
+            log.warn("Telegram send document error!");
+            handleApiError(e, chatId);
+            return null;
+        }
+    }
+    public Message sendPhotoMessage(long chatId,
+                                    byte[] photoBytes,
+                                    String filename,
+                                    String caption,
+                                    ReplyKeyboard replyKeyboard) {
+
+        if (!filename.endsWith(".jpg") && !filename.endsWith(".png")) {
+            filename = filename.trim() + ".jpg";
+        }
+
+        SendPhoto sendPhoto = SendPhoto.builder()
+                .chatId(String.valueOf(chatId))
+                .photo(new InputFile(
+                        new ByteArrayInputStream(photoBytes),
+                        filename))
+                .caption(caption)
+                .replyMarkup(replyKeyboard)
+                .build();
+
+        try {
+            return execute(sendPhoto);
+        } catch (TelegramApiException e) {
+            log.warn("Telegram send photo error!");
+            handleApiError(e, chatId);
+            return null;
+        }
+    }
 
     @Override
     public void sendMessage(BotApiMethod sendMessage) {
@@ -46,7 +172,7 @@ public abstract class TelegramBot extends TelegramLongPollingBot implements Tele
     }
 
     @Override
-    public void sendVoiceMessage(SendVoice message) throws TelegramApiException{
+    public void sendVoiceMessage(SendVoice message) throws TelegramApiException {
         execute(message);
     }
 
@@ -55,7 +181,7 @@ public abstract class TelegramBot extends TelegramLongPollingBot implements Tele
         try {
             return execute(sendMessage);
         } catch (TelegramApiException e) {
-            log.error("Send returned message error!", e);
+            handleApiError(e, Long.valueOf(sendMessage.getChatId()));
         }
         return null;
     }
@@ -79,12 +205,21 @@ public abstract class TelegramBot extends TelegramLongPollingBot implements Tele
         SendMessage sendMessage = buildMessage(chatId, text, replyKeyboard, replyMessageId);
         Message message = sendReturnedMessage(sendMessage);
         if (message == null) {
+            // HTML не разобрался — шлём простым текстом и возвращаем то, что реально ушло
             sendMessage.setParseMode(null);
-            sendReturnedMessage(sendMessage);
+            message = sendReturnedMessage(sendMessage);
         }
         return message;
     }
 
+    //Для callback или message
+    public Message sendReturnedMessage(Update update, String text) {
+        Long chatId = update.hasMessage() ?
+                update.getMessage().getChatId() :
+                update.getCallbackQuery().getMessage().getChatId();
+
+        return sendReturnedMessage(chatId, text);
+    }
     public Message sendReturnedMessage(long chatId, String text) {
         return sendReturnedMessage(chatId, text, null, null);
     }
@@ -139,4 +274,235 @@ public abstract class TelegramBot extends TelegramLongPollingBot implements Tele
                 .parseMode(ParseMode.HTML)
                 .build();
     }
+
+    public void sendEditMessageReplyMarkupNull(Long chatId, Integer messageId) {
+        EditMessageReplyMarkup editMarkup = new EditMessageReplyMarkup();
+        editMarkup.setChatId(chatId);
+        editMarkup.setMessageId(messageId);
+        editMarkup.setReplyMarkup(null);
+
+        try {
+            execute(editMarkup);
+        } catch (TelegramApiException e) {
+            log.error("Не получилось изменить клавиатуру");
+        }
+    }
+
+    public void notifyAlreadyInProcess(Update update) {
+        sendReturnedMessage(getChatId(update), getAlreadyInProcessText(update));
+    }
+
+    /** Текст «предыдущее сообщение ещё обрабатывается». Бот с переводами переопределяет — на языке пользователя. */
+    protected String getAlreadyInProcessText(Update update) {
+        return "Предыдущее сообщение обрабатывается, вам необходимо дождаться его завершения.";
+    }
+
+    /** Текст «бот перегружен, повторите через минуту». Бот с переводами переопределяет — на языке пользователя. */
+    protected String getOverloadedText(Update update) {
+        return "Бот сейчас перегружен. Повторите, пожалуйста, через минуту.";
+    }
+
+    private static Long getChatId(Update update) {
+        return update.hasCallbackQuery()
+                ? update.getCallbackQuery().getMessage().getChatId()
+                : update.hasPreCheckoutQuery()
+                ? update.getPreCheckoutQuery().getFrom().getId()
+                : update.getMessage().getChatId();
+    }
+
+    /** Оплата: подтверждение до списания (на ответ у бота 10 с), сообщение об успешном платеже и о возврате. */
+    protected static boolean isPaymentUpdate(Update update) {
+        return update.hasPreCheckoutQuery()
+                || (update.hasMessage() && update.getMessage().hasSuccessfulPayment())
+                || RefundedPaymentCapture.findOrNull(update) != null;
+    }
+
+    public void notifyAsyncDone(Update update) {
+        if (update.hasCallbackQuery()) {
+            return;
+        }
+
+        User user = getUserFromUpdate(update);
+        if (user == null) {
+            log.error("Not a message or callback {} in async done", update);
+            return;
+        }
+        Long tgUserId = user.getId();
+        inProcess.remove(tgUserId);
+    }
+
+    protected static User getUserFromUpdate(Update update) {
+        if (update.hasMessage()) {
+            return update.getMessage().getFrom();
+        } else if (update.hasCallbackQuery()) {
+            return update.getCallbackQuery().getFrom();
+        } else if (update.hasPreCheckoutQuery()) {
+            return update.getPreCheckoutQuery().getFrom();
+        }
+
+        return null;
+    }
+
+    protected boolean doAsync(AsyncService asyncService, Update update, Consumer<Update> runnable) {
+        try {
+            if (update.hasCallbackQuery()) {
+                executeAsyncOrReject(asyncService, update, runnable);
+                return true;
+            }
+
+            User user = getUserFromUpdate(update);
+            if (user == null) {
+                log.error("Not a message or callback {}", update);
+                return false;
+            }
+
+            Long tgUserId = user.getId();
+            if (inProcess.add(tgUserId)) {
+                try {
+                    executeAsyncOrReject(asyncService, update, runnable);
+                } catch (Exception ex) {
+                    inProcess.remove(tgUserId);
+                    log.error("Parallel execution failed", ex);
+                }
+                return true;
+            }
+
+            return false;
+        } catch (Exception ex) {
+            sendReturnedMessage(425120436, ex.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Пул апдейтов (BotUpdateExecutorConfig) ограничен: очередь переполнена — он отказывает сразу.
+     * Тогда отвечаем «бот перегружен», а не молчим; оплату не теряем — обрабатываем здесь же, в потоке приёма.
+     */
+    void executeAsyncOrReject(AsyncService asyncService, Update update, Consumer<Update> runnable) {
+        try {
+            asyncService.executeAsyncCustom(this, update, runnable);
+        } catch (TaskRejectedException e) {
+            // Задача не началась — finally в AsyncService не выполнится, снимаем замок сами
+            notifyAsyncDone(update);
+            if (isPaymentUpdate(update)) {
+                log.warn("Bot {} update executor is full, handling payment update synchronously", getBotIdentifier());
+                runnable.accept(update);
+                return;
+            }
+            log.warn("Bot {} update executor is full, update rejected for chat {}", getBotIdentifier(), getChatId(update));
+            sendReturnedMessage(getChatId(update), getOverloadedText(update));
+        }
+    }
+
+    public static SendInvoice buildInvoiceOrNull(Long chatId, String title,
+                                                 String description, String payload,
+                                                 String providerToken, int amount,
+                                                 Currency currency, Payment.Provider provider,
+                                                 String labelPrice
+    ) {
+
+        if (provider.equals(Payment.Provider.STARS) && !currency.equals(Currency.XTR)) {
+            return null;
+        }
+
+        return SendInvoice.builder()
+                .chatId(chatId.toString())
+                .title(title)
+                .description(description)
+                .payload(payload)
+                .providerToken(providerToken)
+                .currency(currency.name())
+                .prices(List.of(new LabeledPrice(labelPrice, amount)))
+                .startParameter(provider.getTelegramStartParameter())
+                .build();
+    }
+
+    // Разовый счёт ссылкой (миниаппка: WebApp.openInvoice) — то же, что buildInvoiceOrNull, только без чата
+    public static CreateInvoiceLink buildOneTimeInvoiceLink(String title,
+                                                            String description, String payload,
+                                                            String providerToken, int amount,
+                                                            Currency currency, String labelPrice
+    ) {
+        return CreateInvoiceLink.builder()
+                .title(title)
+                .description(description)
+                .payload(payload)
+                .providerToken(providerToken)
+                .currency(currency.name())
+                .prices(List.of(new LabeledPrice(labelPrice, amount)))
+                .build();
+    }
+
+    // ⚠️ Счёт-ПОДПИСКА с автосписанием каждые 30 дней (не разовый!) — подпись всегда «Подписка 30 дней».
+    // Сейчас не используется: только для 30-дневного тарифа, подробности — CreateInvoiceLinkWithTelegramSubscription.
+    // Для разовой оплаты — buildOneTimeInvoiceLink.
+    public static CreateInvoiceLinkWithTelegramSubscription buildCreateInvoiceLink(
+            String title,
+            String description, String payload,
+            int amount, Currency currency
+    ) {
+        String TOKEN_DUMMY = "xtr_dummy";
+
+        CreateInvoiceLinkWithTelegramSubscription link = new CreateInvoiceLinkWithTelegramSubscription(2_592_000);
+        link.setTitle(title);
+        link.setDescription(description);
+        link.setPayload(payload);
+        link.setCurrency(currency.name());
+        link.setPrices(List.of(new LabeledPrice("Подписка 30 дней", amount)));
+        link.setProviderToken(TOKEN_DUMMY);
+
+        return link;
+
+    }
+
+    public void answerCallback(Update update) {
+        if (update.hasCallbackQuery()) {
+            CallbackQuery cq = update.getCallbackQuery();
+
+            AnswerCallbackQuery answer = AnswerCallbackQuery.builder()
+                    .callbackQueryId(cq.getId())
+                    .build();
+
+            try {
+                execute(answer);
+            } catch (TelegramApiException e) {
+                log.error("Callback answer error!");
+            }
+        }
+    }
+
+    public void sendChatActionTyping(Long chatId) {
+        sendChatAction(chatId, ActionType.TYPING);
+    }
+
+    /** Статус над чатом («печатает…», «отправляет фото…») — держится ~5 секунд или до сообщения бота. */
+    public void sendChatAction(Long chatId, ActionType action) {
+        SendChatAction chatAction = new SendChatAction();
+        chatAction.setChatId(chatId);
+        chatAction.setAction(action);
+        try {
+            execute(chatAction);
+        } catch (TelegramApiException e) {
+            log.error("Не получилось отправить ChatAction!");
+        }
+    }
+
+    /**
+     * Удобный метод для отправки документа из байтов (CSV и т.п.)
+     */
+    public Message sendDocument(long chatId, byte[] content, String filename, String caption) throws TelegramApiException {
+        InputFile inputFile = new InputFile(
+                new ByteArrayInputStream(content),
+                filename
+        );
+
+        SendDocument sendDocument = SendDocument.builder()
+                .chatId(chatId)
+                .document(inputFile)
+                .caption(caption)
+                .build();
+
+        return execute(sendDocument);
+    }
 }
+
