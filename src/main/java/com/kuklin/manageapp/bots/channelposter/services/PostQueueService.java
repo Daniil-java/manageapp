@@ -14,6 +14,7 @@ import com.kuklin.manageapp.bots.channelposter.telegram.ChannelPosterBotKeyCompo
 import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
@@ -27,6 +28,7 @@ import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class PostQueueService {
     private final PostQueueRepository postQueueRepository;
     private final TopicCategoryService topicCategoryService;
@@ -46,6 +48,16 @@ public class PostQueueService {
                     Текст статьи: 
                     %s
                         """;
+
+    private static final String FIT_CAPTION_PROMPT =
+            """
+                    Сократи пост для Telegram до %d символов вместе с HTML-разметкой — он должен влезть в подпись к фото.
+                    Сохрани заголовок, стиль, разметку (<b>, <i>, <u>, <s>) и деление на короткие абзацы.
+                    Убирай второстепенные детали и повторы, а не главный вывод и не упоминания учёных и журналов.
+                    Верни только текст поста, без пояснений.
+                    Текст поста:
+                    %s
+                    """;
 
     // посты, готовые к публикации
     public List<PostQueue> getPostsReadyToPublish() {
@@ -95,16 +107,33 @@ public class PostQueueService {
         );
     }
 
+    // «✂️ Короче»: вдвое короче
     public PostQueue makePostQueueContentShorter(Long postId) throws PostQueueNotFoundException {
         PostQueue postQueue = getPostQueueById(postId);
+        return makeContentShorter(postQueue, String.format(SHORT_PROMPT, postQueue.getTextContent()), "short prompt");
+    }
+
+    // пост не влез в подпись к фото — сокращаем до maxChars, чтобы вышел одним сообщением
+    public PostQueue makePostQueueContentFitCaption(Long postId, int maxChars) throws PostQueueNotFoundException {
+        PostQueue postQueue = getPostQueueById(postId);
+        return makeContentShorter(postQueue,
+                String.format(FIT_CAPTION_PROMPT, maxChars, postQueue.getTextContent()), "fit caption prompt");
+    }
+
+    // AI не ответил — текст остаётся прежним
+    private PostQueue makeContentShorter(PostQueue postQueue, String prompt, String label) {
         String raw = openAiProviderProcessor.fetchResponse(
                 component.getAiKey(),
-                String.format(SHORT_PROMPT, postQueue.getTextContent()),
+                prompt,
                 BotIdentifier.CHANNEL_POSTER,
-                getClass().getSimpleName() + " short prompt",
+                getClass().getSimpleName() + " " + label,
                 MetricsAiInteractionRecord.AiMessageType.TEXT
         );
-        postQueue.setTextContent(raw);
+        if (raw == null || raw.isBlank()) {
+            log.warn("Post #{}: AI didn't shorten the text ({})", postQueue.getId(), label);
+            return postQueue;
+        }
+        postQueue.setTextContent(raw.trim());
         return postQueueRepository.save(postQueue);
     }
 

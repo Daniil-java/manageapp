@@ -104,6 +104,15 @@ public class PostPublisher {
         return message == null ? null : message.getMessageId();
     }
 
+    /**
+     * Сколько видимых символов текста поста не влезает в подпись к фото — с хвостом (источник, ссылка на бота,
+     * хэштег) и подписью автора фото, как пост выйдет в канале. 0 — выйдет одним сообщением.
+     */
+    public int getCaptionOverflow(PostQueue post) {
+        String credit = buildPhotoCreditOrNull(postImageService.getByPostQueueIdOrNull(post.getId()));
+        return Math.max(0, getVisibleLength(render(post, credit)) - CAPTION_LIMIT);
+    }
+
     // у угадайки перед квизом — фото блюда с подписью; у обычных квизов и опросов картинки нет
     /**
      * @return сообщение с фото или null — фото нет или Telegram не принял

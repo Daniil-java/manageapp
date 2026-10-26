@@ -146,7 +146,7 @@ public class ArticlePosterUpdateHandler implements ChannelPosterUpdateHandler {
      * отправляем пользователю результат + кнопки
      */
     private void sendPostQueue(Long chatId, String text, String sourceUrl) {
-        channelPosterTelegramBot.sendReturnedMessage(chatId, "✍️ Пишу пост и рисую картинку…");
+        channelPosterTelegramBot.sendReturnedMessage(chatId, "✍️ Пишу пост и подбираю картинку…");
         try {
             PostQueue postQueue = postQueueService.createPostQueueByText(
                     text, TopicCategory.TopicType.ARTICLE

@@ -46,6 +46,9 @@ public class PostReviewService {
     public static final String PHOTO_CMD = "PHOTO";
     // сколько фото выдачи подряд пробуем, если Telegram не берёт ссылку
     static final int STOCK_TRIES = 3;
+    // сокращая пост под подпись к фото, просим на столько символов меньше нужного — модель обычно перебирает
+    static final int FIT_MARGIN = 100;
+    static final int MIN_FIT_CHARS = 400;
     public static final String NO_IMAGE_CMD = "NOIMG";
     public static final String DELETE_CMD = "DEL";
 
@@ -67,6 +70,7 @@ public class PostReviewService {
         // опрос выходит без картинки
         if (!isPoll(post)) {
             attachDefaultImage(post, chatIds.get(0));
+            post = makeFitCaption(post);
         }
         PostQueue review = postQueueService.markReview(post);
         chatIds.forEach(chatId -> sendPreview(chatId, review, true));
@@ -80,6 +84,30 @@ public class PostReviewService {
             return;
         }
         prepareAndSend(post, admins);
+    }
+
+    /**
+     * Пост не влезает в подпись к фото (вышел бы двумя сообщениями: фото отдельно, текст отдельно) —
+     * один раз просим AI сократить текст на лишнее с запасом. Модели плохо считают символы, поэтому меряем код.
+     * Не вышло — пост остаётся как есть, у админа есть «✂️ Короче».
+     */
+    private PostQueue makeFitCaption(PostQueue post) {
+        int overflow = publisher.getCaptionOverflow(post);
+        if (overflow == 0) return post;
+        int target = Math.max(MIN_FIT_CHARS, getLength(post.getTextContent()) - overflow - FIT_MARGIN);
+        try {
+            PostQueue shorter = postQueueService.makePostQueueContentFitCaption(post.getId(), target);
+            log.info("Post #{}: {} chars over the caption, shortened to ~{}, now over by {}",
+                    post.getId(), overflow, target, publisher.getCaptionOverflow(shorter));
+            return shorter;
+        } catch (Exception e) {
+            log.warn("Post #{}: can't shorten to fit the caption: {}", post.getId(), e.getMessage());
+            return post;
+        }
+    }
+
+    private static int getLength(String text) {
+        return text == null ? 0 : text.length();
     }
 
     /**

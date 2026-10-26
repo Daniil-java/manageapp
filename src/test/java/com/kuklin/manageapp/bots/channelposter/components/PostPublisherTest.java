@@ -43,6 +43,25 @@ class PostPublisherTest {
         when(topicCategoryService.findById(7L)).thenReturn(Optional.of(new TopicCategory().setHashtag("#миф")));
     }
 
+    /** Переполнение подписи считается с хвостом: хэштег и подпись автора фото — как пост выйдет в канале. */
+    @Test
+    void captionOverflowCountsTailAndPhotoCredit() {
+        // «\n\n#миф» — 6 видимых символов: 1018 + 6 = 1024 влезает, 1020 + 6 — на 2 больше
+        assertThat(publisher.getCaptionOverflow(longPost(2L, 1018))).isZero();
+        assertThat(publisher.getCaptionOverflow(longPost(2L, 1020))).isEqualTo(2);
+
+        // «Фото: Anna / Pixabay» и перенос строки — ещё 21 символ, теги ссылки не считаются
+        when(postImageService.getByPostQueueIdOrNull(3L)).thenReturn(new PostImage().setTgFileId("f")
+                .setStockAuthor("Anna").setStockPageUrl("https://pixabay.com/photos/x-1/"));
+        assertThat(publisher.getCaptionOverflow(longPost(3L, 1018))).isEqualTo(21);
+    }
+
+    private static PostQueue longPost(Long id, int chars) {
+        PostQueue post = new PostQueue().setTextContent("а".repeat(chars)).setCategoryId(7L);
+        post.setId(id);
+        return post;
+    }
+
     @Test
     void appendsEscapedSourceLink() {
         PostQueue post = new PostQueue()
