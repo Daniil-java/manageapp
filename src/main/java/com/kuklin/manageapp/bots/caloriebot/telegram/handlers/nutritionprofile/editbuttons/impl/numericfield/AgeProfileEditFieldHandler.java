@@ -1,0 +1,51 @@
+package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.editbuttons.impl.numericfield;
+
+import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
+import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
+import com.kuklin.manageapp.bots.caloriebot.components.services.UserNutritionProfileService;
+import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.CalorieNutritionProfileEditCallbackUpdateHandler;
+import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.editbuttons.ProfileEditAction;
+import org.springframework.stereotype.Component;
+
+@Component
+public class AgeProfileEditFieldHandler
+        extends AbstractNumericProfileEditFieldHandler {
+
+    public AgeProfileEditFieldHandler(
+            UserNutritionProfileService profileService,
+            CalorieNutritionProfileEditCallbackUpdateHandler callbackHandler
+    ) {
+        super(
+                profileService,
+                callbackHandler,
+                20,     // default
+                1,      // min
+                130,    // max
+                1,      // small
+                5,      // mid
+                10      // big
+        );
+    }
+
+    @Override
+    protected Integer getCurrentValue(UserNutritionProfile profile) {
+        return profile.getAgeYears();
+    }
+
+    @Override
+    protected UserNutritionProfile applyValue(UserNutritionProfile profile, Integer value) {
+        return profile.setAgeYears(value);
+    }
+
+    @Override
+    protected String buildText(UserNutritionProfile profile) {
+        return profile.getAgeYears() == null
+                ? texts.get(profile.getUserId(), BotTextKeys.PROFILE_FIELD_AGE_EMPTY)
+                : texts.get(profile.getUserId(), BotTextKeys.PROFILE_FIELD_AGE, String.valueOf(profile.getAgeYears()));
+    }
+
+    @Override
+    public ProfileEditAction getProfileAction() {
+        return ProfileEditAction.AGE;
+    }
+}
