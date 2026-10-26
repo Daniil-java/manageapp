@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.common.configurations;
 
+import com.kuklin.manageapp.common.library.tgmodels.RefundedPaymentCapture;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSource;
@@ -16,6 +17,8 @@ import org.telegram.telegrambots.updatesreceivers.DefaultBotSession;
 public class TelegramBotConfiguration {
     @Bean
     public TelegramBotsApi telegramBotsApi() throws TelegramApiException {
+        // До регистрации ботов: первый getUpdates закеширует десериализатор Update
+        RefundedPaymentCapture.install();
         return new TelegramBotsApi(DefaultBotSession.class);
     }
 
