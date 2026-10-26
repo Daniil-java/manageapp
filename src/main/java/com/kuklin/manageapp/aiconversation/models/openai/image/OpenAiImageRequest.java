@@ -9,7 +9,8 @@ import lombok.experimental.Accessors;
 @Accessors(chain = true)
 public class OpenAiImageRequest {
 
-    public static final String MODEL_GPT_IMAGE_1 = "gpt-image-1";
+    // gpt-image-1 отключён OpenAI 23.10.2026
+    public static final String MODEL_GPT_IMAGE_2_5_FLARE = "gpt-image-2.5-flare";
 
     public static final String SIZE_512 = "512x512";
     public static final String SIZE_1024 = "1024x1024";
@@ -19,6 +20,6 @@ public class OpenAiImageRequest {
     public static final String SIZE_1792x1024 = "1792x1024"; // горизонтальная
 
     private String prompt;
-    private String model;   // например "gpt-image-1"
+    private String model;   // например "gpt-image-2.5-flare"
     private String size;    // "1024x1024"
 }

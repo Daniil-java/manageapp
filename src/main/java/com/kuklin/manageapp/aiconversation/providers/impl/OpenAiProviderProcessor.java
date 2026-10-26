@@ -257,7 +257,7 @@ public class OpenAiProviderProcessor implements ProviderProcessor, AiTextClient 
 
         OpenAiImageRequest request = OpenAiImageRequest.builder()
                 .prompt(prompt)
-                .model(OpenAiImageRequest.MODEL_GPT_IMAGE_1)
+                .model(OpenAiImageRequest.MODEL_GPT_IMAGE_2_5_FLARE)
                 .size(OpenAiImageRequest.SIZE_1024)
                 .build();
 
