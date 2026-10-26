@@ -41,15 +41,30 @@ public class PixabayClient {
     }
 
     /**
-     * Горизонтальные фото еды по запросу на русском.
+     * Горизонтальные фото еды по запросу на русском («Угадай калорийность»).
      *
      * @return фото или пустой список, если ничего не нашлось
      */
     public List<StockPhoto> search(String query) throws IOException {
+        return search(query, "ru", "food");
+    }
+
+    /**
+     * Горизонтальные фото любой тематики по ключевым словам на английском (картинка к посту).
+     *
+     * @return фото или пустой список, если ничего не нашлось
+     */
+    public List<StockPhoto> searchByKeywords(String keywords) throws IOException {
+        return search(keywords, "en", null);
+    }
+
+    private List<StockPhoto> search(String query, String lang, String category) throws IOException {
         String q = query.length() > MAX_QUERY ? query.substring(0, MAX_QUERY) : query;
         String url = SEARCH_URL + "?key=" + URLEncoder.encode(keys.getPixabayApiKey(), StandardCharsets.UTF_8)
                 + "&q=" + URLEncoder.encode(q, StandardCharsets.UTF_8)
-                + "&lang=ru&image_type=photo&orientation=horizontal&category=food&safesearch=true&per_page=" + PER_PAGE;
+                + "&lang=" + lang + "&image_type=photo&orientation=horizontal"
+                + (category == null ? "" : "&category=" + category)
+                + "&safesearch=true&per_page=" + PER_PAGE;
         String json;
         try {
             json = http.get(url, SourceHttpClient.BROWSER_USER_AGENT, Map.of());

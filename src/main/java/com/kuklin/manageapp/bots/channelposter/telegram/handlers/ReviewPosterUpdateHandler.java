@@ -3,7 +3,6 @@ package com.kuklin.manageapp.bots.channelposter.telegram.handlers;
 import com.kuklin.manageapp.bots.channelposter.components.PostPublisher;
 import com.kuklin.manageapp.bots.channelposter.entities.PostQueue;
 import com.kuklin.manageapp.bots.channelposter.model.PostQueueNotFoundException;
-import com.kuklin.manageapp.bots.channelposter.services.PostImageService;
 import com.kuklin.manageapp.bots.channelposter.services.PostQueueService;
 import com.kuklin.manageapp.bots.channelposter.services.PostReviewService;
 import com.kuklin.manageapp.bots.channelposter.telegram.ChannelPosterBotKeyComponent;
@@ -23,7 +22,8 @@ import java.util.Set;
 import static com.kuklin.manageapp.bots.channelposter.services.PostReviewService.*;
 
 /**
- * Кнопки под превью поста: в очередь, опубликовать сейчас, короче, другая картинка, без картинки, удалить.
+ * Кнопки под превью поста: в очередь, опубликовать сейчас, другое фото, сгенерировать картинку, короче,
+ * без картинки, удалить.
  */
 @Component
 @RequiredArgsConstructor
@@ -45,7 +45,6 @@ public class ReviewPosterUpdateHandler implements ChannelPosterUpdateHandler {
     private final ChannelPosterTelegramBot bot;
     private final ChannelPosterBotKeyComponent keys;
     private final PostQueueService postQueueService;
-    private final PostImageService postImageService;
     private final PostReviewService reviewService;
     private final PostPublisher publisher;
 
@@ -96,6 +95,15 @@ public class ReviewPosterUpdateHandler implements ChannelPosterUpdateHandler {
                     bot.sendEditMessageReplyMarkupNull(chatId, messageId);
                     reviewService.sendPreview(chatId, shorter, true);
                 }
+                case PHOTO_CMD -> {
+                    bot.sendReturnedMessage(chatId, "🔎 Ищу другое фото…");
+                    if (!reviewService.attachNextStockPhoto(post, chatId)) {
+                        bot.sendReturnedMessage(chatId, "❌ Другого фото не нашлось — попробуй «🎨 Сгенерировать».");
+                        return;
+                    }
+                    bot.sendEditMessageReplyMarkupNull(chatId, messageId);
+                    reviewService.sendPreview(chatId, post, true);
+                }
                 case IMAGE_CMD -> {
                     bot.sendReturnedMessage(chatId, "🎨 Рисую новую картинку…");
                     boolean ok = reviewService.generateImage(post, chatId);
@@ -107,7 +115,7 @@ public class ReviewPosterUpdateHandler implements ChannelPosterUpdateHandler {
                     reviewService.sendPreview(chatId, post, true);
                 }
                 case NO_IMAGE_CMD -> {
-                    postImageService.deletePostImageByPostQueueId(post.getId());
+                    reviewService.removeImage(post);
                     bot.sendEditMessageReplyMarkupNull(chatId, messageId);
                     reviewService.sendPreview(chatId, post, false);
                 }

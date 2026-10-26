@@ -27,11 +27,14 @@ public class PostImage {
     @Enumerated(EnumType.STRING)
     private ImageStatus status;
     private String tgFileId;
+    // автор фото со стока и его страница — для подписи «Фото: автор / Pixabay» (у угадайки подпись своя, тут null)
+    private String stockAuthor;
+    private String stockPageUrl;
 
     @CreationTimestamp
     private Instant created;
 
-    // STOCK — фото с Pixabay («Угадай калорийность»)
+    // STOCK — фото с Pixabay («Угадай калорийность», статьи и рубрики по умолчанию)
     public enum ImageSource { AI_GENERATED, ADMIN_UPLOAD, STOCK }
 
     public enum ImageStatus { GENERATING, READY, APPROVED, REJECTED }

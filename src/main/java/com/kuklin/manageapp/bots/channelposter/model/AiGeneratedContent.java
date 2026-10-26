@@ -14,4 +14,8 @@ public class AiGeneratedContent {
     private String postText;
     @JsonProperty("image_prompt")
     private String imagePrompt;
+    @JsonProperty("image_query")
+    private String imageQuery;
+    @JsonProperty("image_query_broad")
+    private String imageQueryBroad;
 }

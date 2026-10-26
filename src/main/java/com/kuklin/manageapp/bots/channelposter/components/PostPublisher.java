@@ -83,8 +83,11 @@ public class PostPublisher {
         if (poll.isPresent()) {
             return sendPollPreview(chatId, post, poll.get(), footer, keyboard);
         }
-        byte[] photo = withImage ? getPhotoOrNull(post) : null;
-        String text = render(post) + (footer == null ? "" : footer);
+        PostImage image = withImage ? postImageService.getByPostQueueIdOrNull(post.getId()) : null;
+        byte[] photo = getPhotoOrNull(post, image);
+        // автор фото со стока — только если фото уходит вместе с постом
+        String credit = photo == null ? null : buildPhotoCreditOrNull(image);
+        String text = render(post, credit) + (footer == null ? "" : footer);
 
         if (photo != null && getVisibleLength(text) <= CAPTION_LIMIT) {
             Message message = bot.sendHtmlPhoto(chatId, photo, text, keyboard);
@@ -106,7 +109,7 @@ public class PostPublisher {
      * @return сообщение с фото или null — фото нет или Telegram не принял
      */
     private Message sendLeadPhoto(Long chatId, PostQueue post) {
-        byte[] photo = getPhotoOrNull(post);
+        byte[] photo = getPhotoOrNull(post, postImageService.getByPostQueueIdOrNull(post.getId()));
         if (photo == null) return null;
         Message message = bot.sendHtmlPhoto(chatId, photo, render(post), null);
         if (message == null) {
@@ -140,8 +143,7 @@ public class PostPublisher {
                 + "\n💬 " + escapeHtml(poll.getExplanation());
     }
 
-    private byte[] getPhotoOrNull(PostQueue post) {
-        PostImage image = postImageService.getByPostQueueIdOrNull(post.getId());
+    private byte[] getPhotoOrNull(PostQueue post, PostImage image) {
         if (image == null || image.getTgFileId() == null) {
             return null;
         }
@@ -153,8 +155,23 @@ public class PostPublisher {
     }
 
     private String render(PostQueue post) {
+        return render(post, null);
+    }
+
+    private String render(PostQueue post, String photoCredit) {
         TopicCategory category = topicCategoryService.findById(post.getCategoryId()).orElse(null);
-        return renderText(post, category == null ? null : category.getHashtag(), getBotLinkOrNull(post, category));
+        return renderText(post, category == null ? null : category.getHashtag(), getBotLinkOrNull(post, category),
+                photoCredit);
+    }
+
+    /**
+     * «Фото: автор / Pixabay» — правила Pixabay просят показывать источник. У угадайки автор уже в тексте поста,
+     * у её картинки stockAuthor не заполнен — второй раз не подписываем.
+     */
+    static String buildPhotoCreditOrNull(PostImage image) {
+        if (image == null || image.getStockAuthor() == null || image.getStockPageUrl() == null) return null;
+        return "<i>Фото: <a href=\"" + escapeAttr(image.getStockPageUrl()) + "\">" + escapeHtml(image.getStockAuthor())
+                + "</a> / Pixabay</i>";
     }
 
     // ссылка на калорийного бота — в каждом CTA_EVERY-м текстовом посте, чтобы не превращать канал в рекламу
@@ -171,12 +188,19 @@ public class PostPublisher {
         }
     }
 
-    /**
-     * Текст поста, затем хвост строками: ссылка на источник, ссылка на бота, хэштег рубрики.
-     */
     public static String renderText(PostQueue post, String hashtag, String botLink) {
+        return renderText(post, hashtag, botLink, null);
+    }
+
+    /**
+     * Текст поста, затем хвост строками: автор фото, ссылка на источник, ссылка на бота, хэштег рубрики.
+     */
+    public static String renderText(PostQueue post, String hashtag, String botLink, String photoCredit) {
         String text = post.getTextContent() == null ? "" : post.getTextContent().trim();
         List<String> tail = new ArrayList<>();
+        if (photoCredit != null) {
+            tail.add(photoCredit);
+        }
         if (post.getSourceUrl() != null && !post.getSourceUrl().isBlank()) {
             String name = post.getSourceName() == null || post.getSourceName().isBlank()
                     ? "Источник"
@@ -217,7 +241,7 @@ public class PostPublisher {
         return length;
     }
 
-    static String escapeHtml(String s) {
+    public static String escapeHtml(String s) {
         return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
     }
 

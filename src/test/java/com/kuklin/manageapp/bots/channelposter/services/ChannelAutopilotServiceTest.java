@@ -30,7 +30,7 @@ class ChannelAutopilotServiceTest {
     private final ChannelFeedbackService feedbackService = mock(ChannelFeedbackService.class);
     private final PostReviewService reviewService = new PostReviewService(
             bot, keys, null, null, postQueueService, null, properties, topicCategoryService,
-            mock(ChannelPollService.class));
+            mock(ChannelPollService.class), null);
     private final ChannelAutopilotService service = new ChannelAutopilotService(
             keys, bot, postQueueService, mock(SourceItemService.class), mock(ContentSourceService.class),
             reviewService, properties, mock(RubricTopicService.class), feedbackService);

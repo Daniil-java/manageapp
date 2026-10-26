@@ -38,6 +38,18 @@ class PixabayClientTest {
     }
 
     @Test
+    void searchesByKeywordsInEnglishWithoutCategory() throws IOException {
+        when(keys.getPixabayApiKey()).thenReturn("k1");
+        when(http.get(anyString(), anyString(), anyMap())).thenReturn("{\"hits\": []}");
+
+        assertThat(client.searchByKeywords("oatmeal berries")).isEmpty();
+
+        verify(http).get(eq(PixabayClient.SEARCH_URL + "?key=k1&q=oatmeal+berries"
+                        + "&lang=en&image_type=photo&orientation=horizontal&safesearch=true&per_page=20"),
+                anyString(), eq(Map.of()));
+    }
+
+    @Test
     void errorDoesNotLeakKey() throws IOException {
         when(keys.getPixabayApiKey()).thenReturn("secret-key");
         when(http.get(anyString(), anyString(), anyMap()))

@@ -65,6 +65,11 @@ class PostPublisherTest {
         PostQueue article = new PostQueue().setTextContent("Текст").setSourceUrl("https://e.com").setSourceName("E");
         assertThat(PostPublisher.renderText(article, "#наука", null))
                 .isEqualTo("Текст\n\n<a href=\"https://e.com\">Источник: E</a>\n#наука");
+        assertThat(PostPublisher.renderText(new PostQueue().setTextContent("Текст"), "#миф", null,
+                PostPublisher.buildPhotoCreditOrNull(new PostImage().setStockAuthor("Anna").setStockPageUrl("https://p/1"))))
+                .isEqualTo("Текст\n\n<i>Фото: <a href=\"https://p/1\">Anna</a> / Pixabay</i>\n#миф");
+        // у угадайки автор уже в тексте — картинка без stockAuthor не подписывается
+        assertThat(PostPublisher.buildPhotoCreditOrNull(new PostImage().setTgFileId("f"))).isNull();
         assertThat(PostPublisher.renderText(new PostQueue().setTextContent("Текст"), "#миф", null))
                 .isEqualTo("Текст\n\n#миф");
     }

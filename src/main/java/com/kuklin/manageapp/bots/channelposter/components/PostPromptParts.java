@@ -8,10 +8,14 @@ public final class PostPromptParts {
 
     public static final String JSON_FORMAT =
             """
-                    ВЫХОДНЫЕ ДАННЫЕ ДОЛЖНЫ БЫТЬ СТРОГО В ФОРМАТЕ JSON с тремя полями:
+                    ВЫХОДНЫЕ ДАННЫЕ ДОЛЖНЫ БЫТЬ СТРОГО В ФОРМАТЕ JSON с пятью полями:
                     1. "post_title": короткий заголовок поста на русском (до 80 символов, без HTML)
                     2. "post_text": текст поста.
                     3. "image_prompt": финальный текст промпта для генерации изображения (максимум 3000 символов).
+                    4. "image_query": 2–4 ключевых слова НА АНГЛИЙСКОМ для поиска фото к посту на фотостоке (Pixabay).
+                       Только то, что можно сфотографировать: продукты, блюда, предметы, люди за делом (например: "oatmeal berries breakfast", "woman sleeping bed", "running park").
+                       Без абстракций («health», «science», «study»), без цифр и знаков препинания, через пробел.
+                    5. "image_query_broad": запасной запрос на случай, если по "image_query" фото не найдётся — 1–2 английских слова, шире и проще (например: "yogurt" вместо "gut bacteria yogurt", "sleep" вместо "woman sleeping bed"). Не повторяй "image_query".
                     """;
 
     public static final String MARKUP_RULES =

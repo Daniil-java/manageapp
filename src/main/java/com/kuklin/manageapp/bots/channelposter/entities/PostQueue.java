@@ -21,6 +21,13 @@ public class PostQueue {
     private String title;
     private String textContent;
     private String imageDescription;
+    // ключевые слова на английском для поиска фото на Pixabay (AI пишет вместе с постом): точные и запасные,
+    // пошире — их фото идут в выдаче после точных
+    private String imageQuery;
+    private String imageQueryBroad;
+    // id фото Pixabay у поста (null — фото не со стока): «🔁 Другое фото» берёт следующее после него,
+    // а фото других постов, в том числе вышедших, повторно не берутся
+    private Long stockPhotoId;
     private Instant scheduledAt;
     @Enumerated(EnumType.STRING)
     private PostQueueStatus status;

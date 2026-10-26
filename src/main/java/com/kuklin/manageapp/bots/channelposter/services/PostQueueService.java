@@ -18,9 +18,12 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.time.*;
+import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -86,6 +89,8 @@ public class PostQueueService {
                 .setCategoryId(topicCategory.getId())
                 .setStatus(PostQueue.PostQueueStatus.TEXT_GENERATED)
                 .setImageDescription(content.getImagePrompt())
+                .setImageQuery(content.getImageQuery())
+                .setImageQueryBroad(content.getImageQueryBroad())
                 .setTitle(content.getPostTitle())
         );
     }
@@ -108,6 +113,12 @@ public class PostQueueService {
 //        PostQueue postQueue = getPostQueueById(postId);
 //        return articleContentGenerator.generateImage(postQueue);
 //    }
+
+    // фото Pixabay из photoIds, которые уже у других постов, — чтобы не повторять их в канале
+    public Set<Long> findStockPhotoIdsOfOtherPosts(Collection<Long> photoIds, Long postId) {
+        if (photoIds.isEmpty()) return Set.of();
+        return new HashSet<>(postQueueRepository.findStockPhotoIdsOfOtherPosts(photoIds, postId));
+    }
 
     public void removePost(Long postId) {
         postImageService.deletePostImageByPostQueueId(postId);

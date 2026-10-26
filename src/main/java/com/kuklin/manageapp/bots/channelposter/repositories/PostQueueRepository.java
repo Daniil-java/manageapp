@@ -38,6 +38,10 @@ public interface PostQueueRepository extends JpaRepository<PostQueue, Long> {
 
     long countByStatusIn(Collection<PostQueue.PostQueueStatus> statuses);
 
+    // какие из фото Pixabay уже у других постов (на проверке, в очереди, вышедших)
+    @Query("SELECT pq.stockPhotoId FROM PostQueue pq WHERE pq.stockPhotoId IN :photoIds AND pq.id <> :postId")
+    List<Long> findStockPhotoIdsOfOtherPosts(@Param("photoIds") Collection<Long> photoIds, @Param("postId") Long postId);
+
     long countByCategoryIdAndStatusIn(Long categoryId, Collection<PostQueue.PostQueueStatus> statuses);
 
     // пост канала по id сообщения — для реакций

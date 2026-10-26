@@ -103,6 +103,8 @@ public class RubricPostService {
                 .setTitle(content.getPostTitle())
                 .setTextContent(content.getPostText())
                 .setImageDescription(content.getImagePrompt())
+                .setImageQuery(content.getImageQuery())
+                .setImageQueryBroad(content.getImageQueryBroad())
                 .setStatus(PostQueue.PostQueueStatus.TEXT_GENERATED));
         topicService.markUsed(topic, post.getId());
         reviewService.prepareAndSendToAdmins(post);
