@@ -8,6 +8,7 @@ import com.kuklin.manageapp.bots.caloriebot.i18n.I18nProperties;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieMenuButtons;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.TelegramCalorieBotFacade;
+import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.DayCardCalorieUpdateHandler;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.dish.DishKeyboards;
 import com.kuklin.manageapp.bots.caloriebot.texts.DishTexts;
 import com.kuklin.manageapp.common.entities.TelegramUser;
@@ -79,7 +80,33 @@ class TodayUpdateHandlerDaysTest {
                 .containsExactly(DAY_PREFIX + today.minusDays(1), "📊СЕГОДНЯ", NO_ACTION);
         assertThat(rows.get(1)).extracting(InlineKeyboardButton::getText).containsExactly("🗑 Удалить", "📸 Поделиться днём");
         assertThat(rows.get(1)).extracting(b -> ((StyledInlineKeyboardButton) b).getStyle()).containsExactly("danger", "primary");
+        // Карточка — за день сообщения: нажатая завтра, поделится сегодняшним
+        assertThat(rows.get(1).get(1).getCallbackData()).isEqualTo("daycard " + today);
         assertThat(rows.get(2)).extracting(InlineKeyboardButton::getText).containsExactly("← Меню");
+    }
+
+    /** Прошлый день: «Поделиться днём» этим днём, над «← Меню». */
+    @Test
+    void pastDayHasCardOfThatDay() {
+        LocalDate day = today.minusDays(3);
+        press(DAY_PREFIX + day);
+        ArgumentCaptor<InlineKeyboardMarkup> captor = ArgumentCaptor.forClass(InlineKeyboardMarkup.class);
+        verify(bot).sendEditMessage(anyLong(), anyString(), anyInt(), captor.capture());
+        List<List<InlineKeyboardButton>> rows = captor.getValue().getKeyboard();
+
+        assertThat(rows.get(rows.size() - 2)).extracting(InlineKeyboardButton::getCallbackData)
+                .containsExactly("daycard " + day);
+        assertThat(rows.get(rows.size() - 1)).extracting(InlineKeyboardButton::getText).containsExactly("← Меню");
+    }
+
+    @Test
+    void cardDayFromCallback() {
+        assertThat(DayCardCalorieUpdateHandler.getDayOrToday("daycard " + today.minusDays(2), today))
+                .isEqualTo(today.minusDays(2));
+        // Старая кнопка без даты, испорченная, из будущего — сегодня
+        assertThat(DayCardCalorieUpdateHandler.getDayOrToday("daycard", today)).isEqualTo(today);
+        assertThat(DayCardCalorieUpdateHandler.getDayOrToday("daycard x", today)).isEqualTo(today);
+        assertThat(DayCardCalorieUpdateHandler.getDayOrToday("daycard " + today.plusDays(1), today)).isEqualTo(today);
     }
 
     /** Накануне сегодня «▶» ведёт на сегодняшний экран. */

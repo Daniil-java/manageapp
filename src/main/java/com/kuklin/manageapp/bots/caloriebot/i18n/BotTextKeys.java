@@ -103,6 +103,7 @@ public final class BotTextKeys {
     public static final String CARD_CAPTION = "card.caption";
     public static final String CARD_EMPTY = "card.empty";
     public static final String CARD_FAILED = "card.failed";
+    public static final String CARD_ALREADY_SENT = "card.already-sent";
     public static final String CARD_TITLE = "card.title";
     public static final String CARD_OF_NORM = "card.of-norm";
     public static final String CARD_NO_NORM = "card.no-norm";

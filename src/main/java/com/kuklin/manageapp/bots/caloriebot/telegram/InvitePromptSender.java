@@ -2,10 +2,11 @@ package com.kuklin.manageapp.bots.caloriebot.telegram;
 
 import com.kuklin.manageapp.bots.caloriebot.components.repository.UserSettingsRepository;
 import com.kuklin.manageapp.bots.caloriebot.components.services.ReferralRewardService;
+import com.kuklin.manageapp.bots.caloriebot.components.services.UserSettingsService;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
+import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.DayCardCalorieUpdateHandler;
 import com.kuklin.manageapp.common.library.tgutils.ButtonStyle;
-import com.kuklin.manageapp.common.library.tgutils.Command;
 import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +15,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMa
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
 
 /**
  * Предложение пригласить друга — так, чтобы не стало спамом:
@@ -34,6 +36,7 @@ public class InvitePromptSender {
 
     private final CalorieTelegramBot calorieTelegramBot;
     private final UserSettingsRepository userSettingsRepository;
+    private final UserSettingsService userSettingsService;
     private final ReferralRewardService referralRewardService;
     private final InviteLinks inviteLinks;
     private final CalorieTexts texts;
@@ -70,9 +73,11 @@ public class InvitePromptSender {
             String text = texts.get(appUserId, BotTextKeys.INVITE_PROMPT,
                     referralRewardService.getPlanDays(ReferralRewardService.INVITED_PLAN_CODE),
                     referralRewardService.getPlanDays(ReferralRewardService.INVITER_PLAN_CODE));
+            // Карточка за день отчёта — даже если нажать на следующий день
+            LocalDate reportDay = LocalDate.now(userSettingsService.getZoneId(appUserId));
             InlineKeyboardMarkup keyboard = TelegramKeyboard.builder()
                     .row(TelegramKeyboard.button(texts.get(appUserId, BotTextKeys.CARD_BUTTON),
-                            Command.CALORIE_DAY_CARD.getCommandText(), ButtonStyle.PRIMARY))
+                            DayCardCalorieUpdateHandler.buildCallbackData(reportDay), ButtonStyle.PRIMARY))
                     .row(inviteLinks.buildShareButton(appUserId))
                     .build();
             calorieTelegramBot.sendReturnedMessage(chatId, text, keyboard, null);

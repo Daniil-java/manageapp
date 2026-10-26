@@ -472,11 +472,16 @@ public abstract class TelegramBot extends TelegramLongPollingBot implements Tele
     }
 
     public void sendChatActionTyping(Long chatId) {
-        SendChatAction typingAction = new SendChatAction();
-        typingAction.setChatId(chatId);
-        typingAction.setAction(ActionType.TYPING);
+        sendChatAction(chatId, ActionType.TYPING);
+    }
+
+    /** Статус над чатом («печатает…», «отправляет фото…») — держится ~5 секунд или до сообщения бота. */
+    public void sendChatAction(Long chatId, ActionType action) {
+        SendChatAction chatAction = new SendChatAction();
+        chatAction.setChatId(chatId);
+        chatAction.setAction(action);
         try {
-            execute(typingAction);
+            execute(chatAction);
         } catch (TelegramApiException e) {
             log.error("Не получилось отправить ChatAction!");
         }

@@ -23,7 +23,7 @@ import java.util.Objects;
 import java.util.function.Function;
 
 /**
- * Карточка «мой день» — картинка для сторис и чатов: калории и БЖУ за сегодня против нормы, серия, число блюд,
+ * Карточка «мой день» — картинка для сторис и чатов: калории и БЖУ за день против нормы, серия, число блюд,
  * внизу — реферальная ссылка автора (кто придёт по ней, получит бонус, автор — награды за приглашение).
  * HTML-шаблон templates/daycard.html → PNG 1080×1350 (HtmlPdfRenderer).
  */
@@ -40,7 +40,6 @@ public class DayCardService {
 
     private final DishService dishService;
     private final UserNutritionProfileService userNutritionProfileService;
-    private final UserSettingsService userSettingsService;
     private final StreakService streakService;
     private final CalorieTexts texts;
     // Шаблон и маскот не меняются, пока приложение работает
@@ -65,19 +64,19 @@ public class DayCardService {
     }
 
     /**
-     * Карточка за сегодня (по часовому поясу пользователя).
+     * Карточка за день date (календарный день пользователя): сегодня или прошлый — из истории или старого сообщения.
+     * Серия — на конец этого дня.
      *
      * @param referralUrl реферальная ссылка автора — печатается внизу без https://
      * @param bonusDays   сколько дней Premium получит пришедший по ссылке
      */
-    public DayCard buildCard(Long appUserId, String referralUrl, int bonusDays) {
-        List<Dish> dishes = dishService.getTodayDishes(appUserId);
+    public DayCard buildCard(Long appUserId, LocalDate date, String referralUrl, int bonusDays) {
+        List<Dish> dishes = dishService.getDishesForDate(appUserId, date);
         if (dishes.isEmpty()) {
             return new DayCard(Status.EMPTY, null);
         }
         DayTotals totals = getTotals(dishes, userNutritionProfileService.getOrCreateProfile(appUserId));
-        LocalDate today = LocalDate.now(userSettingsService.getZoneId(appUserId));
-        String html = fillTemplateOrNull(appUserId, totals, today, streakService.getCurrentStreak(appUserId),
+        String html = fillTemplateOrNull(appUserId, totals, date, streakService.getStreakEndingAt(appUserId, date),
                 referralUrl, bonusDays);
         byte[] png = html == null ? null : HtmlPdfRenderer.renderPngOrNull(html, getClass().getResource(IMAGES_BASE_URL).toString());
         return png == null ? new DayCard(Status.FAILED, null) : new DayCard(Status.OK, png);
@@ -96,7 +95,7 @@ public class DayCardService {
         return dishes.stream().map(value).filter(Objects::nonNull).mapToInt(Integer::intValue).sum();
     }
 
-    String fillTemplateOrNull(Long appUserId, DayTotals totals, LocalDate today, int streak,
+    String fillTemplateOrNull(Long appUserId, DayTotals totals, LocalDate date, int streak,
                               String referralUrl, int bonusDays) {
         String template = getCachedResourceOrNull(TEMPLATE_PATH);
         String mascot = getCachedResourceOrNull(MASCOT_PATH);
@@ -115,7 +114,7 @@ public class DayCardService {
         return template
                 .replace("{{LANG}}", language.getCode())
                 .replace("{{TITLE}}", esc(texts.get(language, BotTextKeys.CARD_TITLE)))
-                .replace("{{DATE}}", esc(DateTimeFormatter.ofPattern("d MMMM", language.getLocale()).format(today)))
+                .replace("{{DATE}}", esc(DateTimeFormatter.ofPattern("d MMMM", language.getLocale()).format(date)))
                 .replace("{{MASCOT}}", mascot.replace("<svg ", "<svg width=\"120\" height=\"113\" "))
                 .replace("{{KCAL}}", String.valueOf(totals.calories()))
                 .replace("{{KCAL_UNIT}}", esc(kcalUnit))

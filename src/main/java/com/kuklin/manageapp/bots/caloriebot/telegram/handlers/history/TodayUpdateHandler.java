@@ -11,6 +11,7 @@ import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieMenuButtons;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
+import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.DayCardCalorieUpdateHandler;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.dish.DishKeyboards;
 import com.kuklin.manageapp.bots.caloriebot.texts.DishTexts;
 import com.kuklin.manageapp.common.entities.TelegramUser;
@@ -33,7 +34,7 @@ import java.util.List;
 
 /**
  * Обработчик для отображения статистики и списка блюд пользователя за текущий день.
- * Кнопками ◀ ▶ листаются прошлые дни (не дальше MAX_DAYS_BACK) — только просмотр, без удаления и карточки.
+ * Кнопками ◀ ▶ листаются прошлые дни (не дальше MAX_DAYS_BACK) — просмотр и карточка дня, без удаления.
  */
 @Component
 @RequiredArgsConstructor
@@ -126,7 +127,7 @@ public class TodayUpdateHandler implements CalorieBotUpdateHandler {
     }
 
     /**
-     * Прошлый день — только просмотр: блюда, итоги, шкалы. Сегодня (или дата вне окна листания) — обычный экран «Сегодня».
+     * Прошлый день — просмотр: блюда, итоги, шкалы, карточка дня. Сегодня (или дата вне окна листания) — обычный экран «Сегодня».
      */
     private void showDay(Long chatId, Integer messageId, Long userId, LocalDate requested) {
         LocalDate today = getUserToday(userId);
@@ -234,16 +235,14 @@ public class TodayUpdateHandler implements CalorieBotUpdateHandler {
 
         builder.row(
                 TelegramKeyboard.button(texts.get(userId, BotTextKeys.TODAY_BUTTON_GO_TO_REMOVE), REMOVE_CMD, ButtonStyle.DANGER),
-                // Карточка «мой день» для сторис и чатов (DayCardCalorieUpdateHandler)
-                TelegramKeyboard.button(texts.get(userId, BotTextKeys.CARD_BUTTON), Command.CALORIE_DAY_CARD.getCommandText(),
-                        ButtonStyle.PRIMARY)
+                buildCardButton(userId, today)
         );
         builder.row(menuButtons.buildBackToMenuButton(userId));
 
         return builder.build();
     }
 
-    /** Прошлый день: [ ◀ ] [ Сегодня ] [ ▶ ], шкалы за тот день, «← Меню». */
+    /** Прошлый день: [ ◀ ] [ Сегодня ] [ ▶ ], шкалы за тот день, [ 📸 Поделиться днём ], «← Меню». */
     private InlineKeyboardMarkup buildPastDayKeyboard(Long userId, LocalDate date, LocalDate today) {
         TelegramKeyboard.TelegramKeyboardBuilder builder = TelegramKeyboard.builder()
                 .row(buildDayNavRow(userId, date, today));
@@ -251,8 +250,18 @@ public class TodayUpdateHandler implements CalorieBotUpdateHandler {
         analyticsService.buildDayBars(userId, date)
                 .forEach(bar -> builder.row(TelegramKeyboard.noActionButton(bar)));
 
+        builder.row(buildCardButton(userId, date));
         builder.row(menuButtons.buildBackToMenuButton(userId));
         return builder.build();
+    }
+
+    /**
+     * Карточка «мой день» для сторис и чатов (DayCardCalorieUpdateHandler). День — в кнопке:
+     * сообщение «Сегодня», оставшееся со вчера, делится вчерашним днём.
+     */
+    private InlineKeyboardButton buildCardButton(Long userId, LocalDate date) {
+        return TelegramKeyboard.button(texts.get(userId, BotTextKeys.CARD_BUTTON),
+                DayCardCalorieUpdateHandler.buildCallbackData(date), ButtonStyle.PRIMARY);
     }
 
     /**

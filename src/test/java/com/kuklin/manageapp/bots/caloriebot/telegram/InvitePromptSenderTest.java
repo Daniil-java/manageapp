@@ -15,6 +15,8 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKe
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -43,6 +45,7 @@ class InvitePromptSenderTest {
     void setUp() {
         UserSettingsService settings = mock(UserSettingsService.class);
         when(settings.findLanguageCode(USER)).thenReturn("ru");
+        when(settings.getZoneId(USER)).thenReturn(ZoneOffset.UTC);
         CalorieTexts texts = new CalorieTexts(new I18nProperties(), settings);
         when(bot.getBotUsername()).thenReturn("@calorydairy_bot");
         when(utmService.getOrCreateReferralLink(USER)).thenReturn("ref7");
@@ -50,7 +53,7 @@ class InvitePromptSenderTest {
         when(rewardService.getPlanDays(ReferralRewardService.INVITER_PLAN_CODE)).thenReturn(7);
         when(rewardService.getPlanDays(ReferralRewardService.FRIEND_PAID_PLAN_CODE)).thenReturn(30);
         InviteLinks links = new InviteLinks(bot, utmService, rewardService, texts);
-        sender = new InvitePromptSender(bot, settingsRepository, rewardService, links, texts);
+        sender = new InvitePromptSender(bot, settingsRepository, settings, rewardService, links, texts);
     }
 
     private List<InlineKeyboardButton> sentButtons() {
@@ -95,8 +98,10 @@ class InvitePromptSenderTest {
         verify(settingsRepository).claimInvitePrompt(eq(USER), now.capture(), joinedBefore.capture(), promptedBefore.capture());
         assertThat(Duration.between(joinedBefore.getValue(), now.getValue())).isEqualTo(InvitePromptSender.MIN_ACCOUNT_AGE);
         assertThat(Duration.between(promptedBefore.getValue(), now.getValue())).isEqualTo(InvitePromptSender.PROMPT_INTERVAL);
-        // Две кнопки: карточка дня и «Переслать другу»
-        assertThat(sentButtons()).hasSize(2);
+        // Две кнопки: карточка за сегодня и «Переслать другу»
+        List<InlineKeyboardButton> buttons = sentButtons();
+        assertThat(buttons).hasSize(2);
+        assertThat(buttons.get(0).getCallbackData()).isEqualTo("daycard " + LocalDate.now(ZoneOffset.UTC));
     }
 
     @Test

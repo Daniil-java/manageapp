@@ -15,7 +15,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -26,6 +25,7 @@ class DayCardServiceTest {
 
     private static final long USER_ID = 7L;
     private static final String REF_URL = "https://t.me/calorydairy_bot?start=ref7";
+    private static final LocalDate DAY = LocalDate.of(2026, 10, 20);
 
     private final DishService dishService = mock(DishService.class);
     private final UserNutritionProfileService profileService = mock(UserNutritionProfileService.class);
@@ -34,12 +34,11 @@ class DayCardServiceTest {
 
     private DayCardService buildService(String language) {
         when(settingsService.findLanguageCode(USER_ID)).thenReturn(language);
-        when(settingsService.getZoneId(USER_ID)).thenReturn(ZoneId.of("Europe/Moscow"));
-        when(streakService.getCurrentStreak(USER_ID)).thenReturn(5);
+        when(streakService.getStreakEndingAt(USER_ID, DAY)).thenReturn(5);
         when(profileService.getOrCreateProfile(USER_ID)).thenReturn(new UserNutritionProfile()
                 .setCaloriesNormPerDay(2100).setProteinsNormGramsPerDay(120)
                 .setFatsNormGramsPerDay(70).setCarbsNormGramsPerDay(240));
-        return new DayCardService(dishService, profileService, settingsService, streakService,
+        return new DayCardService(dishService, profileService, streakService,
                 new CalorieTexts(new I18nProperties(), settingsService));
     }
 
@@ -51,9 +50,9 @@ class DayCardServiceTest {
     @Test
     void noDishesTodayIsEmpty() {
         DayCardService service = buildService("ru");
-        when(dishService.getTodayDishes(USER_ID)).thenReturn(List.of());
+        when(dishService.getDishesForDate(USER_ID, DAY)).thenReturn(List.of());
 
-        assertThat(service.buildCard(USER_ID, REF_URL, 3).status()).isEqualTo(Status.EMPTY);
+        assertThat(service.buildCard(USER_ID, DAY, REF_URL, 3).status()).isEqualTo(Status.EMPTY);
     }
 
     @Test
@@ -96,10 +95,10 @@ class DayCardServiceTest {
     @Test
     void rendersPngOfCardSize() throws IOException {
         DayCardService service = buildService("ru");
-        when(dishService.getTodayDishes(USER_ID)).thenReturn(List.of(
+        when(dishService.getDishesForDate(USER_ID, DAY)).thenReturn(List.of(
                 dish(520, 32, 18, 55), dish(780, 41, 30, 70), dish(540, 22, 12, 85)));
 
-        DayCard card = service.buildCard(USER_ID, REF_URL, 3);
+        DayCard card = service.buildCard(USER_ID, DAY, REF_URL, 3);
 
         assertThat(card.status()).isEqualTo(Status.OK);
         BufferedImage image = ImageIO.read(new ByteArrayInputStream(card.png()));
@@ -111,9 +110,9 @@ class DayCardServiceTest {
     @Test
     void rendersEnglishCard() throws IOException {
         DayCardService service = buildService("en");
-        when(dishService.getTodayDishes(USER_ID)).thenReturn(List.of(dish(1840, 95, 60, 210)));
+        when(dishService.getDishesForDate(USER_ID, DAY)).thenReturn(List.of(dish(1840, 95, 60, 210)));
 
-        DayCard card = service.buildCard(USER_ID, REF_URL, 3);
+        DayCard card = service.buildCard(USER_ID, DAY, REF_URL, 3);
 
         assertThat(card.status()).isEqualTo(Status.OK);
         savePreview("daycard-en.png", card.png());

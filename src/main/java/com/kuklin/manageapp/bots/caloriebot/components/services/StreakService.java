@@ -42,6 +42,22 @@ public class StreakService {
         return getStreak(userId).current();
     }
 
+    /** Серия на конец дня date: сколько дней подряд с записями заканчиваются этим днём (карточка прошлого дня). */
+    @Transactional(readOnly = true)
+    public int getStreakEndingAt(Long userId, LocalDate date) {
+        return countStreakEndingAt(findActiveDays(userId, userSettingsService.getZoneId(userId)), date);
+    }
+
+    static int countStreakEndingAt(Set<LocalDate> activeDays, LocalDate date) {
+        int streak = 0;
+        LocalDate day = date;
+        while (activeDays.contains(day)) {
+            streak++;
+            day = day.minusDays(1);
+        }
+        return streak;
+    }
+
     /** Сколько разных дней (в таймзоне пользователя) есть блюда за [from, to). Вода не считается. */
     @Transactional(readOnly = true)
     public long countDishDaysBetween(Long userId, Instant from, Instant to) {
@@ -69,12 +85,7 @@ public class StreakService {
     static StreakDto buildStreak(Set<LocalDate> activeDays, LocalDate today) {
         boolean todayLogged = activeDays.contains(today);
 
-        int current = 0;
-        LocalDate day = todayLogged ? today : today.minusDays(1);
-        while (activeDays.contains(day)) {
-            current++;
-            day = day.minusDays(1);
-        }
+        int current = countStreakEndingAt(activeDays, todayLogged ? today : today.minusDays(1));
 
         List<StreakDay> last7 = new ArrayList<>(LAST_DAYS);
         for (int i = LAST_DAYS - 1; i >= 0; i--) {
