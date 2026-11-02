@@ -3,6 +3,7 @@ package com.kuklin.manageapp.bots.caloriebot.telegram;
 import com.kuklin.manageapp.aiconversation.models.AiUnavailableException;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserSettingsService;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
+import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.RefundedPaymentCapture;
@@ -17,10 +18,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
+import org.telegram.telegrambots.meta.api.methods.AnswerPreCheckoutQuery;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.User;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
 import java.util.Optional;
 
@@ -66,25 +69,74 @@ public class TelegramCalorieBotFacade extends TelegramFacade {
         if (updateHandler == null) {
             log.debug("No suitable handler found, no reply will be sent");
         } else {
-            handleOrNotifyAiUnavailable(updateHandler, update, telegramUser);
+            handleOrNotifyError(updateHandler, update, telegramUser);
         }
     }
 
     /**
-     * ИИ не ответил (401, 429, 5xx, таймаут) в любом обработчике — фото, текст, голос, отчёт за день.
-     * Раньше исключение уходило в пул обработки апдейтов и только логировалось, пользователь ждал впустую.
-     * Попытку фото к этому моменту уже вернул FeatureAccessAspect.
+     * Исключение из любого обработчика — отвечаем пользователю, а не молчим: раньше оно уходило
+     * в пул обработки апдейтов и только логировалось.
      */
-    private void handleOrNotifyAiUnavailable(UpdateHandler updateHandler, Update update, TelegramUser telegramUser) {
+    private void handleOrNotifyError(UpdateHandler updateHandler, Update update, TelegramUser telegramUser) {
         try {
             updateHandler.handle(update, telegramUser);
-        } catch (AiUnavailableException e) {
-            log.warn("AI unavailable for user {}: {}", telegramUser.getAppUserId(), e.getMessage());
-            Long chatId = getChatIdOrNull(update);
-            if (chatId == null) return;
-            Long appUserId = telegramUser.getAppUserId();
-            calorieTelegramBot.sendReturnedMessage(chatId, texts.error(appUserId, ErrorStatus.AI_UNAVAILABLE),
-                    menuButtons.buildKeyboard(appUserId), null);
+        } catch (RuntimeException e) {
+            notifyError(updateHandler, update, telegramUser, e);
+        }
+    }
+
+    /**
+     * Оплата — свои ответы: деньги уже списаны или счёт ждёт ответа, «попробуйте позже» не подходит.
+     * Остальное: ИИ не ответил (попытку фото уже вернул FeatureAccessAspect) — AI_UNAVAILABLE;
+     * ErrorResponseException из сервиса — его текст из errors_*; всё прочее (БД, баг) — общий ответ с /support.
+     */
+    private void notifyError(UpdateHandler updateHandler, Update update, TelegramUser telegramUser, RuntimeException e) {
+        Long appUserId = telegramUser.getAppUserId();
+        String handlerName = updateHandler.getClass().getSimpleName();
+        if (update.hasPreCheckoutQuery()) {
+            log.error("Pre-checkout failed in {} for user {}", handlerName, appUserId, e);
+            answerPreCheckoutFailed(update.getPreCheckoutQuery().getId(), appUserId);
+            return;
+        }
+        if (update.hasMessage() && update.getMessage().hasSuccessfulPayment()) {
+            log.error("Successful payment not handled in {} for user {}", handlerName, appUserId, e);
+            calorieTelegramBot.sendReturnedMessage(update.getMessage().getChatId(),
+                    texts.error(appUserId, ErrorStatus.PAYMENT_NOT_ACTIVATED));
+            return;
+        }
+        if (RefundedPaymentCapture.findOrNull(update) != null) {
+            // Возврат пользователю ответа не требует — нужен только алерт
+            log.error("Refunded payment not handled in {} for user {}", handlerName, appUserId, e);
+            return;
+        }
+
+        String text;
+        if (e instanceof AiUnavailableException) {
+            log.warn("AI unavailable for user {}: {}", appUserId, e.getMessage());
+            text = texts.error(appUserId, ErrorStatus.AI_UNAVAILABLE);
+        } else if (e instanceof ErrorResponseException errorResponse) {
+            // Ожидаемая ошибка с понятным текстом — без алерта
+            log.warn("{} for user {}: {}", handlerName, appUserId, e.getMessage());
+            text = texts.error(appUserId, errorResponse);
+        } else {
+            log.error("Unhandled error in {} for user {}", handlerName, appUserId, e);
+            text = texts.error(appUserId, ErrorStatus.UNEXPECTED_ERROR);
+        }
+        Long chatId = getChatIdOrNull(update);
+        if (chatId == null) return;
+        calorieTelegramBot.sendReturnedMessage(chatId, text, menuButtons.buildKeyboard(appUserId), null);
+    }
+
+    /** Без ответа на pre-checkout Telegram держит оплату до таймаута — отказываем сразу. */
+    private void answerPreCheckoutFailed(String preCheckoutQueryId, Long appUserId) {
+        AnswerPreCheckoutQuery answer = new AnswerPreCheckoutQuery();
+        answer.setPreCheckoutQueryId(preCheckoutQueryId);
+        answer.setOk(false);
+        answer.setErrorMessage(texts.error(appUserId, ErrorStatus.UNEXPECTED_ERROR));
+        try {
+            calorieTelegramBot.execute(answer);
+        } catch (TelegramApiException ex) {
+            log.error("Failed to answer pre-checkout query {}", preCheckoutQueryId, ex);
         }
     }
 

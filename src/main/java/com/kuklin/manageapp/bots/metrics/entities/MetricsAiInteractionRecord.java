@@ -44,6 +44,9 @@ public class MetricsAiInteractionRecord {
     private AiOperation operation;
     // null — модели нет в AiModelPrice
     private BigDecimal costUsd;
+    // Вызов упал: HTTP-код провайдера (0 — ответа не было) и текст ошибки. null — успешный вызов
+    private Integer errorCode;
+    private String error;
     @CreationTimestamp
     private Instant created;
 

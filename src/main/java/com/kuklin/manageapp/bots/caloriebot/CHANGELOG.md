@@ -1,3 +1,23 @@
+## 0.0.81 (02.11.2026)
+[et-111] — Ответ пользователю при любой ошибке бота
+* Fix: исключение из обработчика, кроме AiUnavailableException, уходило в пул обработки апдейтов и только логировалось — пользователь ждал впустую. Теперь TelegramCalorieBotFacade.handleOrNotifyError ловит любое RuntimeException:
+  * AiUnavailableException — как раньше, error.AI_UNAVAILABLE;
+  * ErrorResponseException из сервиса — его текст из errors_* (log.warn, без алерта);
+  * всё прочее (БД, баг) — новый error.UNEXPECTED_ERROR «⚠️ Что-то пошло не так, попробуйте позже. Если повторяется — напишите в /support» с клавиатурой; log.error — алерт в метрикс-бот как раньше.
+* Оплата — свои ответы: упал pre-checkout — сразу AnswerPreCheckoutQuery ok=false, а не ожидание до таймаута; упала обработка успешной оплаты — error.PAYMENT_NOT_ACTIVATED «Оплата получена, но при активации что-то пошло не так. Напишите в /support»; возврат — только алерт.
+* Fix: отчёт за день при сбое ИИ отвечал «Ошибка данных!» — общий catch в CalorieReportUpdateHandler перехватывал AiUnavailableException. Теперь её и ErrorResponseException отправляет фасад.
+* DishUpdateHandler: свой перехват DISH_SAVE_FAILED убран — тот же текст отправляет фасад.
+* Экран «Сегодня», ошибка карточки блюда: голое «ОШИБКА» (common.error, ключ удалён) → error.UNEXPECTED_ERROR.
+* Тесты: TelegramCalorieBotFacadeErrorsTest — общий ответ, текст ErrorResponseException, ИИ не отвечает, упавшая успешная оплата, отказ на pre-checkout.
+
+[et-111] — Упавшие вызовы ИИ в метриках
+* metrics_ai_interaction_record: колонки error_code (HTTP-код провайдера, 0 — ответа не было: таймаут, сеть, пустой ответ) и error (ответ провайдера об ошибке, до 1000 символов). Миграция 0.0.71, changeset 74. У успешных вызовов — null.
+* OpenAiProviderProcessor: упавший чат (текст, фото) и расшифровка голоса пишутся через MetricsAiInteractionRecordService.saveFailedInteractionRecord — без токенов и стоимости, с пользователем и операцией из AiUsageContext. Сбой записи метрики только логируется и исходную ошибку не подменяет.
+* Статистика метрикс-бота (buildStatistics): COUNT — только успешные, новая колонка ERR — упавшие.
+* AiQuotaAlertService (findUsageByUserSince): по-прежнему только успешные вызовы — иначе при пустом счёте подозрительными выглядели бы все, кто повторял попытки.
+* Не покрыто: Claude / DeepSeek / Gemini и генерация картинок OpenAI (канал) — ошибки там не превращаются в AiUnavailableException и в метрики не пишутся.
+* Тесты: OpenAiProviderProcessorErrorsTest — упавший чат пишется с кодом 500 и текстом ошибки, пустая расшифровка — с кодом 0.
+
 ## 0.0.80 (26.10.2026)
 [et-110] — «Поделиться днём» за прошлые дни
 * Fix: кнопка «📸 Поделиться днём» в старом сообщении «Сегодня» (или в предложении после вечернего отчёта) делилась днём, когда её нажали, а не днём сообщения. Теперь день — в callback_data: «daycard 2026-10-21» (DayCardCalorieUpdateHandler.buildCallbackData). Старые кнопки без даты, испорченная дата или дата из будущего — сегодня.

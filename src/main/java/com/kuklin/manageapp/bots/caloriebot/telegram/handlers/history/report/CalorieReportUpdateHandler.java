@@ -1,6 +1,8 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.history.report;
 
+import com.kuklin.manageapp.aiconversation.models.AiUnavailableException;
 import com.kuklin.manageapp.bots.caloriebot.components.services.AiRateLimiter;
+import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.MissingFeatureException;
 import com.kuklin.manageapp.bots.caloriebot.components.services.ReportService;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
@@ -96,6 +98,9 @@ public class CalorieReportUpdateHandler implements CalorieBotUpdateHandler {
                 }
             });
 
+        } catch (AiUnavailableException | ErrorResponseException e) {
+            // Свой текст («ИИ не отвечает», текст ошибки сервиса) отправит фасад — не подменяем «ошибкой данных»
+            throw e;
         } catch (Exception e) {
             log.error("{} Callback error! Data: {}", calorieTelegramBot.getBotUsername(), data, e);
             calorieTelegramBot.sendReturnedMessage(chatId,

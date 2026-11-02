@@ -13,8 +13,6 @@ import com.kuklin.manageapp.bots.caloriebot.entities.DishChoiceChatModel;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.DishDto;
-import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
-import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.MissingFeatureException;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.AccessResult;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.EmptyResultCharge;
@@ -65,20 +63,8 @@ public class DishUpdateHandler implements CalorieBotUpdateHandler {
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
-        List<Dish> dishes;
-        try {
-            dishes = getDishOrNull(update, telegramUser);
-        } catch (ErrorResponseException e) {
-            // ИИ распознал блюда, но в БД они не записались — это не «не съедобно», говорим как есть
-            if (e.getErrorStatus() != ErrorStatus.DISH_SAVE_FAILED) throw e;
-            calorieTelegramBot.sendReturnedMessage(
-                    update.getMessage().getChatId(),
-                    texts.error(telegramUser.getAppUserId(), e),
-                    menuButtons.buildKeyboard(telegramUser.getAppUserId()),
-                    null
-            );
-            return;
-        }
+        // DISH_SAVE_FAILED (ИИ распознал, БД не записала) и другие ErrorResponseException — текст ошибки отправит фасад
+        List<Dish> dishes = getDishOrNull(update, telegramUser);
         if (dishes == null || dishes.isEmpty()) return;
 
         // Итоги дня у всех карточек общие — собираем тексты разом, а не грузим блюда и профиль на каждую

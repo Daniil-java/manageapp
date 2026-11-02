@@ -103,6 +103,41 @@ public class MetricsAiInteractionRecordService {
         );
     }
 
+    /**
+     * Запись упавшего вызова ИИ: без токенов и стоимости, с HTTP-кодом (0 — ответа не было) и текстом ошибки.
+     * Сбой записи метрики не должен подменять исходную ошибку провайдера — только логируем.
+     */
+    public void saveFailedInteractionRecord(
+            ProviderVariant providerVariant,
+            BotIdentifier botIdentifier,
+            String model,
+            String request,
+            MetricsAiInteractionRecord.AiMessageType requestMessageType,
+            int errorCode,
+            String error
+    ) {
+        try {
+            MetricsAiInteractionRecord record = metricsAiInteractionRecordRepository.save(
+                    new MetricsAiInteractionRecord()
+                            .setProviderVariant(providerVariant)
+                            .setBotIdentifier(botIdentifier)
+                            .setModel(model)
+                            .setAppUserId(AiUsageContext.getCurrentAppUserIdOrNull())
+                            .setOperation(AiUsageContext.getCurrentOperationOrNull())
+                            .setRequest(request)
+                            .setRequestMessageType(requestMessageType)
+                            .setErrorCode(errorCode)
+                            .setError(error)
+            );
+            log.info(BotIdentifier.METRICS + ": failed AI interaction saved! ID {}, Provider {}, BotId {}, Model {}, "
+                            + "User {}, Operation {}, ErrorCode {}",
+                    record.getId(), providerVariant, botIdentifier, model,
+                    record.getAppUserId(), record.getOperation(), errorCode);
+        } catch (RuntimeException e) {
+            log.warn(BotIdentifier.METRICS + ": failed to save failed AI interaction: {}", e.getMessage());
+        }
+    }
+
     /** Статистика вызовов ИИ за день day (по Хошимину). */
     public String buildStatistics(LocalDate day) {
         ZonedDateTime startOfDay = day.atStartOfDay(HO_CHI_MINH_ZONE);
@@ -119,7 +154,8 @@ public class MetricsAiInteractionRecordService {
         }
 
         StringBuilder sb = new StringBuilder();
-        sb.append("COUNT, INP, OUT, TOTAL, $\n\n");
+        // COUNT — успешные вызовы, ERR — упавшие (без токенов и стоимости)
+        sb.append("COUNT, INP, OUT, TOTAL, $, ERR\n\n");
 
         records.stream()
                 .collect(Collectors.groupingBy(MetricsAiInteractionRecord::getBotIdentifier))
@@ -131,7 +167,10 @@ public class MetricsAiInteractionRecordService {
                             .collect(Collectors.groupingBy(MetricsAiInteractionRecord::getProviderVariant))
                             .forEach((provider, providerRecords) -> {
 
-                                long count = providerRecords.size();
+                                long errors = providerRecords.stream()
+                                        .filter(r -> r.getErrorCode() != null)
+                                        .count();
+                                long count = providerRecords.size() - errors;
                                 long input = providerRecords.stream()
                                         .mapToLong(r -> r.getInputTokens() != null ? r.getInputTokens() : 0L)
                                         .sum();
@@ -157,6 +196,8 @@ public class MetricsAiInteractionRecordService {
                                         .append(input + output)
                                         .append(", ")
                                         .append(costUsd)
+                                        .append(", ")
+                                        .append(errors)
                                         .append("\n");
                             });
 

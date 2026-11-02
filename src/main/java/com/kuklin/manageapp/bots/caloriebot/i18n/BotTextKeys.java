@@ -148,7 +148,6 @@ public final class BotTextKeys {
 
     // ── Общее ──────────────────────────────────────────────────────
     public static final String COMMON_BUTTON_BACK = "common.button.back";
-    public static final String COMMON_ERROR = "common.error";
     public static final String COMMON_UNIT_KCAL = "common.unit.kcal";
     public static final String COMMON_UNIT_GRAM = "common.unit.gram";
 

@@ -14,7 +14,7 @@ import java.util.List;
 public interface MetricsAiInteractionRecordRepository extends JpaRepository<MetricsAiInteractionRecord, Long> {
     List<MetricsAiInteractionRecord> findByCreatedBetween(Instant from, Instant to);
 
-    /** Вызовы ИИ с момента from по пользователям, больше всего вызовов — первым. */
+    /** Успешные вызовы ИИ с момента from по пользователям, больше всего вызовов — первым. Упавшие (error_code) не считаем. */
     @Query("""
             select new com.kuklin.manageapp.bots.metrics.models.AiUsageByUser(
                 r.appUserId,
@@ -22,7 +22,7 @@ public interface MetricsAiInteractionRecordRepository extends JpaRepository<Metr
                 coalesce(sum(coalesce(r.inputTokens, 0L) + coalesce(r.outputTokens, 0L)), 0L),
                 sum(r.costUsd))
             from MetricsAiInteractionRecord r
-            where r.created >= :from
+            where r.created >= :from and r.errorCode is null
             group by r.appUserId
             order by count(r) desc
             """)

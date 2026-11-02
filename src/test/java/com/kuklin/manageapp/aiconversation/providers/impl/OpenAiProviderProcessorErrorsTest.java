@@ -25,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -41,14 +42,39 @@ class OpenAiProviderProcessorErrorsTest {
 
     private OpenAiFeignClient client;
     private ApplicationEventPublisher eventPublisher;
+    private MetricsAiInteractionRecordService metrics;
     private OpenAiProviderProcessor processor;
 
     @BeforeEach
     void setUp() {
         client = mock(OpenAiFeignClient.class);
         eventPublisher = mock(ApplicationEventPublisher.class);
-        processor = new OpenAiProviderProcessor(client, mock(MetricsAiLogService.class),
-                mock(MetricsAiInteractionRecordService.class), eventPublisher);
+        metrics = mock(MetricsAiInteractionRecordService.class);
+        processor = new OpenAiProviderProcessor(client, mock(MetricsAiLogService.class), metrics, eventPublisher);
+    }
+
+    @Test
+    void failedChatCallIsSavedToMetricsWithCode() {
+        when(client.generate(anyString(), any())).thenThrow(
+                new FeignException.InternalServerError("boom", REQUEST, null, null));
+
+        assertThatThrownBy(this::fetchText).isInstanceOf(AiUnavailableException.class);
+
+        ArgumentCaptor<String> error = ArgumentCaptor.forClass(String.class);
+        verify(metrics).saveFailedInteractionRecord(eq(ProviderVariant.OPENAI), eq(BotIdentifier.CALORIE_BOT),
+                anyString(), eq("prompt"), eq(MetricsAiInteractionRecord.AiMessageType.TEXT), eq(500), error.capture());
+        assertThat(error.getValue()).contains("boom");
+    }
+
+    @Test
+    void emptyTranscriptionIsSavedToMetricsWithZeroCode() {
+        when(client.transcribeAudio(anyString(), any(), anyString())).thenReturn(new TranscriptionResponse());
+
+        assertThatThrownBy(() -> processor.fetchAudioResponse("key", new byte[]{1}, BotIdentifier.CALORIE_BOT, "test"))
+                .isInstanceOf(AiUnavailableException.class);
+
+        verify(metrics).saveFailedInteractionRecord(eq(ProviderVariant.OPENAI), eq(BotIdentifier.CALORIE_BOT),
+                anyString(), eq("[VOICE]"), eq(MetricsAiInteractionRecord.AiMessageType.VOICE), eq(0), anyString());
     }
 
     @Test

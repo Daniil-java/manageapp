@@ -53,6 +53,10 @@ public enum ErrorStatus {
     DISH_SAVE_FAILED(HttpStatus.SERVICE_UNAVAILABLE),
     // ИИ не ответил (ошибка провайдера, таймаут) — AiUnavailableException. Попытку фото аспект уже вернул
     AI_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE),
+    // Бот: любое другое исключение в обработчике (БД, баг) — общий ответ со ссылкой на /support
+    UNEXPECTED_ERROR(HttpStatus.INTERNAL_SERVER_ERROR),
+    // Бот: оплата прошла, но обработчик упал — деньги списаны, «попробуйте позже» тут не подходит
+    PAYMENT_NOT_ACTIVATED(HttpStatus.INTERNAL_SERVER_ERROR),
     // Блюда без ИИ (вручную, из избранного) — calorie.dish-limits.per-day
     DISH_DAILY_LIMIT(HttpStatus.TOO_MANY_REQUESTS),
     // Вход на сайт (auth.*): лимиты по IP и неверным паролям; email + пароль выключен до подтверждения email

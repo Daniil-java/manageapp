@@ -122,7 +122,7 @@ public class TodayUpdateHandler implements CalorieBotUpdateHandler {
         } catch (Exception e) {
             log.error("Failed to parse dish ID from callback: {}", data, e);
             calorieTelegramBot.sendReturnedMessage(update.getCallbackQuery().getMessage().getChatId(),
-                    texts.get(userId, BotTextKeys.COMMON_ERROR));
+                    texts.error(userId, ErrorStatus.UNEXPECTED_ERROR));
         }
     }
 

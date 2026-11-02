@@ -37,6 +37,10 @@ public class OpenAiProviderProcessor implements ProviderProcessor, AiTextClient 
     // Расшифровка голоса для всех ботов. whisper-1 путал язык на коротких фразах
     // («кофе» → португальский, японский), mini-transcribe точнее и дешевле
     private static final String TRANSCRIPTION_MODEL = "gpt-4o-mini-transcribe";
+    // Запрос расшифровки в метриках — аудио не пишем
+    private static final String VOICE_REQUEST = "[VOICE]";
+    // Ответ провайдера об ошибке в метриках — хватает начала
+    private static final int MAX_ERROR_LENGTH = 1000;
 
     private final OpenAiFeignClient openAiFeignClient;
     private final MetricsAiLogService metricsAiLogService;
@@ -56,7 +60,8 @@ public class OpenAiProviderProcessor implements ProviderProcessor, AiTextClient 
                 OpenAiChatCompletionRequest.makeDefaultImgRequest(content, imagerUrl, chatModel);
         increaseMetricsLog();
 
-        OpenAiChatCompletionResponse response = generateOrThrow(aiKey, request);
+        OpenAiChatCompletionResponse response = generateOrThrow(
+                aiKey, request, botIdentifier, content, MetricsAiInteractionRecord.AiMessageType.PHOTO);
 
         if (response.getUsage() != null) {
             metricsAiInteractionRecordService.saveInteractionRecord(
@@ -93,14 +98,15 @@ public class OpenAiProviderProcessor implements ProviderProcessor, AiTextClient 
             MetricsAiInteractionRecord.AiMessageType messageType
     ) {
         increaseMetricsLog();
-        OpenAiChatCompletionResponse response = generateOrThrow(aiKey, request);
+        String requestText = request.getMessages().get(0).getContent().get(0).getText();
+        OpenAiChatCompletionResponse response = generateOrThrow(aiKey, request, botIdentifier, requestText, messageType);
 
         if (response.getUsage() != null) {
             metricsAiInteractionRecordService.saveInteractionRecord(
                     getProviderName(),
                     botIdentifier,
                     request.getModel(),
-                    request.getMessages().get(0).getContent().get(0).getText(),
+                    requestText,
                     messageType,
                     response.getContent(),
                     MetricsAiInteractionRecord.AiMessageType.TEXT,
@@ -222,10 +228,12 @@ public class OpenAiProviderProcessor implements ProviderProcessor, AiTextClient 
                     ? openAiFeignClient.transcribeAudio("Bearer " + aiKey, multipartFile, TRANSCRIPTION_MODEL)
                     : openAiFeignClient.transcribeAudioWithPrompt("Bearer " + aiKey, multipartFile, TRANSCRIPTION_MODEL, prompt);
         } catch (FeignException e) {
-            throw buildUnavailable("transcription", e);
+            throw saveFailedCall(buildUnavailable("transcription", e),
+                    botIdentifier, TRANSCRIPTION_MODEL, VOICE_REQUEST, MetricsAiInteractionRecord.AiMessageType.VOICE);
         }
         if (response == null || response.getText() == null) {
-            throw new AiUnavailableException("OpenAI transcription: empty response", 0, null);
+            throw saveFailedCall(new AiUnavailableException("OpenAI transcription: empty response", 0, null),
+                    botIdentifier, TRANSCRIPTION_MODEL, VOICE_REQUEST, MetricsAiInteractionRecord.AiMessageType.VOICE);
         }
 
         TranscriptionResponse.TranscriptionUsage usage = response.getUsage();
@@ -233,7 +241,7 @@ public class OpenAiProviderProcessor implements ProviderProcessor, AiTextClient 
                 getProviderName(),
                 botIdentifier,
                 TRANSCRIPTION_MODEL,
-                "[VOICE]",
+                VOICE_REQUEST,
                 MetricsAiInteractionRecord.AiMessageType.VOICE,
                 response.getText(),
                 MetricsAiInteractionRecord.AiMessageType.TEXT,
@@ -292,7 +300,21 @@ public class OpenAiProviderProcessor implements ProviderProcessor, AiTextClient 
      * Запрос к chat/completions. Ошибка провайдера (401, 429, 5xx), таймаут, обрыв сети или ответ без текста —
      * AiUnavailableException: вызывающий код отличает «ИИ не ответил» от «ИИ ответил, но не то».
      */
-    private OpenAiChatCompletionResponse generateOrThrow(String aiKey, OpenAiChatCompletionRequest request) {
+    private OpenAiChatCompletionResponse generateOrThrow(
+            String aiKey,
+            OpenAiChatCompletionRequest request,
+            BotIdentifier botIdentifier,
+            String requestText,
+            MetricsAiInteractionRecord.AiMessageType messageType
+    ) {
+        try {
+            return callChatOrThrow(aiKey, request);
+        } catch (AiUnavailableException e) {
+            throw saveFailedCall(e, botIdentifier, request.getModel(), requestText, messageType);
+        }
+    }
+
+    private OpenAiChatCompletionResponse callChatOrThrow(String aiKey, OpenAiChatCompletionRequest request) {
         OpenAiChatCompletionResponse response;
         try {
             response = openAiFeignClient.generate("Bearer " + aiKey, request);
@@ -304,6 +326,26 @@ public class OpenAiProviderProcessor implements ProviderProcessor, AiTextClient 
             throw new AiUnavailableException("OpenAI chat " + request.getModel() + ": empty response", 0, null);
         }
         return response;
+    }
+
+    /**
+     * Упавший вызов — в metrics_ai_interaction_record с кодом ошибки: иначе в статистике видны только успешные.
+     * Текст — сообщение FeignException (в нём тело ответа провайдера), без него — сообщение исключения.
+     */
+    private AiUnavailableException saveFailedCall(
+            AiUnavailableException e,
+            BotIdentifier botIdentifier,
+            String model,
+            String requestText,
+            MetricsAiInteractionRecord.AiMessageType messageType
+    ) {
+        String error = e.getCause() != null && e.getCause().getMessage() != null
+                ? e.getCause().getMessage()
+                : e.getMessage();
+        if (error.length() > MAX_ERROR_LENGTH) error = error.substring(0, MAX_ERROR_LENGTH);
+        metricsAiInteractionRecordService.saveFailedInteractionRecord(
+                getProviderName(), botIdentifier, model, requestText, messageType, e.getStatus(), error);
+        return e;
     }
 
     // RetryableException (таймаут, сеть) — тоже FeignException, у неё status() = -1
