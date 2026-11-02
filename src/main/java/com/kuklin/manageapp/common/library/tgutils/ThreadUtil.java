@@ -8,7 +8,8 @@ public class ThreadUtil {
         try {
             Thread.sleep(milliseconds);
         } catch (InterruptedException e) {
-            log.error("Thread sleep error!", e);
+            Thread.currentThread().interrupt();
+            log.warn("Thread was interrupted while sleeping, stopping current task");
         }
     }
 }

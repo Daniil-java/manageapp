@@ -1,0 +1,54 @@
+package com.kuklin.manageapp.payment.components.providerprocessors;
+
+import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
+import com.kuklin.manageapp.payment.components.texts.PaymentText;
+import com.kuklin.manageapp.payment.components.texts.PaymentTextResolver;
+import com.kuklin.manageapp.payment.entities.Payment;
+import com.kuklin.manageapp.payment.entities.PricingPlan;
+import com.kuklin.manageapp.payment.models.common.Currency;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+import org.telegram.telegrambots.meta.api.methods.invoices.SendInvoice;
+
+/**
+ * Класс для динамичной сборки SendInvoice
+ * <p>
+ * Отвечает за:
+ * - возврат SendInvoice
+ */
+@Component
+@RequiredArgsConstructor
+public class SendInvoiceBuilder {
+    // Если оплата проходит звёздами (XTR), Telegram не проверяет providerToken.
+    // Библиотека не допускает null/пустую строку, поэтому кладём фиктивный токен.
+    private final static String TOKEN_DUMMY = "xtr_dummy";
+
+    private final PaymentTextResolver textResolver;
+
+    public SendInvoice build(Payment.Provider provider,
+                             Payment payment,
+                             PricingPlan plan,
+                             Long chatId,
+                             String providerToken) {
+        if (providerToken == null) providerToken = TOKEN_DUMMY;
+
+        if (!provider.equals(Payment.Provider.STARS) && providerToken.equals(TOKEN_DUMMY)) {
+            return null;
+        }
+        Integer price = plan.getCurrency().equals(Currency.XTR)
+                ? payment.getStarsAmount()
+                : payment.getAmount();
+
+        return TelegramBot.buildInvoiceOrNull(
+                chatId,
+                textResolver.getPlanTitle(plan, payment.getAppUserId()),
+                textResolver.getPlanInvoiceDescription(plan, payment.getAppUserId()),
+                payment.getTelegramInvoicePayload(),
+                providerToken,
+                price,
+                plan.getCurrency(),
+                provider,
+                textResolver.getText(plan.getBotIdentifier(), PaymentText.INVOICE_PRICE_LABEL, payment.getAppUserId())
+        );
+    }
+}

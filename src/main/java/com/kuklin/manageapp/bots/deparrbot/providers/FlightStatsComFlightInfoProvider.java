@@ -90,7 +90,7 @@ public class FlightStatsComFlightInfoProvider implements FlightInfoProvider {
                     ;
 
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Flight parsing error!", e);
             return null;
         }
     }

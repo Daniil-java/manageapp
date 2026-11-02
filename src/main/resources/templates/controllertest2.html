@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calorie Bot Tester</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root { --bg: #f4f4f9; --card: #fff; --text: #333; --border: #ddd; --primary: #0088cc; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; }
+    .container { max-width: 800px; margin: 0 auto; }
+    h1 { text-align: center; font-size: 1.5em; margin-bottom: 20px; }
+    .config-box { background: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #bbdefb; }
+    .grid { display: grid; grid-template-columns: 1fr; gap: 15px; }
+    @media(min-width: 600px) { .grid { grid-template-columns: 1fr 1fr; } }
+    .card { background: var(--card); padding: 15px; border-radius: 8px; border: 1px solid var(--border); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+    .card h2 { margin-top: 0; font-size: 1.1em; border-bottom: 2px solid var(--border); padding-bottom: 5px; margin-bottom: 15px; }
+    .row { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; flex-wrap: wrap; }
+    input, select, textarea { padding: 6px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px; flex-grow: 1; min-width: 60px; }
+    button { cursor: pointer; padding: 6px 12px; background: var(--primary); color: white; border: none; border-radius: 4px; font-weight: bold; font-size: 12px; }
+    button:hover { opacity: 0.8; }
+    button.get { background: #2980b9; } button.post { background: #27ae60; } button.patch { background: #8e44ad; } button.delete { background: #c0392b; } button.put { background: #f39c12; }
+    .log-container { margin-top: 20px; background: #1e1e1e; color: #4af626; padding: 15px; border-radius: 8px; font-family: monospace; font-size: 12px; height: 300px; overflow-y: auto; white-space: pre-wrap; }
+    .log-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; color: #fff; }
+
+    /* Стили для новых элементов Дашборда */
+    .full-width { grid-column: 1 / -1; }
+    .dashboard-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 20px; }
+    .summary-item { background: #f8f9fa; padding: 10px; border-radius: 6px; text-align: center; border: 1px solid #eee; }
+    .summary-item .value { font-size: 1.3em; font-weight: bold; color: var(--primary); margin: 5px 0; }
+    .summary-item .target { font-size: 11px; color: #777; }
+    .charts-grid { display: grid; grid-template-columns: 1fr; gap: 20px; margin-top: 15px; }
+    @media(min-width: 600px) { .charts-grid { grid-template-columns: 1fr 1fr; } }
+    .chart-container { position: relative; height: 220px; width: 100%; }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>🛠 Calorie API Tester</h1>
+
+  <div class="config-box row">
+    <label><b>URL:</b></label>
+    <input type="text" id="baseUrl" value="https://tvoy-url.ngrok-free.dev" placeholder="https://...">
+  </div>
+
+  <div class="config-box row" style="justify-content: space-between;">
+    <div>
+      <label><b>Авторизация через сайт (OAuth2):</b></label>
+      <script async src="https://telegram.org/js/telegram-widget.js?22"
+              data-telegram-login="medidairy_bot"
+              data-size="large"
+              data-onauth="onTelegramAuth(user)"
+              data-request-access="write"></script>
+    </div>
+    <button class="delete" onclick="logoutWeb()">Выйти (Очистить LocalStorage)</button>
+  </div>
+
+  <div class="grid">
+
+    <div class="card full-width">
+      <h2>📊 Панель аналитики (Dashboard)</h2>
+      <div class="row" style="background: #f0f4f8; padding: 10px; border-radius: 6px;">
+        <label>Период:</label>
+        <input type="date" id="dash_from">
+        <input type="date" id="dash_to">
+        <button class="post" onclick="loadDashboard()">Обновить данные дашборда 🔄</button>
+      </div>
+
+      <h3 style="font-size: 1em; margin: 15px 0 10px 0; color: #555;">📍 Прогресс за сегодня</h3>
+      <div class="dashboard-summary">
+        <div class="summary-item">
+          <div>🔥 Калории</div>
+          <div class="value" id="sum_cal">0</div>
+          <div class="target" id="tar_cal">Цель: --</div>
+        </div>
+        <div class="summary-item">
+          <div>🥩 Белки</div>
+          <div class="value" id="sum_prot">0г</div>
+          <div class="target" id="tar_prot">Цель: --</div>
+        </div>
+        <div class="summary-item">
+          <div>🧀 Жиры</div>
+          <div class="value" id="sum_fats">0г</div>
+          <div class="target" id="tar_fats">Цель: --</div>
+        </div>
+        <div class="summary-item">
+          <div>🍞 Углеводы</div>
+          <div class="value" id="sum_carbs">0г</div>
+          <div class="target" id="tar_carbs">Цель: --</div>
+        </div>
+      </div>
+
+      <div class="charts-grid">
+        <div class="summary-item">
+          <strong style="font-size:12px;">📆 Динамика КБЖУ по дням</strong>
+          <div class="chart-container"><canvas id="chartPeriod"></canvas></div>
+        </div>
+        <div class="summary-item">
+          <strong style="font-size:12px;">⚖️ Изменение веса (кг)</strong>
+          <div class="chart-container"><canvas id="chartWeight"></canvas></div>
+        </div>
+        <div class="summary-item">
+          <strong style="font-size:12px;">🍕 Калории по категориям</strong>
+          <div class="chart-container"><canvas id="chartCategory"></canvas></div>
+        </div>
+        <div class="summary-item">
+          <strong style="font-size:12px;">🕒 Ритм питания (по часам суток)</strong>
+          <div class="chart-container"><canvas id="chartRhythm"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>💰 Оплата (Telegram Stars)</h2>
+      <div class="row">
+        <button class="get" onclick="api('GET', '/calorie/payment/plans')">Список тарифов</button>
+        <button class="get" style="background: #2ecc71;" onclick="checkSubscription()">Статус подписки</button>
+      </div>
+      <div class="row">
+        <input type="number" id="plan_id" placeholder="ID тарифа (planId)">
+        <button class="post" style="background: #f1c40f; color: #000;" onclick="payWithStars()">Оплатить звездами ⭐</button>
+      </div>
+      <small style="color: #666; font-size: 10px;">Для оплаты звездами валюта в тарифе должна быть XTR</small>
+    </div>
+
+    <div class="card">
+      <h2>🍽 Блюда (Dishes)</h2>
+      <div class="row">
+        <button class="get" onclick="api('GET', '/calorie/dishes/today')">За сегодня</button>
+      </div>
+      <div class="row">
+        <input type="date" id="d_from"> <input type="date" id="d_to">
+        <button class="get" onclick="api('GET', `/calorie/dishes/period?from=${val('d_from')}&to=${val('d_to')}`)">За период</button>
+      </div>
+      <div class="row">
+        <input type="text" id="d_text" placeholder="Текст: '2 яйца'">
+        <button class="post" onclick="api('POST', '/calorie/dishes/text', {text: val('d_text')})">Текст +</button>
+      </div>
+      <div class="row">
+        <input type="file" id="d_photo" accept="image/*" style="max-width: 150px;">
+        <input type="text" id="d_photo_msg" placeholder="Сообщение к фото">
+        <button class="post" onclick="sendPhoto()">Фото +</button>
+      </div>
+      <div class="row">
+        <input type="file" id="d_voice" accept="audio/*" style="max-width: 150px;">
+        <button class="post" onclick="sendVoice()">Голос +</button>
+      </div>
+      <div class="row">
+        <input type="number" id="d_id" placeholder="ID блюда" style="max-width: 70px;">
+        <input type="text" id="d_portion" placeholder='JSON: {"weight": 100}'>
+        <button class="patch" onclick="api('PATCH', `/calorie/dishes/${val('d_id')}/portion`, JSON.parse(val('d_portion') || '{}'))">Изменить</button>
+        <button class="delete" onclick="api('DELETE', `/calorie/dishes/${val('d_id')}`)">Удалить</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>👤 Профиль и Настройки</h2>
+      <div class="row">
+        <button class="get" onclick="api('GET', '/calorie/profile')">Профиль</button>
+        <button class="get" onclick="api('GET', '/calorie/profile/entries')">История профиля</button>
+      </div>
+      <div class="row">
+        <input type="text" id="p_json" placeholder='JSON профиля'>
+        <button class="put" onclick="api('PUT', '/calorie/profile', JSON.parse(val('p_json') || '{}'))">Обновить профиль</button>
+      </div>
+      <div class="row" style="margin-top: 15px; border-top: 1px solid #ddd; padding-top: 10px;">
+        <button class="get" onclick="api('GET', '/calorie/settings')">Настройки</button>
+      </div>
+      <div class="row">
+        <input type="text" id="s_json" placeholder='JSON настроек'>
+        <button class="put" onclick="api('PUT', '/calorie/settings', JSON.parse(val('s_json') || '{}'))">Обновить настройки</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>💧 Вода и Вес</h2>
+      <div class="row">
+        <button class="get" onclick="api('GET', '/calorie/water')">Вода за сегодня</button>
+      </div>
+      <div class="row">
+        <input type="number" id="w_amount" placeholder="мл (напр. 250)">
+        <button class="post" onclick="api('POST', `/calorie/water?amountMl=${val('w_amount')}`)">Добавить воду</button>
+      </div>
+      <div class="row" style="margin-top: 15px; border-top: 1px solid #ddd; padding-top: 10px;">
+        <button class="get" onclick="api('GET', '/calorie/weight')">История веса</button>
+      </div>
+      <div class="row">
+        <input type="number" step="0.1" id="weight_val" placeholder="Вес кг (напр. 75.5)">
+        <button class="put" onclick="api('PUT', '/calorie/weight', parseFloat(val('weight_val')))">Записать вес</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>⭐ Избранное</h2>
+      <div class="row">
+        <button class="get" onclick="api('GET', '/calorie/favorites')">Все избранные</button>
+      </div>
+      <div class="row">
+        <input type="number" id="f_dish_id" placeholder="ID блюда (Dish)">
+        <button class="post" onclick="api('POST', `/calorie/favorites/from-dish?dishId=${val('f_dish_id')}`)">В избранное</button>
+      </div>
+      <div class="row">
+        <input type="number" id="f_fav_id" placeholder="ID избранного (Fav)">
+        <button class="post" onclick="api('POST', `/calorie/favorites/${val('f_fav_id')}/use`)">Съесть</button>
+        <button class="delete" onclick="api('DELETE', `/calorie/favorites/${val('f_fav_id')}`)">Удалить</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="log-container">
+    <div class="log-header">
+      <strong>КОНСОЛЬ ЗАПРОСОВ:</strong>
+      <button onclick="document.getElementById('out').innerText = ''" style="background: #555;">Очистить</button>
+    </div>
+    <div id="out">Ожидание команд... Telegram InitData: Проверяем...</div>
+  </div>
+</div>
+
+<script>
+  const tg = window.Telegram.WebApp;
+  tg.ready();
+  tg.expand();
+
+  const out = document.getElementById('out');
+  const val = (id) => document.getElementById(id).value;
+
+  // Хранилище объектов графиков, чтобы уничтожать старые перед обновлением
+  let charts = {};
+
+  // Инициализация дефолтных дат для дашборда (последние 7 дней)
+  window.addEventListener('DOMContentLoaded', () => {
+    const today = new Date();
+    const weekAgo = new Date();
+    weekAgo.setDate(today.getDate() - 7);
+
+    document.getElementById('dash_to').value = today.toISOString().split('T')[0];
+    document.getElementById('dash_from').value = weekAgo.toISOString().split('T')[0];
+
+    document.getElementById('d_to').value = today.toISOString().split('T')[0];
+    document.getElementById('d_from').value = today.toISOString().split('T')[0];
+  });
+
+  // 1. Проверяем источник авторизации
+  let currentAuthData = tg.initData || localStorage.getItem('tg_web_auth') || "";
+
+  if (tg.initData) {
+    out.innerText = `✅ Вход через Mini App (initData).\n` + out.innerText;
+  } else if (localStorage.getItem('tg_web_auth')) {
+    out.innerText = `✅ Вход через Web Widget (LocalStorage).\n` + out.innerText;
+  } else {
+    out.innerText = `⚠️ ОШИБКА: Нет данных авторизации! Войдите через виджет или запустите в боте.\n` + out.innerText;
+  }
+
+  // Функция загрузки и отрисовки Дашборда
+  async function loadDashboard() {
+    const from = val('dash_from');
+    const to = val('dash_to');
+    if(!from || !to) return alert("Выберите даты!");
+
+    let url = val('baseUrl').replace(/\/$/, '') + `/calorie/reports/dashboard?from=${from}&to=${to}`;
+    out.innerText = `\n📊 [GET] /calorie/reports/ui/dashboard\n⏳ Загрузка графиков...` + out.innerText;
+
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-TG-INIT-DATA': currentAuthData,
+          'ngrok-skip-browser-warning': 'true'
+        }
+      });
+
+      if (!response.ok) throw new Error(`Статус: ${response.status}`);
+      const data = await response.json();
+
+      out.innerText = `✅ Данные дашборда успешно получены!\n` + out.innerText;
+
+      // 1. Заполняем текстовые виджеты за сегодня
+      const today = data.todayProgress;
+      document.getElementById('sum_cal').innerText = today.caloriesFact;
+      document.getElementById('tar_cal').innerText = today.caloriesTarget ? `Цель: ${today.caloriesTarget}` : 'Цель: --';
+
+      document.getElementById('sum_prot').innerText = today.proteinsFact + 'г';
+      document.getElementById('tar_prot').innerText = today.proteinsTarget ? `Цель: ${today.proteinsTarget}г` : 'Цель: --';
+
+      document.getElementById('sum_fats').innerText = today.fatsFact + 'г';
+      document.getElementById('tar_fats').innerText = today.fatsTarget ? `Цель: ${today.fatsTarget}г` : 'Цель: --';
+
+      document.getElementById('sum_carbs').innerText = today.carbsFact + 'г';
+      document.getElementById('tar_carbs').innerText = today.carbsTarget ? `Цель: ${today.carbsTarget}г` : 'Цель: --';
+
+      // Функция безопасного пересоздания графика
+      const initChart = (id, config) => {
+        if (charts[id]) charts[id].destroy();
+        charts[id] = new Chart(document.getElementById(id), config);
+      };
+
+      // 2. График 1: Стек КБЖУ по дням (Stacked Bar Chart)
+      const dates = data.periodStats.map(s => s.date);
+      initChart('chartPeriod', {
+        type: 'bar',
+        data: {
+          labels: dates,
+          datasets: [
+            { label: 'Белки (г)', data: data.periodStats.map(s => s.proteins), backgroundColor: '#3498db' },
+            { label: 'Жиры (г)', data: data.periodStats.map(s => s.fats), backgroundColor: '#e67e22' },
+            { label: 'Углеводы (г)', data: data.periodStats.map(s => s.carbs), backgroundColor: '#2ecc71' }
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true } } }
+      });
+
+      // 3. График 2: Тренд изменения веса (Line Chart)
+      initChart('chartWeight', {
+        type: 'line',
+        data: {
+          labels: data.weightTrend.map(w => w.date),
+          datasets: [{
+            label: 'Вес (кг)',
+            data: data.weightTrend.map(w => w.weight),
+            borderColor: '#e74c3c',
+            backgroundColor: 'rgba(231, 76, 60, 0.1)',
+            tension: 0.3,
+            fill: true,
+            spanGaps: true
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+
+      // 4. График 3: Калории по категориям (Doughnut Chart)
+      initChart('chartCategory', {
+        type: 'doughnut',
+        data: {
+          labels: data.categoryDistribution.map(c => c.categoryName),
+          datasets: [{
+            data: data.categoryDistribution.map(c => c.calories),
+            backgroundColor: ['#9b59b6', '#34495e', '#16a085', '#f1c40f', '#e74c3c', '#95a5a6']
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right' } } }
+      });
+
+      // 5. График 4: Ритм питания по часам (Bar Chart)
+      const hoursLabels = Array.from({length: 24}, (_, i) => `${i}:00`);
+      const hoursData = Array.from({length: 24}, (_, i) => data.hourlyRhythm[i] || 0);
+      initChart('chartRhythm', {
+        type: 'bar',
+        data: {
+          labels: hoursLabels,
+          datasets: [{
+            label: 'Калории',
+            data: hoursData,
+            backgroundColor: '#f39c12'
+          }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+
+    } catch (err) {
+      out.innerText = `\n🔥 ОШИБКА ДАШБОРДА: ${err.message}\n` + out.innerText;
+    }
+  }
+
+  // 2. Обработчик успешного входа через виджет Telegram
+  function onTelegramAuth(user) {
+    const authDataString = Object.keys(user)
+            .map(key => `${key}=${encodeURIComponent(user[key])}`)
+            .join('&');
+
+    localStorage.setItem('tg_web_auth', authDataString);
+    currentAuthData = authDataString;
+    out.innerText = `✅ Web-авторизация успешна! ID: ${user.id}\n` + out.innerText;
+  }
+
+  // 3. Выход (очистка сессии сайта)
+  function logoutWeb() {
+    localStorage.removeItem('tg_web_auth');
+    currentAuthData = tg.initData || "";
+    out.innerText = "🚪 Вышли из Web-сессии. Данные стерты.\n" + out.innerText;
+  }
+
+  // Конвертер файлов в Base64
+  const fileToBase64 = file => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = error => reject(error);
+  });
+
+  // Отправка фото
+  async function sendPhoto() {
+    const file = document.getElementById('d_photo').files[0];
+    if (!file) return alert('Выберите фото!');
+    out.innerText = "⏳ Конвертация фото в Base64...\n" + out.innerText;
+    const base64 = await fileToBase64(file);
+    api('POST', '/calorie/dishes/photo', { base64Image: base64, message: val('d_photo_msg') });
+  }
+
+  // Отправка аудио
+  async function sendVoice() {
+    const file = document.getElementById('d_voice').files[0];
+    if (!file) return alert('Выберите аудиофайл!');
+    out.innerText = "⏳ Конвертация аудио в Base64...\n" + out.innerText;
+    const base64 = await fileToBase64(file);
+    const format = file.name.split('.').pop() || "webm";
+    api('POST', '/calorie/dishes/voice', { base64Audio: base64, format: format });
+  }
+
+  // Главная функция запросов
+  async function api(method, path, body = null) {
+    let url = val('baseUrl').replace(/\/$/, '') + path;
+
+    let logMsg = `\n-------------------------\n📡 [${method}] ${path}`;
+    if (body) logMsg += `\n📦 Тело: ${JSON.stringify(body)}`;
+    out.innerText = logMsg + "\n⏳ Ожидание ответа..." + out.innerText;
+
+    const options = {
+      method: method,
+      headers: {
+        'Content-Type': 'application/json',
+        'X-TG-INIT-DATA': currentAuthData,
+        'ngrok-skip-browser-warning': 'true'
+      }
+    };
+
+    if (body && method !== 'GET') {
+      options.body = JSON.stringify(body);
+    }
+
+    try {
+      const response = await fetch(url, options);
+      let resData = "";
+      if (response.status === 204) {
+        resData = "Успешно удалено (204 No Content)";
+      } else {
+        const text = await response.text();
+        try {
+          resData = JSON.stringify(JSON.parse(text), null, 2);
+        } catch(e) {
+          resData = text;
+        }
+      }
+
+      const statusIcon = response.ok ? '✅' : '❌';
+      out.innerText = `\n${statusIcon} Статус: ${response.status}\nОтвет:\n${resData}\n` + out.innerText;
+
+    } catch (err) {
+      out.innerText = `\n🔥 ОШИБКА СЕТИ: ${err.message}\n` + out.innerText;
+    }
+  }
+
+  // Функция для оплаты
+  async function payWithStars() {
+    const planId = val('plan_id');
+    if (!planId) return alert('Сначала введите ID тарифа!');
+
+    out.innerText = `\n-------------------------\n💰 [PAYMENT] Инициализация оплаты для плана ID: ${planId}...\n` + out.innerText;
+    let url = val('baseUrl').replace(/\/$/, '') + `/calorie/payment/create?planId=${planId}`;
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-TG-INIT-DATA': currentAuthData,
+          'ngrok-skip-browser-warning': 'true'
+        }
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Ошибка сервера (${response.status}): ${errorText}`);
+      }
+
+      const data = await response.json();
+
+      if (data.paymentUrl) {
+        out.innerText = `✅ Ссылка получена: ${data.paymentUrl.substring(0, 30)}...\n` + out.innerText;
+
+        if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
+          window.Telegram.WebApp.openInvoice(data.paymentUrl, function(status) {
+            out.innerText = `\n🔔 Результат Telegram: [${status}]\n` + out.innerText;
+            if (status === 'paid') {
+              setTimeout(() => { checkSubscription(); }, 1500);
+            } else if (status === 'cancelled') {
+              window.Telegram.WebApp.showAlert("Оплата отменена");
+            }
+          });
+        } else {
+          out.innerText = `⚠️ Тестер запущен вне Mini App. Открываю ссылку в новой вкладке...\n` + out.innerText;
+          window.open(data.paymentUrl, '_blank');
+        }
+      } else {
+        out.innerText = `❌ Ошибка: Поле paymentUrl не найдено в ответе бэкенда.\n` + out.innerText;
+      }
+    } catch (err) {
+      out.innerText = `\n🔥 ОШИБКА ПРИ СОЗДАНИИ ПЛАТЕЖА: ${err.message}\n` + out.innerText;
+    }
+  }
+
+  async function checkSubscription() {
+    out.innerText = `\n-------------------------\n🔄 Запрос статуса подписки...\n` + out.innerText;
+    let url = val('baseUrl').replace(/\/$/, '') + '/calorie/payment/subscription-status';
+
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'X-TG-INIT-DATA': currentAuthData,
+          'ngrok-skip-browser-warning': 'true'
+        }
+      });
+
+      if (!response.ok) throw new Error('Ошибка при получении статуса');
+      const data = await response.json();
+
+      out.innerText = `\nℹ️ Получено подписок: ${data.length}\n` + out.innerText;
+
+      if (!data || data.length === 0) {
+        const msg = "❌ У вас нет активных или запланированных подписок.";
+        if (window.Telegram?.WebApp) window.Telegram.WebApp.showAlert(msg);
+        else alert(msg);
+        return;
+      }
+
+      let fullMessage = "📋 Ваши подписки:\n\n";
+      data.forEach((sub, index) => {
+        const icon = sub.status === 'ACTIVE' ? '✅' : '⏳';
+        fullMessage += `${icon} ${sub.planName}\n`;
+        fullMessage += `   Статус: ${sub.statusMessage}\n`;
+        fullMessage += `   Истекает: ${sub.expiryDate}\n`;
+        if (index < data.length - 1) fullMessage += `-------------------\n`;
+      });
+
+      if (window.Telegram && window.Telegram.WebApp) {
+        window.Telegram.WebApp.showAlert(fullMessage);
+      } else {
+        alert(fullMessage);
+      }
+    } catch (err) {
+      out.innerText = `\n🔥 Ошибка: ${err.message}\n` + out.innerText;
+    }
+  }
+</script>
+</body>
+</html>

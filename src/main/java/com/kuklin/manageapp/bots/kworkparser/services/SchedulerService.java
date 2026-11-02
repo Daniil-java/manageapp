@@ -1,5 +1,7 @@
 package com.kuklin.manageapp.bots.kworkparser.services;
 
+import com.kuklin.manageapp.common.configurations.BotScheduler;
+import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import com.kuklin.manageapp.bots.kworkparser.processors.KworkScheduleProcessor;
 import com.kuklin.manageapp.bots.kworkparser.processors.NotificationScheduleProcessor;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +12,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@BotScheduler(BotIdentifier.KWORK)
 public class SchedulerService {
     private final KworkScheduleProcessor kworkScheduleProcessor;
     private final NotificationScheduleProcessor notificationScheduleProcessor;
@@ -20,11 +23,11 @@ public class SchedulerService {
         kworkScheduleProcessor.process();
     }
 
-    @Scheduled(cron = "0 */1 * * * *")
-    public void notificationScheduleProcessor() {
-        log.info(notificationScheduleProcessor.getSchedulerName() + " started working!");
-        notificationScheduleProcessor.process();
-    }
+//    @Scheduled(cron = "0 */1 * * * *")
+//    public void notificationScheduleProcessor() {
+//        log.info(notificationScheduleProcessor.getSchedulerName() + " started working!");
+//        notificationScheduleProcessor.process();
+//    }
 
 
 }
