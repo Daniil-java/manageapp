@@ -1,4 +1,5 @@
 package com.kuklin.manageapp.bots.caloriebot.dish;
+import com.kuklin.manageapp.aiconversation.models.enums.AiMessageType;
 import com.kuklin.manageapp.bots.caloriebot.settings.UserSettingsService;
 import com.kuklin.manageapp.bots.caloriebot.dish.ai.AiInputValidator;
 import com.kuklin.manageapp.bots.caloriebot.access.CalorieAccessService;
@@ -23,7 +24,6 @@ import com.kuklin.manageapp.bots.caloriebot.access.MissingFeatureException;
 import com.kuklin.manageapp.bots.caloriebot.access.model.AccessResult;
 import com.kuklin.manageapp.bots.caloriebot.access.model.BotFeature;
 import com.kuklin.manageapp.bots.caloriebot.bot.CalorieTelegramBot;
-import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import com.kuklin.manageapp.common.telegram.BotIdentifier;
@@ -163,7 +163,7 @@ public class DishService {
                     String.format(AI_REQUEST, text, aiLanguageOf(userId)),
                     CalorieTelegramBot.BOT_IDENTIFIER,
                     this.getClass().getSimpleName(),
-                    MetricsAiInteractionRecord.AiMessageType.TEXT
+                    AiMessageType.TEXT
             );
         }
         return getDishListByAiResponseOrNull(userId, aiResponse);

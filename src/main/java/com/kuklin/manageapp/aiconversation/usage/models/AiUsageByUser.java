@@ -1,4 +1,4 @@
-package com.kuklin.manageapp.bots.metrics.models;
+package com.kuklin.manageapp.aiconversation.usage.models;
 
 import java.math.BigDecimal;
 

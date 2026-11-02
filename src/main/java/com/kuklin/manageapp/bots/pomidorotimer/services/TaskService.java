@@ -1,10 +1,10 @@
 package com.kuklin.manageapp.bots.pomidorotimer.services;
 
+import com.kuklin.manageapp.aiconversation.models.enums.AiMessageType;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcessor;
-import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
 import com.kuklin.manageapp.bots.pomidorotimer.configurations.TelegramPomidoroTimerBotKeyComponents;
 import com.kuklin.manageapp.bots.pomidorotimer.repositories.TaskRepository;
 import com.kuklin.manageapp.bots.pomidorotimer.telegram.PomidoroTelegramBot;
@@ -139,7 +139,7 @@ public class TaskService {
                         String.format(AI_REQUEST, name, comment),
                         PomidoroTelegramBot.BOT_IDENTIFIER,
                         this.getClass().getSimpleName(),
-                        MetricsAiInteractionRecord.AiMessageType.TEXT
+                        AiMessageType.TEXT
                 );
 
         List<Task> taskList = taskMapper.dtoListToEntityList(objectMapper.readValue(

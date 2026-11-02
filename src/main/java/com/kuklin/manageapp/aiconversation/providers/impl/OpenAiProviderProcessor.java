@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.aiconversation.providers.impl;
 
+import com.kuklin.manageapp.aiconversation.models.enums.AiMessageType;
 import com.kuklin.manageapp.aiconversation.integrations.OpenAiFeignClient;
 import com.kuklin.manageapp.aiconversation.models.AiProcessorException;
 import com.kuklin.manageapp.aiconversation.models.AiQuotaExhaustedEvent;
@@ -14,9 +15,8 @@ import com.kuklin.manageapp.aiconversation.models.openai.image.OpenAiImageReques
 import com.kuklin.manageapp.aiconversation.models.openai.image.OpenAiImageResponse;
 import com.kuklin.manageapp.aiconversation.providers.AiTextClient;
 import com.kuklin.manageapp.aiconversation.providers.ProviderProcessor;
-import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
-import com.kuklin.manageapp.bots.metrics.services.MetricsAiInteractionRecordService;
-import com.kuklin.manageapp.bots.metrics.services.MetricsAiLogService;
+import com.kuklin.manageapp.aiconversation.usage.services.MetricsAiInteractionRecordService;
+import com.kuklin.manageapp.aiconversation.usage.services.MetricsAiLogService;
 import com.kuklin.manageapp.aiconversation.models.ByteArrayMultipartFile;
 import com.kuklin.manageapp.aiconversation.models.TranscriptionResponse;
 import com.kuklin.manageapp.common.telegram.BotIdentifier;
@@ -61,7 +61,7 @@ public class OpenAiProviderProcessor implements ProviderProcessor, AiTextClient 
         increaseMetricsLog();
 
         OpenAiChatCompletionResponse response = generateOrThrow(
-                aiKey, request, botIdentifier, content, MetricsAiInteractionRecord.AiMessageType.PHOTO);
+                aiKey, request, botIdentifier, content, AiMessageType.PHOTO);
 
         if (response.getUsage() != null) {
             metricsAiInteractionRecordService.saveInteractionRecord(
@@ -69,9 +69,9 @@ public class OpenAiProviderProcessor implements ProviderProcessor, AiTextClient 
                     botIdentifier,
                     request.getModel(),
                     content,
-                    MetricsAiInteractionRecord.AiMessageType.PHOTO,
+                    AiMessageType.PHOTO,
                     response.getContent(),
-                    MetricsAiInteractionRecord.AiMessageType.TEXT,
+                    AiMessageType.TEXT,
                     response.getUsage().getPromptTokens(),
                     response.getUsage().getCachedTokensOrZero(),
                     response.getUsage().getCompletionTokens()
@@ -88,14 +88,14 @@ public class OpenAiProviderProcessor implements ProviderProcessor, AiTextClient 
         OpenAiChatCompletionRequest request =
                 OpenAiChatCompletionRequest.makeDefaultImgRequest(content, imageUrl);
 
-        return fetchResponse(aiKey, request, botIdentifier, MetricsAiInteractionRecord.AiMessageType.PHOTO);
+        return fetchResponse(aiKey, request, botIdentifier, AiMessageType.PHOTO);
     }
 
     private String fetchResponse(
             String aiKey,
             OpenAiChatCompletionRequest request,
             BotIdentifier botIdentifier,
-            MetricsAiInteractionRecord.AiMessageType messageType
+            AiMessageType messageType
     ) {
         increaseMetricsLog();
         String requestText = request.getMessages().get(0).getContent().get(0).getText();
@@ -109,7 +109,7 @@ public class OpenAiProviderProcessor implements ProviderProcessor, AiTextClient 
                     requestText,
                     messageType,
                     response.getContent(),
-                    MetricsAiInteractionRecord.AiMessageType.TEXT,
+                    AiMessageType.TEXT,
                     response.getUsage().getPromptTokens(),
                     response.getUsage().getCachedTokensOrZero(),
                     response.getUsage().getCompletionTokens()
@@ -125,7 +125,7 @@ public class OpenAiProviderProcessor implements ProviderProcessor, AiTextClient 
             String content,
             BotIdentifier botIdentifier,
             String uniqLog,
-            MetricsAiInteractionRecord.AiMessageType messageType) {
+            AiMessageType messageType) {
         log.info(botIdentifier + " uniq log: " + uniqLog);
         OpenAiChatCompletionRequest request =
                 OpenAiChatCompletionRequest.makeDefaultRequest(content);
@@ -141,7 +141,7 @@ public class OpenAiProviderProcessor implements ProviderProcessor, AiTextClient 
             String content,
             BotIdentifier botIdentifier,
             String uniqLog,
-            MetricsAiInteractionRecord.AiMessageType messageType) {
+            AiMessageType messageType) {
         log.info(botIdentifier + " uniq log: " + uniqLog);
         OpenAiChatCompletionRequest request =
                 OpenAiChatCompletionRequest.makeCreativeRequest(content);
@@ -156,7 +156,7 @@ public class OpenAiProviderProcessor implements ProviderProcessor, AiTextClient 
             String content,
             BotIdentifier botIdentifier,
             String uniqLog,
-            MetricsAiInteractionRecord.AiMessageType messageType) {
+            AiMessageType messageType) {
         log.info(botIdentifier + " uniq log: " + uniqLog);
         OpenAiChatCompletionRequest request =
                 OpenAiChatCompletionRequest.makeCreativeJsonRequest(content);
@@ -171,7 +171,7 @@ public class OpenAiProviderProcessor implements ProviderProcessor, AiTextClient 
             String content,
             BotIdentifier botIdentifier,
             String uniqLog,
-            MetricsAiInteractionRecord.AiMessageType messageType) {
+            AiMessageType messageType) {
         log.info(botIdentifier + " uniq log: " + uniqLog);
         OpenAiChatCompletionRequest request =
                 OpenAiChatCompletionRequest.makeJsonRequest(content);
@@ -229,11 +229,11 @@ public class OpenAiProviderProcessor implements ProviderProcessor, AiTextClient 
                     : openAiFeignClient.transcribeAudioWithPrompt("Bearer " + aiKey, multipartFile, TRANSCRIPTION_MODEL, prompt);
         } catch (FeignException e) {
             throw saveFailedCall(buildUnavailable("transcription", e),
-                    botIdentifier, TRANSCRIPTION_MODEL, VOICE_REQUEST, MetricsAiInteractionRecord.AiMessageType.VOICE);
+                    botIdentifier, TRANSCRIPTION_MODEL, VOICE_REQUEST, AiMessageType.VOICE);
         }
         if (response == null || response.getText() == null) {
             throw saveFailedCall(new AiUnavailableException("OpenAI transcription: empty response", 0, null),
-                    botIdentifier, TRANSCRIPTION_MODEL, VOICE_REQUEST, MetricsAiInteractionRecord.AiMessageType.VOICE);
+                    botIdentifier, TRANSCRIPTION_MODEL, VOICE_REQUEST, AiMessageType.VOICE);
         }
 
         TranscriptionResponse.TranscriptionUsage usage = response.getUsage();
@@ -242,9 +242,9 @@ public class OpenAiProviderProcessor implements ProviderProcessor, AiTextClient 
                 botIdentifier,
                 TRANSCRIPTION_MODEL,
                 VOICE_REQUEST,
-                MetricsAiInteractionRecord.AiMessageType.VOICE,
+                AiMessageType.VOICE,
                 response.getText(),
-                MetricsAiInteractionRecord.AiMessageType.TEXT,
+                AiMessageType.TEXT,
                 usage != null ? usage.getInputTokens() : null,
                 0L,
                 usage != null ? usage.getOutputTokens() : null
@@ -305,7 +305,7 @@ public class OpenAiProviderProcessor implements ProviderProcessor, AiTextClient 
             OpenAiChatCompletionRequest request,
             BotIdentifier botIdentifier,
             String requestText,
-            MetricsAiInteractionRecord.AiMessageType messageType
+            AiMessageType messageType
     ) {
         try {
             return callChatOrThrow(aiKey, request);
@@ -337,7 +337,7 @@ public class OpenAiProviderProcessor implements ProviderProcessor, AiTextClient 
             BotIdentifier botIdentifier,
             String model,
             String requestText,
-            MetricsAiInteractionRecord.AiMessageType messageType
+            AiMessageType messageType
     ) {
         String error = e.getCause() != null && e.getCause().getMessage() != null
                 ? e.getCause().getMessage()

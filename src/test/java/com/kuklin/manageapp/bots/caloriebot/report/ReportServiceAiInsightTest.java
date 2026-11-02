@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.bots.caloriebot.report;
 
+import com.kuklin.manageapp.aiconversation.models.enums.AiMessageType;
 import com.kuklin.manageapp.bots.caloriebot.settings.UserSettingsService;
 import com.kuklin.manageapp.bots.caloriebot.weight.WeightEntryService;
 import com.kuklin.manageapp.bots.caloriebot.profile.UserNutritionProfileService;
@@ -15,7 +16,6 @@ import com.kuklin.manageapp.bots.caloriebot.i18n.I18nProperties;
 import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorStatus;
 import com.kuklin.manageapp.bots.caloriebot.access.model.AccessResult;
-import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
 import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -128,7 +128,7 @@ class ReportServiceAiInsightTest {
 
         ArgumentCaptor<String> prompt = ArgumentCaptor.forClass(String.class);
         verify(ai).fetchJsonResponse(eq(AI_KEY), prompt.capture(), eq(BotIdentifier.CALORIE_BOT), anyString(),
-                eq(MetricsAiInteractionRecord.AiMessageType.TEXT));
+                eq(AiMessageType.TEXT));
 
         assertThat(prompt.getValue())
                 .contains("last 7 days")

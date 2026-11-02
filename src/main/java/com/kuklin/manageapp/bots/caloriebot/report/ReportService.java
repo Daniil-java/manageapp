@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.bots.caloriebot.report;
 
+import com.kuklin.manageapp.aiconversation.models.enums.AiMessageType;
 import com.kuklin.manageapp.bots.caloriebot.settings.UserSettingsService;
 import com.kuklin.manageapp.bots.caloriebot.weight.WeightEntryService;
 import com.kuklin.manageapp.bots.caloriebot.weight.WeightEntry;
@@ -35,7 +36,6 @@ import com.kuklin.manageapp.bots.caloriebot.report.ai.GoalPromptRules;
 import com.kuklin.manageapp.bots.caloriebot.report.ai.ReportPrompts;
 import com.kuklin.manageapp.bots.caloriebot.report.pdf.HtmlPdfRenderer;
 import com.kuklin.manageapp.bots.caloriebot.report.pdf.ReportHtml;
-import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
 import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -173,7 +173,7 @@ public class ReportService {
                     prompt,
                     BotIdentifier.CALORIE_BOT,
                     "AI INSIGHT " + type,
-                    MetricsAiInteractionRecord.AiMessageType.TEXT
+                    AiMessageType.TEXT
             );
 
             // JSON-режим гарантирует JSON, но проверяем — в jsonb всё равно ляжет только валидный
@@ -239,7 +239,7 @@ public class ReportService {
                     prompt,
                     BotIdentifier.CALORIE_BOT,
                     "PDF REPORT " + source.kind(),
-                    MetricsAiInteractionRecord.AiMessageType.TEXT
+                    AiMessageType.TEXT
             );
             ReportAiResponse ai = response != null ? mapper.readValue(response, ReportAiResponse.class) : null;
             return ai != null ? ai : ReportAiResponse.empty();
@@ -312,7 +312,7 @@ public class ReportService {
                 prompt,
                 BotIdentifier.CALORIE_BOT,
                 loggingContext,
-                MetricsAiInteractionRecord.AiMessageType.TEXT
+                AiMessageType.TEXT
         );
     }
 

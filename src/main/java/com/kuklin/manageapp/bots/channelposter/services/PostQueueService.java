@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.bots.channelposter.services;
 
+import com.kuklin.manageapp.aiconversation.models.enums.AiMessageType;
 import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcessor;
 import com.kuklin.manageapp.bots.channelposter.components.ArticleContentGenerator;
 import com.kuklin.manageapp.bots.channelposter.entities.PostImage;
@@ -11,7 +12,6 @@ import com.kuklin.manageapp.bots.channelposter.model.PostQueueNotFoundException;
 import com.kuklin.manageapp.bots.channelposter.model.TopicCategoryNotFoundException;
 import com.kuklin.manageapp.bots.channelposter.repositories.PostQueueRepository;
 import com.kuklin.manageapp.bots.channelposter.telegram.ChannelPosterBotKeyComponent;
-import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
 import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -127,7 +127,7 @@ public class PostQueueService {
                 prompt,
                 BotIdentifier.CHANNEL_POSTER,
                 getClass().getSimpleName() + " " + label,
-                MetricsAiInteractionRecord.AiMessageType.TEXT
+                AiMessageType.TEXT
         );
         if (raw == null || raw.isBlank()) {
             log.warn("Post #{}: AI didn't shorten the text ({})", postQueue.getId(), label);

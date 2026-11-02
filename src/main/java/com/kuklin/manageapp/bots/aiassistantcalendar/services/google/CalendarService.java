@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.bots.aiassistantcalendar.services.google;
 
+import com.kuklin.manageapp.aiconversation.models.enums.AiMessageType;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.api.client.auth.oauth2.BearerToken;
@@ -21,7 +22,6 @@ import com.kuklin.manageapp.bots.aiassistantcalendar.models.ActionKnot;
 import com.kuklin.manageapp.bots.aiassistantcalendar.models.CalendarEventAiResponse;
 import com.kuklin.manageapp.bots.aiassistantcalendar.models.TokenRefreshException;
 import com.kuklin.manageapp.bots.aiassistantcalendar.services.google.utils.CalendarServiceUtils;
-import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
 import com.kuklin.manageapp.bots.aiassistantcalendar.entities.AssistantGoogleOAuth;
 import com.kuklin.manageapp.bots.aiassistantcalendar.entities.GoogleCacheableCalendar;
 import com.kuklin.manageapp.bots.aiassistantcalendar.services.AiMessageLogService;
@@ -375,7 +375,7 @@ public class CalendarService {
                 components.getAiKey(), request,
                 BotIdentifier.ASSISTANT_BOT,
                 BotIdentifier.ASSISTANT_BOT + " FINDING EVENT",
-                MetricsAiInteractionRecord.AiMessageType.TEXT
+                AiMessageType.TEXT
         );
         aiMessageLogService.saveLog(request, aiResponse);
         List<String> eventIds = objectMapper.readValue(aiResponse, new TypeReference<List<String>>() {
@@ -415,7 +415,7 @@ public class CalendarService {
                 components.getAiKey(), request,
                 BotIdentifier.ASSISTANT_BOT,
                 BotIdentifier.ASSISTANT_BOT + "YEAR FINDING EVENT",
-                MetricsAiInteractionRecord.AiMessageType.TEXT
+                AiMessageType.TEXT
         );
         aiMessageLogService.saveLog(request, aiResponse);
         return aiResponse;

@@ -1,6 +1,6 @@
 package com.kuklin.manageapp.aiconversation.providers;
 
-import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
+import com.kuklin.manageapp.aiconversation.models.enums.AiMessageType;
 import com.kuklin.manageapp.common.telegram.BotIdentifier;
 
 public interface AiTextClient {
@@ -9,5 +9,5 @@ public interface AiTextClient {
             String content,
             BotIdentifier botIdentifier,
             String uniqLog,
-            MetricsAiInteractionRecord.AiMessageType messageType);
+            AiMessageType messageType);
 }

@@ -1,13 +1,13 @@
 package com.kuklin.manageapp.aiconversation.providers.impl;
 
+import com.kuklin.manageapp.aiconversation.models.enums.AiMessageType;
 import com.kuklin.manageapp.aiconversation.integrations.OpenAiFeignClient;
 import com.kuklin.manageapp.aiconversation.models.AiQuotaExhaustedEvent;
 import com.kuklin.manageapp.aiconversation.models.AiUnavailableException;
 import com.kuklin.manageapp.aiconversation.models.enums.ProviderVariant;
 import com.kuklin.manageapp.aiconversation.models.openai.OpenAiChatCompletionResponse;
-import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
-import com.kuklin.manageapp.bots.metrics.services.MetricsAiInteractionRecordService;
-import com.kuklin.manageapp.bots.metrics.services.MetricsAiLogService;
+import com.kuklin.manageapp.aiconversation.usage.services.MetricsAiInteractionRecordService;
+import com.kuklin.manageapp.aiconversation.usage.services.MetricsAiLogService;
 import com.kuklin.manageapp.aiconversation.models.TranscriptionResponse;
 import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import feign.FeignException;
@@ -62,7 +62,7 @@ class OpenAiProviderProcessorErrorsTest {
 
         ArgumentCaptor<String> error = ArgumentCaptor.forClass(String.class);
         verify(metrics).saveFailedInteractionRecord(eq(ProviderVariant.OPENAI), eq(BotIdentifier.CALORIE_BOT),
-                anyString(), eq("prompt"), eq(MetricsAiInteractionRecord.AiMessageType.TEXT), eq(500), error.capture());
+                anyString(), eq("prompt"), eq(AiMessageType.TEXT), eq(500), error.capture());
         assertThat(error.getValue()).contains("boom");
     }
 
@@ -74,7 +74,7 @@ class OpenAiProviderProcessorErrorsTest {
                 .isInstanceOf(AiUnavailableException.class);
 
         verify(metrics).saveFailedInteractionRecord(eq(ProviderVariant.OPENAI), eq(BotIdentifier.CALORIE_BOT),
-                anyString(), eq("[VOICE]"), eq(MetricsAiInteractionRecord.AiMessageType.VOICE), eq(0), anyString());
+                anyString(), eq("[VOICE]"), eq(AiMessageType.VOICE), eq(0), anyString());
     }
 
     @Test
@@ -165,6 +165,6 @@ class OpenAiProviderProcessorErrorsTest {
 
     private String fetchText() {
         return processor.fetchResponse("key", "prompt", BotIdentifier.CALORIE_BOT, "test",
-                MetricsAiInteractionRecord.AiMessageType.TEXT);
+                AiMessageType.TEXT);
     }
 }

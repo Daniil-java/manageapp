@@ -1,4 +1,4 @@
-package com.kuklin.manageapp.bots.metrics.entities;
+package com.kuklin.manageapp.aiconversation.usage.entities;
 
 import jakarta.persistence.*;
 import lombok.Data;

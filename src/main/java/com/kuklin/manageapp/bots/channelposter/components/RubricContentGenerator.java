@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.bots.channelposter.components;
 
+import com.kuklin.manageapp.aiconversation.models.enums.AiMessageType;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcessor;
@@ -8,7 +9,6 @@ import com.kuklin.manageapp.bots.channelposter.entities.TopicCategory;
 import com.kuklin.manageapp.bots.channelposter.model.AiGeneratedContent;
 import com.kuklin.manageapp.bots.channelposter.model.PollContent;
 import com.kuklin.manageapp.bots.channelposter.telegram.ChannelPosterBotKeyComponent;
-import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
 import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -227,7 +227,7 @@ public class RubricContentGenerator {
                 prompt,
                 BotIdentifier.CHANNEL_POSTER,
                 "rubric " + type.name().toLowerCase() + " poll",
-                MetricsAiInteractionRecord.AiMessageType.TEXT
+                AiMessageType.TEXT
         );
         if (raw == null) return null;
         try {
@@ -267,7 +267,7 @@ public class RubricContentGenerator {
                 prompt,
                 BotIdentifier.CHANNEL_POSTER,
                 "rubric " + type.name().toLowerCase() + " post",
-                MetricsAiInteractionRecord.AiMessageType.TEXT
+                AiMessageType.TEXT
         );
         if (raw == null) return null;
         try {
@@ -296,7 +296,7 @@ public class RubricContentGenerator {
                 prompt,
                 BotIdentifier.CHANNEL_POSTER,
                 "rubric " + type.name().toLowerCase() + " topics",
-                MetricsAiInteractionRecord.AiMessageType.TEXT
+                AiMessageType.TEXT
         );
         if (raw == null) return List.of();
         try {

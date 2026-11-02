@@ -2,8 +2,8 @@ package com.kuklin.manageapp.bots.metrics.services;
 
 import com.kuklin.manageapp.aiconversation.models.AiQuotaExhaustedEvent;
 import com.kuklin.manageapp.bots.metrics.configurations.MetricsBotKeyComponents;
-import com.kuklin.manageapp.bots.metrics.models.AiUsageByUser;
-import com.kuklin.manageapp.bots.metrics.repositories.MetricsAiInteractionRecordRepository;
+import com.kuklin.manageapp.aiconversation.usage.models.AiUsageByUser;
+import com.kuklin.manageapp.aiconversation.usage.repositories.MetricsAiInteractionRecordRepository;
 import com.kuklin.manageapp.bots.metrics.telegram.MetricsTelegramBot;
 import com.kuklin.manageapp.common.telegram.config.EnabledBots;
 import com.kuklin.manageapp.common.telegram.BotIdentifier;

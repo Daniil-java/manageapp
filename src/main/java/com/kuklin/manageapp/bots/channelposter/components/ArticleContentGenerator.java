@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.bots.channelposter.components;
 
+import com.kuklin.manageapp.aiconversation.models.enums.AiMessageType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcessor;
 import com.kuklin.manageapp.bots.channelposter.components.source.ArticleTextExtractor;
@@ -10,7 +11,6 @@ import com.kuklin.manageapp.bots.channelposter.entities.TopicCategory;
 import com.kuklin.manageapp.bots.channelposter.model.AiGeneratedContent;
 import com.kuklin.manageapp.bots.channelposter.services.PostImageService;
 import com.kuklin.manageapp.bots.channelposter.telegram.ChannelPosterBotKeyComponent;
-import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
 import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -71,7 +71,7 @@ public class ArticleContentGenerator implements ContentGenerator {
                 TEXT_PROMPT.replace("%s", TextUtils.truncate(article, ArticleTextExtractor.MAX_CHARS)),
                 BotIdentifier.CHANNEL_POSTER,
                 "article content generator",
-                MetricsAiInteractionRecord.AiMessageType.TEXT
+                AiMessageType.TEXT
         );
 
         try {

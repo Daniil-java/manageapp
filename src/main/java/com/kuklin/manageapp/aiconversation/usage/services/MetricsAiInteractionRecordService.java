@@ -1,10 +1,11 @@
-package com.kuklin.manageapp.bots.metrics.services;
+package com.kuklin.manageapp.aiconversation.usage.services;
 
+import com.kuklin.manageapp.aiconversation.models.enums.AiMessageType;
 import com.kuklin.manageapp.aiconversation.models.AiUsageContext;
 import com.kuklin.manageapp.aiconversation.models.enums.AiModelPrice;
 import com.kuklin.manageapp.aiconversation.models.enums.ProviderVariant;
-import com.kuklin.manageapp.bots.metrics.repositories.MetricsAiInteractionRecordRepository;
-import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
+import com.kuklin.manageapp.aiconversation.usage.repositories.MetricsAiInteractionRecordRepository;
+import com.kuklin.manageapp.aiconversation.usage.entities.MetricsAiInteractionRecord;
 import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -31,9 +32,9 @@ public class MetricsAiInteractionRecordService {
             ProviderVariant providerVariant,
             BotIdentifier botIdentifier,
             String request,
-            MetricsAiInteractionRecord.AiMessageType requestMessageType,
+            AiMessageType requestMessageType,
             String response,
-            MetricsAiInteractionRecord.AiMessageType responseMessageType,
+            AiMessageType responseMessageType,
             Long inputTokens,
             Long outputTokens
     ) {
@@ -50,9 +51,9 @@ public class MetricsAiInteractionRecordService {
             BotIdentifier botIdentifier,
             String model,
             String request,
-            MetricsAiInteractionRecord.AiMessageType requestMessageType,
+            AiMessageType requestMessageType,
             String response,
-            MetricsAiInteractionRecord.AiMessageType responseMessageType,
+            AiMessageType responseMessageType,
             Long inputTokens,
             Long cachedInputTokens,
             Long outputTokens
@@ -112,7 +113,7 @@ public class MetricsAiInteractionRecordService {
             BotIdentifier botIdentifier,
             String model,
             String request,
-            MetricsAiInteractionRecord.AiMessageType requestMessageType,
+            AiMessageType requestMessageType,
             int errorCode,
             String error
     ) {

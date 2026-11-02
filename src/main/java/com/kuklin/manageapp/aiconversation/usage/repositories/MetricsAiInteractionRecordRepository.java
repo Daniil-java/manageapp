@@ -1,7 +1,7 @@
-package com.kuklin.manageapp.bots.metrics.repositories;
+package com.kuklin.manageapp.aiconversation.usage.repositories;
 
-import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
-import com.kuklin.manageapp.bots.metrics.models.AiUsageByUser;
+import com.kuklin.manageapp.aiconversation.usage.entities.MetricsAiInteractionRecord;
+import com.kuklin.manageapp.aiconversation.usage.models.AiUsageByUser;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -25,7 +25,7 @@ public interface MetricsAiInteractionRecordRepository extends JpaRepository<Metr
 
     /** Успешные вызовы ИИ с момента from по пользователям, больше всего вызовов — первым. Упавшие (error_code) не считаем. */
     @Query("""
-            select new com.kuklin.manageapp.bots.metrics.models.AiUsageByUser(
+            select new com.kuklin.manageapp.aiconversation.usage.models.AiUsageByUser(
                 r.appUserId,
                 count(r),
                 coalesce(sum(coalesce(r.inputTokens, 0L) + coalesce(r.outputTokens, 0L)), 0L),

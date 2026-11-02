@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.bots.channelposter.services.source;
 
+import com.kuklin.manageapp.aiconversation.models.enums.AiMessageType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcessor;
@@ -9,7 +10,6 @@ import com.kuklin.manageapp.bots.channelposter.entities.source.ContentSource;
 import com.kuklin.manageapp.bots.channelposter.entities.source.SourceItem;
 import com.kuklin.manageapp.bots.channelposter.services.PostQueueService;
 import com.kuklin.manageapp.bots.channelposter.telegram.ChannelPosterBotKeyComponent;
-import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
 import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -101,7 +101,7 @@ public class SourceItemFilterService {
                 prompt,
                 BotIdentifier.CHANNEL_POSTER,
                 "source item filter",
-                MetricsAiInteractionRecord.AiMessageType.TEXT
+                AiMessageType.TEXT
         );
 
         Map<Long, Verdict> verdicts;

@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.bots.hhparserbot.services;
 
+import com.kuklin.manageapp.aiconversation.models.enums.AiMessageType;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcessor;
@@ -9,7 +10,6 @@ import com.kuklin.manageapp.bots.hhparserbot.entities.WorkFilter;
 import com.kuklin.manageapp.bots.hhparserbot.models.*;
 import com.kuklin.manageapp.bots.hhparserbot.repositories.VacancyRepository;
 import com.kuklin.manageapp.bots.hhparserbot.telegram.HhTelegramBot;
-import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -285,7 +285,7 @@ public class HhVacancyService {
                         String.format(AI_JSON_REQUEST, vacancy.getDescription()),
                         HhTelegramBot.BOT_IDENTIFIER,
                         "vacancy id: " + vacancy.getHhId(),
-                        MetricsAiInteractionRecord.AiMessageType.TEXT
+                        AiMessageType.TEXT
                 );
 
         try {
@@ -316,7 +316,7 @@ public class HhVacancyService {
                     request,
                     HhTelegramBot.BOT_IDENTIFIER,
                     "vacancy id: " + vacancy.getHhId(),
-                    MetricsAiInteractionRecord.AiMessageType.TEXT
+                    AiMessageType.TEXT
             );
         }
         return null;

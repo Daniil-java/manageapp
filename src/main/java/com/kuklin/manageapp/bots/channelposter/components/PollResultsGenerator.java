@@ -1,9 +1,9 @@
 package com.kuklin.manageapp.bots.channelposter.components;
 
+import com.kuklin.manageapp.aiconversation.models.enums.AiMessageType;
 import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcessor;
 import com.kuklin.manageapp.bots.channelposter.entities.ChannelPoll;
 import com.kuklin.manageapp.bots.channelposter.telegram.ChannelPosterBotKeyComponent;
-import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
 import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -78,7 +78,7 @@ public class PollResultsGenerator {
                     buildPrompt(poll, data),
                     BotIdentifier.CHANNEL_POSTER,
                     "poll results comment",
-                    MetricsAiInteractionRecord.AiMessageType.TEXT
+                    AiMessageType.TEXT
             );
             if (raw == null || raw.isBlank() || raw.length() > MAX_COMMENT_CHARS) return null;
             return raw.trim();

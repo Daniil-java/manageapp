@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.aiconversation.providers.impl;
 
+import com.kuklin.manageapp.aiconversation.models.enums.AiMessageType;
 import com.kuklin.manageapp.aiconversation.integrations.ClaudeFeignClient;
 import com.kuklin.manageapp.aiconversation.models.AiResponse;
 import com.kuklin.manageapp.aiconversation.models.claude.ClaudeRequest;
@@ -7,9 +8,8 @@ import com.kuklin.manageapp.aiconversation.models.claude.ClaudeResponse;
 import com.kuklin.manageapp.aiconversation.models.enums.ChatModel;
 import com.kuklin.manageapp.aiconversation.models.enums.ProviderVariant;
 import com.kuklin.manageapp.aiconversation.providers.ProviderProcessor;
-import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
-import com.kuklin.manageapp.bots.metrics.services.MetricsAiInteractionRecordService;
-import com.kuklin.manageapp.bots.metrics.services.MetricsAiLogService;
+import com.kuklin.manageapp.aiconversation.usage.services.MetricsAiInteractionRecordService;
+import com.kuklin.manageapp.aiconversation.usage.services.MetricsAiLogService;
 import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -88,9 +88,9 @@ public class ClaudeProviderProcessor implements ProviderProcessor {
                         getProviderName(),
                         botIdentifier,
                         content,
-                        MetricsAiInteractionRecord.AiMessageType.PHOTO,
+                        AiMessageType.PHOTO,
                         resp.firstTextOrEmpty(),
-                        MetricsAiInteractionRecord.AiMessageType.TEXT,
+                        AiMessageType.TEXT,
                         resp.getUsage().getInputTokens(),
                         resp.getUsage().getOutputTokens()
                         );

@@ -1,6 +1,6 @@
-package com.kuklin.manageapp.bots.metrics.repositories;
+package com.kuklin.manageapp.aiconversation.usage.repositories;
 
-import com.kuklin.manageapp.bots.metrics.entities.MetricsAiLog;
+import com.kuklin.manageapp.aiconversation.usage.entities.MetricsAiLog;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;

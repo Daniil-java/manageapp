@@ -3,7 +3,7 @@ package com.kuklin.manageapp.bots.caloriebot.support;
 import com.kuklin.manageapp.bots.caloriebot.settings.UserSettingsService;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.i18n.I18nProperties;
-import com.kuklin.manageapp.bots.metrics.repositories.MetricsAiInteractionRecordRepository;
+import com.kuklin.manageapp.aiconversation.usage.repositories.MetricsAiInteractionRecordRepository;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.payment.entities.Payment;
 import com.kuklin.manageapp.payment.repositories.PaymentRepository;

@@ -1,3 +1,10 @@
+## 0.0.84 (02.11.2026)
+[et-114] — Учёт ИИ-вызовов переехал в aiconversation
+* Только перенос классов, логика и таблицы не менялись.
+* aiconversation/usage — сущности MetricsAiLog, MetricsAiInteractionRecord, их репозитории, MetricsAiLogService, MetricsAiInteractionRecordService, модель AiUsageByUser (были в bots/metrics). aiconversation больше не зависит от бота метрик; bots/metrics (отчёты, AiQuotaAlertService) читает учёт из aiconversation.
+* AiMessageType — отдельный enum в aiconversation/models/enums (был вложенным в MetricsAiInteractionRecord).
+* README.md: почему Command остаётся общим на все боты.
+
 ## 0.0.83 (02.11.2026)
 [et-113] — Пакеты: этап 1, common
 * Только перенос классов, логика не менялась (кроме TelegramService).

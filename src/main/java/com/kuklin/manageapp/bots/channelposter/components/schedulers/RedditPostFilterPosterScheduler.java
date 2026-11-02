@@ -1,11 +1,11 @@
 package com.kuklin.manageapp.bots.channelposter.components.schedulers;
 
+import com.kuklin.manageapp.aiconversation.models.enums.AiMessageType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcessor;
 import com.kuklin.manageapp.bots.channelposter.entities.parser.RedditPost;
 import com.kuklin.manageapp.bots.channelposter.services.parser.RedditPostService;
 import com.kuklin.manageapp.bots.channelposter.telegram.ChannelPosterBotKeyComponent;
-import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
 import com.kuklin.manageapp.common.scheduler.ScheduleProcessor;
 import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import lombok.RequiredArgsConstructor;
@@ -76,7 +76,7 @@ public class RedditPostFilterPosterScheduler implements ScheduleProcessor {
                 String.format(PROMPT, buildAiInputOrNull(redditPosts)),
                 BotIdentifier.CHANNEL_POSTER,
                 getSchedulerName() + " process",
-                MetricsAiInteractionRecord.AiMessageType.TEXT
+                AiMessageType.TEXT
         );
 
         try {

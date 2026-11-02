@@ -1,6 +1,7 @@
-package com.kuklin.manageapp.bots.metrics.entities;
+package com.kuklin.manageapp.aiconversation.usage.entities;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.kuklin.manageapp.aiconversation.models.enums.AiMessageType;
 import com.kuklin.manageapp.aiconversation.models.enums.AiOperation;
 import com.kuklin.manageapp.aiconversation.models.enums.ProviderVariant;
 import com.kuklin.manageapp.common.telegram.BotIdentifier;
@@ -49,9 +50,4 @@ public class MetricsAiInteractionRecord {
     private String error;
     @CreationTimestamp
     private Instant created;
-
-    public enum AiMessageType {
-        TEXT, VOICE, PHOTO, IMAGE;
-    }
-
 }
