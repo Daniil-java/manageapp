@@ -4,7 +4,7 @@ import com.kuklin.manageapp.bots.caloriebot.components.repository.UserNutritionP
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
 import com.kuklin.manageapp.bots.caloriebot.entities.WeightEntry;
 import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.UserNutritionProfileDto;
-import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
+import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.models.landing.CalculatorStartParam;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

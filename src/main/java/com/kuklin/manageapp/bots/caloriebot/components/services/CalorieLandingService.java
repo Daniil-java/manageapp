@@ -1,12 +1,13 @@
 package com.kuklin.manageapp.bots.caloriebot.components.services;
 
-import com.kuklin.manageapp.bots.caloriebot.configurations.AiRateLimitProperties;
+import com.kuklin.manageapp.bots.caloriebot.access.PlanFeatureService;
+import com.kuklin.manageapp.bots.caloriebot.access.AiRateLimitProperties;
 import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.i18n.LandingTextKeys;
-import com.kuklin.manageapp.bots.caloriebot.entities.PlanFeature;
-import com.kuklin.manageapp.bots.caloriebot.models.feature.BotFeature;
-import com.kuklin.manageapp.bots.caloriebot.models.feature.FeatureLimitPeriod;
+import com.kuklin.manageapp.bots.caloriebot.access.PlanFeature;
+import com.kuklin.manageapp.bots.caloriebot.access.model.BotFeature;
+import com.kuklin.manageapp.bots.caloriebot.access.model.FeatureLimitPeriod;
 import com.kuklin.manageapp.bots.caloriebot.texts.PlanTexts;
 import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import com.kuklin.manageapp.payment.entities.PricingPlan;
@@ -28,7 +29,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.kuklin.manageapp.bots.caloriebot.components.services.CalorieAccessService.FREE_PLAN_CODE;
+import static com.kuklin.manageapp.bots.caloriebot.access.CalorieAccessService.FREE_PLAN_CODE;
 
 /**
  * Данные для лендинга zefir.fit. Тарифы и лимиты берутся из БД (pricing_plans, plan_features) —

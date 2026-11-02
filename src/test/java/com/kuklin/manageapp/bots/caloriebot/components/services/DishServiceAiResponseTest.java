@@ -1,5 +1,7 @@
 package com.kuklin.manageapp.bots.caloriebot.components.services;
 
+import com.kuklin.manageapp.bots.caloriebot.access.CalorieAccessService;
+import com.kuklin.manageapp.bots.caloriebot.access.AiRateLimiter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcessor;
 import com.kuklin.manageapp.bots.caloriebot.components.repository.DishRepository;
@@ -8,8 +10,8 @@ import com.kuklin.manageapp.bots.caloriebot.configurations.TelegramCaloriesBotKe
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
-import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
-import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
+import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponseException;
+import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorStatus;
 import com.kuklin.manageapp.common.services.TelegramUserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

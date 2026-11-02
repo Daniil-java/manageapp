@@ -1,7 +1,7 @@
 package com.kuklin.manageapp.common.auth.security;
 
-import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
-import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
+import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponseException;
+import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorStatus;
 import com.kuklin.manageapp.common.auth.dto.AuthResponse;
 import com.kuklin.manageapp.common.auth.dto.LoginRequest;
 import com.kuklin.manageapp.common.auth.dto.RegisterRequest;
@@ -11,7 +11,7 @@ import com.kuklin.manageapp.common.entities.Role;
 import com.kuklin.manageapp.common.services.AppUserService;
 import com.kuklin.manageapp.common.services.RoleService;
 import com.kuklin.manageapp.common.services.UserAuthIdentityService;
-import com.kuklin.manageapp.bots.caloriebot.components.services.security.TelegramAuthService;
+import com.kuklin.manageapp.bots.caloriebot.web.security.TelegramAuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;

@@ -1,17 +1,17 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.history.report;
 
 import com.kuklin.manageapp.aiconversation.models.AiUnavailableException;
-import com.kuklin.manageapp.bots.caloriebot.components.services.AiRateLimiter;
-import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
-import com.kuklin.manageapp.bots.caloriebot.models.exceptions.MissingFeatureException;
+import com.kuklin.manageapp.bots.caloriebot.access.AiRateLimiter;
+import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponseException;
+import com.kuklin.manageapp.bots.caloriebot.access.MissingFeatureException;
 import com.kuklin.manageapp.bots.caloriebot.components.services.ReportService;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.i18n.PdfTextKeys;
-import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieMenuButtons;
-import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
-import com.kuklin.manageapp.bots.caloriebot.telegram.FeatureLimitNotifier;
-import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
+import com.kuklin.manageapp.bots.caloriebot.bot.CalorieMenuButtons;
+import com.kuklin.manageapp.bots.caloriebot.bot.CalorieTelegramBot;
+import com.kuklin.manageapp.bots.caloriebot.access.telegram.FeatureLimitNotifier;
+import com.kuklin.manageapp.bots.caloriebot.bot.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.weight.CalorieWeightHistoryUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.telegram.TelegramBot;

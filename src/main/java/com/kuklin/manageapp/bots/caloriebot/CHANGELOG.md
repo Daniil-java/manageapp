@@ -7,6 +7,14 @@
 * aiconversation/models — TranscriptionResponse и ByteArrayMultipartFile (были в common/library/models). Старый неиспользуемый aiconversation/models/TranscriptionResponse (без usage) удалён — его заменил актуальный из common.
 * TelegramService.convertVoiceToTextOrNull: бот для учёта расшифровки в метриках — из переданного telegramBot.getBotIdentifier(), а не CalorieTelegramBot.BOT_IDENTIFIER. common больше не импортирует калорийного бота отсюда; результат тот же — вызывает только калорийный бот.
 * Тесты переехали вслед за классами (common/telegram, keyboard, config, scheduler). RefundedPaymentCaptureTest — в common/telegram: проверяет и TelegramBot.isPaymentUpdate (protected).
+* Этап 2, калорийный бот — общие части (только перенос):
+  * bot — CalorieTelegramBot, TelegramCalorieBotFacade, CalorieMenuButtons, CalorieBotCommandsPublisher, KeyboardCalorieUpdateHandler, CalorieBotUpdateHandler, MenuCalorieUpdateHandler, CalorieCloseButtonCallbackUpdateHandler, AdminMessageSenderUpdateHandler (были в telegram и telegram/handlers/common).
+  * i18n — AbstractBotTexts (был в texts).
+  * web — GlobalExceptionHandler, TelegramWebAppController, CalorieTelegramUsersController, CalorieSiteLinks, OpenApiConfig; web/security — DomainUrlFilter, RequestSizeLimitFilter, TelegramAuthFilter, TelegramAuthService; web/error — ErrorStatus, ErrorResponse, ErrorResponseException, ErrorParams (были в models/exceptions).
+  * access — FeatureAccessAspect, @RequiresFeature, CalorieAccessService, PlanFeatureService, UserFeatureUsageService, AiRateLimiter, AiRateLimitProperties, MissingFeatureException, сущности PlanFeature, UserFeatureUsage, CalorieAiRequest и их репозитории; access/model — AccessResult, BotFeature, EmptyResultCharge, FeatureLimitDto, FeatureLimitPeriod, QuotaCharge (были в models/feature); access/telegram — FeatureLimitNotifier.
+  * scheduler — CalorieSchedulerService, DailySummarySchedulerProcessor, MealReminderSchedulerProcessor (были в components/services/scheduler).
+  * TelegramCaloriesBotKeyComponents оставлен в configurations — в нём локальная подмена токенов.
+  * NoHardcodedTextsTest: проверяет и bot, access/telegram — туда переехал код, который пишет пользователю.
 * common/auth не трогали: вход и SecurityConfig общие для всего приложения (правила для /nicotine, hh, календаря). Его зависимость от ошибок калорийного бота (ErrorResponseException, ErrorStatus) и фильтров — отдельная задача.
 
 ## 0.0.82 (02.11.2026)

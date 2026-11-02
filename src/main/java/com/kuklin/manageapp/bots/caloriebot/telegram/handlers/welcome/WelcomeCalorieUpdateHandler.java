@@ -2,10 +2,10 @@ package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.welcome;
 
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
-import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieMenuButtons;
-import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieSiteLinks;
-import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
-import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
+import com.kuklin.manageapp.bots.caloriebot.bot.CalorieMenuButtons;
+import com.kuklin.manageapp.bots.caloriebot.web.CalorieSiteLinks;
+import com.kuklin.manageapp.bots.caloriebot.bot.CalorieTelegramBot;
+import com.kuklin.manageapp.bots.caloriebot.bot.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.telegram.keyboard.ButtonStyle;
 import com.kuklin.manageapp.common.telegram.Command;

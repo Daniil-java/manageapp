@@ -1,6 +1,6 @@
 package com.kuklin.manageapp.payment.handlers;
 
-import com.kuklin.manageapp.bots.caloriebot.telegram.TelegramCalorieBotFacade;
+import com.kuklin.manageapp.bots.caloriebot.bot.TelegramCalorieBotFacade;
 import com.kuklin.manageapp.bots.payment.telegram.PaymentTelegramFacade;
 import com.kuklin.manageapp.common.telegram.UpdateHandler;
 import com.kuklin.manageapp.common.telegram.Command;

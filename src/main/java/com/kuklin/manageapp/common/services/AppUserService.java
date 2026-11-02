@@ -1,7 +1,7 @@
 package com.kuklin.manageapp.common.services;
 
-import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
-import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
+import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponseException;
+import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorStatus;
 import com.kuklin.manageapp.common.entities.AppUser;
 import com.kuklin.manageapp.common.entities.Role;
 import com.kuklin.manageapp.common.entities.TelegramUser;

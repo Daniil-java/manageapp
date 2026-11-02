@@ -1,4 +1,6 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram;
+import com.kuklin.manageapp.bots.caloriebot.bot.CalorieTelegramBot;
+import com.kuklin.manageapp.bots.caloriebot.bot.CalorieMenuButtons;
 
 import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;

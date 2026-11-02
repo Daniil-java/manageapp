@@ -2,8 +2,8 @@ package com.kuklin.manageapp.bots.caloriebot.i18n;
 
 import com.ibm.icu.text.MessageFormat;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserSettingsService;
-import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
-import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
+import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponseException;
+import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSource;

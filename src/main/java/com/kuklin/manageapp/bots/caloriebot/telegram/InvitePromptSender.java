@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram;
 
+import com.kuklin.manageapp.bots.caloriebot.bot.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.components.repository.UserSettingsRepository;
 import com.kuklin.manageapp.bots.caloriebot.components.services.ReferralRewardService;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserSettingsService;

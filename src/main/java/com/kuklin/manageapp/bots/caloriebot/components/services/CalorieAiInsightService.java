@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.bots.caloriebot.components.services;
 
+import com.kuklin.manageapp.bots.caloriebot.access.AiRateLimiter;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kuklin.manageapp.bots.caloriebot.components.repository.CalorieAiInsightRefreshRepository;
@@ -7,10 +8,10 @@ import com.kuklin.manageapp.bots.caloriebot.components.repository.CalorieAiInsig
 import com.kuklin.manageapp.bots.caloriebot.entities.CalorieAiInsight;
 import com.kuklin.manageapp.bots.caloriebot.models.AiInsightType;
 import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
-import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
-import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
-import com.kuklin.manageapp.bots.caloriebot.models.exceptions.MissingFeatureException;
-import com.kuklin.manageapp.bots.caloriebot.models.feature.AccessResult;
+import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponseException;
+import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorStatus;
+import com.kuklin.manageapp.bots.caloriebot.access.MissingFeatureException;
+import com.kuklin.manageapp.bots.caloriebot.access.model.AccessResult;
 import com.kuklin.manageapp.bots.caloriebot.models.report.AiInsightDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

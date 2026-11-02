@@ -1,8 +1,8 @@
 package com.kuklin.manageapp.common.auth;
 
-import com.kuklin.manageapp.bots.caloriebot.components.services.security.DomainUrlFilter;
-import com.kuklin.manageapp.bots.caloriebot.components.services.security.RequestSizeLimitFilter;
-import com.kuklin.manageapp.bots.caloriebot.components.services.security.TelegramAuthFilter;
+import com.kuklin.manageapp.bots.caloriebot.web.security.DomainUrlFilter;
+import com.kuklin.manageapp.bots.caloriebot.web.security.RequestSizeLimitFilter;
+import com.kuklin.manageapp.bots.caloriebot.web.security.TelegramAuthFilter;
 import com.kuklin.manageapp.common.auth.security.CustomUserDetailsService;
 import com.kuklin.manageapp.common.auth.security.JwtAuthenticationFilter;
 import jakarta.servlet.http.HttpServletResponse;

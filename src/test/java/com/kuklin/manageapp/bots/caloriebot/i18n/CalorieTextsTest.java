@@ -2,12 +2,12 @@ package com.kuklin.manageapp.bots.caloriebot.i18n;
 
 import com.kuklin.manageapp.bots.caloriebot.components.services.AiInputValidator;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserSettingsService;
-import com.kuklin.manageapp.bots.caloriebot.components.services.security.RequestSizeLimitFilter;
+import com.kuklin.manageapp.bots.caloriebot.web.security.RequestSizeLimitFilter;
 import com.kuklin.manageapp.bots.caloriebot.configurations.AiInputLimitsProperties;
 import org.springframework.util.unit.DataSize;
-import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorParams;
-import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
-import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
+import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorParams;
+import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponseException;
+import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

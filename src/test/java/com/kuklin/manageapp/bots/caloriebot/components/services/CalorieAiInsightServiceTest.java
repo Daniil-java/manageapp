@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.bots.caloriebot.components.services;
 
+import com.kuklin.manageapp.bots.caloriebot.access.AiRateLimiter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kuklin.manageapp.bots.caloriebot.components.repository.CalorieAiInsightRefreshRepository;
 import com.kuklin.manageapp.bots.caloriebot.components.repository.CalorieAiInsightRepository;
@@ -7,9 +8,9 @@ import com.kuklin.manageapp.bots.caloriebot.entities.CalorieAiInsight;
 import com.kuklin.manageapp.bots.caloriebot.entities.CalorieAiInsightRefresh;
 import com.kuklin.manageapp.bots.caloriebot.models.AiInsightType;
 import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
-import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
-import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
-import com.kuklin.manageapp.bots.caloriebot.models.feature.AccessResult;
+import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponseException;
+import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorStatus;
+import com.kuklin.manageapp.bots.caloriebot.access.model.AccessResult;
 import com.kuklin.manageapp.bots.caloriebot.models.report.AiInsightDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

@@ -1,12 +1,12 @@
 package com.kuklin.manageapp.bots.caloriebot.components.controller;
 
-import com.kuklin.manageapp.bots.caloriebot.components.services.CalorieAccessService;
+import com.kuklin.manageapp.bots.caloriebot.access.CalorieAccessService;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserNutritionProfileEntryService;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserNutritionProfileService;
 import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.UserNutritionProfileDto;
 import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.UserNutritionProfileEntryDto;
-import com.kuklin.manageapp.bots.caloriebot.models.feature.BotFeature;
-import com.kuklin.manageapp.bots.caloriebot.models.feature.FeatureLimitDto;
+import com.kuklin.manageapp.bots.caloriebot.access.model.BotFeature;
+import com.kuklin.manageapp.bots.caloriebot.access.model.FeatureLimitDto;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;

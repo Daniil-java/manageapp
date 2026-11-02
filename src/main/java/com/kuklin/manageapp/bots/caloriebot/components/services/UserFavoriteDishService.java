@@ -1,15 +1,16 @@
 package com.kuklin.manageapp.bots.caloriebot.components.services;
 
+import com.kuklin.manageapp.bots.caloriebot.access.UserFeatureUsageService;
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserFavoriteDish;
 import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.DishDto;
 import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.UserFavoriteDishDto;
-import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
-import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
-import com.kuklin.manageapp.bots.caloriebot.models.exceptions.MissingFeatureException;
-import com.kuklin.manageapp.bots.caloriebot.models.feature.AccessResult;
-import com.kuklin.manageapp.bots.caloriebot.models.feature.BotFeature;
-import com.kuklin.manageapp.bots.caloriebot.components.RequiresFeature;
+import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponseException;
+import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorStatus;
+import com.kuklin.manageapp.bots.caloriebot.access.MissingFeatureException;
+import com.kuklin.manageapp.bots.caloriebot.access.model.AccessResult;
+import com.kuklin.manageapp.bots.caloriebot.access.model.BotFeature;
+import com.kuklin.manageapp.bots.caloriebot.access.RequiresFeature;
 import com.kuklin.manageapp.bots.caloriebot.components.repository.UserFavoriteDishRepository;
 import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import lombok.RequiredArgsConstructor;

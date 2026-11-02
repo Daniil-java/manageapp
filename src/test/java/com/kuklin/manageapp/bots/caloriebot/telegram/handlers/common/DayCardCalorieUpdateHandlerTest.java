@@ -6,7 +6,7 @@ import com.kuklin.manageapp.bots.caloriebot.components.services.UserSettingsServ
 import com.kuklin.manageapp.bots.caloriebot.components.services.UtmService;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.i18n.I18nProperties;
-import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
+import com.kuklin.manageapp.bots.caloriebot.bot.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.InviteLinks;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import org.junit.jupiter.api.BeforeEach;

@@ -1,13 +1,14 @@
 package com.kuklin.manageapp.bots.caloriebot.components.services;
 
+import com.kuklin.manageapp.bots.caloriebot.access.PlanFeatureService;
 import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.i18n.I18nProperties;
 import com.kuklin.manageapp.bots.caloriebot.texts.PlanTexts;
-import com.kuklin.manageapp.bots.caloriebot.configurations.AiRateLimitProperties;
-import com.kuklin.manageapp.bots.caloriebot.entities.PlanFeature;
-import com.kuklin.manageapp.bots.caloriebot.models.feature.BotFeature;
-import com.kuklin.manageapp.bots.caloriebot.models.feature.FeatureLimitPeriod;
+import com.kuklin.manageapp.bots.caloriebot.access.AiRateLimitProperties;
+import com.kuklin.manageapp.bots.caloriebot.access.PlanFeature;
+import com.kuklin.manageapp.bots.caloriebot.access.model.BotFeature;
+import com.kuklin.manageapp.bots.caloriebot.access.model.FeatureLimitPeriod;
 import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import com.kuklin.manageapp.payment.entities.PricingPlan;
 import com.kuklin.manageapp.payment.models.common.Currency;

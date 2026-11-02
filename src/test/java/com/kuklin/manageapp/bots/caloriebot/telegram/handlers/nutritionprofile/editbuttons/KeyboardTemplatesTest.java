@@ -1,7 +1,7 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.editbuttons;
 
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
-import com.kuklin.manageapp.bots.caloriebot.telegram.TelegramCalorieBotFacade;
+import com.kuklin.manageapp.bots.caloriebot.bot.TelegramCalorieBotFacade;
 import com.kuklin.manageapp.common.telegram.Command;
 import com.kuklin.manageapp.common.telegram.keyboard.StyledInlineKeyboardButton;
 import org.junit.jupiter.api.Test;

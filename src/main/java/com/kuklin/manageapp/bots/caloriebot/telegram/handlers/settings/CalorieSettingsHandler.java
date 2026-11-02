@@ -1,6 +1,6 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.settings;
 
-import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.CalorieBotUpdateHandler;
+import com.kuklin.manageapp.bots.caloriebot.bot.CalorieBotUpdateHandler;
 
 /**
  * Интерфейс, который отвечает за параметр настроек

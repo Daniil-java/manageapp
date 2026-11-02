@@ -1,7 +1,7 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common;
 
 import com.kuklin.manageapp.bots.caloriebot.components.services.UtmReportService;
-import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
+import com.kuklin.manageapp.bots.caloriebot.bot.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.UtmStatsCalorieUpdateHandler.StatsRequest;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import org.junit.jupiter.api.BeforeEach;

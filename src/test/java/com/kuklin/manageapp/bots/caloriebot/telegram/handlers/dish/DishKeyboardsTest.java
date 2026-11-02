@@ -4,7 +4,7 @@ import com.kuklin.manageapp.bots.caloriebot.components.services.UserSettingsServ
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.i18n.I18nProperties;
-import com.kuklin.manageapp.bots.caloriebot.telegram.TelegramCalorieBotFacade;
+import com.kuklin.manageapp.bots.caloriebot.bot.TelegramCalorieBotFacade;
 import com.kuklin.manageapp.common.telegram.keyboard.StyledInlineKeyboardButton;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

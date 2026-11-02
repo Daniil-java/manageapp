@@ -17,15 +17,17 @@ import static org.assertj.core.api.Assertions.assertThat;
  * В коде, который пишет пользователю бота, не должно быть русского текста: строковых литералов
  * (и текстовых блоков """) с русскими буквами. Комментарии не считаются.
  * <p>
- * Проверяем Telegram-часть бота (telegram) и сборку текстов (texts). Новый текст — в словарь
- * i18n/calorie/bot_* и ключ в BotTextKeys, иначе на английском пользователь увидит русский.
+ * Проверяем Telegram-часть бота (bot, telegram, telegram-подпакеты фич) и сборку текстов (texts). Новый текст —
+ * в словарь i18n/calorie/bot_* и ключ в BotTextKeys, иначе на английском пользователь увидит русский.
  * Остальной код калорийного бота (Swagger-описания, промпты ИИ, валидация DTO) сюда не входит.
  */
 class NoHardcodedTextsTest {
 
     private static final Path CALORIE_SOURCES = Path.of("src/main/java/com/kuklin/manageapp/bots/caloriebot");
     private static final List<Path> CHECKED_SOURCES = List.of(
+            CALORIE_SOURCES.resolve("bot"),
             CALORIE_SOURCES.resolve("telegram"),
+            CALORIE_SOURCES.resolve("access/telegram"),
             CALORIE_SOURCES.resolve("texts")
     );
 

@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.bots.caloriebot.texts;
 
+import com.kuklin.manageapp.bots.caloriebot.i18n.AbstractBotTexts;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserSettingsService;
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
