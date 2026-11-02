@@ -1,7 +1,7 @@
 package com.kuklin.manageapp.bots.caloriebot.web.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.kuklin.manageapp.bots.caloriebot.components.services.UserSettingsService;
+import com.kuklin.manageapp.bots.caloriebot.settings.UserSettingsService;
 import com.kuklin.manageapp.bots.caloriebot.dish.ai.AiInputLimitsProperties;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.i18n.I18nProperties;

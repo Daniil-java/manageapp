@@ -1,6 +1,6 @@
 package com.kuklin.manageapp.bots.caloriebot.water;
 
-import com.kuklin.manageapp.bots.caloriebot.components.services.UserSettingsService;
+import com.kuklin.manageapp.bots.caloriebot.settings.UserSettingsService;
 import com.kuklin.manageapp.bots.caloriebot.weight.WeightEntry;
 import com.kuklin.manageapp.bots.caloriebot.weight.WeightEntryDto;
 import lombok.RequiredArgsConstructor;

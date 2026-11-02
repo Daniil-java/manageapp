@@ -1,6 +1,6 @@
 package com.kuklin.manageapp.bots.caloriebot.i18n;
 
-import com.kuklin.manageapp.bots.caloriebot.entities.SupportTicket;
+import com.kuklin.manageapp.bots.caloriebot.support.SupportTicket;
 import com.kuklin.manageapp.payment.components.texts.PaymentText;
 import com.kuklin.manageapp.payment.entities.Payment;
 import com.kuklin.manageapp.payment.entities.UserSubscription;

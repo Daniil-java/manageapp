@@ -1,6 +1,6 @@
 package com.kuklin.manageapp.bots.caloriebot.dish;
 
-import com.kuklin.manageapp.bots.caloriebot.components.services.StreakService;
+import com.kuklin.manageapp.bots.caloriebot.report.StreakService;
 import com.kuklin.manageapp.bots.caloriebot.dish.dto.FoodImageRequest;
 import com.kuklin.manageapp.bots.caloriebot.dish.dto.FoodTextRequest;
 import com.kuklin.manageapp.bots.caloriebot.dish.dto.FoodVoiceRequest;

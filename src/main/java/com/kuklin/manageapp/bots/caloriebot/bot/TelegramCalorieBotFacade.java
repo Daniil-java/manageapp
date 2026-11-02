@@ -1,11 +1,11 @@
 package com.kuklin.manageapp.bots.caloriebot.bot;
 
 import com.kuklin.manageapp.aiconversation.models.AiUnavailableException;
-import com.kuklin.manageapp.bots.caloriebot.components.services.UserSettingsService;
+import com.kuklin.manageapp.bots.caloriebot.settings.UserSettingsService;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorStatus;
-import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.SupportInputUpdateHandler;
+import com.kuklin.manageapp.bots.caloriebot.support.telegram.SupportInputUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.telegram.payment.RefundedPaymentCapture;
 import com.kuklin.manageapp.common.telegram.TelegramBot;

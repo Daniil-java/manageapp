@@ -1,6 +1,6 @@
 package com.kuklin.manageapp.bots.channelposter.services;
 
-import com.kuklin.manageapp.bots.caloriebot.components.services.UtmService;
+import com.kuklin.manageapp.bots.caloriebot.referral.UtmService;
 import com.kuklin.manageapp.bots.channelposter.entities.ChannelDailyStats;
 import com.kuklin.manageapp.bots.channelposter.entities.PostQueue;
 import com.kuklin.manageapp.bots.channelposter.repositories.ChannelDailyStatsRepository;

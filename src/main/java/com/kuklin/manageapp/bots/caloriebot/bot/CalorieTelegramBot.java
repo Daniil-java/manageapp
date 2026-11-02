@@ -4,7 +4,7 @@ import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.support.SupportGroupService;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
-import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.paymentpart.PaymentPlanListCalorieUpdateHandler;
+import com.kuklin.manageapp.bots.caloriebot.subscription.telegram.PaymentPlanListCalorieUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.telegram.TelegramBot;
 import com.kuklin.manageapp.common.telegram.BotIdentifier;

@@ -3,7 +3,7 @@ package com.kuklin.manageapp.bots.caloriebot.profile;
 import com.kuklin.manageapp.bots.caloriebot.weight.WeightEntryService;
 import com.kuklin.manageapp.bots.caloriebot.weight.WeightEntry;
 import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponseException;
-import com.kuklin.manageapp.bots.caloriebot.models.landing.CalculatorStartParam;
+import com.kuklin.manageapp.bots.caloriebot.onboarding.CalculatorStartParam;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

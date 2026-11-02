@@ -1,7 +1,7 @@
 package com.kuklin.manageapp.bots.caloriebot.i18n;
 
 import com.kuklin.manageapp.bots.caloriebot.dish.ai.AiInputValidator;
-import com.kuklin.manageapp.bots.caloriebot.components.services.UserSettingsService;
+import com.kuklin.manageapp.bots.caloriebot.settings.UserSettingsService;
 import com.kuklin.manageapp.bots.caloriebot.web.security.RequestSizeLimitFilter;
 import com.kuklin.manageapp.bots.caloriebot.dish.ai.AiInputLimitsProperties;
 import org.springframework.util.unit.DataSize;

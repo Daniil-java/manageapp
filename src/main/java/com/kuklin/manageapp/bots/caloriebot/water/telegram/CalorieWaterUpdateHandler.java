@@ -1,6 +1,6 @@
 package com.kuklin.manageapp.bots.caloriebot.water.telegram;
 
-import com.kuklin.manageapp.bots.caloriebot.components.services.AnalyticsService;
+import com.kuklin.manageapp.bots.caloriebot.report.AnalyticsService;
 import com.kuklin.manageapp.bots.caloriebot.profile.UserNutritionProfileService;
 import com.kuklin.manageapp.bots.caloriebot.water.WaterEntryService;
 import com.kuklin.manageapp.bots.caloriebot.profile.UserNutritionProfile;

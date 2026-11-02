@@ -1,14 +1,9 @@
 package com.kuklin.manageapp.bots.caloriebot.support;
 
-import com.kuklin.manageapp.bots.caloriebot.components.repository.SupportMessageRepository;
-import com.kuklin.manageapp.bots.caloriebot.components.repository.SupportTicketRepository;
-import com.kuklin.manageapp.bots.caloriebot.configurations.SupportProperties;
-import com.kuklin.manageapp.bots.caloriebot.entities.SupportMessage;
-import com.kuklin.manageapp.bots.caloriebot.entities.SupportTicket;
 import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
-import com.kuklin.manageapp.bots.caloriebot.utils.ReportHtml;
+import com.kuklin.manageapp.bots.caloriebot.report.pdf.ReportHtml;
 import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
 import com.kuklin.manageapp.bots.metrics.repositories.MetricsAiInteractionRecordRepository;
 import com.kuklin.manageapp.common.entities.TelegramUser;

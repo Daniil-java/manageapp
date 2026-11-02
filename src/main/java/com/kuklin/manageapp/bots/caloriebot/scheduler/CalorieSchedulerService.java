@@ -1,5 +1,7 @@
 package com.kuklin.manageapp.bots.caloriebot.scheduler;
 
+import com.kuklin.manageapp.bots.caloriebot.settings.MealReminderSchedulerProcessor;
+import com.kuklin.manageapp.bots.caloriebot.report.DailySummarySchedulerProcessor;
 import com.kuklin.manageapp.bots.caloriebot.support.SupportGroupService;
 import com.kuklin.manageapp.common.scheduler.BotScheduler;
 import com.kuklin.manageapp.common.telegram.BotIdentifier;

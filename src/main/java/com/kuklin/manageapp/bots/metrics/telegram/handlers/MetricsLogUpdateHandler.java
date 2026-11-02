@@ -9,7 +9,7 @@ import com.kuklin.manageapp.bots.metrics.services.MetricsAiLogService;
 import com.kuklin.manageapp.bots.metrics.telegram.MetricsTelegramBot;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.telegram.Command;
-import com.kuklin.manageapp.bots.caloriebot.components.services.UtmReportService;
+import com.kuklin.manageapp.bots.caloriebot.referral.UtmReportService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;

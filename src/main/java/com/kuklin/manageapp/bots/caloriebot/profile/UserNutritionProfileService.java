@@ -11,7 +11,7 @@ import com.kuklin.manageapp.bots.caloriebot.profile.exception.UserNutritionProfi
 import com.kuklin.manageapp.bots.caloriebot.weight.WeightEntry;
 import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorStatus;
-import com.kuklin.manageapp.bots.caloriebot.models.landing.CalculatorStartParam;
+import com.kuklin.manageapp.bots.caloriebot.onboarding.CalculatorStartParam;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

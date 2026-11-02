@@ -1,7 +1,7 @@
 package com.kuklin.manageapp.bots.caloriebot.i18n;
 
 import com.ibm.icu.text.MessageFormat;
-import com.kuklin.manageapp.bots.caloriebot.components.services.UserSettingsService;
+import com.kuklin.manageapp.bots.caloriebot.settings.UserSettingsService;
 import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorStatus;
 import lombok.RequiredArgsConstructor;

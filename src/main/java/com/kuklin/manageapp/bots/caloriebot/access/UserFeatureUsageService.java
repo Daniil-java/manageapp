@@ -1,6 +1,6 @@
 package com.kuklin.manageapp.bots.caloriebot.access;
 
-import com.kuklin.manageapp.bots.caloriebot.components.services.UserSettingsService;
+import com.kuklin.manageapp.bots.caloriebot.settings.UserSettingsService;
 import com.kuklin.manageapp.bots.caloriebot.access.model.BotFeature;
 import com.kuklin.manageapp.bots.caloriebot.access.model.FeatureLimitPeriod;
 import com.kuklin.manageapp.common.telegram.BotIdentifier;

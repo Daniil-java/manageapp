@@ -1,9 +1,9 @@
 package com.kuklin.manageapp.bots.caloriebot.web;
 
-import com.kuklin.manageapp.bots.caloriebot.components.services.CalorieLandingService;
-import com.kuklin.manageapp.bots.caloriebot.components.services.UtmService;
+import com.kuklin.manageapp.bots.caloriebot.landing.CalorieLandingService;
+import com.kuklin.manageapp.bots.caloriebot.referral.UtmService;
 import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
-import com.kuklin.manageapp.bots.caloriebot.texts.LandingTexts;
+import com.kuklin.manageapp.bots.caloriebot.landing.LandingTexts;
 import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;

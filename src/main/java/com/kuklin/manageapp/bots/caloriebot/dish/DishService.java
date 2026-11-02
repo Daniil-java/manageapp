@@ -1,5 +1,5 @@
 package com.kuklin.manageapp.bots.caloriebot.dish;
-import com.kuklin.manageapp.bots.caloriebot.components.services.UserSettingsService;
+import com.kuklin.manageapp.bots.caloriebot.settings.UserSettingsService;
 import com.kuklin.manageapp.bots.caloriebot.dish.ai.AiInputValidator;
 import com.kuklin.manageapp.bots.caloriebot.access.CalorieAccessService;
 import com.kuklin.manageapp.bots.caloriebot.access.AiRateLimiter;
@@ -15,7 +15,6 @@ import com.kuklin.manageapp.bots.caloriebot.bot.TelegramCaloriesBotKeyComponents
 import com.kuklin.manageapp.bots.caloriebot.favorite.UserFavoriteDish;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.dish.dto.ManualDishRequest;
-import com.kuklin.manageapp.bots.caloriebot.models.events.DishAddedEvent;
 import com.kuklin.manageapp.bots.caloriebot.dish.dto.DishDto;
 import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorParams;
 import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponseException;

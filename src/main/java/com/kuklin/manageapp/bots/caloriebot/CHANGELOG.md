@@ -21,6 +21,18 @@
   * profile — UserNutritionProfile и история (UserNutritionProfileEntry), сервисы, ProfileController, репозитории, DTO; profile/exception — ошибки профиля и валидации; profile/telegram — диалог, калькулятор, NutritionProfileTexts; profile/telegram/editbuttons (+ enumfield, numericfield — без промежуточного impl).
   * water, weight — сущность, сервис, контроллер, репозиторий, DTO; telegram — обработчик и WaterTexts / WeightTexts.
   * NoHardcodedTextsTest проверяет пакет bot, texts и любой пакет telegram (dish/telegram, profile/telegram…) — новые фичи попадают в проверку сами.
+* Этап 4, калорийный бот — остальные фичи (только перенос). Старых пакетов components, models, entities, telegram, texts, utils, configurations больше нет.
+  * report — ReportService, ReportSourceLoader, CalorieAiInsightService, AnalyticsService (шкалы «Сегодня»), UiAnalyticsService (дашборд), StreakService, DayCardService, ReportController, StreakController, CalorieAiInsight(+Refresh) и репозитории, AiInsightType, ReportStatsCalculator, DailySummarySchedulerProcessor; report/dto — модели отчёта и дашборда; report/ai — промпты (Report*Prompts, DayReportPrompt, GoalPromptRules) и ответы ИИ (InsightPayloadRecord, ReportAiPayloadRecord, ReportAiResponse); report/pdf — HtmlPdfRenderer, ReportHtml, ReportCharts, ReportPalette, PdfTexts; report/telegram — «Сегодня», неделя, аналитика, карточка дня, WeekTexts. Отдельного пакета analytics нет — оба сервиса аналитики про отчёты.
+  * subscription — CaloriePaymentService, CaloriePaymentController; subscription/dto — PaymentPlanDto, SubscriptionStatusDto, PaymentResponse, PricingPlanDto; subscription/telegram — тарифы, статус подписки, PlanTexts, SubscriptionTexts, PaymentModuleTexts.
+  * referral — UtmService, UtmReportService, ReferralRewardService, UtmController, UtmLink/UtmClick/UtmAttribution и репозитории; referral/telegram — InviteLinks, InvitePromptSender, ReferralRewardNotifier, /utm, /utmstats.
+  * settings — UserSettings, сервис, контроллер, репозиторий, DTO, MealReminderSchedulerProcessor; settings/telegram — ⚙ Настройки, часовой пояс, напоминания, язык (CalorieLanguageSwitcher, /lang), SettingsTexts.
+  * onboarding — CalculatorStartParam; onboarding/telegram — /start, знакомство, выбор языка при старте, FAQ, /privacy, /terms.
+  * landing — CalorieLandingService, LandingTexts.
+  * support — + SupportProperties, SupportTicket, SupportMessage и репозитории; support/telegram — /support и приём сообщений в заявку.
+  * dish — + DishAddedEvent; web — + TelegramUserDto.
+  * scheduler — остался только CalorieSchedulerService со всеми @Scheduled; процессоры — в своих фичах (report, settings).
+  * Импорты со звёздочкой на исчезнувшие пакеты (entities.*, models.report.*) заменены явными.
+  * NoHardcodedTextsTest: вместо пакета texts проверяет классы *Texts в любом пакете (PdfTexts, LandingTexts).
 * common/auth не трогали: вход и SecurityConfig общие для всего приложения (правила для /nicotine, hh, календаря). Его зависимость от ошибок калорийного бота (ErrorResponseException, ErrorStatus) и фильтров — отдельная задача.
 
 ## 0.0.82 (02.11.2026)

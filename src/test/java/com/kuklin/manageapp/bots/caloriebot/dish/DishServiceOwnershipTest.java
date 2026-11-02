@@ -1,6 +1,6 @@
 package com.kuklin.manageapp.bots.caloriebot.dish;
 
-import com.kuklin.manageapp.bots.caloriebot.components.services.UserSettingsService;
+import com.kuklin.manageapp.bots.caloriebot.settings.UserSettingsService;
 import com.kuklin.manageapp.bots.caloriebot.dish.ai.AiInputValidator;
 import com.kuklin.manageapp.bots.caloriebot.access.CalorieAccessService;
 import com.kuklin.manageapp.bots.caloriebot.access.AiRateLimiter;

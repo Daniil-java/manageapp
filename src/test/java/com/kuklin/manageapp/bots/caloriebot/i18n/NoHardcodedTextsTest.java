@@ -18,15 +18,16 @@ import static org.assertj.core.api.Assertions.assertThat;
  * (и текстовых блоков """) с русскими буквами. Комментарии не считаются.
  * <p>
  * Проверяем Telegram-часть бота — пакет bot и любой пакет telegram (у фич: dish/telegram, profile/telegram…) —
- * и сборку текстов (texts). Новый текст — в словарь i18n/calorie/bot_* и ключ в BotTextKeys, иначе на английском
- * пользователь увидит русский. Остальной код калорийного бота (Swagger-описания, промпты ИИ, валидация DTO,
- * группа поддержки) сюда не входит.
+ * и сборку текстов: классы *Texts в любом пакете (PdfTexts, LandingTexts). Новый текст — в словарь i18n/calorie/bot_*
+ * и ключ в BotTextKeys, иначе на английском пользователь увидит русский. Остальной код калорийного бота
+ * (Swagger-описания, промпты ИИ, валидация DTO, группа поддержки) сюда не входит.
  */
 class NoHardcodedTextsTest {
 
     private static final Path CALORIE_SOURCES = Path.of("src/main/java/com/kuklin/manageapp/bots/caloriebot");
-    private static final List<String> CHECKED_ROOTS = List.of("bot/", "texts/");
+    private static final List<String> CHECKED_ROOTS = List.of("bot/");
     private static final String CHECKED_SEGMENT = "telegram/";
+    private static final String TEXTS_SUFFIX = "Texts.java";
 
     @Test
     void noRussianTextInBotCode() throws IOException {
@@ -54,7 +55,8 @@ class NoHardcodedTextsTest {
     static boolean isChecked(String relativePath) {
         return CHECKED_ROOTS.stream().anyMatch(relativePath::startsWith)
                 || relativePath.startsWith(CHECKED_SEGMENT)
-                || relativePath.contains("/" + CHECKED_SEGMENT);
+                || relativePath.contains("/" + CHECKED_SEGMENT)
+                || relativePath.endsWith(TEXTS_SUFFIX);
     }
 
     private enum State { CODE, LINE_COMMENT, BLOCK_COMMENT, STRING, CHAR, TEXT_BLOCK }
