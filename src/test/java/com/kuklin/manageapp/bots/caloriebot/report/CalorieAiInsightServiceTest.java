@@ -4,7 +4,7 @@ import com.kuklin.manageapp.bots.caloriebot.settings.UserSettingsService;
 import com.kuklin.manageapp.bots.caloriebot.access.AiRateLimiter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponseException;
+import com.kuklin.manageapp.common.web.error.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorStatus;
 import com.kuklin.manageapp.bots.caloriebot.access.model.AccessResult;
 import com.kuklin.manageapp.bots.caloriebot.report.dto.AiInsightDto;
@@ -320,7 +320,7 @@ class CalorieAiInsightServiceTest {
     private static void assertError(Runnable call, ErrorStatus expected) {
         assertThatThrownBy(call::run)
                 .isInstanceOf(ErrorResponseException.class)
-                .extracting(e -> ((ErrorResponseException) e).getErrorStatus())
+                .extracting(e -> ((ErrorResponseException) e).getErrorCode())
                 .isEqualTo(expected);
     }
 }

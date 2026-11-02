@@ -5,7 +5,7 @@ import com.kuklin.manageapp.bots.caloriebot.access.AiRateLimiter;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponseException;
+import com.kuklin.manageapp.common.web.error.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorStatus;
 import com.kuklin.manageapp.bots.caloriebot.access.MissingFeatureException;
 import com.kuklin.manageapp.bots.caloriebot.access.model.AccessResult;

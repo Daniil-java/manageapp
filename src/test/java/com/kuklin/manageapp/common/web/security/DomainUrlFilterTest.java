@@ -1,4 +1,4 @@
-package com.kuklin.manageapp.bots.caloriebot.web.security;
+package com.kuklin.manageapp.common.web.security;
 
 import jakarta.servlet.FilterChain;
 import org.junit.jupiter.api.Test;

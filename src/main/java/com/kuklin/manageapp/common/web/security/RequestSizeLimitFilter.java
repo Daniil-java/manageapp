@@ -1,12 +1,11 @@
-package com.kuklin.manageapp.bots.caloriebot.web.security;
+package com.kuklin.manageapp.common.web.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.kuklin.manageapp.bots.caloriebot.dish.ai.AiInputLimitsProperties;
-import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorParams;
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponse;
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponseException;
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorStatus;
+import com.kuklin.manageapp.common.web.error.CommonErrorStatus;
+import com.kuklin.manageapp.common.web.error.ErrorParams;
+import com.kuklin.manageapp.common.web.error.ErrorResponse;
+import com.kuklin.manageapp.common.web.error.ErrorResponseException;
+import com.kuklin.manageapp.common.web.error.ErrorTextResolver;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ReadListener;
 import jakarta.servlet.ServletException;
@@ -14,10 +13,11 @@ import jakarta.servlet.ServletInputStream;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
+import org.springframework.util.unit.DataSize;
 import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.filter.OncePerRequestFilter;
 
@@ -28,7 +28,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 /**
- * Ограничивает размер тела любого запроса (calorie.ai-input.request-max-size).
+ * Ограничивает размер тела любого запроса (security.request-max-size).
  * Tomcat и Spring сами размер JSON-тела не ограничивают.
  * Если Content-Length известен — отвечаем 413 сразу, не читая тело.
  * Если нет (chunked) — тело читается через счётчик, и при превышении чтение обрывается
@@ -36,12 +36,20 @@ import java.nio.charset.StandardCharsets;
  */
 @Slf4j
 @Component
-@RequiredArgsConstructor
 public class RequestSizeLimitFilter extends OncePerRequestFilter {
 
-    private final AiInputLimitsProperties limits;
+    private final DataSize maxSize;
     private final ObjectMapper objectMapper;
-    private final CalorieTexts texts;
+    private final ErrorTextResolver errorTextResolver;
+
+    public RequestSizeLimitFilter(
+            @Value("${security.request-max-size}") DataSize maxSize,
+            ObjectMapper objectMapper,
+            ErrorTextResolver errorTextResolver) {
+        this.maxSize = maxSize;
+        this.objectMapper = objectMapper;
+        this.errorTextResolver = errorTextResolver;
+    }
 
     @Override
     protected void doFilterInternal(
@@ -49,7 +57,7 @@ public class RequestSizeLimitFilter extends OncePerRequestFilter {
             HttpServletResponse response,
             FilterChain filterChain) throws ServletException, IOException {
 
-        long maxBytes = limits.getRequestMaxSize().toBytes();
+        long maxBytes = maxSize.toBytes();
         long contentLength = request.getContentLengthLong();
 
         if (contentLength > maxBytes) {
@@ -63,17 +71,17 @@ public class RequestSizeLimitFilter extends OncePerRequestFilter {
     }
 
     private void writeTooLarge(HttpServletRequest request, HttpServletResponse response) throws IOException {
-        ErrorResponseException e = tooLarge(limits);
+        ErrorResponseException e = makeTooLargeException();
         response.setStatus(HttpServletResponse.SC_REQUEST_ENTITY_TOO_LARGE);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
         response.setCharacterEncoding(StandardCharsets.UTF_8.name());
         objectMapper.writeValue(response.getOutputStream(),
-                new ErrorResponse(e, texts.errorForApi(e), new ServletWebRequest(request)));
+                new ErrorResponse(e, errorTextResolver.getApiMessage(e), new ServletWebRequest(request)));
     }
 
     /** 413 REQUEST_TOO_LARGE с лимитом в params (maxSizeMb). */
-    public static ErrorResponseException tooLarge(AiInputLimitsProperties limits) {
-        return new ErrorResponseException(ErrorStatus.REQUEST_TOO_LARGE, ErrorParams.maxSize(limits.getRequestMaxSize()));
+    public ErrorResponseException makeTooLargeException() {
+        return new ErrorResponseException(CommonErrorStatus.REQUEST_TOO_LARGE, ErrorParams.maxSize(maxSize));
     }
 
     /** Тело запроса оказалось больше лимита — бросается при чтении тела без Content-Length. */

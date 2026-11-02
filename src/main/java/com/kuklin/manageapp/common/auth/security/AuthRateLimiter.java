@@ -1,8 +1,8 @@
 package com.kuklin.manageapp.common.auth.security;
 
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorParams;
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponseException;
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorStatus;
+import com.kuklin.manageapp.common.web.error.ErrorParams;
+import com.kuklin.manageapp.common.web.error.ErrorResponseException;
+import com.kuklin.manageapp.common.auth.AuthErrorStatus;
 import com.kuklin.manageapp.common.configurations.AuthProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -218,6 +218,6 @@ public class AuthRateLimiter {
 
     /** 429 AUTH_RATE_LIMIT; текст «через сколько повторить» — из словаря errors_* по params. */
     private static ErrorResponseException tooMany(long retryAfterSeconds) {
-        return new ErrorResponseException(ErrorStatus.AUTH_RATE_LIMIT, ErrorParams.retryAfter(retryAfterSeconds));
+        return new ErrorResponseException(AuthErrorStatus.AUTH_RATE_LIMIT, ErrorParams.retryAfter(retryAfterSeconds));
     }
 }

@@ -13,7 +13,7 @@ import com.kuklin.manageapp.bots.caloriebot.profile.UserNutritionProfile;
 import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.i18n.I18nProperties;
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponseException;
+import com.kuklin.manageapp.common.web.error.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorStatus;
 import com.kuklin.manageapp.bots.caloriebot.access.model.AccessResult;
 import com.kuklin.manageapp.common.telegram.BotIdentifier;
@@ -95,7 +95,7 @@ class ReportServiceAiInsightTest {
 
         assertThatThrownBy(() -> service.getAiInsightReport(AiInsightType.WEEKLY_SUMMARY, FROM, TO, USER_ID, AppLanguage.EN))
                 .isInstanceOf(ErrorResponseException.class)
-                .extracting(e -> ((ErrorResponseException) e).getErrorStatus())
+                .extracting(e -> ((ErrorResponseException) e).getErrorCode())
                 .isEqualTo(ErrorStatus.AI_INSIGHT_NOT_ENOUGH_DATA);
         verifyNoInteractions(ai);
     }

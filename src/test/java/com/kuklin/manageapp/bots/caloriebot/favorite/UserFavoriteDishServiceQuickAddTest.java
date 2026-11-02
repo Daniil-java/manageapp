@@ -2,7 +2,7 @@ package com.kuklin.manageapp.bots.caloriebot.favorite;
 
 import com.kuklin.manageapp.bots.caloriebot.dish.DishService;
 import com.kuklin.manageapp.bots.caloriebot.access.UserFeatureUsageService;
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponseException;
+import com.kuklin.manageapp.common.web.error.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -70,7 +70,7 @@ class UserFavoriteDishServiceQuickAddTest {
 
         assertThatThrownBy(() -> service.setQuickAdd(USER_ID, 5L, true))
                 .isInstanceOfSatisfying(ErrorResponseException.class,
-                        e -> assertThat(e.getErrorStatus()).isEqualTo(ErrorStatus.QUICK_ADD_FULL));
+                        e -> assertThat(e.getErrorCode()).isEqualTo(ErrorStatus.QUICK_ADD_FULL));
     }
 
     @Test

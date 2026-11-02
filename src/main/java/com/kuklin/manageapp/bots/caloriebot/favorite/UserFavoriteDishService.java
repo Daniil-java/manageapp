@@ -4,7 +4,7 @@ import com.kuklin.manageapp.bots.caloriebot.dish.DishService;
 import com.kuklin.manageapp.bots.caloriebot.access.UserFeatureUsageService;
 import com.kuklin.manageapp.bots.caloriebot.dish.Dish;
 import com.kuklin.manageapp.bots.caloriebot.dish.dto.DishDto;
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponseException;
+import com.kuklin.manageapp.common.web.error.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorStatus;
 import com.kuklin.manageapp.bots.caloriebot.access.MissingFeatureException;
 import com.kuklin.manageapp.bots.caloriebot.access.model.AccessResult;

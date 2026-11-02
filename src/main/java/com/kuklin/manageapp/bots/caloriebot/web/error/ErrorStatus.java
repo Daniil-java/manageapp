@@ -1,16 +1,18 @@
 package com.kuklin.manageapp.bots.caloriebot.web.error;
 
+import com.kuklin.manageapp.common.web.error.ErrorCode;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
 /**
- * Коды ошибок API и бота. Здесь только HTTP-статус — тексты лежат в словарях
- * i18n/calorie/errors_*.properties по ключу {@link #getTextKey()} (в API message — текст из errors_en).
+ * Коды ошибок калорийного бота (API и бот); общие — CommonErrorStatus, входа на сайт — AuthErrorStatus.
+ * Здесь только HTTP-статус — тексты лежат в словарях i18n/calorie/errors_*.properties
+ * по ключу getTextKey() (в API message — текст из errors_en).
  */
 @Getter
 @AllArgsConstructor
-public enum ErrorStatus {
+public enum ErrorStatus implements ErrorCode {
     MISSING_FEATURE(HttpStatus.BAD_REQUEST),
     PROFILE_INSUFFICIENT_DATA(HttpStatus.BAD_REQUEST),
     USER_NUTRITION_PROFILE_VALIDATION_EXCEPTION(HttpStatus.BAD_REQUEST),
@@ -23,10 +25,7 @@ public enum ErrorStatus {
     // Оплата только звёздами: счёт оплачивается в Telegram тем же аккаунтом, что привязан к пользователю
     PAYMENT_TELEGRAM_REQUIRED(HttpStatus.FORBIDDEN),
     PRICING_PLAN_NOT_AVAILABLE(HttpStatus.BAD_REQUEST),
-    USER_NOT_FOUND(HttpStatus.BAD_REQUEST),
     DISH_NOT_BELONG_USER(HttpStatus.BAD_REQUEST),
-    EMAIL_ALREADY_BUSY(HttpStatus.BAD_REQUEST),
-    SITE_ACCESS_DENIED(HttpStatus.FORBIDDEN),
     // PUT /calorie/settings: значения проверяются до сохранения — кривая таймзона ломала все запросы пользователя
     INVALID_TIMEZONE(HttpStatus.BAD_REQUEST),
     INVALID_DAILY_SUMMARY_HOUR(HttpStatus.BAD_REQUEST),
@@ -42,7 +41,6 @@ public enum ErrorStatus {
     AUDIO_TOO_LARGE(HttpStatus.PAYLOAD_TOO_LARGE),
     UNSUPPORTED_AUDIO_FORMAT(HttpStatus.UNSUPPORTED_MEDIA_TYPE),
     INVALID_FILE(HttpStatus.BAD_REQUEST),
-    REQUEST_TOO_LARGE(HttpStatus.PAYLOAD_TOO_LARGE),
     // Ограничение частоты обращений к ИИ (calorie.ai-rate-limit) — через сколько повторить, в params
     AI_RATE_LIMIT(HttpStatus.TOO_MANY_REQUESTS),
     AI_DAILY_LIMIT(HttpStatus.TOO_MANY_REQUESTS),
@@ -58,16 +56,8 @@ public enum ErrorStatus {
     // Бот: оплата прошла, но обработчик упал — деньги списаны, «попробуйте позже» тут не подходит
     PAYMENT_NOT_ACTIVATED(HttpStatus.INTERNAL_SERVER_ERROR),
     // Блюда без ИИ (вручную, из избранного) — calorie.dish-limits.per-day
-    DISH_DAILY_LIMIT(HttpStatus.TOO_MANY_REQUESTS),
-    // Вход на сайт (auth.*): лимиты по IP и неверным паролям; email + пароль выключен до подтверждения email
-    AUTH_RATE_LIMIT(HttpStatus.TOO_MANY_REQUESTS),
-    EMAIL_AUTH_DISABLED(HttpStatus.FORBIDDEN)
+    DISH_DAILY_LIMIT(HttpStatus.TOO_MANY_REQUESTS)
     ;
 
     private final HttpStatus httpStatus;
-
-    /** Ключ текста ошибки для пользователя в словаре i18n/calorie/errors_*.properties. */
-    public String getTextKey() {
-        return "error." + name();
-    }
 }

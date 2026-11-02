@@ -2,7 +2,7 @@ package com.kuklin.manageapp.bots.caloriebot.report.telegram;
 
 import com.kuklin.manageapp.aiconversation.models.AiUnavailableException;
 import com.kuklin.manageapp.bots.caloriebot.access.AiRateLimiter;
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponseException;
+import com.kuklin.manageapp.common.web.error.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.access.MissingFeatureException;
 import com.kuklin.manageapp.bots.caloriebot.report.ReportService;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;

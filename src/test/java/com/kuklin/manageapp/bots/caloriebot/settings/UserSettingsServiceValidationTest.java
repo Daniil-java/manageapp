@@ -1,6 +1,6 @@
 package com.kuklin.manageapp.bots.caloriebot.settings;
 
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponseException;
+import com.kuklin.manageapp.common.web.error.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorStatus;
 import org.junit.jupiter.api.Test;
 
@@ -35,7 +35,7 @@ class UserSettingsServiceValidationTest {
 
         assertThatThrownBy(() -> UserSettingsService.validateOrThrow(dto))
                 .isInstanceOfSatisfying(ErrorResponseException.class,
-                        e -> assertThat(e.getErrorStatus()).isEqualTo(ErrorStatus.INVALID_TIMEZONE));
+                        e -> assertThat(e.getErrorCode()).isEqualTo(ErrorStatus.INVALID_TIMEZONE));
     }
 
     @Test
@@ -45,7 +45,7 @@ class UserSettingsServiceValidationTest {
 
         assertThatThrownBy(() -> UserSettingsService.validateOrThrow(dto))
                 .isInstanceOfSatisfying(ErrorResponseException.class,
-                        e -> assertThat(e.getErrorStatus()).isEqualTo(ErrorStatus.INVALID_DAILY_SUMMARY_HOUR));
+                        e -> assertThat(e.getErrorCode()).isEqualTo(ErrorStatus.INVALID_DAILY_SUMMARY_HOUR));
     }
 
     @Test
@@ -55,7 +55,7 @@ class UserSettingsServiceValidationTest {
 
         assertThatThrownBy(() -> UserSettingsService.validateOrThrow(dto))
                 .isInstanceOfSatisfying(ErrorResponseException.class,
-                        e -> assertThat(e.getErrorStatus()).isEqualTo(ErrorStatus.INVALID_MEAL_REMINDER_INTERVAL));
+                        e -> assertThat(e.getErrorCode()).isEqualTo(ErrorStatus.INVALID_MEAL_REMINDER_INTERVAL));
     }
 
     @Test

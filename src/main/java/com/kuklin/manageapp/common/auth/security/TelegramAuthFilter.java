@@ -1,4 +1,4 @@
-package com.kuklin.manageapp.bots.caloriebot.web.security;
+package com.kuklin.manageapp.common.auth.security;
 
 import com.kuklin.manageapp.common.entities.AppUser;
 import com.kuklin.manageapp.common.services.AppUserService;
@@ -25,7 +25,7 @@ import java.util.List;
 public class TelegramAuthFilter extends OncePerRequestFilter {
 
     // Сервис для валидации initData и извлечения данных пользователя
-    private final TelegramAuthService telegramAuthService;
+    private final TelegramAuthVerifier telegramAuthVerifier;
     private final UserAuthIdentityService userAuthIdentityService;
     private final AppUserService appUserService;
 
@@ -41,9 +41,9 @@ public class TelegramAuthFilter extends OncePerRequestFilter {
 
         String initData = request.getHeader("X-TG-INIT-DATA");
 
-        if (initData != null && !initData.isBlank() && telegramAuthService.isValid(initData)) {
+        if (initData != null && !initData.isBlank() && telegramAuthVerifier.isValid(initData)) {
             // Достаем только ID
-            Long telegramId = telegramAuthService.extractTelegramId(initData);
+            Long telegramId = telegramAuthVerifier.extractTelegramId(initData);
 
             if (telegramId != null) {
                 // AppUser общий для всех ботов и входа на сайте — ищем по telegramId через identity

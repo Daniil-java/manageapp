@@ -1,8 +1,8 @@
 package com.kuklin.manageapp.common.auth.security;
 
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorParams;
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponseException;
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorStatus;
+import com.kuklin.manageapp.common.web.error.ErrorParams;
+import com.kuklin.manageapp.common.web.error.ErrorResponseException;
+import com.kuklin.manageapp.common.auth.AuthErrorStatus;
 import com.kuklin.manageapp.common.configurations.AuthProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -53,7 +53,7 @@ class AuthRateLimiterTest {
                 .isInstanceOf(ErrorResponseException.class)
                 .satisfies(e -> {
                     ErrorResponseException ex = (ErrorResponseException) e;
-                    assertThat(ex.getErrorStatus()).isEqualTo(ErrorStatus.AUTH_RATE_LIMIT);
+                    assertThat(ex.getErrorCode()).isEqualTo(AuthErrorStatus.AUTH_RATE_LIMIT);
                     assertThat(ex.getParams()).containsEntry(ErrorParams.WAIT_HOURS, 1L).containsEntry(ErrorParams.WAIT_MINUTES, 0L);
                 });
 

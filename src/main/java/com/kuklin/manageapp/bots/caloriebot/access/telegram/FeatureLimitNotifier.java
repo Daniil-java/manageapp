@@ -8,7 +8,7 @@ import com.kuklin.manageapp.bots.caloriebot.access.PlanFeature;
 import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorParams;
+import com.kuklin.manageapp.common.web.error.ErrorParams;
 import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorStatus;
 import com.kuklin.manageapp.bots.caloriebot.access.model.BotFeature;
 import com.kuklin.manageapp.common.telegram.BotIdentifier;

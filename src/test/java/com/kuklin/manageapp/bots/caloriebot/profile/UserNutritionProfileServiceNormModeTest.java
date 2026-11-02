@@ -3,7 +3,7 @@ package com.kuklin.manageapp.bots.caloriebot.profile;
 import com.kuklin.manageapp.bots.caloriebot.weight.WeightEntryService;
 import com.kuklin.manageapp.bots.caloriebot.profile.exception.InsufficientProfileDataException;
 import com.kuklin.manageapp.bots.caloriebot.profile.UserNutritionProfile.NormMode;
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponseException;
+import com.kuklin.manageapp.common.web.error.ErrorResponseException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

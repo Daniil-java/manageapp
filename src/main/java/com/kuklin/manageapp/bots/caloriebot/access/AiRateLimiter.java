@@ -1,7 +1,7 @@
 package com.kuklin.manageapp.bots.caloriebot.access;
 
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorParams;
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponseException;
+import com.kuklin.manageapp.common.web.error.ErrorParams;
+import com.kuklin.manageapp.common.web.error.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorStatus;
 import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import com.kuklin.manageapp.payment.entities.UserSubscription;

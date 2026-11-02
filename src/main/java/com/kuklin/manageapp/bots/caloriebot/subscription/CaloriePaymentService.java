@@ -6,7 +6,7 @@ import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.subscription.dto.SubscriptionStatusDto;
 import com.kuklin.manageapp.bots.caloriebot.subscription.dto.PaymentResponse;
 import com.kuklin.manageapp.bots.caloriebot.subscription.dto.PricingPlanDto;
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponseException;
+import com.kuklin.manageapp.common.web.error.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorStatus;
 import com.kuklin.manageapp.bots.caloriebot.bot.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.subscription.telegram.PaymentModuleTexts;

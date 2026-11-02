@@ -5,6 +5,14 @@
 * AiMessageType — отдельный enum в aiconversation/models/enums (был вложенным в MetricsAiInteractionRecord).
 * README.md: почему Command остаётся общим на все боты.
 
+[et-114] — Общая модель ошибок: common/auth больше не зависит от калорийного бота
+* API не менялся: errorCode, тексты и HTTP-статусы прежние.
+* common/web/error — ErrorCode (интерфейс кода ошибки: name, HTTP-статус, ключ текста), ErrorResponseException, ErrorResponse, ErrorParams (были в caloriebot/web/error), ErrorTextResolver (текст ошибки для API), CommonErrorStatus (USER_NOT_FOUND, REQUEST_TOO_LARGE).
+* common/auth/AuthErrorStatus — EMAIL_ALREADY_BUSY, SITE_ACCESS_DENIED, AUTH_RATE_LIMIT, EMAIL_AUTH_DISABLED (были в калорийном ErrorStatus). Калорийный ErrorStatus реализует ErrorCode, в нём остались только ошибки бота.
+* ErrorResponseException.getErrorStatus() → getErrorCode(); CalorieTexts.errorForApi → getApiMessage (реализует ErrorTextResolver). Тексты всех кодов по-прежнему в i18n/calorie/errors_*; TextBundlesConsistencyTest проверяет и CommonErrorStatus, AuthErrorStatus.
+* Фильтры: DomainUrlFilter и RequestSizeLimitFilter → common/web/security, TelegramAuthFilter → common/auth/security. Лимит тела запроса — security.request-max-size (было calorie.ai-input.request-max-size), текст 413 — через ErrorTextResolver.
+* TelegramAuthService остался в калорийном боте (подпись проверяется его токенами) и реализует common/auth/security/TelegramAuthVerifier — через него с ним работают AuthService и TelegramAuthFilter.
+
 ## 0.0.83 (02.11.2026)
 [et-113] — Пакеты: этап 1, common
 * Только перенос классов, логика не менялась (кроме TelegramService).

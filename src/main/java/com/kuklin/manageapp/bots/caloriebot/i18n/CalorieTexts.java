@@ -2,8 +2,9 @@ package com.kuklin.manageapp.bots.caloriebot.i18n;
 
 import com.ibm.icu.text.MessageFormat;
 import com.kuklin.manageapp.bots.caloriebot.settings.UserSettingsService;
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponseException;
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorStatus;
+import com.kuklin.manageapp.common.web.error.ErrorResponseException;
+import com.kuklin.manageapp.common.web.error.ErrorCode;
+import com.kuklin.manageapp.common.web.error.ErrorTextResolver;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSource;
@@ -29,7 +30,7 @@ import java.util.Map;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class CalorieTexts {
+public class CalorieTexts implements ErrorTextResolver {
     /** Словари: i18n/calorie/<имя>_<код языка>.properties. Новый словарь — сюда же. */
     static final List<String> BUNDLES = List.of(
             "i18n/calorie/bot",
@@ -81,20 +82,21 @@ public class CalorieTexts {
 
     /** Текст ошибки для пользователя (словарь errors_*) — со значениями из params исключения. */
     public String error(Long appUserId, ErrorResponseException e) {
-        return get(appUserId, e.getErrorStatus().getTextKey(), e.getParams());
+        return get(appUserId, e.getErrorCode().getTextKey(), e.getParams());
     }
 
     /**
      * Текст ошибки для поля message в ответе API — всегда по-английски (errors_en): фронт сам переводит по коду
      * и params, а английский показывает как есть. Переносы строк (они для бота) склеиваем в пробел — в API одна строка.
      */
-    public String errorForApi(ErrorResponseException e) {
-        String text = get(AppLanguage.EN, e.getErrorStatus().getTextKey(), e.getParams());
+    @Override
+    public String getApiMessage(ErrorResponseException e) {
+        String text = get(AppLanguage.EN, e.getErrorCode().getTextKey(), e.getParams());
         return String.join(" ", text.lines().map(String::strip).filter(line -> !line.isEmpty()).toList());
     }
 
     /** Текст ошибки без значений — когда исключения нет, а код ошибки известен. */
-    public String error(Long appUserId, ErrorStatus status) {
+    public String error(Long appUserId, ErrorCode status) {
         return get(appUserId, status.getTextKey(), Map.of());
     }
 

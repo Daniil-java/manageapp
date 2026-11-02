@@ -29,7 +29,7 @@ import com.kuklin.manageapp.bots.caloriebot.report.dto.ReportSource;
 import com.kuklin.manageapp.bots.caloriebot.report.dto.ReportStats;
 import com.kuklin.manageapp.bots.caloriebot.report.pdf.PdfTexts;
 import com.kuklin.manageapp.bots.caloriebot.report.ai.InsightPayloadRecord;
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponseException;
+import com.kuklin.manageapp.common.web.error.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorStatus;
 import com.kuklin.manageapp.bots.caloriebot.report.ai.DayReportPrompt;
 import com.kuklin.manageapp.bots.caloriebot.report.ai.GoalPromptRules;

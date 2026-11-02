@@ -8,7 +8,7 @@ import com.kuklin.manageapp.bots.caloriebot.subscription.telegram.PaymentModuleT
 import com.kuklin.manageapp.bots.caloriebot.subscription.telegram.PlanTexts;
 import com.kuklin.manageapp.bots.caloriebot.subscription.telegram.SubscriptionTexts;
 import com.kuklin.manageapp.bots.caloriebot.subscription.dto.PaymentResponse;
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponseException;
+import com.kuklin.manageapp.common.web.error.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorStatus;
 import com.kuklin.manageapp.bots.caloriebot.bot.CalorieTelegramBot;
 import com.kuklin.manageapp.common.entities.TelegramUser;
@@ -83,7 +83,7 @@ class CaloriePaymentServiceTest {
 
         assertThatThrownBy(() -> service.createPaymentLink(USER_ID, PLAN_ID, AppLanguage.RU))
                 .isInstanceOfSatisfying(ErrorResponseException.class,
-                        e -> assertThat(e.getErrorStatus()).isEqualTo(ErrorStatus.PAYMENT_TELEGRAM_REQUIRED));
+                        e -> assertThat(e.getErrorCode()).isEqualTo(ErrorStatus.PAYMENT_TELEGRAM_REQUIRED));
         verifyNoInteractions(paymentService);
     }
 
@@ -109,14 +109,14 @@ class CaloriePaymentServiceTest {
 
         assertThatThrownBy(() -> service.createPaymentLink(USER_ID, PLAN_ID, AppLanguage.RU))
                 .isInstanceOfSatisfying(ErrorResponseException.class,
-                        e -> assertThat(e.getErrorStatus()).isEqualTo(ErrorStatus.PRICING_PLAN_NOT_AVAILABLE));
+                        e -> assertThat(e.getErrorCode()).isEqualTo(ErrorStatus.PRICING_PLAN_NOT_AVAILABLE));
 
         when(pricingPlanService.getPricingPlanById(PLAN_ID))
                 .thenReturn(plan(30, 150).setPlanStatus(PricingPlan.PlanStatus.DISABLED));
 
         assertThatThrownBy(() -> service.createPaymentLink(USER_ID, PLAN_ID, AppLanguage.RU))
                 .isInstanceOfSatisfying(ErrorResponseException.class,
-                        e -> assertThat(e.getErrorStatus()).isEqualTo(ErrorStatus.PRICING_PLAN_NOT_AVAILABLE));
+                        e -> assertThat(e.getErrorCode()).isEqualTo(ErrorStatus.PRICING_PLAN_NOT_AVAILABLE));
         verifyNoInteractions(paymentService);
     }
 
@@ -154,7 +154,7 @@ class CaloriePaymentServiceTest {
 
         assertThatThrownBy(() -> service.createPaymentLink(USER_ID, PLAN_ID, AppLanguage.RU))
                 .isInstanceOfSatisfying(ErrorResponseException.class,
-                        e -> assertThat(e.getErrorStatus()).isEqualTo(ErrorStatus.PAYMENT_FAILED));
+                        e -> assertThat(e.getErrorCode()).isEqualTo(ErrorStatus.PAYMENT_FAILED));
         verify(paymentService).markFailed(eq(payment), any());
     }
 
@@ -170,7 +170,7 @@ class CaloriePaymentServiceTest {
 
         assertThatThrownBy(() -> service.createPaymentLink(USER_ID, PLAN_ID, AppLanguage.RU))
                 .isInstanceOfSatisfying(ErrorResponseException.class,
-                        e -> assertThat(e.getErrorStatus()).isEqualTo(ErrorStatus.PAYMENT_FAILED));
+                        e -> assertThat(e.getErrorCode()).isEqualTo(ErrorStatus.PAYMENT_FAILED));
     }
 
     private static Payment payment(int stars) {

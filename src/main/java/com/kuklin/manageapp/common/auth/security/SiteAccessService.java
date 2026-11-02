@@ -1,7 +1,7 @@
 package com.kuklin.manageapp.common.auth.security;
 
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponseException;
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorStatus;
+import com.kuklin.manageapp.common.web.error.ErrorResponseException;
+import com.kuklin.manageapp.common.auth.AuthErrorStatus;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -44,13 +44,13 @@ public class SiteAccessService {
 
     public void checkEmail(String email) {
         if (restricted && (email == null || !allowedEmails.contains(normalizeEmail(email)))) {
-            throw new ErrorResponseException(ErrorStatus.SITE_ACCESS_DENIED);
+            throw new ErrorResponseException(AuthErrorStatus.SITE_ACCESS_DENIED);
         }
     }
 
     public void checkTelegramId(Long telegramId) {
         if (restricted && !allowedTelegramIds.contains(telegramId)) {
-            throw new ErrorResponseException(ErrorStatus.SITE_ACCESS_DENIED);
+            throw new ErrorResponseException(AuthErrorStatus.SITE_ACCESS_DENIED);
         }
     }
 

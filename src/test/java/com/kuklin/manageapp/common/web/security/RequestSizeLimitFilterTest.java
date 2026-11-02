@@ -1,8 +1,7 @@
-package com.kuklin.manageapp.bots.caloriebot.web.security;
+package com.kuklin.manageapp.common.web.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kuklin.manageapp.bots.caloriebot.settings.UserSettingsService;
-import com.kuklin.manageapp.bots.caloriebot.dish.ai.AiInputLimitsProperties;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.i18n.I18nProperties;
 import jakarta.servlet.FilterChain;
@@ -26,10 +25,8 @@ class RequestSizeLimitFilterTest {
 
     @BeforeEach
     void setUp() {
-        AiInputLimitsProperties limits = new AiInputLimitsProperties();
-        limits.setRequestMaxSize(DataSize.ofBytes(10));
         CalorieTexts texts = new CalorieTexts(new I18nProperties(), mock(UserSettingsService.class));
-        filter = new RequestSizeLimitFilter(limits, new ObjectMapper(), texts);
+        filter = new RequestSizeLimitFilter(DataSize.ofBytes(10), new ObjectMapper(), texts);
     }
 
     @Test

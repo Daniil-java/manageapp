@@ -95,6 +95,7 @@ security:
   # На проде НЕ включать — заголовок Host задаёт клиент.
   domain-filter:
     allow-localhost: ${DOMAIN_FILTER_ALLOW_LOCALHOST:false}
+  request-max-size: 8MB   # тело любого запроса (RequestSizeLimitFilter): фото 5 МБ в Base64 ≈ 6,7 МБ
 
 # Ограничения на ввод для ИИ (бот, мини-апп, сайт) — меняются только здесь.
 # Конвейер Telegram-канала (ChannelPosterProperties): сбор источников → AI-фильтр → посты на проверку.
@@ -119,7 +120,6 @@ calorie:
     voice-max-size: 3MB              # ~2 минуты даже при высоком битрейте
     voice-max-duration: 2m           # бот: длительность голосового сообщает Telegram
     voice-formats: [ogg, webm, mp4, m4a, mp3, wav] # бот — ogg, Android/Chrome — webm, iPhone — mp4
-    request-max-size: 8MB            # тело любого запроса: фото 5 МБ в Base64 ≈ 6,7 МБ
     insight-max-dishes: 1000         # инсайты: последние N блюд за период (~50 токенов на блюдо)
   # Блюда без ИИ (вручную, из избранного) не ограничены лимитами ИИ — ограничиваем отдельно,
   # чтобы ими нельзя было забить базу и раздуть промпт инсайтов.

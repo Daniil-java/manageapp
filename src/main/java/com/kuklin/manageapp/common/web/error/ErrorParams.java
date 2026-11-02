@@ -1,4 +1,4 @@
-package com.kuklin.manageapp.bots.caloriebot.web.error;
+package com.kuklin.manageapp.common.web.error;
 
 import org.springframework.util.unit.DataSize;
 

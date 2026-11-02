@@ -3,6 +3,7 @@ package com.kuklin.manageapp.bots.caloriebot.web.security;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kuklin.manageapp.bots.caloriebot.bot.TelegramCaloriesBotKeyComponents;
+import com.kuklin.manageapp.common.auth.security.TelegramAuthVerifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,7 +22,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 @RequiredArgsConstructor
-public class TelegramAuthService {
+public class TelegramAuthService implements TelegramAuthVerifier {
 
     // Компонент, содержащий ключи/токены Telegram-бота
     private final TelegramCaloriesBotKeyComponents botKeyComponents;
@@ -43,6 +44,7 @@ public class TelegramAuthService {
     /**
      * Проверка initData мини-аппы (заголовок X-TG-INIT-DATA): подпись + свежесть auth_date.
      */
+    @Override
     public boolean isValid(String authData) {
         // Парсинг строки и декодирование значений
         Map<String, String> params = parseAuthData(authData);
@@ -53,6 +55,7 @@ public class TelegramAuthService {
      * Проверка данных Telegram Login Widget (объект из data-onauth) для входа на сайте:
      * подпись + свежесть auth_date.
      */
+    @Override
     public boolean isValidLoginWidget(Map<String, String> widgetData) {
         // Виджет не присылает "user" — но если его подложить, isValid() проверит подпись
         // ключом мини-аппы, а не бота. Такие данные виджетом быть не могут.
@@ -128,6 +131,7 @@ public class TelegramAuthService {
         }
     }
 
+    @Override
     public Long extractTelegramId(String authData) {
         try {
             Map<String, String> params = parseAuthData(authData);

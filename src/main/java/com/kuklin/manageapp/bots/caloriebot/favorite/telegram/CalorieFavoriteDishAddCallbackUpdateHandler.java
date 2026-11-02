@@ -5,7 +5,8 @@ import com.kuklin.manageapp.bots.caloriebot.favorite.UserFavoriteDishService;
 import com.kuklin.manageapp.bots.caloriebot.favorite.UserFavoriteDish;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponseException;
+import com.kuklin.manageapp.common.web.error.ErrorCode;
+import com.kuklin.manageapp.common.web.error.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorStatus;
 import com.kuklin.manageapp.bots.caloriebot.access.model.AccessResult;
 import com.kuklin.manageapp.bots.caloriebot.bot.CalorieTelegramBot;
@@ -75,10 +76,10 @@ public class CalorieFavoriteDishAddCallbackUpdateHandler implements CalorieBotUp
     }
 
     private String toUserMessage(Long appUserId, ErrorResponseException e) {
-        return switch (e.getErrorStatus()) {
-            case FAVORITE_DISH_ALREADY_EXISTS, DISH_NOT_FOUND -> texts.error(appUserId, e);
-            default -> texts.get(appUserId, BotTextKeys.FAVORITES_SAVE_FAILED);
-        };
+        ErrorCode code = e.getErrorCode();
+        return code == ErrorStatus.FAVORITE_DISH_ALREADY_EXISTS || code == ErrorStatus.DISH_NOT_FOUND
+                ? texts.error(appUserId, e)
+                : texts.get(appUserId, BotTextKeys.FAVORITES_SAVE_FAILED);
     }
 
     private Long extractDishIdOrNull(String data) {

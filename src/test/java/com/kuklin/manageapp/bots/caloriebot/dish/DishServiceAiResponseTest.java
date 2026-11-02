@@ -9,7 +9,7 @@ import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcesso
 import com.kuklin.manageapp.bots.caloriebot.bot.TelegramCaloriesBotKeyComponents;
 import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponseException;
+import com.kuklin.manageapp.common.web.error.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorStatus;
 import com.kuklin.manageapp.common.services.TelegramUserService;
 import org.junit.jupiter.api.BeforeEach;
@@ -92,7 +92,7 @@ class DishServiceAiResponseTest {
         assertThatThrownBy(() -> service.getDishByDescriptionOrNull(USER_ID, "омлет"))
                 .isInstanceOf(ErrorResponseException.class)
                 .hasCause(dbDown)
-                .extracting(e -> ((ErrorResponseException) e).getErrorStatus())
+                .extracting(e -> ((ErrorResponseException) e).getErrorCode())
                 .isEqualTo(ErrorStatus.DISH_SAVE_FAILED);
     }
 

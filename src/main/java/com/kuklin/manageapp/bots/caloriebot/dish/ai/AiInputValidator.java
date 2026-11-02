@@ -1,7 +1,7 @@
 package com.kuklin.manageapp.bots.caloriebot.dish.ai;
 
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorParams;
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponseException;
+import com.kuklin.manageapp.common.web.error.ErrorParams;
+import com.kuklin.manageapp.common.web.error.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

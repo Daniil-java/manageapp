@@ -3,7 +3,7 @@ package com.kuklin.manageapp.bots.caloriebot.bot;
 import com.kuklin.manageapp.aiconversation.models.AiUnavailableException;
 import com.kuklin.manageapp.bots.caloriebot.settings.UserSettingsService;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponseException;
+import com.kuklin.manageapp.common.web.error.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorStatus;
 import com.kuklin.manageapp.bots.caloriebot.support.telegram.SupportInputUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;

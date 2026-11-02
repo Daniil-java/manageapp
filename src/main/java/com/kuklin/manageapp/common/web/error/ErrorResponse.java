@@ -1,6 +1,7 @@
-package com.kuklin.manageapp.bots.caloriebot.web.error;
+package com.kuklin.manageapp.common.web.error;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -15,7 +16,9 @@ import java.util.Map;
 public class ErrorResponse {
     private Date timestamp;
     private int status;
-    private ErrorStatus errorCode;
+    // Имя кода (DISH_NOT_FOUND) — enum модуля, реализующий ErrorCode
+    @Schema(type = "string", example = "DISH_NOT_FOUND")
+    private ErrorCode errorCode;
     private String reasonPhrase;
     private String message;
     private String error;
@@ -32,12 +35,12 @@ public class ErrorResponse {
         this.path = ((ServletWebRequest) request).getRequest().getRequestURL().toString();
     }
 
-    /** @param message текст ошибки по-английски — CalorieTexts.errorForApi(e) */
+    /** @param message текст ошибки по-английски — ErrorTextResolver.getApiMessage(e) */
     public ErrorResponse(ErrorResponseException e, String message, WebRequest request) {
-        this.status = e.getErrorStatus().getHttpStatus().value();
-        this.reasonPhrase = e.getErrorStatus().getHttpStatus().getReasonPhrase();
+        this.status = e.getErrorCode().getHttpStatus().value();
+        this.reasonPhrase = e.getErrorCode().getHttpStatus().getReasonPhrase();
         this.message = message;
-        this.errorCode = e.getErrorStatus();
+        this.errorCode = e.getErrorCode();
         this.params = e.getParams().isEmpty() ? null : e.getParams();
         this.path = ((ServletWebRequest) request).getRequest().getRequestURL().toString();
         this.timestamp = new Date();

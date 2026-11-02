@@ -1,7 +1,7 @@
 package com.kuklin.manageapp.bots.caloriebot.access;
 
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorParams;
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponseException;
+import com.kuklin.manageapp.common.web.error.ErrorParams;
+import com.kuklin.manageapp.common.web.error.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorStatus;
 import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import com.kuklin.manageapp.payment.entities.PricingPlan;
@@ -197,7 +197,7 @@ class AiRateLimiterTest {
                 .isInstanceOf(ErrorResponseException.class)
                 .satisfies(e -> {
                     ErrorResponseException ex = (ErrorResponseException) e;
-                    assertThat(ex.getErrorStatus()).isEqualTo(ErrorStatus.AI_RATE_LIMIT);
+                    assertThat(ex.getErrorCode()).isEqualTo(ErrorStatus.AI_RATE_LIMIT);
                     assertThat(ex.getParams()).containsEntry(ErrorParams.RETRY_AFTER_SECONDS, 60L);
                 });
 
@@ -205,7 +205,7 @@ class AiRateLimiterTest {
         acquire(USER, 2);
         assertThatThrownBy(() -> limiter.acquireOrThrow(USER))
                 .isInstanceOf(ErrorResponseException.class)
-                .extracting(e -> ((ErrorResponseException) e).getErrorStatus())
+                .extracting(e -> ((ErrorResponseException) e).getErrorCode())
                 .isEqualTo(ErrorStatus.AI_DAILY_LIMIT);
     }
 

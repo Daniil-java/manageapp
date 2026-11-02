@@ -1,7 +1,7 @@
 package com.kuklin.manageapp.common.auth.security;
 
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponseException;
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorStatus;
+import com.kuklin.manageapp.common.web.error.ErrorResponseException;
+import com.kuklin.manageapp.common.auth.AuthErrorStatus;
 import com.kuklin.manageapp.common.auth.dto.AuthResponse;
 import com.kuklin.manageapp.common.auth.dto.LoginRequest;
 import com.kuklin.manageapp.common.auth.dto.RegisterRequest;
@@ -11,7 +11,6 @@ import com.kuklin.manageapp.common.entities.Role;
 import com.kuklin.manageapp.common.services.AppUserService;
 import com.kuklin.manageapp.common.services.RoleService;
 import com.kuklin.manageapp.common.services.UserAuthIdentityService;
-import com.kuklin.manageapp.bots.caloriebot.web.security.TelegramAuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -29,7 +28,7 @@ public class AuthService {
     private final RoleService roleService;
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
-    private final TelegramAuthService telegramAuthService;
+    private final TelegramAuthVerifier telegramAuthVerifier;
     private final UserAuthIdentityService userAuthIdentityService;
     private final SiteAccessService siteAccessService;
     private final AuthRateLimiter authRateLimiter;
@@ -42,7 +41,7 @@ public class AuthService {
         siteAccessService.checkEmail(request.email());
 
         if (appUserService.existsByEmail(request.email())) {
-            throw new ErrorResponseException(ErrorStatus.EMAIL_ALREADY_BUSY);
+            throw new ErrorResponseException(AuthErrorStatus.EMAIL_ALREADY_BUSY);
         }
 
         Role userRole = roleService.findByRoleName(Role.RoleName.ROLE_USER)
@@ -95,7 +94,7 @@ public class AuthService {
             if (value != null) params.put(key, String.valueOf(value));
         });
 
-        if (!telegramAuthService.isValidLoginWidget(params)) {
+        if (!telegramAuthVerifier.isValidLoginWidget(params)) {
             throw new BadCredentialsException("Неверные данные авторизации Telegram");
         }
 
@@ -129,7 +128,7 @@ public class AuthService {
      */
     private void checkEmailPasswordEnabled() {
         if (!authProperties.getEmailPassword().isEnabled()) {
-            throw new ErrorResponseException(ErrorStatus.EMAIL_AUTH_DISABLED);
+            throw new ErrorResponseException(AuthErrorStatus.EMAIL_AUTH_DISABLED);
         }
     }
 

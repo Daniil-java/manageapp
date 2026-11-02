@@ -1,4 +1,4 @@
-package com.kuklin.manageapp.bots.caloriebot.web.error;
+package com.kuklin.manageapp.common.web.error;
 
 import lombok.Data;
 
@@ -10,25 +10,25 @@ import java.util.Map;
  */
 @Data
 public class ErrorResponseException extends RuntimeException{
-    private final ErrorStatus errorStatus;
+    private final ErrorCode errorCode;
     // Значения для текста ошибки ({max} → 4096): уходят в API (params) и в словарь errors_*.
     // Собирать методами ErrorParams; без значений — пустая карта
     private final Map<String, Object> params;
 
-    public ErrorResponseException(ErrorStatus errorStatus, Throwable ex) {
-        super(errorStatus.name(), ex);
-        this.errorStatus = errorStatus;
+    public ErrorResponseException(ErrorCode errorCode, Throwable ex) {
+        super(errorCode.name(), ex);
+        this.errorCode = errorCode;
         this.params = Map.of();
     }
 
-    public ErrorResponseException(ErrorStatus errorStatus) {
-        this(errorStatus, Map.of());
+    public ErrorResponseException(ErrorCode errorCode) {
+        this(errorCode, Map.of());
     }
 
-    public ErrorResponseException(ErrorStatus errorStatus, Map<String, ?> params) {
+    public ErrorResponseException(ErrorCode errorCode, Map<String, ?> params) {
         // В логах и стектрейсах: "AI_DAILY_LIMIT {dailyLimit=100, ...}"
-        super(params.isEmpty() ? errorStatus.name() : errorStatus.name() + " " + params);
-        this.errorStatus = errorStatus;
+        super(params.isEmpty() ? errorCode.name() : errorCode.name() + " " + params);
+        this.errorCode = errorCode;
         this.params = Map.copyOf(params);
     }
 }

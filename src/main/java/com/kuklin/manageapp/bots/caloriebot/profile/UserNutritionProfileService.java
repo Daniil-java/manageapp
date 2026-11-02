@@ -9,7 +9,7 @@ import com.kuklin.manageapp.bots.caloriebot.profile.exception.InvalidWaterNormEx
 import com.kuklin.manageapp.bots.caloriebot.profile.exception.InvalidWeightException;
 import com.kuklin.manageapp.bots.caloriebot.profile.exception.UserNutritionProfileValidationException;
 import com.kuklin.manageapp.bots.caloriebot.weight.WeightEntry;
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponseException;
+import com.kuklin.manageapp.common.web.error.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorStatus;
 import com.kuklin.manageapp.bots.caloriebot.onboarding.CalculatorStartParam;
 import lombok.RequiredArgsConstructor;

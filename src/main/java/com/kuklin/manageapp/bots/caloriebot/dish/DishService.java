@@ -17,9 +17,10 @@ import com.kuklin.manageapp.bots.caloriebot.favorite.UserFavoriteDish;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.dish.dto.ManualDishRequest;
 import com.kuklin.manageapp.bots.caloriebot.dish.dto.DishDto;
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorParams;
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponseException;
+import com.kuklin.manageapp.common.web.error.ErrorParams;
+import com.kuklin.manageapp.common.web.error.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorStatus;
+import com.kuklin.manageapp.common.web.error.CommonErrorStatus;
 import com.kuklin.manageapp.bots.caloriebot.access.MissingFeatureException;
 import com.kuklin.manageapp.bots.caloriebot.access.model.AccessResult;
 import com.kuklin.manageapp.bots.caloriebot.access.model.BotFeature;
@@ -84,7 +85,7 @@ public class DishService {
             }
             Optional<TelegramUser> optUser = telegramUserService.findByAppUserIdAndBotIdentifier(userId, BotIdentifier.CALORIE_BOT);
             if (optUser.isEmpty()) {
-                throw new ErrorResponseException(ErrorStatus.USER_NOT_FOUND);
+                throw new ErrorResponseException(CommonErrorStatus.USER_NOT_FOUND);
             }
             calorieAccessService.incrementResponses(optUser.get());
             return DishDto.fromEntities(dishes);

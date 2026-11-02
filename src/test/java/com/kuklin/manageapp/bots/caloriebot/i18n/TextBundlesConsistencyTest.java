@@ -11,8 +11,11 @@ import com.kuklin.manageapp.payment.entities.Payment;
 import com.kuklin.manageapp.payment.entities.UserSubscription;
 import com.kuklin.manageapp.bots.caloriebot.profile.telegram.editbuttons.ProfileEditAction;
 import com.kuklin.manageapp.bots.caloriebot.report.pdf.PdfTexts;
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorParams;
+import com.kuklin.manageapp.common.web.error.ErrorParams;
 import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorStatus;
+import com.kuklin.manageapp.common.auth.AuthErrorStatus;
+import com.kuklin.manageapp.common.web.error.CommonErrorStatus;
+import com.kuklin.manageapp.common.web.error.ErrorCode;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -107,10 +110,13 @@ public class TextBundlesConsistencyTest {
     void everyErrorStatusHasText() throws IOException {
         Properties errors = load("i18n/calorie/errors", AppLanguage.RU);
         List<String> missing = new ArrayList<>();
-        for (ErrorStatus status : ErrorStatus.values()) {
+        List<ErrorCode> codes = new ArrayList<>(List.of(ErrorStatus.values()));
+        codes.addAll(List.of(CommonErrorStatus.values()));
+        codes.addAll(List.of(AuthErrorStatus.values()));
+        for (ErrorCode status : codes) {
             if (!errors.containsKey(status.getTextKey())) missing.add(status.getTextKey());
         }
-        assertThat(missing).as("ErrorStatus without user text").isEmpty();
+        assertThat(missing).as("ErrorCode without user text").isEmpty();
     }
 
     @Test

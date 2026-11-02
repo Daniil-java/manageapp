@@ -1,7 +1,7 @@
 package com.kuklin.manageapp.common.services;
 
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponseException;
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorStatus;
+import com.kuklin.manageapp.common.web.error.ErrorResponseException;
+import com.kuklin.manageapp.common.web.error.CommonErrorStatus;
 import com.kuklin.manageapp.common.entities.AppUser;
 import com.kuklin.manageapp.common.entities.Role;
 import com.kuklin.manageapp.common.entities.TelegramUser;
@@ -61,7 +61,7 @@ public class AppUserService {
     @Transactional
     public AppUser addRole(Long appUserId, Role role) {
         AppUser user = repository.findById(appUserId)
-                .orElseThrow(() -> new ErrorResponseException(ErrorStatus.USER_NOT_FOUND));
+                .orElseThrow(() -> new ErrorResponseException(CommonErrorStatus.USER_NOT_FOUND));
         user.addRole(role);
         return repository.save(user);
     }
@@ -69,7 +69,7 @@ public class AppUserService {
     @Transactional
     public AppUser removeRole(Long appUserId, Role.RoleName roleName) {
         AppUser user = repository.findById(appUserId)
-                .orElseThrow(() -> new ErrorResponseException(ErrorStatus.USER_NOT_FOUND));
+                .orElseThrow(() -> new ErrorResponseException(CommonErrorStatus.USER_NOT_FOUND));
         user.getRoles().removeIf(r -> r.getRoleName() == roleName);
         return repository.save(user);
     }

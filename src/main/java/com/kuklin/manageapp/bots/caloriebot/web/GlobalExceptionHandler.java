@@ -1,11 +1,10 @@
 package com.kuklin.manageapp.bots.caloriebot.web;
 
 import com.kuklin.manageapp.aiconversation.models.AiUnavailableException;
-import com.kuklin.manageapp.bots.caloriebot.web.security.RequestSizeLimitFilter;
-import com.kuklin.manageapp.bots.caloriebot.dish.ai.AiInputLimitsProperties;
+import com.kuklin.manageapp.common.web.security.RequestSizeLimitFilter;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponse;
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponseException;
+import com.kuklin.manageapp.common.web.error.ErrorResponse;
+import com.kuklin.manageapp.common.web.error.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,7 +28,7 @@ import java.util.Arrays;
 @RequiredArgsConstructor
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
-    private final AiInputLimitsProperties aiInputLimits;
+    private final RequestSizeLimitFilter requestSizeLimitFilter;
     private final CalorieTexts texts;
 
     @ExceptionHandler(BadCredentialsException.class)
@@ -39,7 +38,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler
     public ResponseEntity<ErrorResponse> catchAErrorResponseException(ErrorResponseException e, WebRequest request) {
-        return new ResponseEntity<>(new ErrorResponse(e, texts.errorForApi(e), request), e.getErrorStatus().getHttpStatus());
+        return new ResponseEntity<>(new ErrorResponse(e, texts.getApiMessage(e), request), e.getErrorCode().getHttpStatus());
     }
 
     // ИИ не ответил (401, 429, 5xx, таймаут) — 503 AI_UNAVAILABLE с текстом «попробуйте позже», а не голый 500
@@ -71,8 +70,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             HttpMessageNotReadableException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
         for (Throwable cause = ex; cause != null; cause = cause.getCause()) {
             if (cause instanceof RequestSizeLimitFilter.RequestTooLargeException) {
-                ErrorResponseException e = RequestSizeLimitFilter.tooLarge(aiInputLimits);
-                return new ResponseEntity<>(new ErrorResponse(e, texts.errorForApi(e), request), HttpStatus.PAYLOAD_TOO_LARGE);
+                ErrorResponseException e = requestSizeLimitFilter.makeTooLargeException();
+                return new ResponseEntity<>(new ErrorResponse(e, texts.getApiMessage(e), request), HttpStatus.PAYLOAD_TOO_LARGE);
             }
         }
         return super.handleHttpMessageNotReadable(ex, headers, status, request);

@@ -1,8 +1,7 @@
 package com.kuklin.manageapp.common.auth.security;
 
-import com.kuklin.manageapp.bots.caloriebot.web.security.TelegramAuthService;
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponseException;
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorStatus;
+import com.kuklin.manageapp.common.web.error.ErrorResponseException;
+import com.kuklin.manageapp.common.auth.AuthErrorStatus;
 import com.kuklin.manageapp.common.auth.dto.LoginRequest;
 import com.kuklin.manageapp.common.auth.dto.RegisterRequest;
 import com.kuklin.manageapp.common.configurations.AuthProperties;
@@ -34,7 +33,7 @@ class AuthServiceTest {
 
     private AppUserService appUserService;
     private PasswordEncoder passwordEncoder;
-    private TelegramAuthService telegramAuthService;
+    private TelegramAuthVerifier telegramAuthVerifier;
     private AuthRateLimiter rateLimiter;
     private AuthProperties properties;
     private AuthService service;
@@ -43,11 +42,11 @@ class AuthServiceTest {
     void setUp() {
         appUserService = mock(AppUserService.class);
         passwordEncoder = mock(PasswordEncoder.class);
-        telegramAuthService = mock(TelegramAuthService.class);
+        telegramAuthVerifier = mock(TelegramAuthVerifier.class);
         rateLimiter = mock(AuthRateLimiter.class);
         properties = new AuthProperties();
         service = new AuthService(appUserService, mock(RoleService.class), mock(JwtService.class), passwordEncoder,
-                telegramAuthService, mock(UserAuthIdentityService.class), mock(SiteAccessService.class),
+                telegramAuthVerifier, mock(UserAuthIdentityService.class), mock(SiteAccessService.class),
                 rateLimiter, properties);
     }
 
@@ -57,16 +56,16 @@ class AuthServiceTest {
 
         assertThatThrownBy(() -> service.register(request, IP))
                 .isInstanceOf(ErrorResponseException.class)
-                .extracting(e -> ((ErrorResponseException) e).getErrorStatus())
-                .isEqualTo(ErrorStatus.EMAIL_AUTH_DISABLED);
+                .extracting(e -> ((ErrorResponseException) e).getErrorCode())
+                .isEqualTo(AuthErrorStatus.EMAIL_AUTH_DISABLED);
         verifyNoInteractions(appUserService, rateLimiter);
     }
 
     @Test
     void loginDisabledByFlag() {
         assertThatThrownBy(() -> service.login(new LoginRequest(EMAIL, "password1"), IP))
-                .extracting(e -> ((ErrorResponseException) e).getErrorStatus())
-                .isEqualTo(ErrorStatus.EMAIL_AUTH_DISABLED);
+                .extracting(e -> ((ErrorResponseException) e).getErrorCode())
+                .isEqualTo(AuthErrorStatus.EMAIL_AUTH_DISABLED);
         verifyNoInteractions(appUserService, rateLimiter);
     }
 
@@ -99,7 +98,7 @@ class AuthServiceTest {
     @Test
     void lockedEmailStopsBeforePasswordCheck() {
         properties.getEmailPassword().setEnabled(true);
-        org.mockito.Mockito.doThrow(new ErrorResponseException(ErrorStatus.AUTH_RATE_LIMIT))
+        org.mockito.Mockito.doThrow(new ErrorResponseException(AuthErrorStatus.AUTH_RATE_LIMIT))
                 .when(rateLimiter).checkEmailNotLockedOrThrow(EMAIL);
 
         assertThatThrownBy(() -> service.login(new LoginRequest(EMAIL, "any"), IP))
@@ -120,11 +119,11 @@ class AuthServiceTest {
 
     @Test
     void telegramLoginIsRateLimitedBeforeSignatureCheck() {
-        org.mockito.Mockito.doThrow(new ErrorResponseException(ErrorStatus.AUTH_RATE_LIMIT))
+        org.mockito.Mockito.doThrow(new ErrorResponseException(AuthErrorStatus.AUTH_RATE_LIMIT))
                 .when(rateLimiter).acquireIpOrThrow(AuthRateLimiter.Action.TELEGRAM, IP);
 
         assertThatThrownBy(() -> service.loginByTelegram(Map.of("id", 1), IP))
                 .isInstanceOf(ErrorResponseException.class);
-        verifyNoInteractions(telegramAuthService);
+        verifyNoInteractions(telegramAuthVerifier);
     }
 }

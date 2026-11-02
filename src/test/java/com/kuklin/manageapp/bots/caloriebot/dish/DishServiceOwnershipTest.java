@@ -9,7 +9,7 @@ import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcesso
 import com.kuklin.manageapp.bots.caloriebot.bot.TelegramCaloriesBotKeyComponents;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.dish.dto.DishDto;
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponseException;
+import com.kuklin.manageapp.common.web.error.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorStatus;
 import com.kuklin.manageapp.common.services.TelegramUserService;
 import org.junit.jupiter.api.BeforeEach;
@@ -78,7 +78,7 @@ class DishServiceOwnershipTest {
     void portionUpdateOfStrangersDishRejected() {
         assertThatThrownBy(() -> service.updateDishPortion(STRANGER, DISH_ID, new DishDto().setName("x")))
                 .isInstanceOfSatisfying(ErrorResponseException.class,
-                        e -> assertThat(e.getErrorStatus()).isEqualTo(ErrorStatus.DISH_NOT_BELONG_USER));
+                        e -> assertThat(e.getErrorCode()).isEqualTo(ErrorStatus.DISH_NOT_BELONG_USER));
         verify(repository, never()).save(any());
     }
 
@@ -86,7 +86,7 @@ class DishServiceOwnershipTest {
     void portionUpdateOfMissingDishIsNotFound() {
         assertThatThrownBy(() -> service.updateDishPortion(OWNER, 555L, new DishDto().setName("x")))
                 .isInstanceOfSatisfying(ErrorResponseException.class,
-                        e -> assertThat(e.getErrorStatus()).isEqualTo(ErrorStatus.DISH_NOT_FOUND));
+                        e -> assertThat(e.getErrorCode()).isEqualTo(ErrorStatus.DISH_NOT_FOUND));
     }
 
     @Test

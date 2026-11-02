@@ -2,11 +2,11 @@ package com.kuklin.manageapp.bots.caloriebot.i18n;
 
 import com.kuklin.manageapp.bots.caloriebot.dish.ai.AiInputValidator;
 import com.kuklin.manageapp.bots.caloriebot.settings.UserSettingsService;
-import com.kuklin.manageapp.bots.caloriebot.web.security.RequestSizeLimitFilter;
+import com.kuklin.manageapp.common.web.security.RequestSizeLimitFilter;
 import com.kuklin.manageapp.bots.caloriebot.dish.ai.AiInputLimitsProperties;
 import org.springframework.util.unit.DataSize;
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorParams;
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponseException;
+import com.kuklin.manageapp.common.web.error.ErrorParams;
+import com.kuklin.manageapp.common.web.error.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -97,11 +97,11 @@ class CalorieTextsTest {
     @Test
     void apiMessageIsEnglishOneLineWhateverUserLanguage() {
         ErrorResponseException limit = new ErrorResponseException(ErrorStatus.DISH_DAILY_LIMIT, ErrorParams.max(1000));
-        assertThat(texts.errorForApi(limit)).isEqualTo("Too many dishes added in the last 24 hours (max 1,000). Try again later.");
+        assertThat(texts.getApiMessage(limit)).isEqualTo("Too many dishes added in the last 24 hours (max 1,000). Try again later.");
 
         // В словаре — с переносами для бота, в API — одной строкой
         ErrorResponseException photo = new ErrorResponseException(ErrorStatus.PHOTO_NOT_RECOGNIZED_COUNTED);
-        assertThat(texts.errorForApi(photo))
+        assertThat(texts.getApiMessage(photo))
                 .isEqualTo("🤔 No food found in the photo. This scan was counted. Take a clear, close-up photo of the dish in good light or describe it in text.");
     }
 
@@ -132,7 +132,6 @@ class CalorieTextsTest {
         limits.setVoiceMaxSize(DataSize.ofBytes(100));
         limits.setVoiceMaxDuration(Duration.ofMinutes(2));
         limits.setVoiceFormats(List.of("ogg", "webm"));
-        limits.setRequestMaxSize(DataSize.ofMegabytes(8));
         AiInputValidator validator = new AiInputValidator(limits);
         String b64 = Base64.getEncoder().encodeToString(new byte[101]);
 
@@ -142,12 +141,12 @@ class CalorieTextsTest {
                 catchError(() -> validator.toPhotoDataUrl(b64, null)),
                 catchError(() -> validator.toVoiceInput(b64, "exe")),
                 catchError(() -> validator.toVoiceInput(b64, "ogg")),
-                RequestSizeLimitFilter.tooLarge(limits));
+                new RequestSizeLimitFilter(DataSize.ofMegabytes(8), null, texts).makeTooLargeException());
 
         for (ErrorResponseException e : errors) {
-            assertThat(e.getParams()).as("params of %s", e.getErrorStatus()).isNotEmpty();
+            assertThat(e.getParams()).as("params of %s", e.getErrorCode()).isNotEmpty();
             for (Long user : List.of(RU_USER, EN_USER)) {
-                assertThat(texts.error(user, e)).as("%s for user %d", e.getErrorStatus(), user).doesNotContain("{", "}");
+                assertThat(texts.error(user, e)).as("%s for user %d", e.getErrorCode(), user).doesNotContain("{", "}");
             }
         }
         assertThat(texts.error(RU_USER, errors.get(4))).isEqualTo("Голосовое слишком длинное. Максимум — 0 МБ (около 2 мин).");
