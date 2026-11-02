@@ -6,7 +6,7 @@ import com.kuklin.manageapp.bots.caloriebot.entities.CalorieAiRequest;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorParams;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import com.kuklin.manageapp.payment.entities.UserSubscription;
 import com.kuklin.manageapp.payment.services.PricingPlanService;
 import com.kuklin.manageapp.payment.services.UserSubscriptionService;

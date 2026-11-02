@@ -13,10 +13,10 @@ import com.kuklin.manageapp.bots.aiassistantcalendar.services.UserMessagesLogSer
 import com.kuklin.manageapp.bots.aiassistantcalendar.services.google.CalendarService;
 import com.kuklin.manageapp.bots.aiassistantcalendar.telegram.AssistantTelegramBot;
 import com.kuklin.manageapp.common.entities.TelegramUser;
-import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
-import com.kuklin.manageapp.common.library.tgutils.Command;
-import com.kuklin.manageapp.common.library.tgutils.ThreadUtil;
+import com.kuklin.manageapp.common.telegram.TelegramBot;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
+import com.kuklin.manageapp.common.telegram.Command;
+import com.kuklin.manageapp.common.util.ThreadUtil;
 import com.kuklin.manageapp.common.services.TelegramService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

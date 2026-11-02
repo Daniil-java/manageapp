@@ -8,8 +8,8 @@ import com.kuklin.manageapp.aiconversation.models.openai.OpenAiChatCompletionRes
 import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
 import com.kuklin.manageapp.bots.metrics.services.MetricsAiInteractionRecordService;
 import com.kuklin.manageapp.bots.metrics.services.MetricsAiLogService;
-import com.kuklin.manageapp.common.library.models.TranscriptionResponse;
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.aiconversation.models.TranscriptionResponse;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import feign.FeignException;
 import feign.Request;
 import org.junit.jupiter.api.BeforeEach;

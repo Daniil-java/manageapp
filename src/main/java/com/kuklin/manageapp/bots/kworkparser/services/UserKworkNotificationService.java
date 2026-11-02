@@ -5,7 +5,7 @@ import com.kuklin.manageapp.bots.kworkparser.repositories.UserKworkNotificationR
 import com.kuklin.manageapp.bots.kworkparser.telegram.KworkParserTelegramBot;
 import com.kuklin.manageapp.bots.kworkparser.entities.Kwork;
 import com.kuklin.manageapp.bots.kworkparser.entities.UserKworkNotification;
-import com.kuklin.manageapp.common.library.tgutils.ThreadUtil;
+import com.kuklin.manageapp.common.util.ThreadUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

@@ -11,7 +11,7 @@ import com.kuklin.manageapp.bots.bookingbot.services.FormAnswerService;
 import com.kuklin.manageapp.bots.bookingbot.telegram.BookingTelegramBot;
 import com.kuklin.manageapp.bots.bookingbot.telegram.handlers.BookingUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
-import com.kuklin.manageapp.common.library.tgutils.Command;
+import com.kuklin.manageapp.common.telegram.Command;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Message;

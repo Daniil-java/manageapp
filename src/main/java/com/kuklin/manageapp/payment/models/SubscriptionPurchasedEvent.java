@@ -1,6 +1,6 @@
 package com.kuklin.manageapp.payment.models;
 
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
 
 /**
  * Пользователь купил подписку (в том числе продление подписки за звёзды). Публикует

@@ -2,9 +2,9 @@ package com.kuklin.manageapp.bots.hhparserbot.telegram;
 
 import com.kuklin.manageapp.bots.hhparserbot.telegram.handlers.HhDefaultHhUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
-import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
-import com.kuklin.manageapp.common.library.tgmodels.TelegramFacade;
-import com.kuklin.manageapp.common.library.tgmodels.UpdateHandler;
+import com.kuklin.manageapp.common.telegram.TelegramBot;
+import com.kuklin.manageapp.common.telegram.TelegramFacade;
+import com.kuklin.manageapp.common.telegram.UpdateHandler;
 import com.kuklin.manageapp.common.services.TelegramUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;

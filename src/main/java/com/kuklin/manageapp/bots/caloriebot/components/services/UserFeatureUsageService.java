@@ -4,7 +4,7 @@ import com.kuklin.manageapp.bots.caloriebot.entities.UserFeatureUsage;
 import com.kuklin.manageapp.bots.caloriebot.components.repository.UserFeatureUsageRepository;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.BotFeature;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.FeatureLimitPeriod;
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import com.kuklin.manageapp.payment.components.paymentfacades.CommonPaymentFacade;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

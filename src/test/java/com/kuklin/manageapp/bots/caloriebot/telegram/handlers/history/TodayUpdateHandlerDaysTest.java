@@ -12,7 +12,7 @@ import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.DayCardCalo
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.dish.DishKeyboards;
 import com.kuklin.manageapp.bots.caloriebot.texts.DishTexts;
 import com.kuklin.manageapp.common.entities.TelegramUser;
-import com.kuklin.manageapp.common.library.tgutils.StyledInlineKeyboardButton;
+import com.kuklin.manageapp.common.telegram.keyboard.StyledInlineKeyboardButton;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;

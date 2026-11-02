@@ -6,7 +6,7 @@ import com.kuklin.manageapp.bots.caloriebot.components.services.CalorieAccessSer
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserFeatureUsageService;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.EmptyResultCharge;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.QuotaCharge;
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;

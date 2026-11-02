@@ -5,7 +5,7 @@ import com.kuklin.manageapp.aiconversation.models.enums.AiModelPrice;
 import com.kuklin.manageapp.aiconversation.models.enums.ProviderVariant;
 import com.kuklin.manageapp.bots.metrics.repositories.MetricsAiInteractionRecordRepository;
 import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

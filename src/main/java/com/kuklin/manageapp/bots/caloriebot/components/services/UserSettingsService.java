@@ -6,7 +6,7 @@ import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.UserSettingsDto;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorParams;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;

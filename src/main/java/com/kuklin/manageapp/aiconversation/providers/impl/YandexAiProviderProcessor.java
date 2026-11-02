@@ -3,7 +3,7 @@ package com.kuklin.manageapp.aiconversation.providers.impl;
 import com.kuklin.manageapp.aiconversation.integrations.YandexAiFeignClient;
 import com.kuklin.manageapp.aiconversation.models.yandex.YandexAiRequest;
 import com.kuklin.manageapp.aiconversation.models.yandex.YandexAiResponse;
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

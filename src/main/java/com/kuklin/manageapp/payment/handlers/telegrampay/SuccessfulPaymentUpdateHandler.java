@@ -8,10 +8,10 @@ import com.kuklin.manageapp.payment.services.exceptions.PricingPlanNotFoundExcep
 import com.kuklin.manageapp.payment.services.exceptions.payment.PaymentException;
 import com.kuklin.manageapp.payment.services.exceptions.payment.PaymentValidationDataException;
 import com.kuklin.manageapp.payment.handlers.PaymentUpdateHandler;
-import com.kuklin.manageapp.common.components.TelegramBotRegistry;
+import com.kuklin.manageapp.common.telegram.TelegramBotRegistry;
 import com.kuklin.manageapp.common.entities.TelegramUser;
-import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
-import com.kuklin.manageapp.common.library.tgutils.Command;
+import com.kuklin.manageapp.common.telegram.TelegramBot;
+import com.kuklin.manageapp.common.telegram.Command;
 import com.kuklin.manageapp.payment.components.paymentfacades.CommonPaymentFacade;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

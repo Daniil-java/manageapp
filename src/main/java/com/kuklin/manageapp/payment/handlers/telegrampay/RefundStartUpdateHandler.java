@@ -1,9 +1,9 @@
 package com.kuklin.manageapp.payment.handlers.telegrampay;
 
-import com.kuklin.manageapp.common.components.TelegramBotRegistry;
+import com.kuklin.manageapp.common.telegram.TelegramBotRegistry;
 import com.kuklin.manageapp.common.entities.TelegramUser;
-import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
-import com.kuklin.manageapp.common.library.tgutils.Command;
+import com.kuklin.manageapp.common.telegram.TelegramBot;
+import com.kuklin.manageapp.common.telegram.Command;
 import com.kuklin.manageapp.common.services.TelegramUserService;
 import com.kuklin.manageapp.payment.entities.Payment;
 import com.kuklin.manageapp.payment.handlers.PaymentUpdateHandler;

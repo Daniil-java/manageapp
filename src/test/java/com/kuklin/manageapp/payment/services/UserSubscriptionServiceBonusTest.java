@@ -1,6 +1,6 @@
 package com.kuklin.manageapp.payment.services;
 
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import com.kuklin.manageapp.payment.entities.UserSubscription;
 import com.kuklin.manageapp.payment.handlers.AdminPaymentUpdateHandler;
 import com.kuklin.manageapp.payment.repositories.UserSubscriptionRepository;

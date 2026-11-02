@@ -7,8 +7,8 @@ import com.kuklin.manageapp.bots.bookingbot.services.BookingObjectService;
 import com.kuklin.manageapp.bots.bookingbot.services.BookingService;
 import com.kuklin.manageapp.bots.bookingbot.telegram.BookingTelegramBot;
 import com.kuklin.manageapp.common.entities.TelegramUser;
-import com.kuklin.manageapp.common.library.tgutils.Command;
-import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;
+import com.kuklin.manageapp.common.telegram.Command;
+import com.kuklin.manageapp.common.telegram.keyboard.TelegramKeyboard;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
@@ -24,8 +24,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-import static com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard.DELIMETER;
-import static com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard.button;
+import static com.kuklin.manageapp.common.telegram.keyboard.TelegramKeyboard.DELIMETER;
+import static com.kuklin.manageapp.common.telegram.keyboard.TelegramKeyboard.button;
 
 
 @Component

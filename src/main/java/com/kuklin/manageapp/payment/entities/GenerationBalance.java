@@ -1,6 +1,6 @@
 package com.kuklin.manageapp.payment.entities;
 
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;

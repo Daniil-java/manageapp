@@ -1,7 +1,7 @@
 package com.kuklin.manageapp.common.services;
 
 import com.kuklin.manageapp.common.entities.TelegramUser;
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import com.kuklin.manageapp.common.repositories.TelegramUserRepository;
 import com.kuklin.manageapp.payment.services.GenerationBalanceService;
 import org.junit.jupiter.api.Test;

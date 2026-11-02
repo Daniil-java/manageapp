@@ -12,7 +12,7 @@ import com.kuklin.manageapp.bots.channelposter.model.TopicCategoryNotFoundExcept
 import com.kuklin.manageapp.bots.channelposter.repositories.PostQueueRepository;
 import com.kuklin.manageapp.bots.channelposter.telegram.ChannelPosterBotKeyComponent;
 import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;

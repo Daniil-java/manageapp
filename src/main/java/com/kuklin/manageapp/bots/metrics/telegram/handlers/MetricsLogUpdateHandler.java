@@ -1,14 +1,14 @@
 package com.kuklin.manageapp.bots.metrics.telegram.handlers;
 
-import com.kuklin.manageapp.common.configurations.BotScheduler;
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.scheduler.BotScheduler;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import com.kuklin.manageapp.bots.metrics.configurations.MetricsBotKeyComponents;
 import com.kuklin.manageapp.bots.metrics.entities.MetricsAiLog;
 import com.kuklin.manageapp.bots.metrics.services.MetricsAiInteractionRecordService;
 import com.kuklin.manageapp.bots.metrics.services.MetricsAiLogService;
 import com.kuklin.manageapp.bots.metrics.telegram.MetricsTelegramBot;
 import com.kuklin.manageapp.common.entities.TelegramUser;
-import com.kuklin.manageapp.common.library.tgutils.Command;
+import com.kuklin.manageapp.common.telegram.Command;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UtmReportService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -12,7 +12,7 @@ import com.kuklin.manageapp.bots.caloriebot.utils.ReportHtml;
 import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
 import com.kuklin.manageapp.bots.metrics.repositories.MetricsAiInteractionRecordRepository;
 import com.kuklin.manageapp.common.entities.TelegramUser;
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import com.kuklin.manageapp.payment.entities.Payment;
 import com.kuklin.manageapp.payment.entities.PricingPlan;
 import com.kuklin.manageapp.payment.entities.UserSubscription;

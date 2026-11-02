@@ -8,7 +8,7 @@ import com.kuklin.manageapp.bots.aiassistantcalendar.telegram.AssistantTelegramB
 import com.kuklin.manageapp.bots.aiassistantcalendar.telegram.handlers.CalendarEventUpdateHandler;
 import com.kuklin.manageapp.bots.aiassistantcalendar.services.UserNotificationSettingsService;
 import com.kuklin.manageapp.bots.aiassistantcalendar.services.google.CalendarService;
-import com.kuklin.manageapp.common.library.ScheduleProcessor;
+import com.kuklin.manageapp.common.scheduler.ScheduleProcessor;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

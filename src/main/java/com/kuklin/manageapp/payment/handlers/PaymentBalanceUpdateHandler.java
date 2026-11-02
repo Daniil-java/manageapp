@@ -1,8 +1,8 @@
 package com.kuklin.manageapp.payment.handlers;
 
-import com.kuklin.manageapp.common.components.TelegramBotRegistry;
+import com.kuklin.manageapp.common.telegram.TelegramBotRegistry;
 import com.kuklin.manageapp.common.entities.TelegramUser;
-import com.kuklin.manageapp.common.library.tgutils.Command;
+import com.kuklin.manageapp.common.telegram.Command;
 import com.kuklin.manageapp.payment.components.paymentfacades.CommonPaymentFacade;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

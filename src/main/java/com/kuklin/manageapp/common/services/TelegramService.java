@@ -3,10 +3,9 @@ package com.kuklin.manageapp.common.services;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcessor;
-import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
-import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
-import com.kuklin.manageapp.common.library.tgmodels.TelegramBotClient;
-import com.kuklin.manageapp.common.library.tgutils.TelegramBotFile;
+import com.kuklin.manageapp.common.telegram.TelegramBot;
+import com.kuklin.manageapp.common.telegram.TelegramBotClient;
+import com.kuklin.manageapp.common.telegram.TelegramBotFile;
 import com.kuklin.manageapp.common.configurations.feignclients.TelegramFeignClient;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -71,7 +70,7 @@ public class TelegramService {
                 "audio.ogg",
                 "audio/ogg",
                 prompt,
-                CalorieTelegramBot.BOT_IDENTIFIER,
+                telegramBot.getBotIdentifier(),
                 this.getClass().getSimpleName()
         );
     }

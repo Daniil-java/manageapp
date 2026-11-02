@@ -1,8 +1,8 @@
 package com.kuklin.manageapp.bots.channelposter.components.schedulers;
 
 import com.kuklin.manageapp.bots.channelposter.services.PostImageService;
-import com.kuklin.manageapp.common.library.ScheduleProcessor;
-import com.kuklin.manageapp.common.library.utils.FilesUtils;
+import com.kuklin.manageapp.common.scheduler.ScheduleProcessor;
+import com.kuklin.manageapp.common.util.FilesUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

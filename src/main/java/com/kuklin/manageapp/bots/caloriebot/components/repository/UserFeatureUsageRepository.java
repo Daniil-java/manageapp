@@ -2,7 +2,7 @@ package com.kuklin.manageapp.bots.caloriebot.components.repository;
 
 import com.kuklin.manageapp.bots.caloriebot.entities.UserFeatureUsage;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.BotFeature;
-import  com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import  com.kuklin.manageapp.common.telegram.BotIdentifier;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;

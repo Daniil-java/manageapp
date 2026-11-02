@@ -1,7 +1,7 @@
 package com.kuklin.manageapp.bots.caloriebot.models.entitydtos;
 
 import com.kuklin.manageapp.common.entities.TelegramUser;
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import lombok.Data;
 
 import java.time.LocalDateTime;

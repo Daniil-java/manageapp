@@ -8,7 +8,7 @@ import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.i18n.I18nProperties;
 import com.kuklin.manageapp.bots.caloriebot.models.events.DishAddedEvent;
 import com.kuklin.manageapp.common.entities.TelegramUser;
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import com.kuklin.manageapp.common.services.TelegramUserService;
 import com.kuklin.manageapp.payment.models.SubscriptionPurchasedEvent;
 import com.kuklin.manageapp.payment.models.SubscriptionRefundedEvent;

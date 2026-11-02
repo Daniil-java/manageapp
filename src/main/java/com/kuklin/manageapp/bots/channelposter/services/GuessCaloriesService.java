@@ -8,7 +8,7 @@ import com.kuklin.manageapp.bots.channelposter.entities.PostQueue;
 import com.kuklin.manageapp.bots.channelposter.entities.RubricTopic;
 import com.kuklin.manageapp.bots.channelposter.entities.TopicCategory;
 import com.kuklin.manageapp.bots.channelposter.model.PollContent;
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

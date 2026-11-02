@@ -5,7 +5,6 @@ import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
 import com.kuklin.manageapp.common.auth.dto.AuthResponse;
 import com.kuklin.manageapp.common.auth.dto.LoginRequest;
 import com.kuklin.manageapp.common.auth.dto.RegisterRequest;
-import com.kuklin.manageapp.common.auth.security.JwtService;
 import com.kuklin.manageapp.common.configurations.AuthProperties;
 import com.kuklin.manageapp.common.entities.AppUser;
 import com.kuklin.manageapp.common.entities.Role;

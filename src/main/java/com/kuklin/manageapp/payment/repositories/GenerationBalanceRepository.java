@@ -1,7 +1,7 @@
 package com.kuklin.manageapp.payment.repositories;
 
 import com.kuklin.manageapp.payment.entities.GenerationBalance;
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

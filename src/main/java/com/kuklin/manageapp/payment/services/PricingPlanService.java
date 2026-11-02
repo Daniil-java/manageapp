@@ -1,6 +1,6 @@
 package com.kuklin.manageapp.payment.services;
 
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import com.kuklin.manageapp.payment.entities.PricingPlan;
 import com.kuklin.manageapp.payment.repositories.PricingPlanRepository;
 import com.kuklin.manageapp.payment.services.exceptions.PricingPlanNotFoundException;

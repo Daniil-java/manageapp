@@ -1,6 +1,6 @@
 package com.kuklin.manageapp.payment.models;
 
-import com.kuklin.manageapp.common.library.tgmodels.CreateInvoiceLinkWithTelegramSubscription;
+import com.kuklin.manageapp.common.telegram.payment.CreateInvoiceLinkWithTelegramSubscription;
 import org.telegram.telegrambots.meta.api.methods.invoices.SendInvoice;
 
 public record PlanPaymentResult(

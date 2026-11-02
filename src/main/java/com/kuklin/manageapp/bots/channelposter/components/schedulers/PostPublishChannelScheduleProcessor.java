@@ -4,7 +4,7 @@ import com.kuklin.manageapp.bots.channelposter.components.PostPublisher;
 import com.kuklin.manageapp.bots.channelposter.entities.PostQueue;
 import com.kuklin.manageapp.bots.channelposter.services.PostQueueService;
 import com.kuklin.manageapp.bots.channelposter.telegram.ChannelPosterBotKeyComponent;
-import com.kuklin.manageapp.common.library.ScheduleProcessor;
+import com.kuklin.manageapp.common.scheduler.ScheduleProcessor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

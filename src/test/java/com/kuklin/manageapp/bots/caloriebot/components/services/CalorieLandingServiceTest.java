@@ -8,7 +8,7 @@ import com.kuklin.manageapp.bots.caloriebot.configurations.AiRateLimitProperties
 import com.kuklin.manageapp.bots.caloriebot.entities.PlanFeature;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.BotFeature;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.FeatureLimitPeriod;
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import com.kuklin.manageapp.payment.entities.PricingPlan;
 import com.kuklin.manageapp.payment.models.common.Currency;
 import com.kuklin.manageapp.payment.services.PricingPlanService;

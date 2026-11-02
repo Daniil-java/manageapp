@@ -3,7 +3,7 @@ package com.kuklin.manageapp.aiconversation.providers;
 import com.kuklin.manageapp.aiconversation.models.AiResponse;
 import com.kuklin.manageapp.aiconversation.models.enums.ChatModel;
 import com.kuklin.manageapp.aiconversation.models.enums.ProviderVariant;
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import org.springframework.beans.factory.annotation.Autowired;
 
 public interface ProviderProcessor {

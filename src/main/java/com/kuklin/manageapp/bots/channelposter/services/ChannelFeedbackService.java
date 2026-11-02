@@ -5,7 +5,7 @@ import com.kuklin.manageapp.bots.channelposter.entities.ChannelDailyStats;
 import com.kuklin.manageapp.bots.channelposter.entities.PostQueue;
 import com.kuklin.manageapp.bots.channelposter.repositories.ChannelDailyStatsRepository;
 import com.kuklin.manageapp.bots.channelposter.telegram.ChannelPosterBotKeyComponent;
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

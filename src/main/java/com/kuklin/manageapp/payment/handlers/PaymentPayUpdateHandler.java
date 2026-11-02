@@ -1,11 +1,11 @@
 package com.kuklin.manageapp.payment.handlers;
 
-import com.kuklin.manageapp.common.components.TelegramBotRegistry;
+import com.kuklin.manageapp.common.telegram.TelegramBotRegistry;
 import com.kuklin.manageapp.common.entities.TelegramUser;
-import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
-import com.kuklin.manageapp.common.library.tgutils.ButtonStyle;
-import com.kuklin.manageapp.common.library.tgutils.Command;
-import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;
+import com.kuklin.manageapp.common.telegram.TelegramBot;
+import com.kuklin.manageapp.common.telegram.keyboard.ButtonStyle;
+import com.kuklin.manageapp.common.telegram.Command;
+import com.kuklin.manageapp.common.telegram.keyboard.TelegramKeyboard;
 import com.kuklin.manageapp.payment.components.texts.PaymentText;
 import com.kuklin.manageapp.payment.components.texts.PaymentTextResolver;
 import com.kuklin.manageapp.payment.components.paymentfacades.CommonPaymentFacade;

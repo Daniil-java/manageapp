@@ -3,7 +3,7 @@ package com.kuklin.manageapp.bots.hhparserbot.processors;
 import com.kuklin.manageapp.bots.hhparserbot.entities.Vacancy;
 import com.kuklin.manageapp.bots.hhparserbot.models.VacancyStatus;
 import com.kuklin.manageapp.bots.hhparserbot.services.HhVacancyService;
-import com.kuklin.manageapp.common.library.ScheduleProcessor;
+import com.kuklin.manageapp.common.scheduler.ScheduleProcessor;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

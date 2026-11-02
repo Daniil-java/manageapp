@@ -1,7 +1,7 @@
 package com.kuklin.manageapp.bots.bookingbot.services;
 
-import com.kuklin.manageapp.common.configurations.BotScheduler;
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.scheduler.BotScheduler;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import com.kuklin.manageapp.bots.bookingbot.processors.BookingStatusScheduleProcessor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

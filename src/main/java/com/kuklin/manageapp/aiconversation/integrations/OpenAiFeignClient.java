@@ -5,7 +5,7 @@ import com.kuklin.manageapp.aiconversation.models.openai.OpenAiChatCompletionReq
 import com.kuklin.manageapp.aiconversation.models.openai.OpenAiChatCompletionResponse;
 import com.kuklin.manageapp.aiconversation.models.openai.image.OpenAiImageRequest;
 import com.kuklin.manageapp.aiconversation.models.openai.image.OpenAiImageResponse;
-import com.kuklin.manageapp.common.library.models.TranscriptionResponse;
+import com.kuklin.manageapp.aiconversation.models.TranscriptionResponse;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.PostMapping;

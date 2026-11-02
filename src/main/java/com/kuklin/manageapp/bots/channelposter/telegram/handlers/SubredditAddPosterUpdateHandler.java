@@ -4,8 +4,8 @@ import com.kuklin.manageapp.bots.channelposter.entities.parser.Subreddit;
 import com.kuklin.manageapp.bots.channelposter.services.parser.SubredditService;
 import com.kuklin.manageapp.bots.channelposter.telegram.ChannelPosterTelegramBot;
 import com.kuklin.manageapp.common.entities.TelegramUser;
-import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
-import com.kuklin.manageapp.common.library.tgutils.Command;
+import com.kuklin.manageapp.common.telegram.TelegramBot;
+import com.kuklin.manageapp.common.telegram.Command;
 import lombok.RequiredArgsConstructor;
 import org.telegram.telegrambots.meta.api.objects.Update;
 

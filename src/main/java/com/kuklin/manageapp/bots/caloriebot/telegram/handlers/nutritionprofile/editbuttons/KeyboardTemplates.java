@@ -1,10 +1,10 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.editbuttons;
 
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
-import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
-import com.kuklin.manageapp.common.library.tgutils.ButtonStyle;
-import com.kuklin.manageapp.common.library.tgutils.Command;
-import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;
+import com.kuklin.manageapp.common.telegram.TelegramBot;
+import com.kuklin.manageapp.common.telegram.keyboard.ButtonStyle;
+import com.kuklin.manageapp.common.telegram.Command;
+import com.kuklin.manageapp.common.telegram.keyboard.TelegramKeyboard;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 

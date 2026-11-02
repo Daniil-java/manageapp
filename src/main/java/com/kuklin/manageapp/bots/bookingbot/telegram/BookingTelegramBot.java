@@ -1,8 +1,8 @@
 package com.kuklin.manageapp.bots.bookingbot.telegram;
 
 import com.kuklin.manageapp.bots.bookingbot.configurations.TelegramBookingBotKeyComponents;
-import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.telegram.TelegramBot;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import com.kuklin.manageapp.common.services.AsyncService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;

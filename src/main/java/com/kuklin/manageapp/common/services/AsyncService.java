@@ -1,7 +1,7 @@
 package com.kuklin.manageapp.common.services;
 
-import com.kuklin.manageapp.common.configurations.BotUpdateExecutorConfig;
-import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
+import com.kuklin.manageapp.common.telegram.config.BotUpdateExecutorConfig;
+import com.kuklin.manageapp.common.telegram.TelegramBot;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;

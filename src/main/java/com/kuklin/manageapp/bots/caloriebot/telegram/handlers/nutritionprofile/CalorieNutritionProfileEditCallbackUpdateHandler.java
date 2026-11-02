@@ -12,9 +12,9 @@ import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.e
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.editbuttons.ProfileEditFieldHandler;
 import com.kuklin.manageapp.bots.caloriebot.texts.NutritionProfileTexts;
 import com.kuklin.manageapp.common.entities.TelegramUser;
-import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
-import com.kuklin.manageapp.common.library.tgutils.Command;
-import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;
+import com.kuklin.manageapp.common.telegram.TelegramBot;
+import com.kuklin.manageapp.common.telegram.Command;
+import com.kuklin.manageapp.common.telegram.keyboard.TelegramKeyboard;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

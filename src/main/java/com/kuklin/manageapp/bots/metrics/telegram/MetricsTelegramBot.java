@@ -1,8 +1,8 @@
 package com.kuklin.manageapp.bots.metrics.telegram;
 
 import com.kuklin.manageapp.bots.metrics.configurations.MetricsBotKeyComponents;
-import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.telegram.TelegramBot;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;

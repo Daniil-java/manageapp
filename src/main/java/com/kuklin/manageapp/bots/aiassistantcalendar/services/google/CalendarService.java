@@ -27,7 +27,7 @@ import com.kuklin.manageapp.bots.aiassistantcalendar.entities.GoogleCacheableCal
 import com.kuklin.manageapp.bots.aiassistantcalendar.services.AiMessageLogService;
 import com.kuklin.manageapp.bots.aiassistantcalendar.services.GoogleCacheableCalendarService;
 import com.kuklin.manageapp.bots.aiassistantcalendar.services.UserGoogleCalendarService;
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.Accessors;

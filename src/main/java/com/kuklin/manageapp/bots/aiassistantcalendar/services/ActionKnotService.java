@@ -7,7 +7,7 @@ import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcesso
 import com.kuklin.manageapp.bots.aiassistantcalendar.configurations.TelegramAiAssistantCalendarBotKeyComponents;
 import com.kuklin.manageapp.bots.aiassistantcalendar.models.ActionKnot;
 import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

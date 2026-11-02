@@ -1,8 +1,8 @@
 package com.kuklin.manageapp.payment.components.paymentfacades;
 
-import com.kuklin.manageapp.common.library.tgmodels.CreateInvoiceLinkWithTelegramSubscription;
-import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.telegram.payment.CreateInvoiceLinkWithTelegramSubscription;
+import com.kuklin.manageapp.common.telegram.TelegramBot;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import com.kuklin.manageapp.payment.components.texts.PaymentTextResolver;
 import com.kuklin.manageapp.payment.components.providerprocessors.PaymentUrlProviderFactory;
 import com.kuklin.manageapp.payment.components.providerprocessors.ProviderResult;

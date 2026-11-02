@@ -3,7 +3,7 @@ package com.kuklin.manageapp.common.services;
 import com.kuklin.manageapp.common.entities.AppUser;
 import com.kuklin.manageapp.payment.services.GenerationBalanceService;
 import com.kuklin.manageapp.common.entities.TelegramUser;
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import com.kuklin.manageapp.common.repositories.TelegramUserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

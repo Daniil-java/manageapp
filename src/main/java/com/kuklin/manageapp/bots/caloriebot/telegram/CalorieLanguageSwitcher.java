@@ -3,7 +3,7 @@ package com.kuklin.manageapp.bots.caloriebot.telegram;
 import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import com.kuklin.manageapp.common.services.TelegramUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

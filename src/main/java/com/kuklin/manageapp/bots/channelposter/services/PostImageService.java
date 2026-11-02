@@ -2,7 +2,7 @@ package com.kuklin.manageapp.bots.channelposter.services;
 
 import com.kuklin.manageapp.bots.channelposter.entities.PostImage;
 import com.kuklin.manageapp.bots.channelposter.repositories.PostImageRepository;
-import com.kuklin.manageapp.common.library.utils.FilesUtils;
+import com.kuklin.manageapp.common.util.FilesUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

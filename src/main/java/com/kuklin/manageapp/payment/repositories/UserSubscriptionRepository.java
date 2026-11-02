@@ -1,6 +1,6 @@
 package com.kuklin.manageapp.payment.repositories;
 
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import com.kuklin.manageapp.payment.entities.UserSubscription;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Pageable;

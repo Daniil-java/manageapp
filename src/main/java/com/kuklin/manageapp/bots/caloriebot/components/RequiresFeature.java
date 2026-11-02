@@ -2,7 +2,7 @@ package com.kuklin.manageapp.bots.caloriebot.components;
 
 import com.kuklin.manageapp.bots.caloriebot.models.feature.AccessResult;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.BotFeature;
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

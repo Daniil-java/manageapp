@@ -4,7 +4,7 @@ import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcesso
 import com.kuklin.manageapp.bots.channelposter.entities.ChannelPoll;
 import com.kuklin.manageapp.bots.channelposter.telegram.ChannelPosterBotKeyComponent;
 import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

@@ -1,8 +1,8 @@
 package com.kuklin.manageapp.payment.services.scheduler.processors;
 
-import com.kuklin.manageapp.common.components.TelegramBotRegistry;
-import com.kuklin.manageapp.common.library.ScheduleProcessor;
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.telegram.TelegramBotRegistry;
+import com.kuklin.manageapp.common.scheduler.ScheduleProcessor;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import com.kuklin.manageapp.payment.entities.Payment;
 import com.kuklin.manageapp.payment.models.StarTransactionsClient;
 import com.kuklin.manageapp.payment.models.common.Currency;

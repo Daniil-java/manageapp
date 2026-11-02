@@ -8,7 +8,7 @@ import com.kuklin.manageapp.bots.caloriebot.models.feature.FeatureLimitDto;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.FeatureLimitPeriod;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.QuotaCharge;
 import com.kuklin.manageapp.common.entities.TelegramUser;
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import com.kuklin.manageapp.common.services.TelegramUserService;
 import com.kuklin.manageapp.payment.components.paymentfacades.CommonPaymentFacade;
 import lombok.RequiredArgsConstructor;

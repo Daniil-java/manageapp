@@ -8,9 +8,9 @@ import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseExcep
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.SupportInputUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
-import com.kuklin.manageapp.common.library.tgmodels.UpdateHandler;
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
-import com.kuklin.manageapp.common.library.tgutils.Command;
+import com.kuklin.manageapp.common.telegram.UpdateHandler;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
+import com.kuklin.manageapp.common.telegram.Command;
 import com.kuklin.manageapp.common.services.TelegramUserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

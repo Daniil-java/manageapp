@@ -1,6 +1,6 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.privacyterms;
 
-import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;
+import com.kuklin.manageapp.common.telegram.keyboard.TelegramKeyboard;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 
 final class LegalLinkKeyboards {

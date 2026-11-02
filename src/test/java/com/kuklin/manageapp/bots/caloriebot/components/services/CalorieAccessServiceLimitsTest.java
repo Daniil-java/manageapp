@@ -5,7 +5,7 @@ import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.BotFeature;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.FeatureLimitDto;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.FeatureLimitPeriod;
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import com.kuklin.manageapp.common.services.TelegramUserService;
 import org.junit.jupiter.api.Test;
 

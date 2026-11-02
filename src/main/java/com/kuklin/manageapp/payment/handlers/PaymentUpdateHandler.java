@@ -2,8 +2,8 @@ package com.kuklin.manageapp.payment.handlers;
 
 import com.kuklin.manageapp.bots.caloriebot.telegram.TelegramCalorieBotFacade;
 import com.kuklin.manageapp.bots.payment.telegram.PaymentTelegramFacade;
-import com.kuklin.manageapp.common.library.tgmodels.UpdateHandler;
-import com.kuklin.manageapp.common.library.tgutils.Command;
+import com.kuklin.manageapp.common.telegram.UpdateHandler;
+import com.kuklin.manageapp.common.telegram.Command;
 import org.springframework.beans.factory.annotation.Autowired;
 
 /**

@@ -3,7 +3,7 @@ package com.kuklin.manageapp.bots.caloriebot.texts;
 import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import com.kuklin.manageapp.payment.components.texts.PaymentBotTexts;
 import com.kuklin.manageapp.payment.components.texts.PaymentText;
 import com.kuklin.manageapp.payment.entities.Payment;

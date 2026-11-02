@@ -9,7 +9,7 @@ import com.kuklin.manageapp.bots.channelposter.services.PostQueueService;
 import com.kuklin.manageapp.bots.channelposter.services.PostReviewService;
 import com.kuklin.manageapp.bots.channelposter.telegram.ChannelPosterTelegramBot;
 import com.kuklin.manageapp.common.entities.TelegramUser;
-import com.kuklin.manageapp.common.library.tgutils.Command;
+import com.kuklin.manageapp.common.telegram.Command;
 import com.kuklin.manageapp.common.services.TelegramService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

@@ -1,12 +1,12 @@
 package com.kuklin.manageapp.bots.payment.telegram;
 
 import com.kuklin.manageapp.common.entities.TelegramUser;
-import com.kuklin.manageapp.common.library.tgmodels.RefundedPaymentCapture;
-import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
-import com.kuklin.manageapp.common.library.tgmodels.TelegramFacade;
-import com.kuklin.manageapp.common.library.tgmodels.UpdateHandler;
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
-import com.kuklin.manageapp.common.library.tgutils.Command;
+import com.kuklin.manageapp.common.telegram.payment.RefundedPaymentCapture;
+import com.kuklin.manageapp.common.telegram.TelegramBot;
+import com.kuklin.manageapp.common.telegram.TelegramFacade;
+import com.kuklin.manageapp.common.telegram.UpdateHandler;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
+import com.kuklin.manageapp.common.telegram.Command;
 import com.kuklin.manageapp.common.services.TelegramUserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;

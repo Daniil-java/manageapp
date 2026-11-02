@@ -4,7 +4,7 @@ import com.kuklin.manageapp.bots.caloriebot.components.repository.UtmAttribution
 import com.kuklin.manageapp.bots.caloriebot.components.services.ReferralRewardService.ReferralReward;
 import com.kuklin.manageapp.bots.caloriebot.components.services.ReferralRewardService.RewardType;
 import com.kuklin.manageapp.bots.caloriebot.entities.utm.UtmAttribution;
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import com.kuklin.manageapp.payment.entities.PricingPlan;
 import com.kuklin.manageapp.payment.entities.UserSubscription;
 import com.kuklin.manageapp.payment.services.PricingPlanService;

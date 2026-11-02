@@ -11,8 +11,8 @@ import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseExcep
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
 import com.kuklin.manageapp.bots.caloriebot.telegram.CalorieTelegramBot;
 import com.kuklin.manageapp.common.entities.TelegramUser;
-import com.kuklin.manageapp.common.library.tgmodels.CreateInvoiceLinkWithTelegramSubscription;
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.telegram.payment.CreateInvoiceLinkWithTelegramSubscription;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import com.kuklin.manageapp.common.services.TelegramUserService;
 import com.kuklin.manageapp.common.services.UserAuthIdentityService;
 import com.kuklin.manageapp.payment.components.paymentfacades.CommonPaymentFacade;

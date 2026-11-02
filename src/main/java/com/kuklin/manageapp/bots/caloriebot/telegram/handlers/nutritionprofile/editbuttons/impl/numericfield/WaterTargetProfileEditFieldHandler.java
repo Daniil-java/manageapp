@@ -7,7 +7,7 @@ import com.kuklin.manageapp.bots.caloriebot.components.services.UserNutritionPro
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.CalorieNutritionProfileEditCallbackUpdateHandler;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.editbuttons.CalorieNutritionProfileRecalculate;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.editbuttons.ProfileEditAction;
-import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;
+import com.kuklin.manageapp.common.telegram.keyboard.TelegramKeyboard;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 

@@ -3,7 +3,7 @@ package com.kuklin.manageapp.bots.metrics.entities;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.kuklin.manageapp.aiconversation.models.enums.AiOperation;
 import com.kuklin.manageapp.aiconversation.models.enums.ProviderVariant;
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;

@@ -4,8 +4,8 @@ import com.kuklin.manageapp.bots.pomidorotimer.telegram.handlers.InputMessageHan
 import com.kuklin.manageapp.bots.pomidorotimer.entities.UserEntity;
 import com.kuklin.manageapp.bots.pomidorotimer.models.BotState;
 import com.kuklin.manageapp.bots.pomidorotimer.services.PomidoroUserService;
-import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.telegram.TelegramBot;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import com.kuklin.manageapp.common.services.TelegramUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

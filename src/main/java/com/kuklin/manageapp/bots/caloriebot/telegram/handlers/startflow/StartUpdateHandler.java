@@ -17,11 +17,11 @@ import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.C
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.CalorieNutritionProfileUpdateHandler;
 import com.kuklin.manageapp.bots.caloriebot.texts.SubscriptionTexts;
 import com.kuklin.manageapp.common.entities.TelegramUser;
-import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
-import com.kuklin.manageapp.common.library.tgutils.ButtonStyle;
-import com.kuklin.manageapp.common.library.tgutils.Command;
-import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;
+import com.kuklin.manageapp.common.telegram.TelegramBot;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
+import com.kuklin.manageapp.common.telegram.keyboard.ButtonStyle;
+import com.kuklin.manageapp.common.telegram.Command;
+import com.kuklin.manageapp.common.telegram.keyboard.TelegramKeyboard;
 import com.kuklin.manageapp.payment.entities.UserSubscription;
 import com.kuklin.manageapp.payment.services.UserSubscriptionService;
 import lombok.RequiredArgsConstructor;

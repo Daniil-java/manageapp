@@ -1,3 +1,14 @@
+## 0.0.83 (02.11.2026)
+[et-113] — Пакеты: этап 1, common
+* Только перенос классов, логика не менялась (кроме TelegramService).
+* common/telegram — ядро Telegram для всех ботов: TelegramBot, TelegramBotClient, TelegramFacade, UpdateHandler, TelegramBotRegistry (был в common/components), BotIdentifier, Command, TelegramBotFile. Подпакеты: keyboard (TelegramKeyboard, ButtonStyle, StyledInlineKeyboardButton), payment (RefundedPayment, RefundedPaymentCapture, CreateInvoiceLinkWithTelegramSubscription), config (TelegramBotConfiguration, TelegramBotsStarter, EnabledBots, BotUpdateExecutorConfig — были в common/configurations). Было: common/library/tgmodels и tgutils.
+* common/scheduler — BotScheduler, BotSchedulerAspect, ScheduleProcessor (были в common/configurations и common/library).
+* common/util — FilesUtils, ThreadUtil.
+* aiconversation/models — TranscriptionResponse и ByteArrayMultipartFile (были в common/library/models). Старый неиспользуемый aiconversation/models/TranscriptionResponse (без usage) удалён — его заменил актуальный из common.
+* TelegramService.convertVoiceToTextOrNull: бот для учёта расшифровки в метриках — из переданного telegramBot.getBotIdentifier(), а не CalorieTelegramBot.BOT_IDENTIFIER. common больше не импортирует калорийного бота отсюда; результат тот же — вызывает только калорийный бот.
+* Тесты переехали вслед за классами (common/telegram, keyboard, config, scheduler). RefundedPaymentCaptureTest — в common/telegram: проверяет и TelegramBot.isPaymentUpdate (protected).
+* common/auth не трогали: вход и SecurityConfig общие для всего приложения (правила для /nicotine, hh, календаря). Его зависимость от ошибок калорийного бота (ErrorResponseException, ErrorStatus) и фильтров — отдельная задача.
+
 ## 0.0.82 (02.11.2026)
 [et-112] — Заявки в поддержку через бота
 * /support: выбор темы — 💳 Оплата и возврат, 🐞 Ошибка в боте, ❓ Вопрос, 💡 Предложение, ✉️ Другое — и описание одним сообщением (текст или фото с подписью; голосовые и файлы не принимаем). /paysupport — сразу тема «Оплата». Ответ: «✅ Заявка №N принята — ответ придёт сюда, в этот чат» (срок ответа не обещаем). Под выбором темы — «✍️ Дописать в заявку №N» для открытых заявок (до 3).

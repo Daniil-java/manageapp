@@ -8,7 +8,7 @@ import com.kuklin.manageapp.bots.pomidorotimer.models.task.Status;
 import com.kuklin.manageapp.bots.pomidorotimer.models.timer.TimerIntervalState;
 import com.kuklin.manageapp.bots.pomidorotimer.services.TimerService;
 import com.kuklin.manageapp.bots.pomidorotimer.telegram.PomidoroTelegramBot;
-import com.kuklin.manageapp.common.library.tgutils.ThreadUtil;
+import com.kuklin.manageapp.common.util.ThreadUtil;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

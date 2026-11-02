@@ -6,7 +6,7 @@ import com.kuklin.manageapp.bots.bookingbot.entities.Booking;
 import com.kuklin.manageapp.bots.bookingbot.entities.BookingObject;
 import com.kuklin.manageapp.bots.bookingbot.entities.FormAnswer;
 import com.kuklin.manageapp.common.entities.TelegramUser;
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import com.kuklin.manageapp.common.services.TelegramUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

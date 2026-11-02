@@ -1,9 +1,9 @@
 package com.kuklin.manageapp.payment.handlers.telegrampay;
 
 import com.kuklin.manageapp.common.entities.TelegramUser;
-import com.kuklin.manageapp.common.library.tgmodels.RefundedPayment;
-import com.kuklin.manageapp.common.library.tgmodels.RefundedPaymentCapture;
-import com.kuklin.manageapp.common.library.tgutils.Command;
+import com.kuklin.manageapp.common.telegram.payment.RefundedPayment;
+import com.kuklin.manageapp.common.telegram.payment.RefundedPaymentCapture;
+import com.kuklin.manageapp.common.telegram.Command;
 import com.kuklin.manageapp.payment.handlers.PaymentUpdateHandler;
 import com.kuklin.manageapp.payment.services.PaymentService;
 import lombok.RequiredArgsConstructor;

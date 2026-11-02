@@ -1,7 +1,7 @@
 package com.kuklin.manageapp.aiconversation.providers;
 
 import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
 
 public interface AiTextClient {
     String fetchResponse(

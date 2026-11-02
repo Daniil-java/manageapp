@@ -1,7 +1,7 @@
 package com.kuklin.manageapp.bots.caloriebot.entities;
 
 import com.kuklin.manageapp.bots.caloriebot.models.feature.BotFeature;
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;

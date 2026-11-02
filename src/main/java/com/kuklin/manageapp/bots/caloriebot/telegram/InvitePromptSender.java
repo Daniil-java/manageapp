@@ -6,8 +6,8 @@ import com.kuklin.manageapp.bots.caloriebot.components.services.UserSettingsServ
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.DayCardCalorieUpdateHandler;
-import com.kuklin.manageapp.common.library.tgutils.ButtonStyle;
-import com.kuklin.manageapp.common.library.tgutils.TelegramKeyboard;
+import com.kuklin.manageapp.common.telegram.keyboard.ButtonStyle;
+import com.kuklin.manageapp.common.telegram.keyboard.TelegramKeyboard;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

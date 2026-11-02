@@ -32,7 +32,7 @@ import com.kuklin.manageapp.bots.caloriebot.utils.HtmlPdfRenderer;
 import com.kuklin.manageapp.bots.caloriebot.utils.ReportHtml;
 import com.kuklin.manageapp.bots.caloriebot.utils.ReportStatsCalculator;
 import com.kuklin.manageapp.bots.metrics.entities.MetricsAiInteractionRecord;
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;

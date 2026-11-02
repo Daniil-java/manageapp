@@ -3,7 +3,7 @@ package com.kuklin.manageapp.bots.metrics.services;
 import com.kuklin.manageapp.aiconversation.models.AiQuotaExhaustedEvent;
 import com.kuklin.manageapp.aiconversation.models.enums.ProviderVariant;
 import com.kuklin.manageapp.bots.metrics.models.AiUsageByUser;
-import com.kuklin.manageapp.common.configurations.EnabledBots;
+import com.kuklin.manageapp.common.telegram.config.EnabledBots;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;

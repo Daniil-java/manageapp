@@ -5,7 +5,6 @@ import com.kuklin.manageapp.aiconversation.models.enums.AiModelPrice;
 import com.kuklin.manageapp.aiconversation.models.enums.AiOperation;
 import com.kuklin.manageapp.aiconversation.models.openai.OpenAiChatCompletionRequest;
 import com.kuklin.manageapp.aiconversation.models.openai.Usage;
-import com.kuklin.manageapp.common.library.models.TranscriptionResponse;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;

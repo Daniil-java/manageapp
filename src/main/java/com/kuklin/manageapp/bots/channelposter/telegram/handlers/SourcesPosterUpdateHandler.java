@@ -15,7 +15,7 @@ import com.kuklin.manageapp.bots.channelposter.services.source.SourceItemService
 import com.kuklin.manageapp.bots.channelposter.telegram.ChannelPosterBotKeyComponent;
 import com.kuklin.manageapp.bots.channelposter.telegram.ChannelPosterTelegramBot;
 import com.kuklin.manageapp.common.entities.TelegramUser;
-import com.kuklin.manageapp.common.library.tgutils.Command;
+import com.kuklin.manageapp.common.telegram.Command;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

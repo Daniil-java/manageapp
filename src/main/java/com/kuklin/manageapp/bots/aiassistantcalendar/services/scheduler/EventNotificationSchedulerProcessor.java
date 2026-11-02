@@ -13,8 +13,8 @@ import com.kuklin.manageapp.bots.aiassistantcalendar.services.NotifiedEventServi
 import com.kuklin.manageapp.bots.aiassistantcalendar.services.UserGoogleCalendarService;
 import com.kuklin.manageapp.bots.aiassistantcalendar.services.google.CalendarService;
 import com.kuklin.manageapp.bots.aiassistantcalendar.services.google.TokenService;
-import com.kuklin.manageapp.common.library.ScheduleProcessor;
-import com.kuklin.manageapp.common.library.tgutils.ThreadUtil;
+import com.kuklin.manageapp.common.scheduler.ScheduleProcessor;
+import com.kuklin.manageapp.common.util.ThreadUtil;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

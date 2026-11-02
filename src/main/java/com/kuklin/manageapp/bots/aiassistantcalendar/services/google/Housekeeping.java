@@ -1,7 +1,7 @@
 package com.kuklin.manageapp.bots.aiassistantcalendar.services.google;
 
-import com.kuklin.manageapp.common.configurations.BotScheduler;
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
+import com.kuklin.manageapp.common.scheduler.BotScheduler;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import com.kuklin.manageapp.bots.aiassistantcalendar.repositories.OAuthLinkRepository;
 import com.kuklin.manageapp.bots.aiassistantcalendar.repositories.OAuthStateRepository;
 import lombok.RequiredArgsConstructor;

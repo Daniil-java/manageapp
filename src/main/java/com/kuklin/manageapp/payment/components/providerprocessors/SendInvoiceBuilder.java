@@ -1,6 +1,6 @@
 package com.kuklin.manageapp.payment.components.providerprocessors;
 
-import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
+import com.kuklin.manageapp.common.telegram.TelegramBot;
 import com.kuklin.manageapp.payment.components.texts.PaymentText;
 import com.kuklin.manageapp.payment.components.texts.PaymentTextResolver;
 import com.kuklin.manageapp.payment.entities.Payment;
