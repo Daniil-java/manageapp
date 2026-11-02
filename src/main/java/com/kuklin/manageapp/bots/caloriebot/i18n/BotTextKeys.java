@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.bots.caloriebot.i18n;
 
+import com.kuklin.manageapp.bots.caloriebot.entities.SupportTicket;
 import com.kuklin.manageapp.payment.components.texts.PaymentText;
 import com.kuklin.manageapp.payment.entities.Payment;
 import com.kuklin.manageapp.payment.entities.UserSubscription;
@@ -25,6 +26,16 @@ public final class BotTextKeys {
     /** Способ оплаты на кнопке выбора: payment.provider.YOOKASSA… */
     public static String buildPaymentProviderKey(Payment.Provider provider) {
         return "payment.provider." + provider.name();
+    }
+
+    /** Тема заявки в поддержку на кнопке: support.category.PAYMENT… (и в карточке заявки в группе — по-русски). */
+    public static String buildSupportCategoryKey(SupportTicket.Category category) {
+        return "support.category." + category.name();
+    }
+
+    /** Что написать в заявку этой темы: support.prompt.PAYMENT… */
+    public static String buildSupportPromptKey(SupportTicket.Category category) {
+        return "support.prompt." + category.name();
     }
 
     // ── Выбор языка: /start, ⚙ Настройки → 🌐 Язык, /lang ─────────
@@ -77,6 +88,23 @@ public final class BotTextKeys {
     public static final String COMMAND_PRIVACY = "command.privacy";
     public static final String SUPPORT_TEXT = "support.text";
     public static final String SUPPORT_BUTTON = "support.button";
+
+    // ── Заявки в поддержку: /support, /paysupport (группа поддержки настроена) ──
+    public static final String SUPPORT_CHOOSE = "support.choose";
+    public static final String SUPPORT_PROMPT_APPEND = "support.prompt.append";
+    public static final String SUPPORT_BUTTON_APPEND = "support.button.append";
+    public static final String SUPPORT_BUTTON_CANCEL = "support.button.cancel";
+    public static final String SUPPORT_CANCELLED = "support.cancelled";
+    public static final String SUPPORT_TICKET_CREATED = "support.ticket-created";
+    public static final String SUPPORT_MESSAGE_SENT = "support.message-sent";
+    public static final String SUPPORT_UNSUPPORTED_CONTENT = "support.unsupported-content";
+    public static final String SUPPORT_TICKET_CLOSED = "support.ticket-closed";
+    public static final String SUPPORT_REPLY_HEADER = "support.reply-header";
+    public static final String SUPPORT_BUTTON_REPLY = "support.button.reply";
+    public static final String SUPPORT_CLOSED_NOTICE = "support.closed-notice";
+    public static final String SUPPORT_BUTTON_RATE_UP = "support.button.rate-up";
+    public static final String SUPPORT_BUTTON_RATE_DOWN = "support.button.rate-down";
+    public static final String SUPPORT_RATED = "support.rated";
 
     // ── /privacy, /terms: сами тексты — на сайте ───────────────────
     public static final String LEGAL_PRIVACY_TEXT = "legal.privacy.text";

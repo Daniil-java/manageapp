@@ -5,6 +5,7 @@ import com.kuklin.manageapp.bots.caloriebot.components.services.UserSettingsServ
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
+import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.SupportInputUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.RefundedPaymentCapture;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
@@ -41,6 +42,9 @@ public class TelegramCalorieBotFacade extends TelegramFacade {
     private UserSettingsService userSettingsService;
     @Autowired
     private CalorieTexts texts;
+    @Lazy
+    @Autowired
+    private SupportInputUpdateHandler supportInputUpdateHandler;
     // Бот сам зависит от фасада — берём его лениво
     @Lazy
     @Autowired
@@ -64,7 +68,10 @@ public class TelegramCalorieBotFacade extends TelegramFacade {
         // шедулеры решают, кому слать ежедневный отчёт и напоминания. У существующих — один поиск по PK.
         userSettingsService.getOrCreate(telegramUser.getAppUserId());
 
-        UpdateHandler updateHandler = processInputUpdate(update);
+        // Описание заявки в поддержку или ответ поддержке — не еда
+        UpdateHandler updateHandler = supportInputUpdateHandler.isSupportInput(update, telegramUser)
+                ? supportInputUpdateHandler
+                : processInputUpdate(update);
         // null — только у незнакомых кнопок и кнопок-подписей: их нажатие ничего не делает
         if (updateHandler == null) {
             log.debug("No suitable handler found, no reply will be sent");

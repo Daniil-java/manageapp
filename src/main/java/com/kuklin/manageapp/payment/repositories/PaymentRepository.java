@@ -26,6 +26,10 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     Optional<Payment> findByProviderPaymentId(String providerPaymentId);
     Optional<Payment> findByProviderPaymentIdAndTelegramInvoicePayload(String providerPaymentId, String telegramPayload);
 
+    /** Последние платежи пользователя в боте в этих статусах — для заявки в поддержку. */
+    List<Payment> findTop3ByAppUserIdAndBotIdentifierAndStatusInOrderByCreatedAtDesc(
+            Long appUserId, BotIdentifier botIdentifier, List<Payment.PaymentStatus> statuses);
+
     /** Боты, у которых есть платежи в этой валюте и статусе, — кому сверять звёзды. */
     @Query("SELECT DISTINCT p.botIdentifier FROM Payment p WHERE p.currency = :currency AND p.status = :status")
     List<BotIdentifier> findBotIdentifiersByCurrencyAndStatus(@Param("currency") Currency currency,

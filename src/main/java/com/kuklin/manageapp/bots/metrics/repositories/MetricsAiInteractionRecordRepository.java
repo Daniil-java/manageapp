@@ -9,10 +9,19 @@ import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface MetricsAiInteractionRecordRepository extends JpaRepository<MetricsAiInteractionRecord, Long> {
     List<MetricsAiInteractionRecord> findByCreatedBetween(Instant from, Instant to);
+
+    // Вызовы ИИ пользователя с момента from — для заявки в поддержку: успешные, упавшие и последний упавший
+    long countByAppUserIdAndCreatedAfterAndErrorCodeIsNull(Long appUserId, Instant from);
+
+    long countByAppUserIdAndCreatedAfterAndErrorCodeIsNotNull(Long appUserId, Instant from);
+
+    Optional<MetricsAiInteractionRecord> findFirstByAppUserIdAndCreatedAfterAndErrorCodeIsNotNullOrderByCreatedDesc(
+            Long appUserId, Instant from);
 
     /** Успешные вызовы ИИ с момента from по пользователям, больше всего вызовов — первым. Упавшие (error_code) не считаем. */
     @Query("""

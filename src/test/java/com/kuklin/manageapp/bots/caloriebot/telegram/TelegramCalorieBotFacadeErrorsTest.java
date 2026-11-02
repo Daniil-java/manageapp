@@ -6,6 +6,7 @@ import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.i18n.I18nProperties;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.models.exceptions.ErrorStatus;
+import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.SupportInputUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.UpdateHandler;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
@@ -60,6 +61,7 @@ class TelegramCalorieBotFacadeErrorsTest {
         ReflectionTestUtils.setField(facade, "userSettingsService", settings);
         ReflectionTestUtils.setField(facade, "texts", texts);
         ReflectionTestUtils.setField(facade, "calorieTelegramBot", bot);
+        ReflectionTestUtils.setField(facade, "supportInputUpdateHandler", mock(SupportInputUpdateHandler.class));
         facade.register(Command.CALORIE_GENERAL.getCommandText(), handler);
         facade.register(Command.PAYMENT_PRE_CHECK_QUERY.getCommandText(), handler);
         facade.register(Command.PAYMENT_SUCCESS.getCommandText(), handler);
@@ -94,7 +96,7 @@ class TelegramCalorieBotFacadeErrorsTest {
 
         facade.handleUpdate(update);
 
-        assertThat(getSentText()).isEqualTo(texts.error(USER, ErrorStatus.UNEXPECTED_ERROR)).contains("/support");
+        assertThat(getSentText()).isEqualTo(texts.error(USER, ErrorStatus.UNEXPECTED_ERROR)).doesNotContain("/support");
     }
 
     @Test

@@ -3,6 +3,7 @@ package com.kuklin.manageapp.bots.caloriebot.telegram;
 import com.kuklin.manageapp.bots.caloriebot.configurations.TelegramCaloriesBotKeyComponents;
 import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
+import com.kuklin.manageapp.bots.caloriebot.support.SupportGroupService;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.paymentpart.PaymentPlanListCalorieUpdateHandler;
 import com.kuklin.manageapp.common.entities.TelegramUser;
@@ -38,6 +39,9 @@ public class CalorieTelegramBot extends TelegramBot {
     @Autowired
     @Lazy
     private CalorieTexts texts;
+    @Autowired
+    @Lazy
+    private SupportGroupService supportGroupService;
 
     public CalorieTelegramBot(TelegramCaloriesBotKeyComponents telegramCaloriesBotKeyComponents) {
         super(telegramCaloriesBotKeyComponents.getKey());
@@ -94,6 +98,22 @@ public class CalorieTelegramBot extends TelegramBot {
         if (update.hasCallbackQuery()) {
             answerCallbackQuery(update.getCallbackQuery());
         }
+        // Группа поддержки: сразу, по порядку и без замка «предыдущее сообщение обрабатывается» —
+        // иначе второе быстрое сообщение поддержки потерялось бы, а в группу ушло бы «подождите»
+        if (supportGroupService.isSupportGroupUpdate(update)) {
+            try {
+                supportGroupService.handleGroupUpdate(update);
+            } catch (RuntimeException e) {
+                log.error("Support group update failed", e);
+            }
+            return;
+        }
+        // Бот работает только в личке. Другие группы (или группа поддержки с неверным chat-id) — молчим,
+        // иначе сообщение в группе распознавалось бы как еда, а бот отвечал бы туда с клавиатурой меню
+        if (isGroupUpdate(update)) {
+            log.warn("Update from group chat {} ignored", findChatIdOrNull(update));
+            return;
+        }
         boolean result = doAsync(
                 asyncService,
                 update,
@@ -107,6 +127,21 @@ public class CalorieTelegramBot extends TelegramBot {
                 notifyAlreadyInProcess(update);
             }
         }
+    }
+
+    /** Сообщение или кнопка не из лички: у групп и каналов id чата отрицательный, у лички — id пользователя. */
+    static boolean isGroupUpdate(Update update) {
+        Long chatId = findChatIdOrNull(update);
+        return chatId != null && chatId < 0;
+    }
+
+    // Pre-checkout чата не имеет — null
+    private static Long findChatIdOrNull(Update update) {
+        if (update.hasMessage()) return update.getMessage().getChatId();
+        if (update.hasCallbackQuery() && update.getCallbackQuery().getMessage() != null) {
+            return update.getCallbackQuery().getMessage().getChatId();
+        }
+        return null;
     }
 
     @Override

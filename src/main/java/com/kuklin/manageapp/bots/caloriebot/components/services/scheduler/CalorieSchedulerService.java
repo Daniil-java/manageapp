@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.bots.caloriebot.components.services.scheduler;
 
+import com.kuklin.manageapp.bots.caloriebot.support.SupportGroupService;
 import com.kuklin.manageapp.common.configurations.BotScheduler;
 import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
 import lombok.RequiredArgsConstructor;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 public class CalorieSchedulerService {
     private final DailySummarySchedulerProcessor dailySummarySchedulerProcessor;
     private final MealReminderSchedulerProcessor mealReminderSchedulerProcessor;
+    private final SupportGroupService supportGroupService;
 
     // Локально выключать (CALORIE_DAILY_SUMMARY_ENABLED=false): иначе отчёт за день с вызовом ИИ
     // уходит всем пользователям локальной базы
@@ -32,6 +34,13 @@ public class CalorieSchedulerService {
     public void mealReminderSchedulerProcessor() {
         getInfo(mealReminderSchedulerProcessor.getSchedulerName());
         mealReminderSchedulerProcessor.process();
+    }
+
+    // Заявки без ответа дольше calorie.support.remind-after — напоминание в теме группы поддержки
+    @Scheduled(cron = "0 */30 * * * *")
+    public void supportReminderScheduler() {
+        getInfo("SupportReminderScheduler");
+        supportGroupService.remindUnanswered();
     }
 
 

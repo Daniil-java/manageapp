@@ -3,6 +3,7 @@ package com.kuklin.manageapp.bots.caloriebot.i18n;
 import com.ibm.icu.text.MessageFormat;
 import com.ibm.icu.text.MessagePattern;
 import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
+import com.kuklin.manageapp.bots.caloriebot.entities.SupportTicket;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
 import com.kuklin.manageapp.bots.caloriebot.models.feature.BotFeature;
 import com.kuklin.manageapp.payment.components.texts.PaymentText;
@@ -163,6 +164,19 @@ public class TextBundlesConsistencyTest {
         }
 
         assertThat(keys).as("feature / subscription texts missing in bot_ru").allMatch(bot::containsKey);
+    }
+
+    /** Темы заявки в поддержку: подпись кнопки и приглашение написать — ключи из имён SupportTicket.Category. */
+    @Test
+    void everySupportCategoryHasTexts() throws IOException {
+        Properties bot = load("i18n/calorie/bot", AppLanguage.RU);
+        List<String> keys = new ArrayList<>();
+        for (SupportTicket.Category category : SupportTicket.Category.values()) {
+            keys.add(BotTextKeys.buildSupportCategoryKey(category));
+            keys.add(BotTextKeys.buildSupportPromptKey(category));
+        }
+
+        assertThat(keys).as("support category texts missing in bot_ru").allMatch(bot::containsKey);
     }
 
     /** Тексты общего модуля оплаты (PaymentModuleTexts) — ключи из имён PaymentText и Payment.Provider. */
