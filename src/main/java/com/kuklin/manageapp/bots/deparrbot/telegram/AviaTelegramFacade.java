@@ -1,6 +1,5 @@
 package com.kuklin.manageapp.bots.deparrbot.telegram;
 
-import com.kuklin.manageapp.bots.deparrbot.configurations.TelegramAviaBotKeyComponent;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
 import com.kuklin.manageapp.common.library.tgmodels.TelegramFacade;
@@ -25,7 +24,7 @@ public class AviaTelegramFacade extends TelegramFacade {
                 update.getCallbackQuery().getFrom();
 
         TelegramUser telegramUser = telegramUserService
-                .createOrGetUserByTelegram(BotIdentifier.KWORK, user);
+                .createOrGetUserByTelegram(BotIdentifier.AVIA_BOT, user);
 
         processInputUpdate(update).handle(update, telegramUser);
     }
