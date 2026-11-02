@@ -1,8 +1,8 @@
 package com.kuklin.manageapp.bots.caloriebot.utils;
 
-import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
-import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile.DietType;
-import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile.Goal;
+import com.kuklin.manageapp.bots.caloriebot.profile.UserNutritionProfile;
+import com.kuklin.manageapp.bots.caloriebot.profile.UserNutritionProfile.DietType;
+import com.kuklin.manageapp.bots.caloriebot.profile.UserNutritionProfile.Goal;
 import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 
 import java.util.Map;

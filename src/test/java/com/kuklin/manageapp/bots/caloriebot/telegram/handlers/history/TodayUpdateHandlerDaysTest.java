@@ -1,7 +1,7 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.history;
 
 import com.kuklin.manageapp.bots.caloriebot.components.services.AnalyticsService;
-import com.kuklin.manageapp.bots.caloriebot.components.services.DishService;
+import com.kuklin.manageapp.bots.caloriebot.dish.DishService;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserSettingsService;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.i18n.I18nProperties;
@@ -9,8 +9,8 @@ import com.kuklin.manageapp.bots.caloriebot.bot.CalorieMenuButtons;
 import com.kuklin.manageapp.bots.caloriebot.bot.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.bot.TelegramCalorieBotFacade;
 import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.common.DayCardCalorieUpdateHandler;
-import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.dish.DishKeyboards;
-import com.kuklin.manageapp.bots.caloriebot.texts.DishTexts;
+import com.kuklin.manageapp.bots.caloriebot.dish.telegram.DishKeyboards;
+import com.kuklin.manageapp.bots.caloriebot.dish.telegram.DishTexts;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.telegram.keyboard.StyledInlineKeyboardButton;
 import org.junit.jupiter.api.BeforeEach;

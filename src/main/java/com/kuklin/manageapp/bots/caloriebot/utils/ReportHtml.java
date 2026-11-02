@@ -1,7 +1,7 @@
 package com.kuklin.manageapp.bots.caloriebot.utils;
 
-import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
-import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
+import com.kuklin.manageapp.bots.caloriebot.dish.Dish;
+import com.kuklin.manageapp.bots.caloriebot.profile.UserNutritionProfile;
 import com.kuklin.manageapp.bots.caloriebot.models.airesponse.ReportAiResponse;
 import com.kuklin.manageapp.bots.caloriebot.models.report.ReportKind;
 import com.kuklin.manageapp.bots.caloriebot.models.report.ReportStats;

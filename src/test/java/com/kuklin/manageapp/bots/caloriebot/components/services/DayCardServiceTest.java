@@ -1,9 +1,11 @@
 package com.kuklin.manageapp.bots.caloriebot.components.services;
 
+import com.kuklin.manageapp.bots.caloriebot.profile.UserNutritionProfileService;
+import com.kuklin.manageapp.bots.caloriebot.dish.DishService;
 import com.kuklin.manageapp.bots.caloriebot.components.services.DayCardService.DayCard;
 import com.kuklin.manageapp.bots.caloriebot.components.services.DayCardService.Status;
-import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
-import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
+import com.kuklin.manageapp.bots.caloriebot.dish.Dish;
+import com.kuklin.manageapp.bots.caloriebot.profile.UserNutritionProfile;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.i18n.I18nProperties;
 import org.junit.jupiter.api.Test;

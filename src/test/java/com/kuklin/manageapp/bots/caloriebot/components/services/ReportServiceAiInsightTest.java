@@ -1,10 +1,13 @@
 package com.kuklin.manageapp.bots.caloriebot.components.services;
 
+import com.kuklin.manageapp.bots.caloriebot.weight.WeightEntryService;
+import com.kuklin.manageapp.bots.caloriebot.profile.UserNutritionProfileService;
+import com.kuklin.manageapp.bots.caloriebot.dish.DishService;
 import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcessor;
-import com.kuklin.manageapp.bots.caloriebot.configurations.AiInputLimitsProperties;
-import com.kuklin.manageapp.bots.caloriebot.configurations.TelegramCaloriesBotKeyComponents;
-import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
-import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
+import com.kuklin.manageapp.bots.caloriebot.dish.ai.AiInputLimitsProperties;
+import com.kuklin.manageapp.bots.caloriebot.bot.TelegramCaloriesBotKeyComponents;
+import com.kuklin.manageapp.bots.caloriebot.dish.Dish;
+import com.kuklin.manageapp.bots.caloriebot.profile.UserNutritionProfile;
 import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.i18n.I18nProperties;

@@ -1,7 +1,10 @@
 package com.kuklin.manageapp.bots.caloriebot.components.services;
 
-import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
-import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
+import com.kuklin.manageapp.bots.caloriebot.water.WaterEntryService;
+import com.kuklin.manageapp.bots.caloriebot.profile.UserNutritionProfileService;
+import com.kuklin.manageapp.bots.caloriebot.dish.DishService;
+import com.kuklin.manageapp.bots.caloriebot.dish.Dish;
+import com.kuklin.manageapp.bots.caloriebot.profile.UserNutritionProfile;
 import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;

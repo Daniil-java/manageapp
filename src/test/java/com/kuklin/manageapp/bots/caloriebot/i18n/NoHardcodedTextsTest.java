@@ -17,19 +17,16 @@ import static org.assertj.core.api.Assertions.assertThat;
  * В коде, который пишет пользователю бота, не должно быть русского текста: строковых литералов
  * (и текстовых блоков """) с русскими буквами. Комментарии не считаются.
  * <p>
- * Проверяем Telegram-часть бота (bot, telegram, telegram-подпакеты фич) и сборку текстов (texts). Новый текст —
- * в словарь i18n/calorie/bot_* и ключ в BotTextKeys, иначе на английском пользователь увидит русский.
- * Остальной код калорийного бота (Swagger-описания, промпты ИИ, валидация DTO) сюда не входит.
+ * Проверяем Telegram-часть бота — пакет bot и любой пакет telegram (у фич: dish/telegram, profile/telegram…) —
+ * и сборку текстов (texts). Новый текст — в словарь i18n/calorie/bot_* и ключ в BotTextKeys, иначе на английском
+ * пользователь увидит русский. Остальной код калорийного бота (Swagger-описания, промпты ИИ, валидация DTO,
+ * группа поддержки) сюда не входит.
  */
 class NoHardcodedTextsTest {
 
     private static final Path CALORIE_SOURCES = Path.of("src/main/java/com/kuklin/manageapp/bots/caloriebot");
-    private static final List<Path> CHECKED_SOURCES = List.of(
-            CALORIE_SOURCES.resolve("bot"),
-            CALORIE_SOURCES.resolve("telegram"),
-            CALORIE_SOURCES.resolve("access/telegram"),
-            CALORIE_SOURCES.resolve("texts")
-    );
+    private static final List<String> CHECKED_ROOTS = List.of("bot/", "texts/");
+    private static final String CHECKED_SEGMENT = "telegram/";
 
     @Test
     void noRussianTextInBotCode() throws IOException {
@@ -43,15 +40,21 @@ class NoHardcodedTextsTest {
 
     private static Map<String, Integer> countByFile() throws IOException {
         Map<String, Integer> byFile = new TreeMap<>();
-        for (Path sources : CHECKED_SOURCES) {
-            try (Stream<Path> files = Files.walk(sources)) {
-                for (Path file : files.filter(p -> p.toString().endsWith(".java")).toList()) {
-                    int count = countLinesWithRussianText(Files.readString(file, StandardCharsets.UTF_8));
-                    if (count > 0) byFile.put(CALORIE_SOURCES.relativize(file).toString().replace('\\', '/'), count);
-                }
+        try (Stream<Path> files = Files.walk(CALORIE_SOURCES)) {
+            for (Path file : files.filter(p -> p.toString().endsWith(".java")).toList()) {
+                String relative = CALORIE_SOURCES.relativize(file).toString().replace('\\', '/');
+                if (!isChecked(relative)) continue;
+                int count = countLinesWithRussianText(Files.readString(file, StandardCharsets.UTF_8));
+                if (count > 0) byFile.put(relative, count);
             }
         }
         return byFile;
+    }
+
+    static boolean isChecked(String relativePath) {
+        return CHECKED_ROOTS.stream().anyMatch(relativePath::startsWith)
+                || relativePath.startsWith(CHECKED_SEGMENT)
+                || relativePath.contains("/" + CHECKED_SEGMENT);
     }
 
     private enum State { CODE, LINE_COMMENT, BLOCK_COMMENT, STRING, CHAR, TEXT_BLOCK }

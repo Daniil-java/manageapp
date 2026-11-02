@@ -1,7 +1,7 @@
 package com.kuklin.manageapp.bots.caloriebot.web.security;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.kuklin.manageapp.bots.caloriebot.configurations.TelegramCaloriesBotKeyComponents;
+import com.kuklin.manageapp.bots.caloriebot.bot.TelegramCaloriesBotKeyComponents;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.env.MockEnvironment;

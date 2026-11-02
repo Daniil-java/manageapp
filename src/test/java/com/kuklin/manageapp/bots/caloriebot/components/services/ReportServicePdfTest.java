@@ -1,12 +1,21 @@
 package com.kuklin.manageapp.bots.caloriebot.components.services;
 
+import com.kuklin.manageapp.bots.caloriebot.weight.WeightEntryService;
+import com.kuklin.manageapp.bots.caloriebot.profile.UserNutritionProfileService;
+import com.kuklin.manageapp.bots.caloriebot.profile.UserNutritionProfileEntryService;
+import com.kuklin.manageapp.bots.caloriebot.profile.UserNutritionProfile;
+import com.kuklin.manageapp.bots.caloriebot.weight.WeightEntry;
+import com.kuklin.manageapp.bots.caloriebot.water.WaterEntryService;
+import com.kuklin.manageapp.bots.caloriebot.profile.UserNutritionProfileEntry;
+import com.kuklin.manageapp.bots.caloriebot.dish.DishService;
+import com.kuklin.manageapp.bots.caloriebot.dish.Dish;
 import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcessor;
-import com.kuklin.manageapp.bots.caloriebot.configurations.AiInputLimitsProperties;
-import com.kuklin.manageapp.bots.caloriebot.configurations.TelegramCaloriesBotKeyComponents;
+import com.kuklin.manageapp.bots.caloriebot.dish.ai.AiInputLimitsProperties;
+import com.kuklin.manageapp.bots.caloriebot.bot.TelegramCaloriesBotKeyComponents;
 import com.kuklin.manageapp.bots.caloriebot.entities.*;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.i18n.I18nProperties;
-import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.WaterEntryDto;
+import com.kuklin.manageapp.bots.caloriebot.water.WaterEntryDto;
 import com.kuklin.manageapp.bots.caloriebot.models.report.ReportKind;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.PDFRenderer;

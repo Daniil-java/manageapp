@@ -1,11 +1,11 @@
 package com.kuklin.manageapp.bots.caloriebot.utils;
 
-import com.kuklin.manageapp.bots.caloriebot.components.services.UserNutritionProfileService;
-import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
-import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
-import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfileEntry;
-import com.kuklin.manageapp.bots.caloriebot.entities.WeightEntry;
-import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.WaterEntryDto;
+import com.kuklin.manageapp.bots.caloriebot.profile.UserNutritionProfileService;
+import com.kuklin.manageapp.bots.caloriebot.dish.Dish;
+import com.kuklin.manageapp.bots.caloriebot.profile.UserNutritionProfile;
+import com.kuklin.manageapp.bots.caloriebot.profile.UserNutritionProfileEntry;
+import com.kuklin.manageapp.bots.caloriebot.weight.WeightEntry;
+import com.kuklin.manageapp.bots.caloriebot.water.WaterEntryDto;
 import com.kuklin.manageapp.bots.caloriebot.models.report.ReportSource;
 import com.kuklin.manageapp.bots.caloriebot.models.report.ReportStats;
 import com.kuklin.manageapp.bots.caloriebot.models.report.ReportStats.*;

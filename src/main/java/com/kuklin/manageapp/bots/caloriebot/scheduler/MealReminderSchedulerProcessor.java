@@ -1,6 +1,6 @@
 package com.kuklin.manageapp.bots.caloriebot.scheduler;
 
-import com.kuklin.manageapp.bots.caloriebot.components.services.DishService;
+import com.kuklin.manageapp.bots.caloriebot.dish.DishService;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserSettingsService;
 import com.kuklin.manageapp.bots.caloriebot.entities.UserSettings;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;

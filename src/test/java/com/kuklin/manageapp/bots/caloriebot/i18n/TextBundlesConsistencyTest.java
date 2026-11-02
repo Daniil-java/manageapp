@@ -2,14 +2,14 @@ package com.kuklin.manageapp.bots.caloriebot.i18n;
 
 import com.ibm.icu.text.MessageFormat;
 import com.ibm.icu.text.MessagePattern;
-import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
+import com.kuklin.manageapp.bots.caloriebot.dish.Dish;
 import com.kuklin.manageapp.bots.caloriebot.entities.SupportTicket;
-import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
+import com.kuklin.manageapp.bots.caloriebot.profile.UserNutritionProfile;
 import com.kuklin.manageapp.bots.caloriebot.access.model.BotFeature;
 import com.kuklin.manageapp.payment.components.texts.PaymentText;
 import com.kuklin.manageapp.payment.entities.Payment;
 import com.kuklin.manageapp.payment.entities.UserSubscription;
-import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.editbuttons.ProfileEditAction;
+import com.kuklin.manageapp.bots.caloriebot.profile.telegram.editbuttons.ProfileEditAction;
 import com.kuklin.manageapp.bots.caloriebot.texts.PdfTexts;
 import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorParams;
 import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorStatus;

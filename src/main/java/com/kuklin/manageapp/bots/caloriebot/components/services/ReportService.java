@@ -1,17 +1,23 @@
 package com.kuklin.manageapp.bots.caloriebot.components.services;
 
+import com.kuklin.manageapp.bots.caloriebot.weight.WeightEntryService;
+import com.kuklin.manageapp.bots.caloriebot.weight.WeightEntry;
+import com.kuklin.manageapp.bots.caloriebot.profile.UserNutritionProfileService;
+import com.kuklin.manageapp.bots.caloriebot.profile.UserNutritionProfile;
+import com.kuklin.manageapp.bots.caloriebot.dish.DishService;
+import com.kuklin.manageapp.bots.caloriebot.dish.Dish;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.kuklin.manageapp.aiconversation.models.AiUsageContext;
 import com.kuklin.manageapp.aiconversation.models.enums.AiOperation;
 import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcessor;
-import com.kuklin.manageapp.bots.caloriebot.configurations.TelegramCaloriesBotKeyComponents;
+import com.kuklin.manageapp.bots.caloriebot.bot.TelegramCaloriesBotKeyComponents;
 import com.kuklin.manageapp.bots.caloriebot.entities.*;
 import com.kuklin.manageapp.bots.caloriebot.access.model.AccessResult;
 import com.kuklin.manageapp.bots.caloriebot.access.model.BotFeature;
 import com.kuklin.manageapp.bots.caloriebot.access.RequiresFeature;
-import com.kuklin.manageapp.bots.caloriebot.configurations.AiInputLimitsProperties;
+import com.kuklin.manageapp.bots.caloriebot.dish.ai.AiInputLimitsProperties;
 import com.kuklin.manageapp.bots.caloriebot.models.AiInsightType;
 import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;

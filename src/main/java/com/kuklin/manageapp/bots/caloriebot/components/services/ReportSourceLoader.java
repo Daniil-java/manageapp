@@ -1,5 +1,10 @@
 package com.kuklin.manageapp.bots.caloriebot.components.services;
 
+import com.kuklin.manageapp.bots.caloriebot.weight.WeightEntryService;
+import com.kuklin.manageapp.bots.caloriebot.water.WaterEntryService;
+import com.kuklin.manageapp.bots.caloriebot.profile.UserNutritionProfileService;
+import com.kuklin.manageapp.bots.caloriebot.profile.UserNutritionProfileEntryService;
+import com.kuklin.manageapp.bots.caloriebot.dish.DishService;
 import com.kuklin.manageapp.bots.caloriebot.models.report.ReportKind;
 import com.kuklin.manageapp.bots.caloriebot.models.report.ReportSource;
 import com.kuklin.manageapp.bots.caloriebot.utils.ReportStatsCalculator;

@@ -1,7 +1,7 @@
 package com.kuklin.manageapp.bots.caloriebot.components.services;
 
-import com.kuklin.manageapp.bots.caloriebot.components.repository.DishRepository;
-import com.kuklin.manageapp.bots.caloriebot.components.repository.WaterEntryRepository;
+import com.kuklin.manageapp.bots.caloriebot.dish.DishRepository;
+import com.kuklin.manageapp.bots.caloriebot.water.WaterEntryRepository;
 import com.kuklin.manageapp.bots.caloriebot.models.report.StreakDto;
 import com.kuklin.manageapp.bots.caloriebot.models.report.StreakDto.StreakDay;
 import lombok.RequiredArgsConstructor;

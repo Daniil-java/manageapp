@@ -1,7 +1,7 @@
 package com.kuklin.manageapp.bots.channelposter.services;
 
-import com.kuklin.manageapp.bots.caloriebot.components.services.DishService;
-import com.kuklin.manageapp.bots.caloriebot.models.entitydtos.DishDto;
+import com.kuklin.manageapp.bots.caloriebot.dish.DishService;
+import com.kuklin.manageapp.bots.caloriebot.dish.dto.DishDto;
 import com.kuklin.manageapp.bots.channelposter.components.source.PixabayClient;
 import com.kuklin.manageapp.bots.channelposter.entities.ChannelPoll;
 import com.kuklin.manageapp.bots.channelposter.entities.PostQueue;

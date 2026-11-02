@@ -1,8 +1,8 @@
 package com.kuklin.manageapp.bots.caloriebot.texts;
 
 import com.kuklin.manageapp.bots.caloriebot.components.services.UserSettingsService;
-import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
-import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
+import com.kuklin.manageapp.bots.caloriebot.dish.Dish;
+import com.kuklin.manageapp.bots.caloriebot.profile.UserNutritionProfile;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.i18n.I18nProperties;
 import org.junit.jupiter.api.BeforeEach;

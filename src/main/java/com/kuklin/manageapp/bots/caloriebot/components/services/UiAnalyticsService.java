@@ -1,8 +1,8 @@
 package com.kuklin.manageapp.bots.caloriebot.components.services;
 
-import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
-import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
-import com.kuklin.manageapp.bots.caloriebot.entities.WeightEntry;
+import com.kuklin.manageapp.bots.caloriebot.dish.Dish;
+import com.kuklin.manageapp.bots.caloriebot.profile.UserNutritionProfile;
+import com.kuklin.manageapp.bots.caloriebot.weight.WeightEntry;
 import com.kuklin.manageapp.bots.caloriebot.models.report.*;
 import com.kuklin.manageapp.bots.caloriebot.utils.ReportStatsCalculator;
 import lombok.RequiredArgsConstructor;

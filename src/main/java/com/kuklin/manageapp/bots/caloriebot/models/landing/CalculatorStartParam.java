@@ -1,9 +1,9 @@
 package com.kuklin.manageapp.bots.caloriebot.models.landing;
 
-import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
-import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile.ActivityLevel;
-import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile.Goal;
-import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile.Sex;
+import com.kuklin.manageapp.bots.caloriebot.profile.UserNutritionProfile;
+import com.kuklin.manageapp.bots.caloriebot.profile.UserNutritionProfile.ActivityLevel;
+import com.kuklin.manageapp.bots.caloriebot.profile.UserNutritionProfile.Goal;
+import com.kuklin.manageapp.bots.caloriebot.profile.UserNutritionProfile.Sex;
 
 import java.math.BigDecimal;
 import java.util.Map;

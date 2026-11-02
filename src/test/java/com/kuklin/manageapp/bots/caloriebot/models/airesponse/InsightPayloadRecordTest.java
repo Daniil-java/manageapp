@@ -1,8 +1,8 @@
 package com.kuklin.manageapp.bots.caloriebot.models.airesponse;
 
-import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
-import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
-import com.kuklin.manageapp.bots.caloriebot.entities.WeightEntry;
+import com.kuklin.manageapp.bots.caloriebot.dish.Dish;
+import com.kuklin.manageapp.bots.caloriebot.profile.UserNutritionProfile;
+import com.kuklin.manageapp.bots.caloriebot.weight.WeightEntry;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;

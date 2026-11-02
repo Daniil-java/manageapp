@@ -1,9 +1,9 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.startflow;
 
-import com.kuklin.manageapp.bots.caloriebot.components.services.UserNutritionProfileService;
+import com.kuklin.manageapp.bots.caloriebot.profile.UserNutritionProfileService;
 import com.kuklin.manageapp.bots.caloriebot.components.services.ReferralRewardService;
 import com.kuklin.manageapp.bots.caloriebot.components.services.UtmService;
-import com.kuklin.manageapp.bots.caloriebot.entities.UserNutritionProfile;
+import com.kuklin.manageapp.bots.caloriebot.profile.UserNutritionProfile;
 import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
@@ -13,8 +13,8 @@ import com.kuklin.manageapp.bots.caloriebot.web.CalorieSiteLinks;
 import com.kuklin.manageapp.bots.caloriebot.bot.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.bot.KeyboardCalorieUpdateHandler;
 import com.kuklin.manageapp.bots.caloriebot.bot.CalorieBotUpdateHandler;
-import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.CalculatorProfileUpdateHandler;
-import com.kuklin.manageapp.bots.caloriebot.telegram.handlers.nutritionprofile.CalorieNutritionProfileUpdateHandler;
+import com.kuklin.manageapp.bots.caloriebot.profile.telegram.CalculatorProfileUpdateHandler;
+import com.kuklin.manageapp.bots.caloriebot.profile.telegram.CalorieNutritionProfileUpdateHandler;
 import com.kuklin.manageapp.bots.caloriebot.texts.SubscriptionTexts;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.telegram.TelegramBot;

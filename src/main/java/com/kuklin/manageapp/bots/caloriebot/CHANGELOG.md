@@ -13,8 +13,14 @@
   * web — GlobalExceptionHandler, TelegramWebAppController, CalorieTelegramUsersController, CalorieSiteLinks, OpenApiConfig; web/security — DomainUrlFilter, RequestSizeLimitFilter, TelegramAuthFilter, TelegramAuthService; web/error — ErrorStatus, ErrorResponse, ErrorResponseException, ErrorParams (были в models/exceptions).
   * access — FeatureAccessAspect, @RequiresFeature, CalorieAccessService, PlanFeatureService, UserFeatureUsageService, AiRateLimiter, AiRateLimitProperties, MissingFeatureException, сущности PlanFeature, UserFeatureUsage, CalorieAiRequest и их репозитории; access/model — AccessResult, BotFeature, EmptyResultCharge, FeatureLimitDto, FeatureLimitPeriod, QuotaCharge (были в models/feature); access/telegram — FeatureLimitNotifier.
   * scheduler — CalorieSchedulerService, DailySummarySchedulerProcessor, MealReminderSchedulerProcessor (были в components/services/scheduler).
-  * TelegramCaloriesBotKeyComponents оставлен в configurations — в нём локальная подмена токенов.
   * NoHardcodedTextsTest: проверяет и bot, access/telegram — туда переехал код, который пишет пользователю.
+* Этап 3, калорийный бот — фичи (только перенос). В каждой: сущности, репозитории, сервисы, контроллер, DTO в корне фичи; обработчики Telegram и сборка их текстов — в подпакете telegram.
+  * bot — + TelegramCaloriesBotKeyComponents (был в configurations).
+  * dish — Dish, DishChoiceChatModel, DishService, DishChoiceChatModelService, DishController, DishLimitsProperties, репозитории; dish/dto — FoodImage/FoodText/FoodVoice/ManualDish Request, DishDto; dish/ai — AiInputValidator, AiInputLimitsProperties, DishCalorieBotPrompts; dish/telegram — обработчики блюд и порций, DishKeyboards, DishTexts.
+  * favorite — UserFavoriteDish, сервис, контроллер, репозиторий, DTO; favorite/telegram — обработчики избранного.
+  * profile — UserNutritionProfile и история (UserNutritionProfileEntry), сервисы, ProfileController, репозитории, DTO; profile/exception — ошибки профиля и валидации; profile/telegram — диалог, калькулятор, NutritionProfileTexts; profile/telegram/editbuttons (+ enumfield, numericfield — без промежуточного impl).
+  * water, weight — сущность, сервис, контроллер, репозиторий, DTO; telegram — обработчик и WaterTexts / WeightTexts.
+  * NoHardcodedTextsTest проверяет пакет bot, texts и любой пакет telegram (dish/telegram, profile/telegram…) — новые фичи попадают в проверку сами.
 * common/auth не трогали: вход и SecurityConfig общие для всего приложения (правила для /nicotine, hh, календаря). Его зависимость от ошибок калорийного бота (ErrorResponseException, ErrorStatus) и фильтров — отдельная задача.
 
 ## 0.0.82 (02.11.2026)

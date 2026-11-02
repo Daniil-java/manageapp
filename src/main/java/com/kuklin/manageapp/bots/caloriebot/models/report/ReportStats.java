@@ -1,6 +1,6 @@
 package com.kuklin.manageapp.bots.caloriebot.models.report;
 
-import com.kuklin.manageapp.bots.caloriebot.entities.Dish;
+import com.kuklin.manageapp.bots.caloriebot.dish.Dish;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;

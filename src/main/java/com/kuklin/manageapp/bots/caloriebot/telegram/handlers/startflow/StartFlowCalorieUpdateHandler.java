@@ -1,6 +1,6 @@
 package com.kuklin.manageapp.bots.caloriebot.telegram.handlers.startflow;
 
-import com.kuklin.manageapp.bots.caloriebot.components.services.UserNutritionProfileService;
+import com.kuklin.manageapp.bots.caloriebot.profile.UserNutritionProfileService;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.bot.CalorieMenuButtons;

@@ -2,7 +2,7 @@ package com.kuklin.manageapp.bots.caloriebot.web;
 
 import com.kuklin.manageapp.aiconversation.models.AiUnavailableException;
 import com.kuklin.manageapp.bots.caloriebot.web.security.RequestSizeLimitFilter;
-import com.kuklin.manageapp.bots.caloriebot.configurations.AiInputLimitsProperties;
+import com.kuklin.manageapp.bots.caloriebot.dish.ai.AiInputLimitsProperties;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponse;
 import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponseException;
