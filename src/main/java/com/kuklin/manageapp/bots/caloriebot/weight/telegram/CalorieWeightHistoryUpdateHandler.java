@@ -1,0 +1,36 @@
+package com.kuklin.manageapp.bots.caloriebot.weight.telegram;
+
+import com.kuklin.manageapp.bots.caloriebot.bot.CalorieTelegramBot;
+import com.kuklin.manageapp.bots.caloriebot.bot.CalorieBotUpdateHandler;
+import com.kuklin.manageapp.common.entities.TelegramUser;
+import com.kuklin.manageapp.common.telegram.Command;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+import org.telegram.telegrambots.meta.api.objects.Update;
+
+
+@Component
+@RequiredArgsConstructor
+public class CalorieWeightHistoryUpdateHandler implements CalorieBotUpdateHandler {
+    private final CalorieTelegramBot calorieTelegramBot;
+    private final WeightTexts weightTexts;
+    @Override
+    public void handle(Update update, TelegramUser telegramUser) {
+        if (update.hasCallbackQuery()) {
+            calorieTelegramBot.sendReturnedMessage(
+                    update.getCallbackQuery().getMessage().getChatId(),
+                    weightTexts.buildWeightHistoryText(telegramUser.getAppUserId())
+            );
+        } else if (update.hasMessage()) {
+            calorieTelegramBot.sendReturnedMessage(
+                    update.getMessage().getChatId(),
+                    weightTexts.buildWeightHistoryText(telegramUser.getAppUserId())
+            );
+        }
+    }
+
+    @Override
+    public String getHandlerListName() {
+        return Command.CALORIE_WEIGHT_HISTORY.getCommandText();
+    }
+}
