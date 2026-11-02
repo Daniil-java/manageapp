@@ -1,7 +1,7 @@
 package com.kuklin.manageapp.bots.caloriebot.dish.ai;
 
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorParams;
-import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorResponseException;
+import com.kuklin.manageapp.common.web.error.ErrorParams;
+import com.kuklin.manageapp.common.web.error.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,7 +34,6 @@ class AiInputValidatorTest {
         limits.setVoiceMaxSize(DataSize.ofBytes(100));
         limits.setVoiceMaxDuration(Duration.ofMinutes(2));
         limits.setVoiceFormats(List.of("ogg", "webm", "mp4", "m4a", "mp3", "wav"));
-        limits.setRequestMaxSize(DataSize.ofMegabytes(8));
         validator = new AiInputValidator(limits);
     }
 
@@ -51,7 +50,7 @@ class AiInputValidatorTest {
                 .isInstanceOf(ErrorResponseException.class)
                 .satisfies(e -> {
                     ErrorResponseException ex = (ErrorResponseException) e;
-                    assertThat(ex.getErrorStatus()).isEqualTo(ErrorStatus.TEXT_TOO_LONG);
+                    assertThat(ex.getErrorCode()).isEqualTo(ErrorStatus.TEXT_TOO_LONG);
                     assertThat(ex.getParams()).containsEntry(ErrorParams.MAX, 10);
                 });
     }
@@ -139,7 +138,7 @@ class AiInputValidatorTest {
     private static void assertStatus(Runnable call, ErrorStatus status) {
         assertThatThrownBy(call::run)
                 .isInstanceOf(ErrorResponseException.class)
-                .extracting(e -> ((ErrorResponseException) e).getErrorStatus())
+                .extracting(e -> ((ErrorResponseException) e).getErrorCode())
                 .isEqualTo(status);
     }
 }
