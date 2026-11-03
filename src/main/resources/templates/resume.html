@@ -1,909 +1,363 @@
 <!doctype html>
 <html lang="ru" data-theme="light">
 <head>
-
-
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>DK_ — Резюме Java-разработчика</title>
-  <meta name="description" content="Даниил Куклин — Java Developer | Spring, PostgreSQL, Docker. Резюме, стэк, опыт, образование и контакты." />
+  <title>Даниил Куклин — Java Backend Developer</title>
+  <meta name="description" content="Даниил Куклин — Java Backend Developer | Spring Boot, PostgreSQL, Docker. Опыт, стек, проекты, образование и контакты." />
+  <meta property="og:type" content="profile" />
+  <meta property="og:title" content="Даниил Куклин — Java Backend Developer" />
+  <meta property="og:description" content="Java, Spring Boot, PostgreSQL, Docker. Опыт, стек, проекты и контакты." />
   <meta name="color-scheme" content="light dark" />
+  <script>
+    // Тема до первой отрисовки — без вспышки светлой темы
+    (function(){ let t=null; try{ t=localStorage.getItem('dk_theme'); }catch(e){}
+      if(!t) t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
+      document.documentElement.setAttribute('data-theme', t); })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Montserrat:wght@400;500;600;700;800;900&display=swap" />
+  <link rel="stylesheet" href="/assets/personal.css" />
   <style>
-    /* =========================
-       ТЕМА / ПАЛИТРА
-       ========================= */
-    :root{
-      --header-h:64px;
-      --container-w:min(1280px,92vw);
-      --radius:14px; --radius-sm:10px;
-      --shadow:0 6px 24px rgba(0,0,0,.06), 0 2px 8px rgba(0,0,0,.04);
+    .about-text p{font-size:clamp(16px,1.3vw,18px); color:var(--ink-2)}
 
-      /* Светлая как в референсе */
-      --bg:#fafbff;
-      --panel:#ffffff;
-      --text:#161a24;
-      --muted:#5f6b7a;
-      --border:#e9ecf2;
+    /* Стек: группа = строка, логотипы в серой гамме */
+    .logos{display:flex; flex-wrap:wrap; gap:10px 22px; margin-bottom:14px}
+    .logos span{display:inline-flex; align-items:center; gap:10px; font-weight:700; font-size:15px}
+    .logos img{width:28px; height:28px; object-fit:contain; filter:grayscale(1); opacity:.75; transition:filter .2s, opacity .2s}
+    .row:hover .logos img{filter:none; opacity:1}
 
-      /* Акценты (оранжевый заголовков, фиолетовые плашки) */
-      --accent:#ff7a18;     /* оранжевый */
-      --accent-2:#6c63ff;   /* фиолетовый */
+    /* Опыт */
+    .job{display:grid; grid-template-columns:minmax(0,220px) minmax(0,1fr); gap:12px 32px; padding:28px 0; border-top:1px solid var(--line)}
+    .job > .label{padding-top:6px; color:var(--muted)}
+    .job .h3{font-size:clamp(22px,2.2vw,28px); font-weight:900; letter-spacing:-.025em}
+    .job .meta{font:500 12px/1.5 var(--font-mono); color:var(--muted); margin-bottom:18px}
+    .job ul.dashes{list-style:none; margin:0 0 28px; padding:0}
+    .job ul.dashes li{position:relative; padding-left:22px; margin:0 0 8px; color:var(--ink-2)}
+    .job ul.dashes li::before{content:"—"; position:absolute; left:0; color:var(--accent)}
+    .job .sub{margin:0 0 14px}
+    .project p{margin-bottom:12px}
+    .project .cell-foot a{color:var(--accent)}
+    .project .cell-foot a:hover{text-decoration:underline}
 
-      --brand:#6c63ff;
-      --brand-2:#ff7a18;
-      --focus:#6c63ff;
+    @media (max-width:640px){
+      .job{grid-template-columns:1fr; gap:6px}
     }
-    html[data-theme="dark"]{
-      --bg:#0f1320;
-      --panel:#11182a;
-      --text:#edf2f7;
-      --muted:#9aa4b2;
-      --border:#1f2937;
-      --accent:#ff9a3c;
-      --accent-2:#8b84ff;
-      --brand:#8b84ff;
-      --brand-2:#ff9a3c;
-      --focus:#8b84ff;
-    }
-
-    /* =========================
-       БАЗОВОЕ
-       ========================= */
-    *{box-sizing:border-box}
-    html,body{height:100%}
-    body{
-      margin:0; background:var(--bg); color:var(--text);
-      font-family: "Fira Code", "JetBrains Mono", "Source Code Pro";
-      line-height:1.6; text-rendering:optimizeLegibility; -webkit-font-smoothing:antialiased;
-      scroll-behavior:smooth;
-    }
-    html, body {
-        font-family: "Fira Code", "JetBrains Mono", "Source Code Pro",
-        Consolas, "Courier New", monospace;
-        font-size: 16px; /* базовый размер, можно подогнать */
-        line-height: 1.5;
-    }
-    body{ padding-top: var(--header-h); }
-
-
-    a{color:var(--brand); text-decoration:none}
-    a:hover{text-decoration:underline}
-    :focus-visible{outline:3px solid var(--focus); outline-offset:2px; border-radius:8px}
-    img,svg{max-width:100%; height:auto; display:block}
-
-    .container{width:var(--container-w); margin:0 auto}
-    section{scroll-margin-top:calc(var(--header-h) + 16px)}
-
-    h1,h2,h3{margin:0 0 .6em; line-height:1.25; font-weight:800}
-    h1{font-size:clamp(32px,5vw,64px)}
-    h2{font-size:clamp(22px,2.4vw,30px)}
-    h3{font-size:clamp(18px,2vw,22px)}
-    p,li{font-size:clamp(14px,1.2vw,16px)}
-    .muted{color:var(--muted)}
-
-    /* =========================
-       ДЕКОР: канвас-фон «поток»
-       ========================= */
-    #flow{
-      position:fixed; inset:0; z-index:-1;
-      background:linear-gradient(180deg, rgba(108,99,255,.06), rgba(255,122,24,.05));
-    }
-
-    /* =========================
-       HEADER (фикс)
-       ========================= */
-    header.site-header{
-        position: fixed;          /* было sticky */
-        top: 0; left: 0; right: 0;
-        z-index: 1000;
-        height: var(--header-h);
-        background: color-mix(in oklab, var(--panel) 92%, transparent);
-        backdrop-filter: blur(6px);
-        border-bottom: 1px solid var(--border);
-    }
-    .nav-row{height:100%; display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:12px}
-    .logo{display:inline-flex; align-items:baseline; font-weight:900; letter-spacing:.4px; font-size:clamp(16px,1.6vw,18px)}
-    .logo__cursor{color:var(--accent-2); margin-left:1px; animation:blink .9s steps(1,end) infinite}
-    @keyframes blink{50%{opacity:0}}
-    nav[aria-label="Основная навигация"] ul{display:flex; gap:clamp(8px,2vw,28px); list-style:none; padding:0; margin:0}
-    nav a{color:var(--text); padding:6px 8px; border-radius:8px}
-    nav a.active{background:color-mix(in oklab, var(--accent-2) 14%, transparent); box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent-2) 55%, var(--border))}
-    .actions{justify-self:end; display:flex; align-items:center; gap:10px}
-    .icon-link{display:inline-flex; align-items:center; justify-content:center; width:36px; height:36px; border-radius:10px; background:var(--panel); border:1px solid var(--border); box-shadow:var(--shadow)}
-    .theme-toggle{display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:10px; border:1px solid var(--border); background:var(--panel)}
-
-    /* =========================
-       FULLSCREEN HERO (центр)
-       ========================= */
-    .hero{
-      min-height:calc(100svh - var(--header-h));
-      display:grid; place-items:center;
-    }
-    .hero-inner {
-      width: var(--container-w);
-      margin: 0 auto;
-      text-align: center;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    .hero small {
-      color: var(--accent);
-      font-weight: 700;
-      letter-spacing: .06em;
-      margin-bottom: 0.25rem; /* ближе к имени */
-    }
-
-    .typing-line {
-      display: inline-flex;
-      gap: .4ch;
-      align-items: baseline;
-      flex-wrap: wrap;
-      justify-content: center;
-      margin-top: 0; /* убираем лишний отступ сверху */
-      margin-bottom: 0.25rem; /* чуть-чуть отступа вниз */
-    }
-    .typing-name{font-size:clamp(36px,7vw,80px); letter-spacing:.6px; font-weight:900}
-
-    /* базовый вид на время печати */
-    .typing-cursor{
-        display:inline-block;
-        width:.65ch;
-        height:1em;
-        translate:0 .15em;
-        background:var(--text);
-        animation: blink .9s steps(1,end) infinite;
-    }
-
-    /* режим после завершения печати: показываем "_" вместо блока */
-    .typing-cursor{
-        /* сам контейнер курсора */
-        display:inline-block;
-        width:1ch;                 /* ширина под символ */
-        height:1em;                /* высота строки для корректной вертикали */
-        vertical-align:baseline;
-    }
-
-    /* рисуем подчёркивание контролируемой толщины через border-bottom */
-    .typing-cursor::after{
-        content:"";
-        display:block;
-        width:1ch;
-        border-bottom: 0.2em solid var(--text); /* толщина подчёркивания */
-        transform: translateY(0.15em);          /* чуть опускаем */
-        animation: blink .85s steps(1,end) infinite;
-    }
-
-    /* если где-то остался старый класс — он не меняет вид */
-    .typing-cursor.underscore::after{
-        border-bottom-width: 0.2em;
-    }
-
-    /* уважение reduce-motion */
-    @media (prefers-reduced-motion: reduce){
-        .typing-cursor::after{ animation: none; }
-    }
-    .hero-sub {
-      font-size: clamp(14px, 1.4vw, 20px);
-      color: var(--muted);
-      margin-top: 0.2rem; /* убираем большой зазор */
-    }
-    .hero-actions{display:flex; gap:12px; flex-wrap:wrap; justify-content:center; margin-top:1rem}
-    .btn{display:inline-flex; align-items:center; justify-content:center; min-height:44px; padding:0 18px; border-radius:12px; border:1px solid var(--border); background:var(--panel); color:var(--text); font-weight:800; box-shadow:var(--shadow); text-decoration:none; transition:transform .12s ease}
-    .btn:hover{transform:translateY(-1px)}
-    .btn-primary{background:color-mix(in oklab, var(--accent-2) 16%, var(--panel)); border-color:color-mix(in oklab, var(--accent-2) 60%, var(--border))}
-    .btn-ghost{background:var(--panel)}
-
-    .section{padding:clamp(28px,5vw,64px) 0}
-    .card{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow); padding:clamp(14px,2vw,24px)}
-    .section-title{display:flex; align-items:center; gap:.6rem; margin-bottom:1rem}
-    .section-title:before{content:"—"; color:var(--accent); font-weight:900}
-
-    .about-grid{display:grid; grid-template-columns:1.1fr 1fr; gap:clamp(14px,2.6vw,28px)}
-    .skills-grid{display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px}
-    .skill{border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px; background:color-mix(in oklab, var(--panel) 88%, transparent); transition:transform .12s ease, background .12s ease}
-    .skill:hover{transform:translateY(-2px); background:color-mix(in oklab, var(--accent-2) 6%, var(--panel))}
-    .stack-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(110px,1fr)); gap:12px}
-    .stack-item{display:grid; gap:8px; place-items:center; border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--panel); box-shadow:var(--shadow); padding:8px; text-align:center}
-    .exp-list{display:grid; gap:14px}
-    article.exp{display:grid; gap:6px; border:1px solid var(--border); border-radius:var(--radius); padding:16px; background:var(--panel); box-shadow:var(--shadow)}
-    .exp header{display:flex; flex-wrap:wrap; gap:8px 14px; align-items:baseline}
-    .exp .meta{color:var(--muted); font-size:14px}
-
-    .stack-item {
-      display: flex;
-      flex-direction: column; /* картинка сверху, текст снизу */
-      align-items: center;
-      gap: 0.25rem; /* расстояние между ними */
-    }
-
-    .stack-item img {
-      width: 64px;
-      height: 64px;
-    }
-
-    .stack-item span {
-      font-size: 0.8rem;
-      color: var(--muted);
-      font-weight: 500;
-    }
-
-
-    footer{border-top:1px solid var(--border); padding:24px 0 40px; color:var(--muted)}
-    .foot{display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between}
-    .foot .icons{display:flex; gap:10px}
-
-    @media (max-width:780px){
-      .about-grid{grid-template-columns:1fr}
-      .nav-row{grid-template-columns:1fr auto auto}
-      .typing-name{white-space:normal}
-    }
-    @media (prefers-reduced-motion:reduce){
-      *{animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important; scroll-behavior:auto !important}
-      #flow{background:none}
-    }
-
-    .hero small{
-      font-size: clamp(16px, 2.2vw, 24px); /* было ~12–14px */
-      font-weight: 800;
-      letter-spacing: .04em;
-    }
-
-    /* — чуть плотнее связка Имя + профессия — */
-    .typing-name{
-      line-height: 1.05;  /* плотнее строка имени */
-      margin: 0;          /* убираем любые отступы */
-    }
-    .typing-line{
-      gap: .3ch;          /* поменьше зазор между именем и курсором */
-      margin-bottom: .2rem; /* можно совсем убрать: 0 */
-    }
-    .hero-sub{
-      margin-top: .25rem; /* было больше — теперь ближе к имени */
-      /* при желании ещё плотнее: .15rem */
-    }
-
-    /* опционально: на очень маленьких экранах ещё компактнее */
-    @media (max-width: 420px){
-      .hero-sub{ margin-top: .18rem; }
-    }
-
-    #education .card {
-      margin-bottom: 1rem; /* расстояние между карточками */
-    }
-
-    #education .card:last-child {
-      margin-bottom: 0; /* убираем отступ у последней */
-    }
-
-    /* Контакты: плоские карточки, фикс-высота шапки */
-    .contacts-row{
-        display:grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px,1fr));
-        gap:14px;
-    }
-
-    .ct-flat{
-        background:var(--panel);
-        border:1px solid var(--border);
-        border-radius:var(--radius);
-        box-shadow:var(--shadow);
-        overflow:hidden;
-    }
-
-    /* Шапка карточки */
-    .ct-head{
-        display:grid;
-        align-items:center;
-        gap:12px;
-        padding:12px 14px;
-        min-height:72px;
-        grid-template-columns: 38px 1fr minmax(0,46%); /* иконка | заголовок | значение */
-    }
-
-    .ct-icon{
-        width:38px; height:38px; border-radius:12px;
-        display:grid; place-items:center;
-        background:color-mix(in oklab, var(--accent-2) 12%, var(--panel));
-        border:1px solid color-mix(in oklab, var(--accent-2) 40%, var(--border));
-        color:var(--accent-2);
-        box-shadow:none; /* тень только у карточки */
-    }
-
-    .ct-title small{ display:block; margin-top:2px; }
-
-    /* Значение контакта справа */
-    .ct-value{
-        display:flex; align-items:center; justify-self:end;
-        min-width:0; max-width:100%; overflow:hidden; gap:10px;
-    }
-
-    /* Пилла со значением: одна строка, 38px высота */
-    .pill{
-        display:inline-flex; align-items:center;
-        height:38px; padding:0 12px;
-        border-radius:12px;
-        border:1px solid color-mix(in oklab, var(--accent-2) 45%, var(--border));
-        background:color-mix(in oklab, var(--accent-2) 8%, var(--panel));
-        box-shadow:none;
-        color:var(--text); text-decoration:none; font-weight:800;
-        white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-        max-width:clamp(160px,48vw,480px);
-    }
-
-    /* Состояния показа */
-    .ct-value .ct-real{ display:none; }
-    .ct-value[data-state="shown"] .ct-reveal{ display:none; }
-    .ct-value[data-state="shown"] .ct-real{ display:flex; gap:10px; align-items:center; animation:fadeIn .16s ease-out; }
-    /*@keyframes fadeIn{ from{opacity:0; transform:translateY(-2px)} to{opacity:1; transform:translateY(0)} }*/
-    @keyframes blink { 50% { opacity: 0; } }
-
-    /* Иконка-кнопка копирования */
-    .icon-btn{
-        width:38px; height:38px; border-radius:10px;
-        border:1px solid var(--border);
-        background:var(--panel);
-        box-shadow:none;
-        display:grid; place-items:center;
-        padding:0; cursor:pointer;
-    }
-    .icon-btn:hover{ transform:translateY(-1px); }
-    .icon-btn svg{ width:18px; height:18px; }
-
-    /* Когда контакт показан — текстовый блок слева скрываем,
-       сетку шапки сжимаем до: иконка | значение */
-    .ct-head:has(.ct-value[data-state="shown"]) .ct-title{ display:none; }
-    .ct-head:has(.ct-value[data-state="shown"]){
-        grid-template-columns:38px 1fr;
-    }
-
-    /* Узкие экраны: кнопка поменьше */
-    @media (max-width:420px){
-        .icon-btn{ width:32px; height:32px; }
-    }
-
   </style>
 </head>
+
 <body>
-  <!-- Канвас с фоновым «потоком» -->
-  <canvas id="flow" aria-hidden="true"></canvas>
+<div class="topbar">
+  <div class="container">
+    <span class="status">Открыт к предложениям</span>
+    <a href="/assets/kuklin.pdf" target="_blank" rel="noopener">Резюме в PDF <span aria-hidden="true">↓</span></a>
+  </div>
+</div>
 
-  <header class="site-header" role="banner">
-    <div class="container nav-row">
-      <div class="logo" aria-label="Логотип">
-        <span>DK</span><span class="logo__cursor" aria-hidden="true">_</span>
+<header class="site-header" role="banner">
+  <div class="container nav-row">
+    <a href="/" class="logo" aria-label="Даниил Куклин — на главную">
+      <b>KUKLIN<i aria-hidden="true">_</i></b>
+      <small>Java · боты · AI</small>
+    </a>
+
+    <nav class="main-nav" aria-label="Основная навигация">
+      <ul role="list">
+        <li><a href="#about" data-nav>Обо мне</a></li>
+        <li><a href="#stack" data-nav>Стек</a></li>
+        <li><a href="#experience" data-nav>Опыт</a></li>
+        <li><a href="#education" data-nav>Образование</a></li>
+        <li><a href="#contacts" data-nav>Контакты</a></li>
+      </ul>
+    </nav>
+
+    <div class="actions">
+      <button id="themeToggle" class="icon-btn" type="button" aria-pressed="false" aria-label="Переключить тему День/Ночь">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 4a8 8 0 0 1 0 16Z" fill="currentColor"/></svg>
+      </button>
+      <button id="menuToggle" class="icon-btn menu-btn" type="button" aria-label="Открыть меню" aria-controls="mobileDrawer" aria-expanded="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main id="main" tabindex="-1">
+  <!-- ===== Hero ===== -->
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="container">
+      <div class="byline">
+        <img src="/images/avatar.webp" alt="" width="56" height="56">
+        <span class="eyebrow">Резюме · Java Backend Developer</span>
+      </div>
+      <h1 id="hero-title" class="display">Даниил Куклин<span class="dot">.</span></h1>
+      <p class="lead">Java Backend Developer: Spring Boot, PostgreSQL, Docker. Коммерческая разработка с 2023 года.</p>
+      <div class="btn-row" role="group" aria-label="Действия">
+        <a class="btn btn-primary" href="/assets/kuklin.pdf" target="_blank" rel="noopener">Резюме в PDF <span class="arr" aria-hidden="true">↓</span></a>
+        <a class="btn" href="#contacts">Связаться</a>
+        <a class="btn" href="https://github.com/Daniil-java" target="_blank" rel="noopener">GitHub</a>
+      </div>
+      <ul class="hero-facts" aria-label="Коротко">
+        <li>Опыт с 2023</li>
+        <li>REST API · интеграции · боты</li>
+        <li>Открыт к предложениям</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ===== Обо мне ===== -->
+  <section id="about" class="section section--alt" aria-labelledby="about-title">
+    <div class="container">
+      <div class="section-head section-head--top">
+        <div>
+          <span class="eyebrow">01 · Обо мне</span>
+          <h2 id="about-title" class="h2">От требований до продакшена<span class="dot">.</span></h2>
+        </div>
+        <div class="about-text">
+          <p>Java-разработчик. С 2023 года занимаюсь коммерческой разработкой на фрилансе: веб-приложения, сервисы и Telegram-боты — от сбора требований до деплоя и поддержки.</p>
+          <p>Пишу REST API на Spring Boot, настраиваю авторизацию (Spring Security, JWT, OAuth2), миграции БД (Liquibase), интеграции с внешними API — Google Calendar и Sheets, OpenAI, Telegram. Упаковываю сервисы в Docker и выстраиваю CI/CD.</p>
+          <p>Сам общаюсь с заказчиками: разбираю требования, предлагаю решения и отвечаю за результат. Открыт к предложениям о работе Backend-разработчиком.</p>
+        </div>
       </div>
 
-      <nav aria-label="Основная навигация">
-        <ul role="list">
-          <li><a href="#about" data-nav>Обо мне</a></li>
-          <li><a href="#stack" data-nav>Стэк технологий</a></li>
-          <li><a href="#experience" data-nav>Опыт работы</a></li>
-          <li><a href="#education" data-nav>Образование</a></li>
-        </ul>
-      </nav>
-
-      <div class="actions">
-        <a class="icon-link" href="mailto:saponembigas@gmail.com" aria-label="Написать на email">
-          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M3.5 7.5 12 13l8.5-5.5M4 6h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z"/></svg>
-        </a>
-        <a class="icon-link" href="https://t.me/kuklin_daniil" target="_blank" rel="noopener" aria-label="Открыть Telegram">
-          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M9.18 15.42 9 19a1 1 0 0 0 1.64.77l2.35-1.93 3.89 2.86a1.5 1.5 0 0 0 2.35-.95l3.77-16.7a1 1 0 0 0-1.36-1.14L1.45 9.36a1 1 0 0 0 .08 1.88l5.92 1.8 13.68-8.5L9.18 15.42Z"/></svg>
-        </a>
-        <a class="icon-link" href="https://github.com/Daniil-java" target="_blank" rel="noopener" aria-label="Открыть GitHub">
-          <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M12 .5a12 12 0 0 0-3.79 23.4c.6.11.82-.26.82-.58v-2.03c-3.34.73-4.04-1.61-4.04-1.61-.55-1.4-1.36-1.77-1.36-1.77-1.11-.76.08-.74.08-.74 1.23.09 1.88 1.27 1.88 1.27 1.09 1.87 2.86 1.33 3.56 1.02.11-.79.43-1.33.77-1.63-2.66-.3-5.46-1.33-5.46-5.93 0-1.31.47-2.38 1.25-3.22-.13-.31-.54-1.56.12-3.26 0 0 1.02-.33 3.34 1.23a11.6 11.6 0 0 1 6.08 0c2.32-1.56 3.34-1.23 3.34-1.23.66 1.7.25 2.95.12 3.26.78.84 1.25 1.91 1.25 3.22 0 4.61-2.8 5.62-5.48 5.92.44.38.83 1.12.83 2.26v3.35c0 .32.22.69.83.58A12 12 0 0 0 12 .5Z"/></svg>
-        </a>
-
-        <button id="themeToggle" class="theme-toggle" type="button" aria-pressed="false" aria-label="Переключить тему День/Ночь">
-          <span aria-hidden="true">🌓</span><span class="muted">Тема</span>
-        </button>
+      <div class="cells" style="--cols:3" role="list" aria-label="Чем занимаюсь">
+        <div class="cell" role="listitem"><span class="label">01</span><h3 class="h3">Чистый код</h3><p>Поддерживаемость и читаемость.</p></div>
+        <div class="cell" role="listitem"><span class="label">02</span><h3 class="h3">Веб-приложения</h3><p>От идеи до продакшена.</p></div>
+        <div class="cell" role="listitem"><span class="label">03</span><h3 class="h3">Интеграции</h3><p>API, очереди, вебхуки, LLM.</p></div>
+        <div class="cell" role="listitem"><span class="label">04</span><h3 class="h3">Надёжные бэкенды</h3><p>Логи, метрики, алёрты.</p></div>
+        <div class="cell" role="listitem"><span class="label">05</span><h3 class="h3">Производительность</h3><p>SQL-тюнинг, кэши, батчи.</p></div>
+        <div class="cell" role="listitem"><span class="label">06</span><h3 class="h3">AI-интеграции</h3><p>GPT, Gemini, Spring AI.</p></div>
       </div>
     </div>
-  </header>
+  </section>
 
-  <main id="main" tabindex="-1">
-    <!-- ===== FULLSCREEN HERO ===== -->
-    <section class="hero" aria-labelledby="hero-title">
-      <div class="hero-inner">
-        <small>Привет, я</small>
-        <div class="typing-line" aria-live="polite" aria-atomic="true">
-          <h1 id="hero-title" class="typing-name" data-typing="Даниил Куклин">‎</h1>
-          <span class="typing-cursor" aria-hidden="true"></span>
-        </div>
-        <div class="hero-sub">Backend Developer | Java | Spring Framework</div>
-        <div class="hero-actions" role="group" aria-label="Действия">
-          <a class="btn btn-primary" href="/static/assets/kuklin.pdf" download aria-label="Скачать резюме PDF">Скачать резюме</a>
-          <a class="btn btn-ghost" href="#about" aria-label="К разделу «Обо мне»">Подробнее ↓</a>
+  <!-- ===== Стек ===== -->
+  <section id="stack" class="section" aria-labelledby="stack-title">
+    <div class="container">
+      <div class="section-head">
+        <div>
+          <span class="eyebrow">02 · Стек</span>
+          <h2 id="stack-title" class="h2">Стек технологий<span class="dot">.</span></h2>
         </div>
       </div>
-    </section>
 
-    <!-- ===== НИЖЕ — СОДЕРЖАНИЕ (пример) ===== -->
-    <section id="about" class="section" aria-labelledby="about-title">
-      <div class="container">
-        <h2 id="about-title" class="section-title">Обо мне</h2>
-        <div class="about-grid">
-          <article class="card" aria-label="Кратко обо мне">
-            <p>Я Java‑разработчик с трёхлетним опытом фриланса. Создаю веб‑приложения, сервисы и ботов, уделяя внимание чистоте кода, продуманной архитектуре и удобству интерфейсов. </p>
-            <p>В работе ценю прозрачность и предсказуемость, умею быстро адаптироваться к новым задачам и интегрировать сторонние решения. Опыт со Spring Boot, PostgreSQL, Docker и CI/CD помогает мне не только писать код, но и выстраивать надёжные процессы. </p>
-            <p>Для меня важно не только решать задачи, но и создавать ценность для пользователей. Открыт к новым возможностям и профессиональному развитию.</p>
-          </article>
-          <div class="skills-grid" role="list" aria-label="Софт-скиллы">
-              <div class="skill" role="listitem">
-                  <h3>Чистый код</h3>
-                  <p class="muted">Поддерживаемость и читаемость.</p>
-              </div>
-              <div class="skill" role="listitem">
-                  <h3>Веб‑приложения</h3>
-                  <p class="muted">От идеи до продакшена.</p>
-              </div>
-              <div class="skill" role="listitem">
-                  <h3>Интеграции</h3>
-                  <p class="muted">API, очереди, вебхуки, LLM.</p>
-              </div>
-              <div class="skill" role="listitem">
-                  <h3>Надёжные бэкенды</h3>
-                  <p class="muted">Логи, метрики, алёрты.</p>
-              </div>
-              <div class="skill" role="listitem">
-                  <h3>Производительность</h3>
-                  <p class="muted">SQL‑тюнинг, кэши, батчи.</p>
-              </div>
-              <div class="skill" role="listitem">
-                  <h3>AI‑интеграции</h3>
-                  <p class="muted">GPT, Gemini, Spring AI.</p>
-              </div>
-
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section id="stack" class="section" aria-labelledby="stack-title">
-      <div class="container">
-        <h2 id="stack-title" class="section-title">Стэк технологий</h2>
-        <div class="stack-grid" role="list">
-
-          <div class="stack-item" role="listitem">
-            <img src="assets/Java.webp" alt="Java logo" width="42" height="42">
-            <span>Java</span>
-          </div>
-
-          <div class="stack-item" role="listitem">
-            <img src="assets/SpringBoot.webp" alt="spring logo" width="42" height="42">
-            <span>Spring</span>
-          </div>
-
-            <div class="stack-item" role="listitem">
-                <img src="assets/sql.png" alt="SQL logo" width="42" height="42">
-                <span>SQL</span>
+      <ul class="rows" role="list">
+        <li class="row">
+          <span class="label">Backend</span>
+          <div>
+            <div class="logos">
+              <span><img src="/assets/Java.webp" alt="" width="28" height="28">Java</span>
+              <span><img src="/assets/SpringBoot.webp" alt="" width="28" height="28">Spring Boot</span>
             </div>
-
-            <div class="stack-item" role="listitem">
-                <img src="assets/PostgresSQL.webp" alt="postgres logo" width="42" height="42">
-                <span>PostgresSQL</span>
-            </div>
-
-            <div class="stack-item" role="listitem">
-                <img src="assets/MongoDB.webp" alt="MongoDB logo" width="42" height="42">
-                <span>MongoDB</span>
-            </div>
-
-            <div class="stack-item" role="listitem">
-                <img src="assets/MySQL.webp" alt="MySQL logo" width="42" height="42">
-                <span>MySQL</span>
-            </div>
-            
-            <div class="stack-item" role="listitem">
-                <img src="assets/dbmigrate.png" alt="DB Migrate logo" width="42" height="42">
-                <span>DB Migrate</span>
-            </div>
-
-            <div class="stack-item" role="listitem">
-                <img src="assets/JavaScript.webp" alt="JavaScript logo" width="42" height="42">
-                <span>JavaScript</span>
-            </div>
-
-            <div class="stack-item" role="listitem">
-                <img src="assets/HTML.webp" alt="HTML logo" width="42" height="42">
-                <span>HTML</span>
-            </div>
-
-            <div class="stack-item" role="listitem">
-                <img src="assets/CSS.webp" alt="CSS logo" width="42" height="42">
-                <span>CSS</span>
-            </div>
-
-            <div class="stack-item" role="listitem">
-                <img src="assets/docker.png" alt="Docker logo" width="42" height="42">
-                <span>Docker</span>
-            </div>
-
-            <div class="stack-item" role="listitem">
-                <img src="assets/Postman.webp" alt="Postman logo" width="42" height="42">
-                <span>Postman</span>
-            </div>
-
-            <div class="stack-item" role="listitem">
-                <img src="assets/redis.svg" alt="Redis logo" width="42" height="42">
-                <span>Redis</span>
-            </div>
-
-            <div class="stack-item" role="listitem">
-                <img src="assets/kafka.svg" alt="Kafka logo" width="42" height="42">
-                <span>Apache Kafka</span>
-            </div>
-
-            <div class="stack-item" role="listitem">
-                <img src="assets/rabbitmq.svg" alt="rabbitmq logo" width="42" height="42">
-                <span>RabbitMQ</span>
-            </div>
-
-            <div class="stack-item" role="listitem">
-                <img src="assets/Git.webp" alt="Git logo" width="42" height="42">
-                <span>Git</span>
-            </div>
-
-            <div class="stack-item" role="listitem">
-                <img src="assets/GitHub.webp" alt="GitHub logo" width="42" height="42">
-                <span>GitHub</span>
-            </div>
-
-            <div class="stack-item" role="listitem">
-                <img src="assets/IntelliJIDEA.webp" alt="IntelliJIDEA logo" width="42" height="42">
-                <span>IntelliJ IDEA</span>
-            </div>
-
-        </div>
-      </div>
-    </section>
-
-    <section id="experience" class="section" aria-labelledby="experience-title">
-      <div class="container">
-        <h2 id="experience-title" class="section-title">Опыт работы</h2>
-        <div class="exp-list">
-          <article class="exp" aria-labelledby="exp1-title">
-            <header>
-              <h3 id="exp1-title">Java-разработчик</h3>
-              <div class="meta">Проектная деятельность в сфере разработки • <time datetime="2023-01">Янв 2023</time> — <time datetime="2025-09">Сент 2025</time></div>
-            </header>
-            <div class="muted">Стэк: Java | Spring Framework | Liquibase/Flyway | PostgreSQL | Docker | OpenFeign | Telegram Bot API | Google API | OpenAI</div>
-            <ul>
-
-                <li><b>Основные направления работы:</b>
-                    <ul>
-                        <li>Разработка и поддержка веб‑приложений и Telegram‑ботов для различных бизнес‑задач.</li>
-                        <li>Взаимодействие с заказчиками: анализ требований, техническое консультирование, подбор оптимальных решений.</li>
-                        <li>Проектирование архитектуры, интеграция сторонних API, оптимизация производительности.</li>
-                    </ul>
-                </li>
-
-                <li><b>Ключевые проекты:</b>
-                    <ul>
-                        <li>
-                            <b>Система управления задачами с помидоро‑таймером и интеграцией OpenAI</b><br>
-                            Стек: Java, Spring Framework, Liquibase, PostgreSQL, Telegram Bot API, OpenFeign, Docker.<br>
-                            Реализовал автоматическое разбиение задач на подзадачи с помощью OpenAI.<br>
-                            Контейнеризация и деплой приложения в Docker.
-                        </li>
-                        <li>
-                            <b>Telegram‑бот для парсинга вакансий</b><br>
-                            Автоматический сбор вакансий с сайтов трудоустройства.<br>
-                            Оптимизация алгоритмов обработки данных для ускорения парсинга.
-                        </li>
-                        <li>
-                            <b>Ассистент‑бот с интеграцией Google API</b><br>
-                            Приём голосовых и текстовых сообщений, автоматическое добавление задач в Google Calendar.
-                        </li>
-                        <li>
-                            <b>Telegram‑бот для подсчёта калорий</b><br>
-                            Распознавание блюд по фото или описанию, расчёт КБЖУ с использованием AI‑моделей.
-                        </li>
-                        <li>
-                            <b>Telegram‑бот для отслеживания авиарейсов</b><br>
-                            Получение информации по номеру рейса и отправка обновлений пользователю в реальном времени.
-                        </li>
-                        <li>
-                            <b>Микросервис для работы с меню и интеграция с веб‑приложением</b><br>
-                            Настройка взаимодействия между ботом и веб‑частью, маршрутизация и фильтры на уровне gateway.
-                        </li>
-                        <li>
-                            <b>Разработка лендингов и промо‑страниц</b><br>
-                            Создание конверсионных страниц с акцентом на UI/UX и адаптивность.
-                        </li>
-                    </ul>
-                </li>
-
+            <ul class="chips" aria-label="Библиотеки и фреймворки">
+              <li>Spring Security</li><li>Spring Data JPA / Hibernate</li><li>OpenFeign</li><li>MapStruct</li><li>Lombok</li><li>JUnit</li><li>OpenAPI / Swagger</li><li>JWT / OAuth2</li>
             </ul>
-          </article>
-        </div>
-      </div>
-    </section>
-
-    <section id="education" class="section" aria-labelledby="education-title">
-      <div class="container">
-        <h2 id="education-title" class="section-title">Образование</h2>
-
-          <div class="card">
-              <h3>Прикладная информатика</h3>
-              <p class="muted">Университет Синергия • Магистратура • <time datetime="2025">2025</time> — <time datetime="2027">2027</time></p>
           </div>
-
-        <div class="card">
-          <h3>Факультет Java-разработки</h3>
-          <p class="muted">Geekbrains • Курсы профессиональной перподготовки • <time datetime="2020">2020</time> — <time datetime="2022">2022</time></p>
-        </div>
-
-          <div class="card">
-              <h3>Факультет цифровых технологий и химического инжиниринга</h3>
-              <p class="muted">РХТУ им. Д.И.Менделеева • Бакалавриат • <time datetime="2017">2017</time> — <time datetime="2021">2021</time></p>
+        </li>
+        <li class="row">
+          <span class="label">Базы данных</span>
+          <div class="logos">
+            <span><img src="/assets/PostgresSQL.webp" alt="" width="28" height="28">PostgreSQL</span>
+            <span><img src="/assets/MySQL.webp" alt="" width="28" height="28">MySQL</span>
+            <span><img src="/assets/MongoDB.webp" alt="" width="28" height="28">MongoDB</span>
+            <span><img src="/assets/redis.svg" alt="" width="28" height="28">Redis</span>
+            <span><img src="/assets/dbmigrate.png" alt="" width="28" height="28">Liquibase / Flyway</span>
           </div>
-
-      </div>
-    </section>
-
-      <section id="contacts" class="section" aria-labelledby="contacts-title">
-          <div class="container">
-              <h2 id="contacts-title" class="section-title">Контакты</h2>
-
-              <div class="contacts-row" role="list">
-                  <!-- Email -->
-                  <article class="ct-flat" role="listitem">
-                      <div class="ct-head">
-          <span class="ct-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="18" height="18">
-              <path fill="none" stroke="currentColor" stroke-width="1.7" d="M3.5 7.5 12 13l8.5-5.5M4 6h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z"/>
-            </svg>
-          </span>
-
-                          <div class="ct-title">
-                              <strong>Email</strong>
-                              <small class="muted">Свяжемся по почте</small>
-                          </div>
-
-                          <div class="ct-value" data-state="hidden">
-                              <!-- Плейсхолдер (виден по умолчанию) -->
-                              <button class="ct-reveal btn btn-ghost" type="button" aria-label="Показать email">Показать</button>
-
-                              <!-- Реальное значение (после клика) -->
-                              <div class="ct-real">
-                                  <a class="pill" href="mailto:saponembigas@gmail.com">saponembigas@gmail.com</a>
-                                  <button class="icon-btn ct-copy" type="button" data-copy="saponembigas@gmail.com" aria-label="Скопировать email">
-                                      <!-- иконка копирования -->
-                                      <svg viewBox="0 0 24 24" aria-hidden="true">
-                                          <path fill="none" stroke="currentColor" stroke-width="1.6" d="M9 9h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2Z"/>
-                                          <path fill="none" stroke="currentColor" stroke-width="1.6" d="M7 15H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/>
-                                      </svg>
-                                  </button>
-                              </div>
-                          </div>
-                      </div>
-                  </article>
-
-                  <!-- Telegram -->
-                  <article class="ct-flat" role="listitem">
-                      <div class="ct-head">
-          <span class="ct-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="18" height="18">
-              <path fill="currentColor" d="M21.9 3.2a1 1 0 0 0-1.1-.1L2.7 11.3a1 1 0 0 0 .1 1.9l6 1.8 1.8 6a1 1 0 0 0 1.8.2l8.2-18.1a1 1 0 0 0-.7-1.9z"/>
-            </svg>
-          </span>
-
-                          <div class="ct-title">
-                              <strong>Telegram</strong>
-                              <small class="muted">Быстрее всего</small>
-                          </div>
-
-                          <div class="ct-value" data-state="hidden">
-                              <button class="ct-reveal btn btn-ghost" type="button" aria-label="Показать Telegram">Показать</button>
-                              <div class="ct-real">
-                                  <a class="pill" href="https://t.me/kuklin_daniil" target="_blank" rel="noopener">@kuklin_daniil</a>
-                                  <button class="icon-btn ct-copy" type="button" data-copy="@kuklin_daniil" aria-label="Скопировать Telegram">
-                                      <svg viewBox="0 0 24 24" aria-hidden="true">
-                                          <path fill="none" stroke="currentColor" stroke-width="1.6" d="M9 9h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2Z"/>
-                                          <path fill="none" stroke="currentColor" stroke-width="1.6" d="M7 15H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/>
-                                      </svg>
-                                  </button>
-                              </div>
-                          </div>
-                      </div>
-                  </article>
-
-                  <!-- GitHub -->
-                  <article class="ct-flat" role="listitem">
-                      <div class="ct-head">
-          <span class="ct-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" width="18" height="18">
-              <path fill="currentColor" d="M12 .5A12 12 0 0 0 8.2 23.9c.6.1.8-.26.8-.58v-2.03c-3.34.73-4.04-1.61-4.04-1.61-.55-1.4-1.36-1.77-1.36-1.77-1.11-.76.08-.74.08-.74 1.23.09 1.88 1.27 1.88 1.27 1.09 1.87 2.86 1.33 3.56 1.02.11-.79.43-1.33.77-1.63-2.66-.3-5.46-1.33-5.46-5.93 0-1.31.47-2.38 1.25-3.22-.13-.31-.54-1.56.12-3.26 0 0 1.02-.33 3.34 1.23a11.6 11.6 0 0 1 6.08 0c2.32-1.56 3.34-1.23 3.34-1.23.66 1.7.25 2.95.12 3.26.78.84 1.25 1.91 1.25 3.22 0 4.61-2.8 5.62-5.48 5.92.44.38.83 1.12.83 2.26v3.35c0 .32.22.69.83.58A12 12 0 0 0 12 .5Z"/>
-            </svg>
-          </span>
-
-                          <div class="ct-title">
-                              <strong>GitHub</strong>
-                              <small class="muted">Код и проекты</small>
-                          </div>
-
-                          <div class="ct-value" data-state="hidden">
-                              <button class="ct-reveal btn btn-ghost" type="button" aria-label="Показать GitHub">Показать</button>
-                              <div class="ct-real">
-                                  <a class="pill" href="https://github.com/Daniil-java" target="_blank" rel="noopener">github.com/Daniil-java</a>
-                                  <button class="icon-btn ct-copy" type="button" data-copy="https://github.com/Daniil-java" aria-label="Скопировать ссылку GitHub">
-                                      <svg viewBox="0 0 24 24" aria-hidden="true">
-                                          <path fill="none" stroke="currentColor" stroke-width="1.6" d="M9 9h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2Z"/>
-                                          <path fill="none" stroke="currentColor" stroke-width="1.6" d="M7 15H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/>
-                                      </svg>
-                                  </button>
-                              </div>
-                          </div>
-                      </div>
-                  </article>
-              </div>
+        </li>
+        <li class="row">
+          <span class="label">Интеграции и очереди</span>
+          <div>
+            <div class="logos">
+              <span><img src="/assets/kafka.svg" alt="" width="28" height="28">Apache Kafka</span>
+              <span><img src="/assets/rabbitmq.svg" alt="" width="28" height="28">RabbitMQ</span>
+            </div>
+            <ul class="chips" aria-label="Внешние API">
+              <li>Telegram Bot API</li><li>Google Calendar / Sheets API</li><li>OpenAI API</li><li>Gemini</li>
+            </ul>
           </div>
-      </section>
-
-
-
-
-  </main>
-
-  <footer role="contentinfo">
-    <div class="container foot">
-      <div>© <span id="year"></span> Daniil Kuklin. Все права защищены.</div>
-      <div class="icons" aria-label="Соцссылки">
-        <a class="icon-link" href="mailto:saponembigas@gmail.com" aria-label="Email">
-          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.5" d="M3.5 7.5 12 13l8.5-5.5M4 6h16a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2Z"/></svg>
-        </a>
-        <a class="icon-link" href="https://t.me/kuklin_daniil" target="_blank" rel="noopener" aria-label="Telegram">
-          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M9.18 15.42 9 19a1 1 0 0 0 1.64.77l2.35-1.93 3.89 2.86a1 1 0 0 0 2.35-.95l3.77-16.7a1 1 0 0 0-1.36-1.14L1.45 9.36a1 1 0 0 0 .08 1.88l5.92 1.8 13.68-8.5L9.18 15.42Z"/></svg>
-        </a>
-        <a class="icon-link" href="https://github.com/Daniil-java" target="_blank" rel="noopener" aria-label="GitHub">
-          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M12 .5a12 12 0 0 0-3.79 23.4c.6.11.82-.26.82-.58v-2.03c-3.34.73-4.04-1.61-4.04-1.61-.55-1.4-1.36-1.77-1.36-1.77-1.11-.76.08-.74.08-.74 1.23.09 1.88 1.27 1.88 1.27 1.09 1.87 2.86 1.33 3.56 1.02.11-.79.43-1.33.77-1.63-2.66-.3-5.46-1.33-5.46-5.93 0-1.31.47-2.38 1.25-3.22-.13-.31-.54-1.56.12-3.26 0 0 1.02-.33 3.34 1.23a11.6 11.6 0 0 1 6.08 0c2.32-1.56 3.34-1.23 3.34-1.23.66 1.7.25 2.95.12 3.26.78.84 1.25 1.91 1.25 3.22 0 4.61-2.8 5.62-5.48 5.92.44.38.83 1.12.83 2.26v3.35c0 .32.22.69.83.58A12 12 0 0 0 12 .5Z"/></svg>
-        </a>
-      </div>
+        </li>
+        <li class="row">
+          <span class="label">Инфраструктура и инструменты</span>
+          <div class="logos">
+            <span><img src="/assets/docker.png" alt="" width="28" height="28">Docker</span>
+            <span><img src="/assets/Git.webp" alt="" width="28" height="28">Git</span>
+            <span><img src="/assets/GitHub.webp" alt="" width="28" height="28">GitHub</span>
+            <span><img src="/assets/Postman.webp" alt="" width="28" height="28">Postman</span>
+            <span><img src="/assets/IntelliJIDEA.webp" alt="" width="28" height="28">IntelliJ IDEA</span>
+          </div>
+        </li>
+        <li class="row">
+          <span class="label">Frontend (для админок и лендингов)</span>
+          <div class="logos">
+            <span><img src="/assets/HTML.webp" alt="" width="28" height="28">HTML</span>
+            <span><img src="/assets/CSS.webp" alt="" width="28" height="28">CSS</span>
+            <span><img src="/assets/JavaScript.webp" alt="" width="28" height="28">JavaScript</span>
+          </div>
+        </li>
+      </ul>
     </div>
-  </footer>
+  </section>
 
-  <script>
-    // ========= Утилиты =========
-    const $ = (s, r=document)=>r.querySelector(s);
-    const $$ = (s, r=document)=>Array.from(r.querySelectorAll(s));
+  <!-- ===== Опыт ===== -->
+  <section id="experience" class="section section--alt" aria-labelledby="experience-title">
+    <div class="container">
+      <div class="section-head">
+        <div>
+          <span class="eyebrow">03 · Опыт</span>
+          <h2 id="experience-title" class="h2">Опыт работы<span class="dot">.</span></h2>
+        </div>
+      </div>
 
-    // Год в футере
-    $('#year').textContent = new Date().getFullYear();
+      <article class="job" aria-labelledby="exp1-title">
+        <span class="label"><time datetime="2023-01">Янв 2023</time> — сейчас</span>
+        <div>
+          <h3 id="exp1-title" class="h3">Java Backend Developer (фриланс)</h3>
+          <div class="meta">Заказные проекты и собственные продукты</div>
+          <ul class="chips sub" aria-label="Стек">
+            <li>Java</li><li>Spring Boot</li><li>Spring Security</li><li>JPA/Hibernate</li><li>Liquibase/Flyway</li><li>PostgreSQL</li><li>Docker</li><li>OpenFeign</li><li>Telegram Bot API</li><li>Google API</li><li>OpenAI</li>
+          </ul>
 
-    // Тема
-    const THEME_KEY='dk_theme', htmlEl=document.documentElement, themeBtn=$('#themeToggle');
-    function setTheme(t, persist=true){ htmlEl.setAttribute('data-theme', t); themeBtn.setAttribute('aria-pressed', String(t==='dark')); if(persist) localStorage.setItem(THEME_KEY,t); const m=$('meta[name="color-scheme"]'); if(m) m.setAttribute('content', t==='dark'?'dark light':'light dark'); }
-    (function(){ const saved=localStorage.getItem(THEME_KEY); if(saved){setTheme(saved,false)} else {const prefersDark=matchMedia('(prefers-color-scheme: dark)').matches; setTheme(prefersDark?'dark':'light',false);} })();
-    themeBtn.addEventListener('click',()=>setTheme(htmlEl.getAttribute('data-theme')==='light'?'dark':'light'));
+          <span class="label">Основные направления</span>
+          <ul class="dashes" style="margin-top:12px">
+            <li>Разработка и поддержка веб-приложений и Telegram-ботов для различных бизнес-задач.</li>
+            <li>Взаимодействие с заказчиками: анализ требований, техническое консультирование, подбор оптимальных решений.</li>
+            <li>Проектирование архитектуры, интеграция сторонних API, оптимизация производительности.</li>
+          </ul>
 
-    // Анимация печати имени
-    // Анимация печати имени (курсор — всегда мигающее "_")
-    (function typing(){
-        const title  = document.getElementById('hero-title');
-        const txt    = title?.getAttribute('data-typing') || '';
+          <span class="label">Ключевые проекты</span>
+          <div class="cells" style="--cols:2; margin-top:12px">
+            <article class="cell project">
+              <h4 class="h3">Система управления задачами с помидоро-таймером и OpenAI</h4>
+              <p>Автоматическое разбиение задач на подзадачи с помощью OpenAI. Контейнеризация и деплой в Docker. Стек: Java, Spring, Liquibase, PostgreSQL, Telegram Bot API, OpenFeign.</p>
+              <div class="cell-foot"><a href="https://t.me/taskGPT_Bot" target="_blank" rel="noopener">@taskGPT_Bot</a></div>
+            </article>
+            <article class="cell project">
+              <h4 class="h3">Зефир — бот для подсчёта калорий</h4>
+              <p>Распознавание блюд по фото или описанию, расчёт КБЖУ с использованием AI-моделей.</p>
+              <div class="cell-foot"><a href="https://t.me/calorydairy_bot" target="_blank" rel="noopener">@calorydairy_bot</a><a href="https://zefir.fit" target="_blank" rel="noopener">zefir.fit</a></div>
+            </article>
+            <article class="cell project">
+              <h4 class="h3">Ассистент-бот с интеграцией Google API</h4>
+              <p>Приём голосовых и текстовых сообщений, автоматическое добавление задач в Google Calendar.</p>
+              <div class="cell-foot"><a href="https://t.me/personal_calen_bot" target="_blank" rel="noopener">@personal_calen_bot</a></div>
+            </article>
+            <article class="cell project">
+              <h4 class="h3">Бот для бронирования ресурсов</h4>
+              <p>Бронирование переговорных и кабинетов с автоматической записью в Google Sheets.</p>
+              <div class="cell-foot"><a href="https://t.me/slotmanage_bot" target="_blank" rel="noopener">@slotmanage_bot</a></div>
+            </article>
+            <article class="cell project">
+              <h4 class="h3">Бот для отслеживания авиарейсов</h4>
+              <p>Информация по номеру рейса и отправка обновлений пользователю в реальном времени.</p>
+              <div class="cell-foot"><a href="https://t.me/deparr_bot" target="_blank" rel="noopener">@deparr_bot</a></div>
+            </article>
+            <article class="cell project">
+              <h4 class="h3">Бот для парсинга вакансий</h4>
+              <p>Автоматический сбор вакансий с сайтов трудоустройства. Оптимизация алгоритмов обработки данных для ускорения парсинга.</p>
+              <div class="cell-foot"><span>Внутренний проект</span></div>
+            </article>
+            <article class="cell project">
+              <h4 class="h3">Микросервис меню и интеграция с веб-приложением</h4>
+              <p>Взаимодействие между ботом и веб-частью, маршрутизация и фильтры на уровне gateway.</p>
+              <div class="cell-foot"><span>Заказной проект</span></div>
+            </article>
+            <article class="cell project">
+              <h4 class="h3">Лендинги и промо-страницы</h4>
+              <p>Конверсионные страницы с акцентом на UI/UX и адаптивность.</p>
+              <div class="cell-foot"><a href="/freelance">Услуги</a></div>
+            </article>
+          </div>
+        </div>
+      </article>
+    </div>
+  </section>
 
-        if (!title) return;
+  <!-- ===== Образование ===== -->
+  <section id="education" class="section" aria-labelledby="education-title">
+    <div class="container">
+      <div class="section-head">
+        <div>
+          <span class="eyebrow">04 · Образование</span>
+          <h2 id="education-title" class="h2">Образование<span class="dot">.</span></h2>
+        </div>
+      </div>
 
-        // Без анимаций — сразу показываем текст
-        if (matchMedia('(prefers-reduced-motion: reduce)').matches){
-            title.textContent = txt;
-            return;
-        }
+      <ul class="rows" role="list">
+        <li class="row">
+          <span class="label"><time datetime="2025">2025</time> — <time datetime="2027">2027</time></span>
+          <div><h3 class="h3">Прикладная информатика</h3><p>Университет «Синергия» · Магистратура (обучаюсь)</p></div>
+        </li>
+        <li class="row">
+          <span class="label"><time datetime="2020">2020</time> — <time datetime="2022">2022</time></span>
+          <div><h3 class="h3">Факультет Java-разработки</h3><p>GeekBrains · Профессиональная переподготовка</p></div>
+        </li>
+        <li class="row">
+          <span class="label"><time datetime="2017">2017</time> — <time datetime="2021">2021</time></span>
+          <div><h3 class="h3">Факультет цифровых технологий и химического инжиниринга</h3><p>РХТУ им. Д. И. Менделеева · Бакалавриат</p></div>
+        </li>
+      </ul>
+    </div>
+  </section>
 
-        let i = 0;
-        const speed = 55; // мс на символ (можно 45–65)
-        const t = setInterval(() => {
-            title.textContent = txt.slice(0, i++);
-            if (i > txt.length){
-                clearInterval(t);
-                // ничего не переключаем: курсор уже "_"
-            }
-        }, speed);
-    })();
+  <!-- ===== Контакты ===== -->
+  <section id="contacts" class="section invert" aria-labelledby="contacts-title">
+    <div class="container contacts-inner">
+      <div>
+        <span class="eyebrow">05 · Контакты</span>
+        <h2 id="contacts-title" class="h2">Свяжитесь со мной<span class="dot">.</span></h2>
+        <p class="lead">Отвечаю в течение дня. Быстрее всего — в Telegram.</p>
+        <div class="btn-row" style="margin-top:28px">
+          <a class="btn btn-primary" href="https://t.me/kuklin_daniil" target="_blank" rel="noopener">Написать в Telegram <span class="arr" aria-hidden="true">→</span></a>
+          <a class="btn" href="/assets/kuklin.pdf" target="_blank" rel="noopener">PDF <span aria-hidden="true">↓</span></a>
+        </div>
+      </div>
 
-    // Скролл к якорю с учётом шапки
-    const headerH=parseInt(getComputedStyle(document.documentElement).getPropertyValue('--header-h'))||64;
-    function scrollToHash(hash){ const el=$(hash); if(!el) return; const y=window.scrollY+el.getBoundingClientRect().top-(headerH+8); window.scrollTo({top:y, behavior:'smooth'}); }
-    $$('a[data-nav]').forEach(a=>a.addEventListener('click',e=>{ if(a.hash){ e.preventDefault(); history.pushState(null,'',a.hash); scrollToHash(a.hash);} }));
+      <ul class="rows" role="list">
+        <li class="ct-row">
+          <span class="label">Telegram</span>
+          <a class="val" href="https://t.me/kuklin_daniil" target="_blank" rel="noopener">@kuklin_daniil</a>
+          <button class="icon-btn ct-copy" type="button" data-copy="@kuklin_daniil" aria-label="Скопировать Telegram">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.6" d="M9 9h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2Z"/><path fill="none" stroke="currentColor" stroke-width="1.6" d="M7 15H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+        </li>
+        <li class="ct-row">
+          <span class="label">Email</span>
+          <a class="val" href="mailto:saponembigas@gmail.com">saponembigas@gmail.com</a>
+          <button class="icon-btn ct-copy" type="button" data-copy="saponembigas@gmail.com" aria-label="Скопировать email">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.6" d="M9 9h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2Z"/><path fill="none" stroke="currentColor" stroke-width="1.6" d="M7 15H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+        </li>
+        <li class="ct-row">
+          <span class="label">GitHub</span>
+          <a class="val" href="https://github.com/Daniil-java" target="_blank" rel="noopener">github.com/Daniil-java</a>
+          <button class="icon-btn ct-copy" type="button" data-copy="https://github.com/Daniil-java" aria-label="Скопировать ссылку GitHub">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.6" d="M9 9h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2Z"/><path fill="none" stroke="currentColor" stroke-width="1.6" d="M7 15H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+        </li>
+      </ul>
+    </div>
+  </section>
+</main>
 
-    // Подсветка активного пункта
-    const navLinks=$$('a[data-nav]'); const map=new Map(navLinks.map(a=>[a.getAttribute('href'),a]));
-    const io=new IntersectionObserver((entries)=>{ entries.forEach(en=>{ const id='#'+en.target.id; const link=map.get(id); if(!link) return; if(en.isIntersecting){ navLinks.forEach(x=>x.classList.remove('active')); link.classList.add('active'); if(history.replaceState) history.replaceState(null,'',id); } }); },{ rootMargin:`-${headerH+24}px 0px -60% 0px`, threshold:0.1 });
-    ['about','stack','experience','education','contacts'].forEach(id=>{ const s=$('#'+id); if(s) io.observe(s); });
+<footer class="site-footer" role="contentinfo">
+  <div class="container foot">
+    <div>© <span id="year"></span> Даниил Куклин</div>
+    <nav aria-label="Другие страницы">
+      <a href="/">Главная</a>
+      <a href="/freelance">Услуги для заказчиков</a>
+      <a href="https://github.com/Daniil-java" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</footer>
 
-    // ====== Фон-канвас «поток» (лёгкий) ======
-    (function flow(){
-      const canvas = document.getElementById('flow');
-      const ctx = canvas.getContext('2d');
-      const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-      let w,h, dpr = Math.min(devicePixelRatio || 1, 2);
-
-      function resize(){
-        w = canvas.width = Math.floor(innerWidth * dpr);
-        h = canvas.height = Math.floor(innerHeight * dpr);
-        canvas.style.width = innerWidth + 'px';
-        canvas.style.height = innerHeight + 'px';
-      }
-      resize(); addEventListener('resize', resize);
-
-      if (reduce) { ctx.clearRect(0,0,w,h); return; }
-
-      // Кол-во частиц — от площади экрана (ограничим для перфа)
-      const count = Math.min(120, Math.floor((innerWidth*innerHeight)/12000));
-      const parts = Array.from({length:count}, () => ({
-        x: Math.random()*w, y: Math.random()*h,
-        vx: (Math.random()*.6 + .2) * dpr, // скорость вправо
-        vy: (Math.random()-.5)*.2*dpr,
-        a: Math.random()*Math.PI*2,
-        r: Math.random()*1.6 + .6
-      }));
-
-      let last=performance.now();
-      function tick(now){
-        const dt = Math.min(33, now-last); last=now;
-        ctx.clearRect(0,0,w,h);
-
-        // лёгкий градиент
-        const g = ctx.createLinearGradient(0,0,w,h);
-        g.addColorStop(0, 'rgba(108,99,255,0.08)');
-        g.addColorStop(1, 'rgba(255,122,24,0.06)');
-        ctx.fillStyle = g;
-        ctx.fillRect(0,0,w,h);
-
-        // линии потока + точки
-        ctx.lineWidth = 1 * dpr;
-        for (let i=0;i<parts.length;i++){
-          const p = parts[i];
-          // «поток»: чуть изгибаем траекторию синусом
-          p.a += 0.002 * dt;
-          p.vy += Math.sin(p.a) * 0.002 * dpr;
-          p.x += p.vx * dt * 0.06;
-          p.y += p.vy * dt * 0.06;
-
-          // респавн справа/сверху/снизу
-          if (p.x > w+10) { p.x = -10; p.y = Math.random()*h; }
-          if (p.y > h+10) p.y = -10;
-          if (p.y < -10) p.y = h+10;
-
-          // линии к соседям (ближайшие)
-          const n = parts[(i+1)%parts.length];
-          const dist = Math.hypot(n.x-p.x, n.y-p.y);
-          if (dist < 120*dpr){
-            ctx.strokeStyle = 'rgba(108,99,255,0.15)';
-            ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(n.x, n.y); ctx.stroke();
-          }
-
-          // точка
-          ctx.fillStyle = 'rgba(255,122,24,0.5)';
-          ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fill();
-        }
-        requestAnimationFrame(tick);
-      }
-      requestAnimationFrame(tick);
-    })();
-
-    // Контакты: замена плейсхолдера на контакт без изменения размера
-    (function flatContacts(){
-        document.addEventListener('click', (e)=>{
-            const btn = e.target.closest('.ct-reveal');
-            if (btn){
-                const wrap = btn.closest('.ct-value');
-                if (wrap) wrap.setAttribute('data-state', 'shown');
-            }
-            const cp = e.target.closest('.ct-copy');
-            if (cp){
-                const val = cp.getAttribute('data-copy') || '';
-                navigator.clipboard?.writeText(val).then(()=>{
-                    const old = cp.textContent;
-                    cp.textContent = 'Скопировано!';
-                    setTimeout(()=>cp.textContent = old, 1200);
-                });
-            }
-        });
-    })();
-
-  </script>
+<aside id="mobileDrawer" class="drawer" hidden aria-hidden="true" aria-label="Меню">
+  <div class="drawer-backdrop"></div>
+  <nav class="drawer-panel">
+    <span class="label">Оглавление</span>
+    <ul></ul>
+  </nav>
+</aside>
+<script src="/assets/personal.js"></script>
 </body>
 </html>
