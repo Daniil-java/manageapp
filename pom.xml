@@ -263,6 +263,8 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<configuration>
+					<!-- Явно: без @SpringBootApplication (et-117) плагин не отличает приложение от других классов с main -->
+					<mainClass>com.kuklin.manageapp.ManageappApplication</mainClass>
 					<excludes>
 						<exclude>
 							<groupId>org.projectlombok</groupId>
