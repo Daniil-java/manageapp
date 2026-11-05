@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-import static com.kuklin.manageapp.bots.hhparserbot.models.VacancyStatus.PENDING;
 import static com.kuklin.manageapp.bots.pomidorotimer.models.timer.TimerStatus.PAUSED;
 
 
@@ -214,7 +213,7 @@ public class TimerService {
                 break;
             case PAUSED:
                 if (timer.getStopTime() == null) {
-                    return updateTimerStatusOrNull(timerId, String.valueOf(PENDING));
+                    return updateTimerStatusOrNull(timerId, String.valueOf(TimerStatus.PENDING));
                 }
                 int timeToStop = (int) Duration.between(LocalDateTime.now(), timer.getStopTime()).getSeconds() / 60;
                 timer.setMinuteToStop(timeToStop);
