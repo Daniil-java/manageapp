@@ -10,6 +10,8 @@
     <meta property="og:title" th:content="${t['meta.title']}">
     <meta property="og:description" th:content="${t['meta.og-description']}">
     <meta property="og:url" th:content="|https://zefir.fit/?lang=${lang}|">
+    <!-- Основной адрес страницы для поисковиков: без ?utm= и прочих меток, у каждого языка свой -->
+    <link rel="canonical" th:href="|https://zefir.fit/?lang=${lang}|">
     <meta property="og:locale" th:content="${lang == 'ru'} ? 'ru_RU' : 'en_US'">
     <link rel="alternate" th:each="l : ${languages}" th:attr="hreflang=${l.code}" th:href="|https://zefir.fit/?lang=${l.code}|">
     <link rel="alternate" hreflang="x-default" href="https://zefir.fit/">

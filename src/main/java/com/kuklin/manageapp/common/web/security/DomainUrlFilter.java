@@ -20,6 +20,11 @@ import java.util.Map;
 @Component
 public class DomainUrlFilter extends OncePerRequestFilter {
 
+    private static final String CALORIE_DOMAIN = "zefir.fit";
+    private static final String CALORIE_SITE_URL = "https://" + CALORIE_DOMAIN;
+    // Лендинг живёт в корне zefir.fit (WebController пересылает "/" на /calorie). Прямой /calorie — дубль адреса
+    private static final List<String> LANDING_PATHS = List.of("/calorie", "/calorie/");
+
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
     private final Map<String, DomainRules> rulesByDomain = Map.of(
@@ -56,6 +61,16 @@ public class DomainUrlFilter extends OncePerRequestFilter {
         String host = normalizeHost(request.getServerName());
         String path = request.getRequestURI();
 
+        // Один адрес у лендинга: zefir.fit/calorie → zefir.fit. 301 — поисковики склеят адреса
+        if ("GET".equals(request.getMethod()) && isCalorieLandingDuplicate(host, path)) {
+            String query = request.getQueryString();
+            String target = CALORIE_SITE_URL + "/" + (query == null ? "" : "?" + query);
+            log.info("[DOMAIN_URL_FILTER] Host {}, path {}, permanent redirect to {}", host, path, target);
+            response.setStatus(HttpServletResponse.SC_MOVED_PERMANENTLY);
+            response.setHeader("Location", target);
+            return;
+        }
+
         DomainRules rules = findRulesForHost(host);
 
         if (rules == null) {
@@ -69,7 +84,7 @@ public class DomainUrlFilter extends OncePerRequestFilter {
 
         if (excluded && rules.redirectExcludedTo() != null && "GET".equals(request.getMethod())) {
             String query = request.getQueryString();
-            String target = rules.redirectExcludedTo() + path + (query == null ? "" : "?" + query);
+            String target = rules.redirectExcludedTo() + buildCalorieSitePath(path) + (query == null ? "" : "?" + query);
             log.info("[DOMAIN_URL_FILTER] Host {}, path {}, redirect to {}", host, path, target);
             response.sendRedirect(target);
             return;
@@ -107,6 +122,16 @@ public class DomainUrlFilter extends OncePerRequestFilter {
         }
 
         return host;
+    }
+
+    /** Прямой zefir.fit/calorie — дубль лендинга, который живёт в корне. */
+    private boolean isCalorieLandingDuplicate(String host, String path) {
+        return host.equals(CALORIE_DOMAIN) && LANDING_PATHS.contains(path);
+    }
+
+    /** Путь на zefir.fit: лендинг — в корне, остальные страницы — по тому же пути. */
+    private String buildCalorieSitePath(String path) {
+        return LANDING_PATHS.contains(path) ? "/" : path;
     }
 
     private DomainRules findRulesForHost(String host) {

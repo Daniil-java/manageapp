@@ -36,7 +36,8 @@ class CalorieLandingTemplateTest {
         String html = render(AppLanguage.RU);
 
         assertThat(html).contains("<html lang=\"ru\"", "Считай калории по&nbsp;фото", "Выгода 22%",
-                "href=\"/calorie/terms?lang=ru\"", ">English</a>");
+                "href=\"/calorie/terms?lang=ru\"", ">English</a>",
+                "<link rel=\"canonical\" href=\"https://zefir.fit/?lang=ru\">");
         assertThat(html).doesNotContain("th:text", "th:utext", "Save 22%");
     }
 

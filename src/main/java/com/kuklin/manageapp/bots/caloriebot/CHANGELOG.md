@@ -1,3 +1,9 @@
+## 0.0.86 (05.11.2026)
+[et-118] — Один адрес у лендинга: zefir.fit
+* zefir.fit/calorie и zefir.fit/calorie/ → 301 на zefir.fit/ (DomainUrlFilter), ?lang= и ?utm= сохраняются. Лендинг живёт в корне (WebController пересылает "/" на /calorie), прямой /calorie был дублем адреса. Остальные страницы (/calorie/privacy, /calorie/terms) не трогаем.
+* Старая ссылка kuklin.dev/calorie ведёт сразу в корень zefir.fit, без второго редиректа.
+* В лендинге `<link rel="canonical">` — https://zefir.fit/?lang=<язык>: адреса с ?utm= поисковики считают той же страницей.
+
 ## 0.0.85 (05.11.2026)
 [et-116] — Распознавание еды: новые промпты и ответ по JSON-схеме
 * Фото, текст и голос: ИИ отвечает по JSON-схеме (Structured Outputs, strict) — AiDishResponse.RESPONSE_FORMAT, корень {"dishes": [...]}. Формат гарантирует OpenAI: из промптов убраны требования «только JSON», NOT NULL, а из DishService — снятие ```json-обёртки. Категория — enum, вместо null — UNKNOWN. userId и isDish у ИИ больше не спрашиваем.
