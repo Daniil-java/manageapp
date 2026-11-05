@@ -27,8 +27,26 @@ public class OpenAiChatCompletionRequest {
     public static final float TEMPERATURE_CREATIVE = 0.8f;
     private static final String MODEL_DEFAULT = ChatModel.GPT51.getName();
 
-    public record ResponseFormat(String type) {
-        public static final ResponseFormat JSON_OBJECT = new ResponseFormat("json_object");
+    /**
+     * json_object — любой JSON-объект; json_schema — ответ строго по схеме (Structured Outputs).
+     */
+    public record ResponseFormat(
+            String type,
+            @JsonInclude(JsonInclude.Include.NON_NULL)
+            @JsonProperty("json_schema")
+            JsonSchema jsonSchema) {
+        public static final ResponseFormat JSON_OBJECT = new ResponseFormat("json_object", null);
+
+        /**
+         * Ответ строго по схеме. Корень схемы — объект; strict требует перечислить все поля в required
+         * и запретить лишние (additionalProperties: false).
+         */
+        public static ResponseFormat makeJsonSchema(String name, Object schema) {
+            return new ResponseFormat("json_schema", new JsonSchema(name, true, schema));
+        }
+    }
+
+    public record JsonSchema(String name, boolean strict, Object schema) {
     }
 
     /**
@@ -62,6 +80,21 @@ public class OpenAiChatCompletionRequest {
                 .setTemperature(TEMPERATURE_DEFAULT)
                 .setModel(MODEL_DEFAULT)
                 .setMessages(PhotoMessageWithPrompt.getFirstMessage(content));
+    }
+
+    /**
+     * Инструкции developer-сообщением, данные пользователя (и фото, если есть) — user-сообщением,
+     * ответ — по JSON-схеме.
+     *
+     * @param imageUrl фото или null
+     */
+    public static OpenAiChatCompletionRequest makeStructuredRequest(
+            String instructions, String content, String imageUrl, ResponseFormat responseFormat) {
+        return new OpenAiChatCompletionRequest()
+                .setTemperature(TEMPERATURE_DEFAULT)
+                .setModel(MODEL_DEFAULT)
+                .setMessages(PhotoMessageWithPrompt.getMessageListWithInstructions(instructions, content, imageUrl))
+                .setResponseFormat(responseFormat);
     }
 
     public static OpenAiChatCompletionRequest makeDefaultImgRequest(String content, String imageUrl) {

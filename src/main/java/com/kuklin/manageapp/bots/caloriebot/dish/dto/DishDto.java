@@ -108,24 +108,6 @@ public class DishDto {
         return dish;
     }
 
-    public void checkValuesNotNull() {
-        if (calories == null) calories = 0;
-        if (proteins == null) proteins = 0;
-        if (fats == null) fats = 0;
-        if (carbohydrates == null) carbohydrates = 0;
-
-        //значения, которые не могут быть меньше единицы
-        if (portions == null || portions < 1) portions = 1;
-        // ИИ мог прислать только вес порции — общий вес считаем из него
-        if ((weight == null || weight <= 1) && portionWeight != null && portionWeight > 1) {
-            weight = Dish.scale(portionWeight, portions);
-        }
-        if (weight == null) weight = 1;
-        if (portionWeight == null) portionWeight = 1;
-
-        if (aiConfidence == null) aiConfidence = 0;
-    }
-
     // ===================== DTO -> ENTITY =====================
 
     public static Dish toEntity(DishDto dto) {

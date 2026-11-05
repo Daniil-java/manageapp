@@ -1,7 +1,9 @@
 package com.kuklin.manageapp.bots.caloriebot.dish;
 
 import com.kuklin.manageapp.bots.caloriebot.settings.UserSettingsService;
+import com.kuklin.manageapp.bots.caloriebot.dish.ai.AiDishResponse;
 import com.kuklin.manageapp.bots.caloriebot.dish.ai.AiInputValidator;
+import com.kuklin.manageapp.bots.caloriebot.dish.ai.DishCalorieBotPrompts;
 import com.kuklin.manageapp.bots.caloriebot.access.CalorieAccessService;
 import com.kuklin.manageapp.bots.caloriebot.access.AiRateLimiter;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,6 +30,7 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -36,14 +39,17 @@ import static org.mockito.Mockito.when;
 /**
  * Разбор ответа ИИ: «нет еды / кривой ответ» → null, сбой сохранения → DISH_SAVE_FAILED,
  * чтобы FeatureAccessAspect вернул попытку, а не засчитал её как «на фото нет еды».
- * Промпт — с текстом пользователя и его языком (на нём названия блюд, если по тексту язык не понять).
+ * Пищевая ценность приходит на 100 г — итог на порцию считается по весу.
+ * Инструкции неизменны (кэшируются), текст пользователя и его язык — только в сообщении пользователя.
  */
 @SuppressWarnings("unchecked")
 class DishServiceAiResponseTest {
 
     private static final Long USER_ID = 7L;
-    private static final String DISH_JSON =
-            "[{\"name\":\"Омлет\",\"calories\":250,\"weight\":150,\"portions\":1,\"isDish\":true}]";
+    private static final String DISH_JSON = """
+            {"dishes":[{"estimation":"2 яйца и молоко, ~150 г","name":"Омлет","emojiIcon":"🍳",
+            "category":"BREAKFAST_ITEM","weightGrams":150,"portions":1,"caloriesPer100g":160,
+            "proteinsPer100g":11,"fatsPer100g":12.4,"carbohydratesPer100g":1.6,"aiConfidence":80}]}""";
 
     private DishService service;
     private OpenAiProviderProcessor openAi;
@@ -68,19 +74,30 @@ class DishServiceAiResponseTest {
     }
 
     private void aiAnswers(String json) {
-        when(openAi.fetchResponse(any(), anyString(), any(), anyString(), any())).thenReturn(json);
+        when(openAi.fetchStructuredResponse(any(), anyString(), anyString(), any(), any(), any(), any()))
+                .thenReturn(json);
     }
 
     @Test
-    void savedDishesAreReturned() {
+    void savedDishesAreReturnedWithTotalsByWeight() {
         aiAnswers(DISH_JSON);
         when(self.saveDishes(eq(USER_ID), anyList())).thenAnswer(inv -> inv.getArgument(1));
 
         List<Dish> dishes = service.getDishByDescriptionOrNull(USER_ID, "омлет");
 
         assertThat(dishes).hasSize(1);
-        assertThat(dishes.get(0).getName()).isEqualTo("Омлет");
-        assertThat(dishes.get(0).getUserId()).isEqualTo(USER_ID);
+        Dish dish = dishes.get(0);
+        assertThat(dish.getName()).isEqualTo("Омлет");
+        assertThat(dish.getUserId()).isEqualTo(USER_ID);
+        assertThat(dish.getCategory()).isEqualTo(Dish.FoodCategory.BREAKFAST_ITEM);
+        assertThat(dish.getWeight()).isEqualTo(150);
+        assertThat(dish.getPortionWeight()).isEqualTo(150);
+        // 160 × 1.5 = 240; 12.4 × 1.5 = 18.6 → 19
+        assertThat(dish.getCalories()).isEqualTo(240);
+        assertThat(dish.getProteins()).isEqualTo(17);
+        assertThat(dish.getFats()).isEqualTo(19);
+        assertThat(dish.getCarbohydrates()).isEqualTo(2);
+        assertThat(dish.getAiConfidence()).isEqualTo(80);
     }
 
     @Test
@@ -105,57 +122,74 @@ class DishServiceAiResponseTest {
     }
 
     @Test
-    void notADishIsNoFoodAndNothingIsSaved() {
-        aiAnswers("[{\"name\":\"Стол\",\"isDish\":false}]");
+    void emptyDishesIsNoFoodAndNothingIsSaved() {
+        aiAnswers("{\"dishes\":[]}");
 
         assertThat(service.getDishByDescriptionOrNull(USER_ID, "стол")).isNull();
         verify(self, never()).saveDishes(anyLong(), anyList());
     }
 
-    // ── Язык названий блюд ─────────────────────────────────
+    @Test
+    void dishWithoutNameIsSkipped() {
+        aiAnswers("{\"dishes\":[{\"name\":\" \",\"weightGrams\":100,\"caloriesPer100g\":50}]}");
+
+        assertThat(service.getDishByDescriptionOrNull(USER_ID, "что-то")).isNull();
+        verify(self, never()).saveDishes(anyLong(), anyList());
+    }
+
+    // ── Промпт: инструкции отдельно, данные пользователя отдельно ─────────
 
     @Test
-    void descriptionPromptCarriesTextAndUserLanguage() {
-        aiAnswers("[]");
+    void descriptionGoesToUserMessageWithUserLanguage() {
+        aiAnswers("{\"dishes\":[]}");
 
         service.getDishByDescriptionOrNull(USER_ID, "chicken breast 200g");
 
-        ArgumentCaptor<String> prompt = ArgumentCaptor.forClass(String.class);
-        verify(openAi).fetchResponse(any(), prompt.capture(), any(), anyString(), any());
-        assertThat(prompt.getValue())
+        ArgumentCaptor<String> userMessage = ArgumentCaptor.forClass(String.class);
+        verify(openAi).fetchStructuredResponse(any(), eq(DishCalorieBotPrompts.TEXT_INSTRUCTIONS),
+                userMessage.capture(), isNull(), eq(AiDishResponse.RESPONSE_FORMAT), any(), any());
+        assertThat(userMessage.getValue())
                 .contains("Описание: chicken breast 200g")
                 .contains("если язык не понять — English");
     }
 
     @Test
-    void photoPromptCarriesCaptionAndUserLanguage() {
-        when(openAi.fetchPhotoResponse(any(), anyString(), anyString(), any())).thenReturn("[]");
+    void photoCaptionGoesToUserMessageWithUserLanguage() {
+        aiAnswers("{\"dishes\":[]}");
 
         service.getDishDtoByPhoto(USER_ID, "data:image/jpeg;base64,AAAA", "my lunch");
 
-        ArgumentCaptor<String> prompt = ArgumentCaptor.forClass(String.class);
-        verify(openAi).fetchPhotoResponse(any(), prompt.capture(), anyString(), any());
-        assertThat(prompt.getValue())
-                .contains("текста пользователя (\"my lunch\")")
+        ArgumentCaptor<String> userMessage = ArgumentCaptor.forClass(String.class);
+        verify(openAi).fetchStructuredResponse(any(), eq(DishCalorieBotPrompts.PHOTO_INSTRUCTIONS),
+                userMessage.capture(), eq("data:image/jpeg;base64,AAAA"), eq(AiDishResponse.RESPONSE_FORMAT),
+                any(), any());
+        assertThat(userMessage.getValue())
+                .contains("Подпись к фото: «my lunch»")
                 .contains("если язык подписи не понять — на языке English")
-                .doesNotContain("Подписи нет");
+                .doesNotContain("подписи нет");
     }
 
     /** Без подписи — прямое указание языка (раньше в промпт попадало «null», и названия выходили русскими). */
     @Test
     void photoWithoutCaptionAsksForUserLanguageOnly() {
-        when(openAi.fetchPhotoResponse(any(), anyString(), anyString(), any())).thenReturn("[]");
+        aiAnswers("{\"dishes\":[]}");
 
         service.getDishDtoByPhoto(USER_ID, "data:image/jpeg;base64,AAAA", null);
 
-        ArgumentCaptor<String> prompt = ArgumentCaptor.forClass(String.class);
-        verify(openAi).fetchPhotoResponse(any(), prompt.capture(), anyString(), any());
-        String rule = "Подписи нет, поэтому название — ТОЛЬКО на языке English";
-        assertThat(prompt.getValue())
-                .contains("текста пользователя (\"\")")
-                .doesNotContain("(\"null\")")
+        ArgumentCaptor<String> userMessage = ArgumentCaptor.forClass(String.class);
+        verify(openAi).fetchStructuredResponse(any(), anyString(), userMessage.capture(), anyString(),
+                any(), any(), any());
+        assertThat(userMessage.getValue())
+                .contains("Подпись к фото: нет")
+                .contains("подписи нет, поэтому название — ТОЛЬКО на языке English")
+                .doesNotContain("null")
                 .doesNotContain("на языке подписи");
-        // В описании поля name и в напоминании в конце
-        assertThat(prompt.getValue().indexOf(rule)).isNotEqualTo(prompt.getValue().lastIndexOf(rule));
+    }
+
+    /** Инструкции без подстановок — иначе OpenAI не закэширует их как общее начало запроса. */
+    @Test
+    void instructionsHaveNoPlaceholders() {
+        assertThat(DishCalorieBotPrompts.PHOTO_INSTRUCTIONS).doesNotContain("%");
+        assertThat(DishCalorieBotPrompts.TEXT_INSTRUCTIONS).doesNotContain("%");
     }
 }

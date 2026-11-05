@@ -6,7 +6,8 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum ChatRole {
-    USER("user"), ASSISTANT("assistant"), MODEL("model");
+    // DEVELOPER — инструкции OpenAI: приоритет выше сообщения пользователя
+    USER("user"), ASSISTANT("assistant"), MODEL("model"), DEVELOPER("developer");
 
     private String value;
 }

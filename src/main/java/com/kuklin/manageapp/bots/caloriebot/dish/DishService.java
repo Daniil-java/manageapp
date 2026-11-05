@@ -1,12 +1,12 @@
 package com.kuklin.manageapp.bots.caloriebot.dish;
 import com.kuklin.manageapp.aiconversation.models.enums.AiMessageType;
 import com.kuklin.manageapp.bots.caloriebot.settings.UserSettingsService;
+import com.kuklin.manageapp.bots.caloriebot.dish.ai.AiDishResponse;
 import com.kuklin.manageapp.bots.caloriebot.dish.ai.AiInputValidator;
 import com.kuklin.manageapp.bots.caloriebot.access.CalorieAccessService;
 import com.kuklin.manageapp.bots.caloriebot.access.AiRateLimiter;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kuklin.manageapp.aiconversation.models.AiUsageContext;
 import com.kuklin.manageapp.aiconversation.models.enums.AiOperation;
@@ -41,11 +41,14 @@ import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 import static com.kuklin.manageapp.bots.caloriebot.dish.Dish.scale;
-import static com.kuklin.manageapp.bots.caloriebot.dish.ai.DishCalorieBotPrompts.AI_PHOTO_REQUEST;
-import static com.kuklin.manageapp.bots.caloriebot.dish.ai.DishCalorieBotPrompts.AI_REQUEST;
 import static com.kuklin.manageapp.bots.caloriebot.dish.ai.DishCalorieBotPrompts.AI_VOICE_TRANSCRIPTION_PROMPT;
+import static com.kuklin.manageapp.bots.caloriebot.dish.ai.DishCalorieBotPrompts.PHOTO_INSTRUCTIONS;
 import static com.kuklin.manageapp.bots.caloriebot.dish.ai.DishCalorieBotPrompts.PHOTO_NAME_LANGUAGE_FROM_CAPTION;
 import static com.kuklin.manageapp.bots.caloriebot.dish.ai.DishCalorieBotPrompts.PHOTO_NAME_LANGUAGE_NO_CAPTION;
+import static com.kuklin.manageapp.bots.caloriebot.dish.ai.DishCalorieBotPrompts.PHOTO_NO_CAPTION;
+import static com.kuklin.manageapp.bots.caloriebot.dish.ai.DishCalorieBotPrompts.PHOTO_USER_MESSAGE;
+import static com.kuklin.manageapp.bots.caloriebot.dish.ai.DishCalorieBotPrompts.TEXT_INSTRUCTIONS;
+import static com.kuklin.manageapp.bots.caloriebot.dish.ai.DishCalorieBotPrompts.TEXT_USER_MESSAGE;
 
 @Service
 @RequiredArgsConstructor
@@ -101,14 +104,17 @@ public class DishService {
         boolean hasCaption = message != null && !message.isBlank();
         String nameLanguageRule = String.format(
                 hasCaption ? PHOTO_NAME_LANGUAGE_FROM_CAPTION : PHOTO_NAME_LANGUAGE_NO_CAPTION, aiLanguageOf(userId));
-        String aiPhotoPrompt = String.format(AI_PHOTO_REQUEST, hasCaption ? message : "", nameLanguageRule);
+        String userMessage = String.format(PHOTO_USER_MESSAGE, getQuotedCaption(message), nameLanguageRule);
         String aiResponse;
         try (var ignored = AiUsageContext.open(userId, AiOperation.DISH_PHOTO)) {
-            aiResponse = openAiIntegrationService.fetchPhotoResponse(
+            aiResponse = openAiIntegrationService.fetchStructuredResponse(
                     telegramCaloriesBotKeyComponents.getAiKey(),
-                    aiPhotoPrompt,
+                    PHOTO_INSTRUCTIONS,
+                    userMessage,
                     photoBase64,
-                    BotIdentifier.CALORIE_BOT
+                    AiDishResponse.RESPONSE_FORMAT,
+                    BotIdentifier.CALORIE_BOT,
+                    AiMessageType.PHOTO
             );
         }
         return AccessResult.success(getDishListByAiResponseOrNull(userId, aiResponse));
@@ -126,27 +132,25 @@ public class DishService {
         String nameLanguageRule = String.format(PHOTO_NAME_LANGUAGE_FROM_CAPTION, AppLanguage.RU.getNativeName());
         String aiResponse;
         try (var ignored = AiUsageContext.open(null, AiOperation.CHANNEL_PHOTO)) {
-            aiResponse = openAiIntegrationService.fetchPhotoResponse(
+            aiResponse = openAiIntegrationService.fetchStructuredResponse(
                     telegramCaloriesBotKeyComponents.getAiKey(),
-                    String.format(AI_PHOTO_REQUEST, hint == null ? "" : hint, nameLanguageRule),
+                    PHOTO_INSTRUCTIONS,
+                    String.format(PHOTO_USER_MESSAGE, getQuotedCaption(hint), nameLanguageRule),
                     imageUrl,
-                    BotIdentifier.CHANNEL_POSTER
+                    AiDishResponse.RESPONSE_FORMAT,
+                    BotIdentifier.CHANNEL_POSTER,
+                    AiMessageType.PHOTO
             );
         }
-        List<DishDto> dtos = parseJsonOrNull(aiResponse, new TypeReference<List<DishDto>>() {});
-        if (dtos == null) return null;
-        try {
-            List<DishDto> dishes = new ArrayList<>();
-            for (DishDto dto : dtos) {
-                if (dto.getIsDish() == null || !dto.getIsDish()) continue;
-                dto.checkValuesNotNull();
-                dishes.add(dto);
-            }
-            return dishes.isEmpty() ? null : dishes;
-        } catch (RuntimeException e) {
-            log.warn("Invalid dish data in channel photo recognition: {}", e.getMessage());
-            return null;
+        return findDishDtosOrNull(aiResponse);
+    }
+
+    /** Подпись к фото для промпта: в кавычках, без подписи — «нет». */
+    private static String getQuotedCaption(String caption) {
+        if (caption == null || caption.isBlank()) {
+            return PHOTO_NO_CAPTION;
         }
+        return "«" + caption + "»";
     }
 
     public List<DishDto> getDishDtoByDescriptionOrNull(Long userId, String text) {
@@ -159,11 +163,13 @@ public class DishService {
         String aiResponse;
         // Из голосового — уже открыт DISH_VOICE, он и запишется
         try (var ignored = AiUsageContext.open(userId, AiOperation.DISH_TEXT)) {
-            aiResponse = openAiIntegrationService.fetchResponse(
+            aiResponse = openAiIntegrationService.fetchStructuredResponse(
                     telegramCaloriesBotKeyComponents.getAiKey(),
-                    String.format(AI_REQUEST, text, aiLanguageOf(userId)),
+                    TEXT_INSTRUCTIONS,
+                    String.format(TEXT_USER_MESSAGE, text, aiLanguageOf(userId)),
+                    null,
+                    AiDishResponse.RESPONSE_FORMAT,
                     CalorieTelegramBot.BOT_IDENTIFIER,
-                    this.getClass().getSimpleName(),
                     AiMessageType.TEXT
             );
         }
@@ -259,7 +265,7 @@ public class DishService {
     @Transactional
     public DishDto addManualDishDto(Long userId, ManualDishRequest request) {
         checkDailyDishLimitOrThrow(userId);
-        // Вес и порции необязательны; без них — те же значения по умолчанию, что и у блюд от ИИ (DishDto.checkValuesNotNull)
+        // Вес и порции необязательны; без них — те же значения по умолчанию, что и у блюд от ИИ (AiDishResponse.AiDish.toDishDto)
         int weight = request.getWeight() != null ? request.getWeight() : 1;
         int portions = request.getPortions() != null ? request.getPortions() : 1;
         Dish dish = new Dish()
@@ -417,57 +423,49 @@ public class DishService {
     }
 
     /**
-     * Ответ ИИ → несохранённые блюда. null — JSON не разобрался, в нём нет блюд или данные кривые.
+     * Ответ ИИ → несохранённые блюда. null — JSON не разобрался или в нём нет блюд.
      */
     private List<Dish> toDishesOrNull(Long userId, String response) {
-        List<DishDto> dtos = parseJsonOrNull(response, new TypeReference<List<DishDto>>() {});
-        if (dtos == null || dtos.isEmpty()) {
+        List<DishDto> dtos = findDishDtosOrNull(response);
+        if (dtos == null) {
             return null;
         }
 
         List<Dish> dishes = new ArrayList<>();
-        try {
-            for (DishDto dto : dtos) {
-                dto.checkValuesNotNull();
-                if (dto.getIsDish() != null && dto.getIsDish()) {
-                    dto.setUserId(userId);
-                    dishes.add(Dish.toEntity(dto));
-                }
-            }
-        } catch (RuntimeException e) {
-            log.warn("Invalid dish data in AI response for user {}: {}", userId, e.getMessage());
-            return null;
+        for (DishDto dto : dtos) {
+            dto.setUserId(userId);
+            dishes.add(Dish.toEntity(dto));
         }
-        return dishes.isEmpty() ? null : dishes;
+        return dishes;
     }
 
-    private <T> T parseJsonOrNull(String json, TypeReference<T> typeReference) {
-        if (json == null) return null;
-
-        if (json.startsWith("```")) {
-            json = stripJsonFence(json);
+    /**
+     * Ответ ИИ по схеме {@link AiDishResponse} → блюда с пищевой ценностью на всю порцию.
+     * null — JSON не разобрался или в нём нет блюд (блюда без названия отбрасываем).
+     */
+    private List<DishDto> findDishDtosOrNull(String response) {
+        if (response == null) {
+            return null;
         }
-
+        AiDishResponse aiResponse;
         try {
-            return objectMapper.readValue(json, typeReference);
+            aiResponse = objectMapper.readValue(response, AiDishResponse.class);
         } catch (JsonProcessingException e) {
             log.error("JSON deserialization error: {}", e.getMessage());
             return null;
         }
-    }
-
-    private static String stripJsonFence(String s) {
-        if (s == null) return null;
-        s = s.replace("\r", "");
-        String lower = s.toLowerCase();
-        if (lower.startsWith("```json\n")) {
-            int end = s.lastIndexOf("```");
-            if (end > 0) {
-                String inner = s.substring("```json\n".length(), end);
-                return inner.strip();
-            }
+        if (aiResponse.dishes() == null) {
+            return null;
         }
-        return s;
+
+        List<DishDto> dishes = new ArrayList<>();
+        for (AiDishResponse.AiDish aiDish : aiResponse.dishes()) {
+            if (aiDish == null || aiDish.name() == null || aiDish.name().isBlank()) {
+                continue;
+            }
+            dishes.add(aiDish.toDishDto());
+        }
+        return dishes.isEmpty() ? null : dishes;
     }
 
     @Transactional

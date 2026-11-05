@@ -91,6 +91,27 @@ public class OpenAiProviderProcessor implements ProviderProcessor, AiTextClient 
         return fetchResponse(aiKey, request, botIdentifier, AiMessageType.PHOTO);
     }
 
+    /**
+     * Запрос с ответом по JSON-схеме: инструкции — developer-сообщением (кэшируются OpenAI),
+     * данные пользователя и фото — user-сообщением.
+     *
+     * @param imageUrl фото (https://… или data:…;base64) или null для текстового запроса
+     */
+    public String fetchStructuredResponse(
+            String aiKey,
+            String instructions,
+            String content,
+            String imageUrl,
+            OpenAiChatCompletionRequest.ResponseFormat responseFormat,
+            BotIdentifier botIdentifier,
+            AiMessageType messageType
+    ) {
+        log.info("OpenAI: structured {} request!", messageType);
+        OpenAiChatCompletionRequest request = OpenAiChatCompletionRequest.makeStructuredRequest(
+                instructions, content, imageUrl, responseFormat);
+        return fetchResponse(aiKey, request, botIdentifier, messageType);
+    }
+
     private String fetchResponse(
             String aiKey,
             OpenAiChatCompletionRequest request,
@@ -98,7 +119,8 @@ public class OpenAiProviderProcessor implements ProviderProcessor, AiTextClient 
             AiMessageType messageType
     ) {
         increaseMetricsLog();
-        String requestText = request.getMessages().get(0).getContent().get(0).getText();
+        // В метрики — сообщение пользователя (последнее): неизменные developer-инструкции там не нужны
+        String requestText = request.getMessages().get(request.getMessages().size() - 1).getContent().get(0).getText();
         OpenAiChatCompletionResponse response = generateOrThrow(aiKey, request, botIdentifier, requestText, messageType);
 
         if (response.getUsage() != null) {

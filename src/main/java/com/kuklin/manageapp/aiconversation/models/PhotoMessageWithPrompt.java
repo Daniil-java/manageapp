@@ -31,4 +31,25 @@ public class PhotoMessageWithPrompt {
                         .setRole(ChatRole.USER.getValue())
         );
     }
+
+    /**
+     * Инструкции отдельным developer-сообщением, данные пользователя — в user-сообщении.
+     * Неизменные инструкции идут первыми — их кэширует OpenAI (кэш работает только по общему началу запроса).
+     *
+     * @param imageUrl фото к сообщению пользователя или null
+     */
+    public static List<PhotoMessageWithPrompt> getMessageListWithInstructions(
+            String instructions, String content, String imageUrl) {
+        List<ContentPart> userParts = imageUrl == null
+                ? List.of(ContentPart.getTextContentPart(content))
+                : List.of(ContentPart.getTextContentPart(content), ContentPart.getImgContentPart(imageUrl));
+        return List.of(
+                new PhotoMessageWithPrompt()
+                        .setContent(List.of(ContentPart.getTextContentPart(instructions)))
+                        .setRole(ChatRole.DEVELOPER.getValue()),
+                new PhotoMessageWithPrompt()
+                        .setContent(userParts)
+                        .setRole(ChatRole.USER.getValue())
+        );
+    }
 }
