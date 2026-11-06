@@ -31,12 +31,16 @@ import java.util.List;
 public class CalorieBotCommandsPublisher {
 
     /** Команда и ключ её описания в словаре bot_*. */
-    private record PublicCommand(Command command, String descriptionKey) {
+    record PublicCommand(Command command, String descriptionKey) {
     }
 
-    /** Команды в списке — по порядку. Служебные (/admin, /utmstats, кнопочные /close …) сюда не попадают. */
-    private static final List<PublicCommand> PUBLIC_COMMANDS = List.of(
+    /**
+     * Команды в списке — по порядку. Служебные (/admin, /utmstats, кнопочные /close …) сюда не попадают.
+     * Тот же список показывает /help (HelpCalorieUpdateHandler).
+     */
+    static final List<PublicCommand> PUBLIC_COMMANDS = List.of(
             new PublicCommand(Command.CALORIE_MENU, BotTextKeys.COMMAND_MENU),
+            new PublicCommand(Command.CALORIE_HELP, BotTextKeys.COMMAND_HELP),
             new PublicCommand(Command.CALORIE_KEYBOARD, BotTextKeys.COMMAND_KEYBOARD),
             new PublicCommand(Command.CALORIE_LANGUAGE, BotTextKeys.COMMAND_LANGUAGE),
             new PublicCommand(Command.CALORIE_SUPPORT, BotTextKeys.COMMAND_SUPPORT),

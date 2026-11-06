@@ -49,7 +49,7 @@ class CalorieBotCommandsPublisherTest {
     void commandsAreValidForTelegram() {
         for (SetMyCommands request : buildPublisher(Set.of()).buildRequests()) {
             assertThat(request.getCommands()).extracting(BotCommand::getCommand)
-                    .containsExactly("menu", "keyboard", "lang", "support", "terms", "privacy")
+                    .containsExactly("menu", "help", "keyboard", "lang", "support", "terms", "privacy")
                     .allMatch(name -> name.matches("[a-z0-9_]{1,32}"));
             assertThat(request.getCommands()).extracting(BotCommand::getDescription)
                     .allMatch(description -> !description.isBlank() && description.length() <= 256);

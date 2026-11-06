@@ -78,9 +78,11 @@ public final class BotTextKeys {
     public static final String MENU_TEXT = "menu.text";
     public static final String KEYBOARD_UPDATED = "keyboard.updated";
     public static final String KEYBOARD_PLACEHOLDER = "keyboard.placeholder";
+    public static final String HELP_TEXT = "help.text";
 
     // Описания команд в списке «/» (CalorieBotCommandsPublisher)
     public static final String COMMAND_MENU = "command.menu";
+    public static final String COMMAND_HELP = "command.help";
     public static final String COMMAND_KEYBOARD = "command.keyboard";
     public static final String COMMAND_LANGUAGE = "command.lang";
     public static final String COMMAND_SUPPORT = "command.support";

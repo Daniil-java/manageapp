@@ -1,3 +1,9 @@
+## 0.0.87 (06.11.2026)
+[et-119] — Команда /help
+* /help (HelpCalorieUpdateHandler): как записывать еду (фото, текст, голос), список команд и кнопка «📖 Инструкция в miniApp». Список команд — тот же, что в меню «/» (CalorieBotCommandsPublisher.PUBLIC_COMMANDS) с описаниями command.*: новая публичная команда попадает в /help сама. Тексты — help.text в bot_ru/en. Раньше /help уходил в распознавание еды.
+* /help — в списке команд «/» вторым, после /menu (command.help).
+* В знакомстве после /start (start.flow.intro) — строка про /help.
+
 ## 0.0.86 (05.11.2026)
 [et-118] — Один адрес у лендинга: zefir.fit
 * zefir.fit/calorie и zefir.fit/calorie/ → 301 на zefir.fit/ (DomainUrlFilter), ?lang= и ?utm= сохраняются. Лендинг живёт в корне (WebController пересылает "/" на /calorie), прямой /calorie был дублем адреса. Остальные страницы (/calorie/privacy, /calorie/terms) не трогаем.
