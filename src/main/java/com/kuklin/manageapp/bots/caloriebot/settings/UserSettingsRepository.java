@@ -56,6 +56,53 @@ public interface UserSettingsRepository extends JpaRepository<UserSettings, Long
     @Query("update UserSettings s set s.invitePromptLastAt = :now where s.userId = :userId and s.invitePromptLastAt is null")
     int claimFirstInvitePrompt(@Param("userId") Long userId, @Param("now") Instant now);
 
+    /**
+     * Новички без единого блюда, которым ещё можно напомнить (FirstDishNudgeSchedulerProcessor): пришли позже
+     * joinedAfter, напоминаний ушло меньше maxCount, напоминания не выключены, бот не заблокирован.
+     */
+    @Query(value = """
+            SELECT u.* FROM user_settings u
+            WHERE u.reminders_enabled = true
+              AND u.first_dish_nudge_count < :maxCount
+              AND u.created_at > :joinedAfter
+              AND NOT EXISTS (SELECT 1 FROM dishes d WHERE d.user_id = u.user_id)
+              AND u.user_id IN (
+                  SELECT tu.app_user_id
+                  FROM telegram_users tu
+                  WHERE tu.is_bot_blocked = false
+                    AND tu.bot_identifier = :botIdentifier
+              )
+            """, nativeQuery = true)
+    List<UserSettings> findFirstDishNudgeCandidates(@Param("joinedAfter") Instant joinedAfter,
+                                                    @Param("maxCount") int maxCount,
+                                                    @Param("botIdentifier") String botIdentifier);
+
+    /**
+     * Занять напоминание о первом блюде: счётчик меняется, только если он ещё sentCount — два параллельных
+     * запуска шедулера не отправят одно напоминание дважды.
+     *
+     * @return 1 — можно отправлять, 0 — уже отправили
+     */
+    @Transactional
+    @Modifying
+    @Query("""
+            update UserSettings s set s.firstDishNudgeCount = :newCount
+            where s.userId = :userId and s.firstDishNudgeCount = :sentCount
+            """)
+    int claimFirstDishNudge(@Param("userId") Long userId,
+                            @Param("sentCount") int sentCount,
+                            @Param("newCount") int newCount);
+
+    /**
+     * Занять сообщения после первого блюда (FirstDishFollowUpSender): только если ещё не отправляли.
+     *
+     * @return 1 — отправлять (время отмечено), 0 — уже отправляли или настроек нет
+     */
+    @Transactional
+    @Modifying
+    @Query("update UserSettings s set s.firstDishFollowUpAt = :now where s.userId = :userId and s.firstDishFollowUpAt is null")
+    int claimFirstDishFollowUp(@Param("userId") Long userId, @Param("now") Instant now);
+
     @Query("""
                 SELECT DISTINCT us FROM UserSettings us
                 JOIN TelegramUser tu 

@@ -42,11 +42,19 @@ public class InvitePromptSender {
     private final InviteLinks inviteLinks;
     private final CalorieTexts texts;
 
-    /** Старт-флоу: что дают приглашения — один раз за всё время; следующее предложение — не раньше чем через неделю. */
+    /**
+     * После первого блюда: что дают приглашения — один раз за всё время; следующее предложение — не раньше
+     * чем через неделю.
+     */
     public void sendStartFlowInvite(Long chatId, Long appUserId) {
         if (userSettingsRepository.claimFirstInvitePrompt(appUserId, Instant.now()) == 0) {
             return;
         }
+        sendInviteRewards(chatId, appUserId);
+    }
+
+    /** Что дают приглашения, с кнопками «переслать» и «подробнее» — без отметки времени (/intro). */
+    public void sendInviteRewards(Long chatId, Long appUserId) {
         String text = texts.get(appUserId, BotTextKeys.INVITE_START_FLOW,
                 referralRewardService.getPlanDays(ReferralRewardService.INVITED_PLAN_CODE),
                 referralRewardService.getPlanDays(ReferralRewardService.INVITER_PLAN_CODE),

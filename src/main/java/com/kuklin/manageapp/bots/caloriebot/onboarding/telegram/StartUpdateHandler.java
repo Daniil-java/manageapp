@@ -1,9 +1,7 @@
 package com.kuklin.manageapp.bots.caloriebot.onboarding.telegram;
 
-import com.kuklin.manageapp.bots.caloriebot.profile.UserNutritionProfileService;
 import com.kuklin.manageapp.bots.caloriebot.referral.ReferralRewardService;
 import com.kuklin.manageapp.bots.caloriebot.referral.UtmService;
-import com.kuklin.manageapp.bots.caloriebot.profile.UserNutritionProfile;
 import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
@@ -11,15 +9,11 @@ import com.kuklin.manageapp.bots.caloriebot.onboarding.CalculatorStartParam;
 import com.kuklin.manageapp.bots.caloriebot.bot.CalorieMenuButtons;
 import com.kuklin.manageapp.bots.caloriebot.web.CalorieSiteLinks;
 import com.kuklin.manageapp.bots.caloriebot.bot.CalorieTelegramBot;
-import com.kuklin.manageapp.bots.caloriebot.bot.KeyboardCalorieUpdateHandler;
 import com.kuklin.manageapp.bots.caloriebot.bot.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.bots.caloriebot.profile.telegram.CalculatorProfileUpdateHandler;
-import com.kuklin.manageapp.bots.caloriebot.profile.telegram.CalorieNutritionProfileUpdateHandler;
-import com.kuklin.manageapp.bots.caloriebot.subscription.telegram.SubscriptionTexts;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.telegram.TelegramBot;
 import com.kuklin.manageapp.common.telegram.BotIdentifier;
-import com.kuklin.manageapp.common.telegram.keyboard.ButtonStyle;
 import com.kuklin.manageapp.common.telegram.Command;
 import com.kuklin.manageapp.common.telegram.keyboard.TelegramKeyboard;
 import com.kuklin.manageapp.payment.entities.UserSubscription;
@@ -27,9 +21,10 @@ import com.kuklin.manageapp.payment.services.UserSubscriptionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Update;
-import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
+import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -48,12 +43,8 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
 
     private final UserSubscriptionService userSubscriptionService;
     private final CalorieTelegramBot calorieTelegramBot;
-    private final SubscriptionTexts subscriptionTexts;
-    private final UserNutritionProfileService userNutritionProfileService;
-    private final CalorieNutritionProfileUpdateHandler calorieNutritionProfileUpdateHandler;
     private final UtmService utmService;
     private final ReferralRewardService referralRewardService;
-    private final KeyboardCalorieUpdateHandler keyboardCalorieUpdateHandler;
     private final CalculatorProfileUpdateHandler calculatorProfileUpdateHandler;
     private final CalorieMenuButtons menuButtons;
     private final CalorieTexts texts;
@@ -121,42 +112,36 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
         calorieTelegramBot.sendReturnedMessage(chatId, text, TelegramKeyboard.builder().row(buttons).build(), null);
     }
 
+    /**
+     * Одно сообщение с клавиатурой меню: как записать первое блюдо (фото, текст, голос), пробный период и бонус
+     * партнёра строками, условия. Цель — первое блюдо: канал, приглашения и профиль — после него
+     * (FirstDishFollowUpSender), всё знакомство целиком — /intro. С лендинга с калькулятором — ещё предложение
+     * сохранить профиль.
+     */
     private void sendWelcome(Long chatId, Long appUserId, PendingStart start) {
-        CalculatorStartParam.Calculator calculator = start.calculator();
-        UserSubscription trial = start.trial();
         AppLanguage language = texts.languageOf(appUserId);
-        keyboardCalorieUpdateHandler.updateKeyboard(chatId, appUserId);
-        calorieTelegramBot.sendReturnedMessage(
-                chatId,
-                texts.get(language, BotTextKeys.START_WELCOME,
-                        CalorieSiteLinks.buildPrivacyUrl(language), CalorieSiteLinks.buildTermsUrl(language)),
-                getStartFlowKeyboard(appUserId),
-                null
-        );
-        if (calculator != null) {
-            calculatorProfileUpdateHandler.offer(chatId, appUserId, calculator);
-        }
-
-        //Сообщение с просьбой заполнить профиль
-//        sendUserNutritionFillRequest(update, telegramUser);
-
-        if (trial != null) {
-            calorieTelegramBot.sendReturnedMessage(chatId, subscriptionTexts.buildSubscriptionEntryText(appUserId, trial));
-        }
-        if (start.partnerBonusDays() > 0) {
-            calorieTelegramBot.sendReturnedMessage(chatId,
-                    texts.get(language, BotTextKeys.START_PARTNER_BONUS, start.partnerBonusDays()));
+        calorieTelegramBot.sendReturnedMessage(chatId, buildWelcomeText(language, start),
+                menuButtons.buildKeyboard(appUserId), null);
+        if (start.calculator() != null) {
+            calculatorProfileUpdateHandler.offer(chatId, appUserId, start.calculator());
         }
     }
 
-    private InlineKeyboardMarkup getStartFlowKeyboard(Long appUserId) {
-        return TelegramKeyboard.builder()
-                .row(TelegramKeyboard.button(
-                        texts.get(appUserId, BotTextKeys.COMMON_BUTTON_NEXT),
-                        Command.CALORIE_START_FLOW_1.getCommandText(),
-                        ButtonStyle.PRIMARY))
-                .row(menuButtons.buildCloseButton(appUserId))
-                .build();
+    private String buildWelcomeText(AppLanguage language, PendingStart start) {
+        List<String> parts = new ArrayList<>();
+        parts.add(texts.get(language, BotTextKeys.START_WELCOME));
+        UserSubscription trial = start.trial();
+        if (trial != null && trial.getStartAt() != null && trial.getEndAt() != null) {
+            long trialDays = Duration.between(trial.getStartAt(), trial.getEndAt()).plusHours(1).toDays();
+            parts.add(texts.get(language, BotTextKeys.START_WELCOME_TRIAL, trialDays));
+        }
+        if (start.partnerBonusDays() > 0) {
+            parts.add(texts.get(language, BotTextKeys.START_PARTNER_BONUS, start.partnerBonusDays()));
+        }
+        parts.add(texts.get(language, BotTextKeys.START_HELP_HINT));
+        parts.add(texts.get(language, BotTextKeys.START_LEGAL,
+                CalorieSiteLinks.buildPrivacyUrl(language), CalorieSiteLinks.buildTermsUrl(language)));
+        return String.join("\n\n", parts);
     }
 
     /**
@@ -166,15 +151,6 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
     private static CalculatorStartParam parseStartParam(Update update) {
         String[] parts = update.getMessage().getText().split(TelegramBot.DEFAULT_DELIMETER);
         return CalculatorStartParam.parse(parts.length < 2 ? null : parts[1]);
-    }
-
-    //Сообщение с просьбой заполнить профиль
-    private void sendUserNutritionFillRequest(Update update, TelegramUser telegramUser) {
-        UserNutritionProfile profile = userNutritionProfileService
-                .getOrCreateProfile(telegramUser.getAppUserId());
-        if (!profile.checkTargetCalculateParams()) {
-            calorieNutritionProfileUpdateHandler.handle(update, telegramUser);
-        }
     }
 
     @Override

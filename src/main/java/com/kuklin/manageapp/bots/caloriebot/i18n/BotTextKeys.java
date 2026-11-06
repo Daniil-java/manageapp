@@ -71,6 +71,12 @@ public final class BotTextKeys {
 
     // ── Онбординг: /start, знакомство, FAQ, /menu, /keyboard, /support ──
     public static final String START_WELCOME = "start.welcome";
+    public static final String START_WELCOME_TRIAL = "start.welcome.trial";
+    public static final String START_LEGAL = "start.legal";
+    public static final String START_HELP_HINT = "start.help-hint";
+    public static final String START_CHANNEL = "start.channel";
+    public static final String START_FIRST_DISH = "start.first-dish";
+    public static final String START_FIRST_DISH_PROFILE = "start.first-dish.profile";
     public static final String START_FLOW_INTRO = "start.flow.intro";
     public static final String START_FLOW_FILL_PROFILE = "start.flow.fill-profile";
     public static final String START_FLOW_BUTTON_FILL_PROFILE = "start.flow.button.fill-profile";
@@ -83,6 +89,7 @@ public final class BotTextKeys {
     // Описания команд в списке «/» (CalorieBotCommandsPublisher)
     public static final String COMMAND_MENU = "command.menu";
     public static final String COMMAND_HELP = "command.help";
+    public static final String COMMAND_INTRO = "command.intro";
     public static final String COMMAND_KEYBOARD = "command.keyboard";
     public static final String COMMAND_LANGUAGE = "command.lang";
     public static final String COMMAND_SUPPORT = "command.support";
@@ -387,4 +394,6 @@ public final class BotTextKeys {
 
     // ── Рассылки ──────────────────────────────────────────────────
     public static final String REMINDER_MEAL = "reminder.meal";
+    public static final String REMINDER_FIRST_DISH_FIRST = "reminder.first-dish.first";
+    public static final String REMINDER_FIRST_DISH_SECOND = "reminder.first-dish.second";
 }

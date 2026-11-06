@@ -85,6 +85,16 @@ public class UserSettings {
     @Column(name = "invite_prompt_last_at", insertable = false, updatable = false)
     private Instant invitePromptLastAt;
 
+    // Сколько напоминаний «запиши первое блюдо» уже ушло (FirstDishNudgeSchedulerProcessor). Пишется только
+    // запросом UserSettingsRepository.claimFirstDishNudge
+    @Column(name = "first_dish_nudge_count", insertable = false, updatable = false)
+    private int firstDishNudgeCount;
+
+    // Когда отправлены сообщения после первого блюда (FirstDishFollowUpSender). Пишется только запросом
+    // UserSettingsRepository.claimFirstDishFollowUp
+    @Column(name = "first_dish_follow_up_at", insertable = false, updatable = false)
+    private Instant firstDishFollowUpAt;
+
     // --- Служебные поля ---
     @CreationTimestamp
     @Column(name = "created_at", updatable = false, nullable = false)

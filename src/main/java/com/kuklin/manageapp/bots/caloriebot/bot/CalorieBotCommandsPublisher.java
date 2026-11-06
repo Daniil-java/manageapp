@@ -41,6 +41,7 @@ public class CalorieBotCommandsPublisher {
     static final List<PublicCommand> PUBLIC_COMMANDS = List.of(
             new PublicCommand(Command.CALORIE_MENU, BotTextKeys.COMMAND_MENU),
             new PublicCommand(Command.CALORIE_HELP, BotTextKeys.COMMAND_HELP),
+            new PublicCommand(Command.CALORIE_INTRO, BotTextKeys.COMMAND_INTRO),
             new PublicCommand(Command.CALORIE_KEYBOARD, BotTextKeys.COMMAND_KEYBOARD),
             new PublicCommand(Command.CALORIE_LANGUAGE, BotTextKeys.COMMAND_LANGUAGE),
             new PublicCommand(Command.CALORIE_SUPPORT, BotTextKeys.COMMAND_SUPPORT),

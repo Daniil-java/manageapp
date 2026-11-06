@@ -50,6 +50,7 @@ public enum Command {
     CALORIE_SETTINGS_LANGUAGE("langset", BotIdentifier.CALORIE_BOT),
     CALORIE_START_LANGUAGE("/startlang", BotIdentifier.CALORIE_BOT),
     CALORIE_HELP("/help", BotIdentifier.CALORIE_BOT),
+    CALORIE_INTRO("/intro", BotIdentifier.CALORIE_BOT),
 
     //==========================PAYMENT============================
     PAYMENT_PRE_CHECK_QUERY("precheckquerynotcommand", BotIdentifier.PAYMENT),
