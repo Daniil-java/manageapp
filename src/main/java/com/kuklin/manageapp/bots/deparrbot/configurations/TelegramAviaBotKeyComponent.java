@@ -17,7 +17,7 @@ public class TelegramAviaBotKeyComponent {
     public TelegramAviaBotKeyComponent(Environment environment) {
         this.key = environment.getProperty("DEPARR_BOT_TOKEN");
         log.info("Generation key initiated (DEPARR_BOT_TOKEN)");
-        this.aiKey = environment.getProperty("GENERATION_TOKEN");
-        log.info("Ai key initiated (DEPARR_PARSER_TOKEN)");
+        this.aiKey = environment.getProperty("DEPARR_GENERATION_TOKEN");
+        log.info("Ai key initiated (DEPARR_GENERATION_TOKEN)");
     }
 }
