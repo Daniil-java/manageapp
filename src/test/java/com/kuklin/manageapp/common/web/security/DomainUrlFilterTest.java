@@ -71,6 +71,28 @@ class DomainUrlFilterTest {
         assertThat(passed).isTrue();
     }
 
+    // Скриншоты страницы инструкции (FAQ) открываются на zefir.fit, остальные картинки kuklin.dev — нет
+    @Test
+    void instructionScreenshotsOnZefirPass() throws Exception {
+        AtomicBoolean passed = new AtomicBoolean();
+
+        filter.doFilter(request("GET", "zefir.fit", "/images/caloriescreens/1_1_kbju_summary.jpg"),
+                new MockHttpServletResponse(), chain(passed));
+
+        assertThat(passed).isTrue();
+    }
+
+    @Test
+    void otherImagesOnZefirAre404() throws Exception {
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        AtomicBoolean passed = new AtomicBoolean();
+
+        filter.doFilter(request("GET", "zefir.fit", "/images/resume/photo.jpg"), response, chain(passed));
+
+        assertThat(passed).isFalse();
+        assertThat(response.getStatus()).isEqualTo(404);
+    }
+
     @Test
     void nonGetToCalorieOnKuklinDevStays404() throws Exception {
         MockHttpServletResponse response = new MockHttpServletResponse();

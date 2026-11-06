@@ -3,6 +3,7 @@
 * zefir.fit/calorie и zefir.fit/calorie/ → 301 на zefir.fit/ (DomainUrlFilter), ?lang= и ?utm= сохраняются. Лендинг живёт в корне (WebController пересылает "/" на /calorie), прямой /calorie был дублем адреса. Остальные страницы (/calorie/privacy, /calorie/terms) не трогаем.
 * Старая ссылка kuklin.dev/calorie ведёт сразу в корень zefir.fit, без второго редиректа.
 * В лендинге `<link rel="canonical">` — https://zefir.fit/?lang=<язык>: адреса с ?utm= поисковики считают той же страницей.
+* FAQ (zefir.fit/calorie/instruction) снова показывает скриншоты: DomainUrlFilter пускает на zefir.fit /images/caloriescreens/**. С переезда страницы на zefir.fit (et-87) картинки отдавали 404. Остальной /images/** на zefir.fit по-прежнему закрыт.
 
 ## 0.0.85 (05.11.2026)
 [et-116] — Распознавание еды: новые промпты и ответ по JSON-схеме

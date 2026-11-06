@@ -28,8 +28,9 @@ public class DomainUrlFilter extends OncePerRequestFilter {
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
     private final Map<String, DomainRules> rulesByDomain = Map.of(
+        // /images/caloriescreens/** — скриншоты страницы инструкции (FAQ); остальной /images/** — картинки kuklin.dev
         "zefir.fit", new DomainRules(
-            List.of("/", "/calorie/**", "/auth/**"),
+            List.of("/", "/calorie/**", "/auth/**", "/images/caloriescreens/**"),
             List.of(),
             null
         ),
