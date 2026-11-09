@@ -77,14 +77,29 @@ public final class BotTextKeys {
     public static final String START_CHANNEL = "start.channel";
     public static final String START_FIRST_DISH = "start.first-dish";
     public static final String START_FIRST_DISH_PROFILE = "start.first-dish.profile";
-    public static final String START_FLOW_INTRO = "start.flow.intro";
-    public static final String START_FLOW_FILL_PROFILE = "start.flow.fill-profile";
     public static final String START_FLOW_BUTTON_FILL_PROFILE = "start.flow.button.fill-profile";
+    public static final String INTRO_HOME = "intro.home";
+    public static final String INTRO_BUTTON_FOOD = "intro.button.food";
+    public static final String INTRO_BUTTON_PROFILE = "intro.button.profile";
+    public static final String INTRO_BUTTON_REMINDERS = "intro.button.reminders";
+    public static final String INTRO_BUTTON_REPORTS = "intro.button.reports";
+    public static final String INTRO_BUTTON_PREMIUM = "intro.button.premium";
+    public static final String INTRO_BUTTON_REWARDS = "intro.button.rewards";
+    public static final String INTRO_BUTTON_CHANNEL = "intro.button.channel";
+    public static final String INTRO_BUTTON_FAQ = "intro.button.faq";
+    public static final String INTRO_BUTTON_BACK = "intro.button.back";
+    public static final String INTRO_BUTTON_OPEN_CHANNEL = "intro.button.open-channel";
+    public static final String INTRO_FOOD = "intro.food";
+    public static final String INTRO_PROFILE_EMPTY = "intro.profile.empty";
+    public static final String INTRO_PROFILE_FILLED = "intro.profile.filled";
+    public static final String INTRO_REMINDERS = "intro.reminders";
+    public static final String INTRO_REPORTS = "intro.reports";
     public static final String WELCOME_TEXT = "welcome.text";
     public static final String MENU_TEXT = "menu.text";
     public static final String KEYBOARD_UPDATED = "keyboard.updated";
     public static final String KEYBOARD_PLACEHOLDER = "keyboard.placeholder";
     public static final String HELP_TEXT = "help.text";
+    public static final String HELP_BUTTON_INTRO = "help.button.intro";
 
     // Описания команд в списке «/» (CalorieBotCommandsPublisher)
     public static final String COMMAND_MENU = "command.menu";

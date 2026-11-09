@@ -2,6 +2,7 @@ package com.kuklin.manageapp.bots.caloriebot.bot;
 
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
+import com.kuklin.manageapp.bots.caloriebot.onboarding.telegram.IntroCalorieUpdateHandler;
 import com.kuklin.manageapp.bots.caloriebot.web.CalorieSiteLinks;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.telegram.Command;
@@ -50,6 +51,7 @@ public class HelpCalorieUpdateHandler implements CalorieBotUpdateHandler {
         return TelegramKeyboard.builder()
                 .row(TelegramKeyboard.webAppButton(texts.get(appUserId, BotTextKeys.COMMON_BUTTON_INSTRUCTION),
                         CalorieSiteLinks.INSTRUCTION_URL, ButtonStyle.PRIMARY))
+                .row(TelegramKeyboard.button(texts.get(appUserId, BotTextKeys.HELP_BUTTON_INTRO), IntroCalorieUpdateHandler.HOME_DATA))
                 .row(menuButtons.buildCloseButton(appUserId))
                 .build();
     }

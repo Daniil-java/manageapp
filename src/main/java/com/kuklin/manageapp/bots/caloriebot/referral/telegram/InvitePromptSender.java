@@ -50,20 +50,19 @@ public class InvitePromptSender {
         if (userSettingsRepository.claimFirstInvitePrompt(appUserId, Instant.now()) == 0) {
             return;
         }
-        sendInviteRewards(chatId, appUserId);
-    }
-
-    /** Что дают приглашения, с кнопками «переслать» и «подробнее» — без отметки времени (/intro). */
-    public void sendInviteRewards(Long chatId, Long appUserId) {
-        String text = texts.get(appUserId, BotTextKeys.INVITE_START_FLOW,
-                referralRewardService.getPlanDays(ReferralRewardService.INVITED_PLAN_CODE),
-                referralRewardService.getPlanDays(ReferralRewardService.INVITER_PLAN_CODE),
-                referralRewardService.getPlanDays(ReferralRewardService.FRIEND_PAID_PLAN_CODE));
         InlineKeyboardMarkup keyboard = TelegramKeyboard.builder()
                 .row(inviteLinks.buildShareButton(appUserId))
                 .row(inviteLinks.buildDetailsButton(appUserId))
                 .build();
-        calorieTelegramBot.sendReturnedMessage(chatId, text, keyboard, null);
+        calorieTelegramBot.sendReturnedMessage(chatId, buildInviteRewardsText(appUserId), keyboard, null);
+    }
+
+    /** Что дают приглашения — после первого блюда и в разделе «Награды» /intro. */
+    public String buildInviteRewardsText(Long appUserId) {
+        return texts.get(appUserId, BotTextKeys.INVITE_START_FLOW,
+                referralRewardService.getPlanDays(ReferralRewardService.INVITED_PLAN_CODE),
+                referralRewardService.getPlanDays(ReferralRewardService.INVITER_PLAN_CODE),
+                referralRewardService.getPlanDays(ReferralRewardService.FRIEND_PAID_PLAN_CODE));
     }
 
     /**
