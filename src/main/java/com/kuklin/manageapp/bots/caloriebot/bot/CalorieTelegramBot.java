@@ -66,8 +66,9 @@ public class CalorieTelegramBot extends TelegramBot {
 
     @Override
     public void sendSubExpiredMessage(Long chatId, String text) {
-        sendReturnedMessage(chatId, text);
-        paymentPlanListCalorieUpdateHandler.sendSubExpiredAdMessage (chatId);
+        // Общее «Срок действия подписки истек!» не шлём: своё сообщение — с тем, что дальше, и молчит,
+        // если на очереди следующая подписка
+        paymentPlanListCalorieUpdateHandler.sendSubExpiredAdMessage(chatId);
     }
 
     private void answerCallbackQuery(CallbackQuery callbackQuery) {

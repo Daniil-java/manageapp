@@ -11,7 +11,6 @@ import com.kuklin.manageapp.bots.caloriebot.referral.telegram.InvitePromptSender
 import com.kuklin.manageapp.bots.caloriebot.settings.UserSettingsService;
 import com.kuklin.manageapp.bots.caloriebot.subscription.telegram.SubscriptionTexts;
 import com.kuklin.manageapp.common.entities.TelegramUser;
-import com.kuklin.manageapp.payment.services.UserSubscriptionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -26,6 +25,7 @@ import java.util.List;
 import java.util.Objects;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.AdditionalMatchers.and;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -37,7 +37,7 @@ class IntroCalorieUpdateHandlerTest {
 
     private final CalorieTelegramBot bot = mock(CalorieTelegramBot.class);
     private final UserNutritionProfileService profileService = mock(UserNutritionProfileService.class);
-    private final UserSubscriptionService subscriptionService = mock(UserSubscriptionService.class);
+    private final SubscriptionTexts subscriptionTexts = mock(SubscriptionTexts.class);
     private final UserNutritionProfile profile = mock(UserNutritionProfile.class);
     private final TelegramUser telegramUser = mock(TelegramUser.class);
     private IntroCalorieUpdateHandler handler;
@@ -46,7 +46,7 @@ class IntroCalorieUpdateHandlerTest {
     void setUp() {
         CalorieTexts texts = new CalorieTexts(new I18nProperties(), mock(UserSettingsService.class));
         handler = new IntroCalorieUpdateHandler(bot, profileService, mock(InvitePromptSender.class),
-                mock(InviteLinks.class), subscriptionService, mock(SubscriptionTexts.class),
+                mock(InviteLinks.class), subscriptionTexts,
                 new CalorieMenuButtons(texts), texts);
         when(profileService.getOrCreateProfile(APP_USER_ID)).thenReturn(profile);
         when(telegramUser.getAppUserId()).thenReturn(APP_USER_ID);
@@ -93,12 +93,12 @@ class IntroCalorieUpdateHandlerTest {
     }
 
     @Test
-    void premiumWithoutSubscriptionSaysSo() {
-        when(subscriptionService.getActiveAndScheduledSubscriptions(eq(APP_USER_ID), any())).thenReturn(List.of());
+    void premiumShowsStatusAndWhatIsIncluded() {
+        when(subscriptionTexts.buildStatusLine(APP_USER_ID)).thenReturn("STATUS");
 
         handler.handle(buildCallbackUpdate("/intro premium"), telegramUser);
 
-        verify(bot).sendEditMessage(eq(CHAT_ID.longValue()), contains("нет активных"), eq(MESSAGE_ID.intValue()), any());
+        verify(bot).sendEditMessage(eq(CHAT_ID.longValue()), and(startsWith("STATUS"), contains("Premium")), eq(MESSAGE_ID.intValue()), any());
     }
 
     private Update buildCommandUpdate() {

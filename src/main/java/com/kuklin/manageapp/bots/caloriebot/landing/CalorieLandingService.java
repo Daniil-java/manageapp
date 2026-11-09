@@ -176,7 +176,7 @@ public class CalorieLandingService {
                 .toList();
     }
 
-    static String formatPrice(Integer priceMinor, Currency currency, AppLanguage language) {
+    public static String formatPrice(Integer priceMinor, Currency currency, AppLanguage language) {
         if (currency == Currency.XTR) {
             // У Telegram Stars нет дробных единиц: price_minor — это и есть количество звёзд
             return priceMinor + " ⭐";
@@ -198,7 +198,7 @@ public class CalorieLandingService {
     }
 
 
-    static Integer savingPercent(PricingPlan plan, PricingPlan base) {
+    public static Integer savingPercent(PricingPlan plan, PricingPlan base) {
         if (base == null || plan == base || base.getPriceMinor() == null || plan.getPriceMinor() == null) {
             return null;
         }

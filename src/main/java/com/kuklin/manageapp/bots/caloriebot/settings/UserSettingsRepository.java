@@ -27,6 +27,37 @@ public interface UserSettingsRepository extends JpaRepository<UserSettings, Long
     List<UserSettings> findAllByDailySummaryEnabled(boolean enabled);
 
     /**
+     * Пользователи калорийного бота, у которых Premium (конец последней действующей или запланированной
+     * подписки) заканчивается в (now, until] — кандидаты на предупреждение (PremiumEndingSchedulerProcessor).
+     */
+    @Query("""
+            select s.appUserId from UserSubscription s
+            where s.botIdentifier = :botIdentifier
+              and s.status in (com.kuklin.manageapp.payment.entities.UserSubscription.Status.ACTIVE,
+                               com.kuklin.manageapp.payment.entities.UserSubscription.Status.SCHEDULED)
+            group by s.appUserId
+            having max(s.endAt) > :now and max(s.endAt) <= :until
+            """)
+    List<Long> findPremiumEndingUserIds(@Param("botIdentifier") BotIdentifier botIdentifier,
+                                        @Param("now") Instant now,
+                                        @Param("until") Instant until);
+
+    /**
+     * Занять предупреждение о конце Premium: только если про этот конец ещё не предупреждали — два запуска
+     * шедулера не отправят его дважды, а после продления (конец другой) предупредим снова.
+     *
+     * @return 1 — отправлять, 0 — уже предупредили или настроек нет
+     */
+    @Transactional
+    @Modifying
+    @Query("""
+            update UserSettings s set s.premiumEndingNotifiedEndAt = :endAt
+            where s.userId = :userId
+              and (s.premiumEndingNotifiedEndAt is null or s.premiumEndingNotifiedEndAt <> :endAt)
+            """)
+    int claimPremiumEndingNotice(@Param("userId") Long userId, @Param("endAt") Instant endAt);
+
+    /**
      * Занять право предложить пригласить друга: только если пользователь с нами дольше joinedBefore и последнее
      * предложение было раньше promptedBefore (или не было). Проверка и отметка — одним UPDATE: два параллельных
      * отчёта не предложат дважды.

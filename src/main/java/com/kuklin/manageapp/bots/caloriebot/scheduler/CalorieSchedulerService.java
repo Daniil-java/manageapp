@@ -3,6 +3,7 @@ package com.kuklin.manageapp.bots.caloriebot.scheduler;
 import com.kuklin.manageapp.bots.caloriebot.onboarding.FirstDishNudgeSchedulerProcessor;
 import com.kuklin.manageapp.bots.caloriebot.settings.MealReminderSchedulerProcessor;
 import com.kuklin.manageapp.bots.caloriebot.report.DailySummarySchedulerProcessor;
+import com.kuklin.manageapp.bots.caloriebot.subscription.PremiumEndingSchedulerProcessor;
 import com.kuklin.manageapp.bots.caloriebot.support.SupportGroupService;
 import com.kuklin.manageapp.common.scheduler.BotScheduler;
 import com.kuklin.manageapp.common.telegram.BotIdentifier;
@@ -20,6 +21,7 @@ public class CalorieSchedulerService {
     private final DailySummarySchedulerProcessor dailySummarySchedulerProcessor;
     private final MealReminderSchedulerProcessor mealReminderSchedulerProcessor;
     private final FirstDishNudgeSchedulerProcessor firstDishNudgeSchedulerProcessor;
+    private final PremiumEndingSchedulerProcessor premiumEndingSchedulerProcessor;
     private final SupportGroupService supportGroupService;
 
     // Локально выключать (CALORIE_DAILY_SUMMARY_ENABLED=false): иначе отчёт за день с вызовом ИИ
@@ -44,6 +46,13 @@ public class CalorieSchedulerService {
     public void firstDishNudgeSchedulerProcessor() {
         getInfo(firstDishNudgeSchedulerProcessor.getSchedulerName());
         firstDishNudgeSchedulerProcessor.process();
+    }
+
+    // «Premium скоро закончится» — раз в полчаса хватает: окно предупреждения — 30 часов
+    @Scheduled(cron = "0 10/30 * * * *")
+    public void premiumEndingSchedulerProcessor() {
+        getInfo(premiumEndingSchedulerProcessor.getSchedulerName());
+        premiumEndingSchedulerProcessor.process();
     }
 
     // Заявки без ответа дольше calorie.support.remind-after — напоминание в теме группы поддержки

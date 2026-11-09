@@ -11,13 +11,10 @@ import com.kuklin.manageapp.bots.caloriebot.referral.telegram.InvitePromptSender
 import com.kuklin.manageapp.bots.caloriebot.subscription.telegram.SubscriptionTexts;
 import com.kuklin.manageapp.bots.caloriebot.web.CalorieSiteLinks;
 import com.kuklin.manageapp.common.entities.TelegramUser;
-import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import com.kuklin.manageapp.common.telegram.Command;
 import com.kuklin.manageapp.common.telegram.TelegramBot;
 import com.kuklin.manageapp.common.telegram.keyboard.ButtonStyle;
 import com.kuklin.manageapp.common.telegram.keyboard.TelegramKeyboard;
-import com.kuklin.manageapp.payment.entities.UserSubscription;
-import com.kuklin.manageapp.payment.services.UserSubscriptionService;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -27,9 +24,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMa
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * /intro — знакомство с ботом одним сообщением-меню: разделы открываются на месте этого сообщения,
@@ -73,7 +68,6 @@ public class IntroCalorieUpdateHandler implements CalorieBotUpdateHandler {
     private final UserNutritionProfileService userNutritionProfileService;
     private final InvitePromptSender invitePromptSender;
     private final InviteLinks inviteLinks;
-    private final UserSubscriptionService userSubscriptionService;
     private final SubscriptionTexts subscriptionTexts;
     private final CalorieMenuButtons menuButtons;
     private final CalorieTexts texts;
@@ -131,7 +125,7 @@ public class IntroCalorieUpdateHandler implements CalorieBotUpdateHandler {
                     ? BotTextKeys.INTRO_PROFILE_FILLED : BotTextKeys.INTRO_PROFILE_EMPTY);
             case REMINDERS -> texts.get(appUserId, BotTextKeys.INTRO_REMINDERS);
             case REPORTS -> texts.get(appUserId, BotTextKeys.INTRO_REPORTS);
-            case PREMIUM -> texts.get(appUserId, BotTextKeys.PAYMENT_PLANS) + "\n\n" + buildSubscriptionStatus(appUserId);
+            case PREMIUM -> subscriptionTexts.buildStatusLine(appUserId) + "\n\n" + texts.get(appUserId, BotTextKeys.PAYMENT_PLANS);
             case REWARDS -> invitePromptSender.buildInviteRewardsText(appUserId);
             case CHANNEL -> texts.get(appUserId, BotTextKeys.START_CHANNEL);
         };
@@ -154,17 +148,6 @@ public class IntroCalorieUpdateHandler implements CalorieBotUpdateHandler {
         return builder
                 .row(TelegramKeyboard.button(texts.get(appUserId, BotTextKeys.INTRO_BUTTON_BACK), HOME_DATA))
                 .build();
-    }
-
-    private String buildSubscriptionStatus(Long appUserId) {
-        List<UserSubscription> subscriptions = userSubscriptionService
-                .getActiveAndScheduledSubscriptions(appUserId, BotIdentifier.CALORIE_BOT);
-        if (subscriptions.isEmpty()) {
-            return texts.get(appUserId, BotTextKeys.SUBSCRIPTION_NONE);
-        }
-        return subscriptions.stream()
-                .map(sub -> subscriptionTexts.buildSubscriptionEntryText(appUserId, sub))
-                .collect(Collectors.joining("\n\n"));
     }
 
     private boolean isProfileFilled(Long appUserId) {

@@ -57,11 +57,9 @@ public class PaymentModuleTexts extends AbstractBotTexts implements PaymentBotTe
         return texts.get(languageOf(appUserId), BotTextKeys.buildPaymentProviderKey(provider));
     }
 
-    /** «Подписка началась» + строка подписки как в «Статусе подписки» (период — в часовом поясе пользователя). */
+    /** «Подписка «Premium Месяц» началась — Premium до 13 февраля». */
     @Override
     public String buildSubscriptionStartedText(UserSubscription subscription) {
-        Long appUserId = subscription.getAppUserId();
-        return texts.get(languageOf(appUserId), BotTextKeys.PAYMENT_SUBSCRIPTION_STARTED) + "\n\n"
-                + subscriptionTexts.buildSubscriptionEntryText(appUserId, subscription);
+        return subscriptionTexts.buildStartedText(subscription);
     }
 }

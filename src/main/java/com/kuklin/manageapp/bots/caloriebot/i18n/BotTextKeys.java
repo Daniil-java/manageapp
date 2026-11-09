@@ -398,14 +398,25 @@ public final class BotTextKeys {
     // ── Подписка. Статус — subscription.status.<UserSubscription.Status> ──
     public static final String PAYMENT_PREMIUM_EXPIRED = "payment.premium-expired";
     public static final String PAYMENT_PLANS = "payment.plans";
-    public static final String PAYMENT_BUTTON_STATUS = "payment.button.status";
     public static final String PAYMENT_IMAGE_ERROR = "payment.image-error";
     public static final String PAYMENT_SUBSCRIPTION_STARTED = "payment.subscription-started";
-    public static final String SUBSCRIPTION_NONE = "subscription.none";
-    public static final String SUBSCRIPTION_TITLE = "subscription.title";
-    public static final String SUBSCRIPTION_ENTRY = "subscription.entry";
-    public static final String SUBSCRIPTION_UNKNOWN_PLAN = "subscription.unknown-plan";
-    public static final String SUBSCRIPTION_NO_PERIOD = "subscription.no-period";
+    public static final String PAYMENT_PLANS_CAPTION = "payment.plans.caption";
+    public static final String PAYMENT_PLAN_BUTTON = "payment.plan-button";
+    public static final String PAYMENT_PLAN_BUTTON_SAVING = "payment.plan-button.saving";
+    public static final String PAYMENT_DURATION_MONTHS = "payment.duration.months";
+    public static final String PAYMENT_DURATION_DAYS = "payment.duration.days";
+    public static final String PAYMENT_BUTTON_PREMIUM_FROM = "payment.button.premium-from";
+    public static final String PAYMENT_BUTTON_EXTEND_FROM = "payment.button.extend-from";
+    public static final String PAYMENT_BUTTON_PLANS = "payment.button.plans";
+    public static final String PAYMENT_BUTTON_FREE_INVITE = "payment.button.free-invite";
+    public static final String PREMIUM_STATUS_FREE = "premium.status.free";
+    public static final String PREMIUM_STATUS_ACTIVE = "premium.status.active";
+    public static final String PREMIUM_LEFT_DAYS = "premium.left.days";
+    public static final String PREMIUM_LEFT_LESS_THAN_DAY = "premium.left.less-than-day";
+    public static final String PREMIUM_STATUS_PARTS = "premium.status.parts";
+    public static final String PREMIUM_STATUS_PART = "premium.status.part";
+    public static final String PREMIUM_DATE_TIME = "premium.date-time";
+    public static final String PREMIUM_ENDING = "premium.ending";
 
     // ── Рассылки ──────────────────────────────────────────────────
     public static final String REMINDER_MEAL = "reminder.meal";

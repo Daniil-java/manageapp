@@ -136,12 +136,26 @@ public abstract class TelegramBot extends TelegramLongPollingBot implements Tele
             return null;
         }
     }
+    /** Подпись — простым текстом (её пересылают как есть, например карточку дня). */
     public Message sendPhotoMessage(long chatId,
                                     byte[] photoBytes,
                                     String filename,
                                     String caption,
                                     ReplyKeyboard replyKeyboard) {
+        return sendPhoto(chatId, photoBytes, filename, caption, replyKeyboard, null);
+    }
 
+    /** Подпись с HTML-разметкой (<b>, <a>), как у sendReturnedMessage. */
+    public Message sendHtmlPhotoMessage(long chatId,
+                                        byte[] photoBytes,
+                                        String filename,
+                                        String caption,
+                                        ReplyKeyboard replyKeyboard) {
+        return sendPhoto(chatId, photoBytes, filename, caption, replyKeyboard, ParseMode.HTML);
+    }
+
+    private Message sendPhoto(long chatId, byte[] photoBytes, String filename, String caption,
+                              ReplyKeyboard replyKeyboard, String parseMode) {
         if (!filename.endsWith(".jpg") && !filename.endsWith(".png")) {
             filename = filename.trim() + ".jpg";
         }
@@ -152,6 +166,7 @@ public abstract class TelegramBot extends TelegramLongPollingBot implements Tele
                         new ByteArrayInputStream(photoBytes),
                         filename))
                 .caption(caption)
+                .parseMode(parseMode)
                 .replyMarkup(replyKeyboard)
                 .build();
 

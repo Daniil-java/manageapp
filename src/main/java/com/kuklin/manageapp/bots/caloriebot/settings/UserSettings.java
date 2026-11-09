@@ -95,6 +95,11 @@ public class UserSettings {
     @Column(name = "first_dish_follow_up_at", insertable = false, updatable = false)
     private Instant firstDishFollowUpAt;
 
+    // Про какой конец Premium уже предупредили (PremiumEndingSchedulerProcessor). Пишется только запросом
+    // UserSettingsRepository.claimPremiumEndingNotice
+    @Column(name = "premium_ending_notified_end_at", insertable = false, updatable = false)
+    private Instant premiumEndingNotifiedEndAt;
+
     // --- Служебные поля ---
     @CreationTimestamp
     @Column(name = "created_at", updatable = false, nullable = false)

@@ -1,59 +1,48 @@
 package com.kuklin.manageapp.bots.caloriebot.subscription.telegram;
 
-import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
-import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
-import com.kuklin.manageapp.bots.caloriebot.bot.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.bot.CalorieBotUpdateHandler;
+import com.kuklin.manageapp.bots.caloriebot.bot.CalorieMenuButtons;
+import com.kuklin.manageapp.bots.caloriebot.bot.CalorieTelegramBot;
+import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
+import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.common.entities.TelegramUser;
-import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import com.kuklin.manageapp.common.telegram.Command;
-import com.kuklin.manageapp.payment.entities.UserSubscription;
-import com.kuklin.manageapp.payment.services.UserSubscriptionService;
+import com.kuklin.manageapp.common.telegram.keyboard.TelegramKeyboard;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
+/**
+ * Статус подписки: «💎 Сейчас: Premium до 13 ноября · ещё 7 дней» и, если подписок несколько, из чего
+ * сложился срок. Приходит после оплаты (SuccessfulPaymentUpdateHandler подменяет апдейт) и по кнопке
+ * «Статус подписки» под старыми тарифами — в новых тарифах статус уже в подписи.
+ */
 @RequiredArgsConstructor
 @Component
-@Slf4j
 public class SubscriptionStatusCalorieUpdateHandler implements CalorieBotUpdateHandler {
     private final CalorieTelegramBot calorieTelegramBot;
-    private final UserSubscriptionService userSubscriptionService;
     private final CalorieTexts texts;
     private final SubscriptionTexts subscriptionTexts;
+    private final PremiumOfferButtons premiumOfferButtons;
+    private final CalorieMenuButtons menuButtons;
 
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
         Long chatId = update.hasCallbackQuery() ?
                 update.getCallbackQuery().getMessage().getChatId() :
                 update.getMessage().getChatId();
+        Long appUserId = telegramUser.getAppUserId();
 
-        calorieTelegramBot.sendReturnedMessage(
-                chatId,
-                getTextStatus(telegramUser.getAppUserId())
-        );
+        calorieTelegramBot.sendReturnedMessage(chatId, subscriptionTexts.buildStatusDetails(appUserId),
+                buildKeyboard(texts.languageOf(appUserId)), null);
     }
 
-    private String getTextStatus(Long appUserId) {
-        List<UserSubscription> subscriptions = userSubscriptionService
-                .getActiveAndScheduledSubscriptions(appUserId, BotIdentifier.CALORIE_BOT);
-
-        if (subscriptions.isEmpty()) {
-            return texts.get(appUserId, BotTextKeys.SUBSCRIPTION_NONE);
-        }
-
-        String details = subscriptions.stream()
-                // Нам нужны только ACTIVE и SCHEDULED (хотя сервис и так должен их вернуть)
-                .filter(sub -> sub.getStatus() == UserSubscription.Status.ACTIVE ||
-                        sub.getStatus() == UserSubscription.Status.SCHEDULED)
-                .map(sub -> subscriptionTexts.buildSubscriptionEntryText(appUserId, sub))
-                .collect(Collectors.joining("\n\n"));
-
-        return texts.get(appUserId, BotTextKeys.SUBSCRIPTION_TITLE) + "\n\n" + details;
+    private InlineKeyboardMarkup buildKeyboard(AppLanguage language) {
+        return TelegramKeyboard.builder()
+                .row(premiumOfferButtons.buildPremiumButton(language))
+                .row(menuButtons.buildCloseButton(language))
+                .build();
     }
 
     @Override

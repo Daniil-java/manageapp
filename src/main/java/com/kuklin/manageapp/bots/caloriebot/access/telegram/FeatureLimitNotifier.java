@@ -1,6 +1,6 @@
 package com.kuklin.manageapp.bots.caloriebot.access.telegram;
 import com.kuklin.manageapp.bots.caloriebot.bot.CalorieTelegramBot;
-import com.kuklin.manageapp.bots.caloriebot.bot.CalorieMenuButtons;
+import com.kuklin.manageapp.bots.caloriebot.subscription.telegram.PremiumOfferButtons;
 
 import com.kuklin.manageapp.bots.caloriebot.access.AiRateLimiter;
 import com.kuklin.manageapp.bots.caloriebot.access.PlanFeatureService;
@@ -12,8 +12,6 @@ import com.kuklin.manageapp.common.web.error.ErrorParams;
 import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorStatus;
 import com.kuklin.manageapp.bots.caloriebot.access.model.BotFeature;
 import com.kuklin.manageapp.common.telegram.BotIdentifier;
-import com.kuklin.manageapp.common.telegram.keyboard.ButtonStyle;
-import com.kuklin.manageapp.common.telegram.Command;
 import com.kuklin.manageapp.common.telegram.keyboard.TelegramKeyboard;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -32,7 +30,7 @@ public class FeatureLimitNotifier {
     private final CalorieTelegramBot calorieTelegramBot;
     private final PlanFeatureService planFeatureService;
     private final CalorieTexts texts;
-    private final CalorieMenuButtons menuButtons;
+    private final PremiumOfferButtons premiumOfferButtons;
 
     public void sendLimitReached(Long chatId, Long appUserId, BotFeature feature) {
         AppLanguage language = texts.languageOf(appUserId);
@@ -92,11 +90,11 @@ public class FeatureLimitNotifier {
         };
     }
 
+    /** «💎 Premium — от 299 ⭐» и «🎁 Бесплатно — позвать друга». */
     private InlineKeyboardMarkup getSubscriptionKeyboard(AppLanguage language) {
         return TelegramKeyboard.builder()
-                .row(TelegramKeyboard.button(
-                        menuButtons.getLabel(CalorieMenuButtons.Button.SUBSCRIPTION, language),
-                        Command.CALORIE_PAYMENT_PAYLOAD_PLAN.getCommandText(), ButtonStyle.PRIMARY))
+                .row(premiumOfferButtons.buildPremiumButton(language))
+                .row(premiumOfferButtons.buildInviteButton(language))
                 .build();
     }
 }
