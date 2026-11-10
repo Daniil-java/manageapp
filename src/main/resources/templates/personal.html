@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="ru" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Даниил Куклин — Java Backend Developer</title>
+  <meta name="description" content="Даниил Куклин — Java-разработчик: бэкенд на Spring Boot, Telegram-боты, AI-интеграции. Резюме, услуги, примеры работ и контакты." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Даниил Куклин — Java Backend Developer" />
+  <meta property="og:description" content="Бэкенд на Spring Boot, Telegram-боты, AI-интеграции. Резюме, услуги и примеры работ." />
+  <meta name="color-scheme" content="light dark" />
+  <script>
+    // Тема до первой отрисовки — без вспышки светлой темы
+    (function(){ let t=null; try{ t=localStorage.getItem('dk_theme'); }catch(e){}
+      if(!t) t=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
+      document.documentElement.setAttribute('data-theme', t); })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Montserrat:wght@400;500;600;700;800;900&display=swap" />
+  <link rel="stylesheet" href="/assets/personal.css" />
+  <style>
+    /* Две дороги из hero: резюме и услуги */
+    .paths{margin-top:clamp(40px,6vw,64px)}
+    .path .h3{font-size:clamp(24px,2.6vw,34px); font-weight:900; letter-spacing:-.03em; margin:0 0 .3em}
+
+    .about-text p{font-size:clamp(16px,1.3vw,18px); color:var(--ink-2)}
+    .about-text a{color:var(--accent); font-weight:600}
+
+    /* Стек: логотипы в серой гамме, цвет — при наведении */
+    .tech{flex-direction:row; align-items:center; gap:14px; padding:18px 20px}
+    .tech img{width:32px; height:32px; object-fit:contain; filter:grayscale(1); opacity:.75; transition:filter .2s, opacity .2s}
+    .tech:hover img{filter:none; opacity:1}
+    .tech span{font-weight:600; font-size:14px}
+    /* 18 технологий: 6 → 3 → 2 колонки, чтобы последняя строка всегда была полной */
+    @media (max-width:1100px){ .cells.tech-grid{--cols:3 !important} }
+    @media (max-width:640px){ .cells.tech-grid{--cols:2 !important} .tech{padding:14px} }
+  </style>
+</head>
+
+<body>
+<div class="topbar">
+  <div class="container">
+    <span class="status">Открыт к предложениям</span>
+    <span>
+      <a href="/resume">Резюме</a>
+      <span aria-hidden="true">&nbsp;·&nbsp;</span>
+      <a href="/freelance">Услуги <span aria-hidden="true">→</span></a>
+    </span>
+  </div>
+</div>
+
+<header class="site-header" role="banner">
+  <div class="container nav-row">
+    <a href="#main" class="logo" aria-label="Даниил Куклин — наверх">
+      <b>KUKLIN<i aria-hidden="true">_</i></b>
+      <small>Java · боты · AI</small>
+    </a>
+
+    <nav class="main-nav" aria-label="Навигация">
+      <ul role="list">
+        <li><a href="#about" data-nav>Обо мне</a></li>
+        <li><a href="#stack" data-nav>Стек</a></li>
+        <li><a href="#portfolio" data-nav>Примеры</a></li>
+        <li><a href="#contacts" data-nav>Контакты</a></li>
+      </ul>
+    </nav>
+
+    <div class="actions">
+      <button id="themeToggle" class="icon-btn" type="button" aria-pressed="false" aria-label="Переключить тему День/Ночь">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 4a8 8 0 0 1 0 16Z" fill="currentColor"/></svg>
+      </button>
+      <button id="menuToggle" class="icon-btn menu-btn" type="button" aria-label="Открыть меню" aria-controls="mobileDrawer" aria-expanded="false">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main id="main" tabindex="-1">
+  <!-- ===== Hero ===== -->
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="container">
+      <div class="byline">
+        <img src="/images/avatar.webp" alt="" width="56" height="56">
+        <span class="eyebrow">Java Backend Developer</span>
+      </div>
+      <h1 id="hero-title" class="display">Даниил Куклин<span class="dot">.</span></h1>
+      <p class="lead">Бэкенд на Spring Boot, Telegram-боты и AI-интеграции — от сбора требований до деплоя.</p>
+
+      <nav class="cells paths" style="--cols:2" aria-label="Куда дальше">
+        <a class="cell cell--cta path" href="/resume">
+          <span class="label">Для работодателей</span>
+          <h2 class="h3">Резюме</h2>
+          <p>Опыт, стек, проекты и образование.</p>
+          <div class="cell-foot"><span>Открыть резюме</span><span class="arr" aria-hidden="true">→</span></div>
+        </a>
+        <a class="cell path" href="/freelance">
+          <span class="label">Для заказчиков</span>
+          <h2 class="h3">Услуги и цены</h2>
+          <p>Боты, бэкенд, AI-интеграции и лендинги под вашу задачу.</p>
+          <div class="cell-foot"><span>Смотреть услуги</span><span class="arr" aria-hidden="true">→</span></div>
+        </a>
+      </nav>
+    </div>
+  </section>
+
+  <!-- ===== Обо мне ===== -->
+  <section id="about" class="section section--alt" aria-labelledby="about-title">
+    <div class="container">
+      <div class="section-head section-head--top">
+        <div>
+          <span class="eyebrow">01 · Обо мне</span>
+          <h2 id="about-title" class="h2">Предсказуемые сроки, читаемый код<span class="dot">.</span></h2>
+        </div>
+        <div class="about-text">
+          <p>Я Java-разработчик. С 2023 года делаю веб-сервисы, бэкенд-API и Telegram-ботов — от сбора требований до деплоя. Мне важны предсказуемые сроки, читаемый код и внятные интеграции.</p>
+          <p>Использую Spring Boot, PostgreSQL, Docker, CI/CD. Привычка: фиксировать чек-лист и критерии «готово» до старта.</p>
+          <p>Подробнее — в <a href="/resume">резюме</a>, а если нужен разработчик под задачу — на странице <a href="/freelance">услуг</a>.</p>
+        </div>
+      </div>
+
+      <div class="cells" style="--cols:4" role="list" aria-label="Сильные стороны">
+        <div class="cell" role="listitem"><span class="label">01</span><h3 class="h3">Чистый код</h3><p>Поддерживаемость и тесты.</p></div>
+        <div class="cell" role="listitem"><span class="label">02</span><h3 class="h3">Веб-приложения</h3><p>От идеи до деплоя.</p></div>
+        <div class="cell" role="listitem"><span class="label">03</span><h3 class="h3">Интеграции</h3><p>API, очереди, вебхуки.</p></div>
+        <div class="cell" role="listitem"><span class="label">04</span><h3 class="h3">AI/боты</h3><p>OpenAI, Telegram Bot API.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Технологии ===== -->
+  <section id="stack" class="section" aria-labelledby="stack-title">
+    <div class="container">
+      <div class="section-head">
+        <div>
+          <span class="eyebrow">02 · Стек</span>
+          <h2 id="stack-title" class="h2">С чем работаю<span class="dot">.</span></h2>
+        </div>
+        <p>Основа — Java и Spring Boot. Остальное — то, что нужно задаче.</p>
+      </div>
+
+      <div class="cells tech-grid" style="--cols:6" role="list">
+        <div class="cell tech" role="listitem"><img src="/assets/Java.webp" alt="" width="32" height="32"><span>Java</span></div>
+        <div class="cell tech" role="listitem"><img src="/assets/SpringBoot.webp" alt="" width="32" height="32"><span>Spring Boot</span></div>
+        <div class="cell tech" role="listitem"><img src="/assets/sql.png" alt="" width="32" height="32"><span>SQL</span></div>
+        <div class="cell tech" role="listitem"><img src="/assets/PostgresSQL.webp" alt="" width="32" height="32"><span>PostgreSQL</span></div>
+        <div class="cell tech" role="listitem"><img src="/assets/MongoDB.webp" alt="" width="32" height="32"><span>MongoDB</span></div>
+        <div class="cell tech" role="listitem"><img src="/assets/MySQL.webp" alt="" width="32" height="32"><span>MySQL</span></div>
+        <div class="cell tech" role="listitem"><img src="/assets/dbmigrate.png" alt="" width="32" height="32"><span>Liquibase / Flyway</span></div>
+        <div class="cell tech" role="listitem"><img src="/assets/redis.svg" alt="" width="32" height="32"><span>Redis</span></div>
+        <div class="cell tech" role="listitem"><img src="/assets/kafka.svg" alt="" width="32" height="32"><span>Apache Kafka</span></div>
+        <div class="cell tech" role="listitem"><img src="/assets/rabbitmq.svg" alt="" width="32" height="32"><span>RabbitMQ</span></div>
+        <div class="cell tech" role="listitem"><img src="/assets/docker.png" alt="" width="32" height="32"><span>Docker</span></div>
+        <div class="cell tech" role="listitem"><img src="/assets/Postman.webp" alt="" width="32" height="32"><span>Postman</span></div>
+        <div class="cell tech" role="listitem"><img src="/assets/Git.webp" alt="" width="32" height="32"><span>Git</span></div>
+        <div class="cell tech" role="listitem"><img src="/assets/GitHub.webp" alt="" width="32" height="32"><span>GitHub</span></div>
+        <div class="cell tech" role="listitem"><img src="/assets/IntelliJIDEA.webp" alt="" width="32" height="32"><span>IntelliJ IDEA</span></div>
+        <div class="cell tech" role="listitem"><img src="/assets/JavaScript.webp" alt="" width="32" height="32"><span>JavaScript</span></div>
+        <div class="cell tech" role="listitem"><img src="/assets/HTML.webp" alt="" width="32" height="32"><span>HTML</span></div>
+        <div class="cell tech" role="listitem"><img src="/assets/CSS.webp" alt="" width="32" height="32"><span>CSS</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Портфолио ===== -->
+  <section id="portfolio" class="section section--alt" aria-labelledby="portfolio-title">
+    <div class="container">
+      <div class="section-head">
+        <div>
+          <span class="eyebrow">03 · Примеры</span>
+          <h2 id="portfolio-title" class="h2">Примеры работ<span class="dot">.</span></h2>
+        </div>
+        <p>Боты в продакшене — каждого можно открыть и попробовать.</p>
+      </div>
+
+      <div class="cells" style="--cols:3">
+        <a class="cell work" href="https://zefir.fit" target="_blank" rel="noopener" aria-label="Открыть сайт Зефира">
+          <div class="thumb"><svg viewBox="0 0 400 300" role="img" aria-label="Логотип Зефира"><use href="/assets/works.svg#zefir"/></svg></div>
+          <div class="body">
+            <span class="label">AI · питание</span>
+            <h3 class="h3">Зефир — дневник питания</h3>
+            <p>Зефир оценивает КБЖУ блюда по фото или вашему описанию и помогает вести удобный дневник питания. Он превращает подсчёт калорий в простой и наглядный процесс, сохраняя все данные в одном месте.</p>
+            <div class="cell-foot"><span>zefir.fit</span><span class="arr" aria-hidden="true">→</span></div>
+          </div>
+        </a>
+
+        <a class="cell work" href="https://t.me/slotmanage_bot" target="_blank" rel="noopener" aria-label="Открыть бота бронирования в Telegram">
+          <div class="thumb"><svg viewBox="0 0 400 300" role="img" aria-label="Календарь с забронированным слотом"><use href="/assets/works.svg#slot"/></svg></div>
+          <div class="body">
+            <span class="label">Google Sheets</span>
+            <h3 class="h3">Бот для бронирования ресурсов</h3>
+            <p>Бот помогает быстро бронировать ресурсы — от переговорных до рабочих кабинетов — и автоматически фиксирует все записи в Google-таблице. Благодаря гибкой настройке правил он легко подстраивается под любые процессы вашей команды.</p>
+            <div class="cell-foot"><span>Открыть в Telegram</span><span class="arr" aria-hidden="true">→</span></div>
+          </div>
+        </a>
+
+        <a class="cell work" href="https://t.me/personal_calen_bot" target="_blank" rel="noopener" aria-label="Открыть ИИ-ассистента в Telegram">
+          <div class="thumb"><svg viewBox="0 0 400 300" role="img" aria-label="Календарь и микрофон"><use href="/assets/works.svg#calen"/></svg></div>
+          <div class="body">
+            <span class="label">AI · Google Calendar</span>
+            <h3 class="h3">ИИ-ассистент с Google Calendar</h3>
+            <p>ИИ-ассистент интегрируется с Google Calendar и позволяет добавлять события простым голосовым или текстовым сообщением. Он автоматически создаёт запись в календаре, экономя время и упрощая планирование.</p>
+            <div class="cell-foot"><span>Открыть в Telegram</span><span class="arr" aria-hidden="true">→</span></div>
+          </div>
+        </a>
+
+        <a class="cell work" href="https://t.me/deparr_bot" target="_blank" rel="noopener" aria-label="Открыть трекер авиарейсов в Telegram">
+          <div class="thumb"><svg viewBox="0 0 400 300" role="img" aria-label="Самолёт на маршруте"><use href="/assets/works.svg#deparr"/></svg></div>
+          <div class="body">
+            <span class="label">Внешние API</span>
+            <h3 class="h3">Трекер авиарейсов</h3>
+            <p>Введите номер рейса — бот покажет информацию о нём и пришлёт уведомление, когда статус обновится.</p>
+            <div class="cell-foot"><span>Открыть в Telegram</span><span class="arr" aria-hidden="true">→</span></div>
+          </div>
+        </a>
+
+        <a class="cell work" href="https://t.me/taskGPT_Bot" target="_blank" rel="noopener" aria-label="Открыть помидоро-таймер в Telegram">
+          <div class="thumb"><svg viewBox="0 0 400 300" role="img" aria-label="Таймер-помидор"><use href="/assets/works.svg#pomodoro"/></svg></div>
+          <div class="body">
+            <span class="label">AI · продуктивность</span>
+            <h3 class="h3">Помидоро-таймер и трекер задач</h3>
+            <p>Помидоро-таймер и трекер задач с приоритетами и ИИ: помогает фокусироваться, планировать и автоматически разбивать задачи на подзадачи.</p>
+            <div class="cell-foot"><span>Открыть в Telegram</span><span class="arr" aria-hidden="true">→</span></div>
+          </div>
+        </a>
+
+        <a class="cell cell--cta" href="https://github.com/Daniil-java" target="_blank" rel="noopener">
+          <span class="label">GitHub</span>
+          <h3 class="h3">Код и другие проекты</h3>
+          <p>Пет-проекты и библиотеки — можно посмотреть, как я пишу код.</p>
+          <div class="cell-foot"><span>github.com/Daniil-java</span><span class="arr" aria-hidden="true">→</span></div>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Контакты ===== -->
+  <section id="contacts" class="section invert" aria-labelledby="contacts-title">
+    <div class="container contacts-inner">
+      <div>
+        <span class="eyebrow">04 · Контакты</span>
+        <h2 id="contacts-title" class="h2">Давайте поговорим<span class="dot">.</span></h2>
+        <p class="lead">Про работу, проект или просто вопрос — отвечаю в течение дня.</p>
+        <div class="btn-row" style="margin-top:28px">
+          <a class="btn btn-primary" href="https://t.me/kuklin_daniil" target="_blank" rel="noopener">Написать в Telegram <span class="arr" aria-hidden="true">→</span></a>
+        </div>
+      </div>
+
+      <ul class="rows" role="list">
+        <li class="ct-row">
+          <span class="label">Telegram</span>
+          <a class="val" href="https://t.me/kuklin_daniil" target="_blank" rel="noopener">@kuklin_daniil</a>
+          <button class="icon-btn ct-copy" type="button" data-copy="@kuklin_daniil" aria-label="Скопировать Telegram">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.6" d="M9 9h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2Z"/><path fill="none" stroke="currentColor" stroke-width="1.6" d="M7 15H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+        </li>
+        <li class="ct-row">
+          <span class="label">Email</span>
+          <a class="val" href="mailto:saponembigas@gmail.com">saponembigas@gmail.com</a>
+          <button class="icon-btn ct-copy" type="button" data-copy="saponembigas@gmail.com" aria-label="Скопировать email">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.6" d="M9 9h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2Z"/><path fill="none" stroke="currentColor" stroke-width="1.6" d="M7 15H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+        </li>
+        <li class="ct-row">
+          <span class="label">GitHub</span>
+          <a class="val" href="https://github.com/Daniil-java" target="_blank" rel="noopener">github.com/Daniil-java</a>
+          <button class="icon-btn ct-copy" type="button" data-copy="https://github.com/Daniil-java" aria-label="Скопировать ссылку GitHub">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.6" d="M9 9h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2Z"/><path fill="none" stroke="currentColor" stroke-width="1.6" d="M7 15H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1"/></svg>
+          </button>
+        </li>
+      </ul>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer" role="contentinfo">
+  <div class="container foot">
+    <div>© <span id="year"></span> Даниил Куклин</div>
+    <nav aria-label="Другие страницы">
+      <a href="/resume">Резюме</a>
+      <a href="/freelance">Услуги</a>
+      <a href="https://github.com/Daniil-java" target="_blank" rel="noopener">GitHub</a>
+    </nav>
+  </div>
+</footer>
+
+<aside id="mobileDrawer" class="drawer" hidden aria-hidden="true" aria-label="Меню">
+  <div class="drawer-backdrop"></div>
+  <nav class="drawer-panel">
+    <span class="label">Оглавление</span>
+    <ul></ul>
+  </nav>
+</aside>
+<script src="/assets/personal.js"></script>
+</body>
+</html>
