@@ -53,9 +53,7 @@ public class SupportGroupService {
     @Autowired
     private SupportProperties properties;
     @Autowired
-    private SupportTicketRepository ticketRepository;
-    @Autowired
-    private SupportMessageRepository messageRepository;
+    private SupportTicketService ticketService;
     @Autowired
     private SupportTicketCardBuilder cardBuilder;
     @Autowired
@@ -86,7 +84,7 @@ public class SupportGroupService {
         if (message.getFrom() == null || Boolean.TRUE.equals(message.getFrom().getIsBot())) return;
         // Сообщения вне тем (General) и служебные (тема создана, закрыта) не трогаем
         if (message.getMessageThreadId() == null || !isRelayable(message)) return;
-        SupportTicket ticket = ticketRepository.findByTopicId(message.getMessageThreadId()).orElse(null);
+        SupportTicket ticket = ticketService.findByTopicIdOrNull(message.getMessageThreadId());
         if (ticket == null) return;
 
         String text = message.hasText() ? message.getText().trim() : null;
@@ -108,13 +106,13 @@ public class SupportGroupService {
 
         Integer groupMessageId = copyMessage(properties.getChatId(), ticket.getTopicId(), message.getChatId(),
                 message.getMessageId(), null, null);
-        messageRepository.save(new SupportMessage()
+        ticketService.saveMessage(new SupportMessage()
                 .setTicketId(ticket.getId())
                 .setDirection(SupportMessage.Direction.USER)
                 .setText(getMessageText(message))
                 .setUserMessageId(message.getMessageId())
                 .setGroupMessageId(groupMessageId));
-        ticketRepository.save(ticket
+        ticketService.saveTicket(ticket
                 .setLastUserMessageAt(Instant.now())
                 .setAwaitingTextSince(null));
         return created;
@@ -129,10 +127,10 @@ public class SupportGroupService {
     public void remindUnanswered() {
         if (!properties.isEnabled()) return;
         Instant now = Instant.now();
-        for (SupportTicket ticket : ticketRepository.findUnanswered(now.minus(properties.getRemindAfter()))) {
+        for (SupportTicket ticket : ticketService.findUnanswered(now.minus(properties.getRemindAfter()))) {
             long hours = Duration.between(ticket.getLastUserMessageAt(), now).toHours();
             sendToTopic(ticket.getTopicId(), "⏰ Пользователь ждёт ответа " + hours + " ч", null);
-            ticketRepository.save(ticket.setRemindedAt(now));
+            ticketService.saveTicket(ticket.setRemindedAt(now));
         }
     }
 
@@ -144,7 +142,7 @@ public class SupportGroupService {
         if (topic == null) {
             throw new IllegalStateException("Support topic not created for ticket " + ticket.getId());
         }
-        ticketRepository.save(ticket
+        ticketService.saveTicket(ticket
                 .setTopicId(topic.getMessageThreadId())
                 .setStatus(SupportTicket.Status.OPEN));
         sendToTopic(ticket.getTopicId(), cardBuilder.buildCard(ticket, user), buildCloseKeyboard(ticket));
@@ -183,13 +181,13 @@ public class SupportGroupService {
             sendToTopic(ticket.getTopicId(), "⚠️ Не доставлено — возможно, пользователь заблокировал бота", null);
             return;
         }
-        messageRepository.save(new SupportMessage()
+        ticketService.saveMessage(new SupportMessage()
                 .setTicketId(ticket.getId())
                 .setDirection(SupportMessage.Direction.SUPPORT)
                 .setText(getMessageText(message))
                 .setUserMessageId(userMessageId)
                 .setGroupMessageId(message.getMessageId()));
-        ticketRepository.save(ticket.setLastSupportMessageAt(Instant.now()));
+        ticketService.saveTicket(ticket.setLastSupportMessageAt(Instant.now()));
     }
 
     private void handleGroupCallback(CallbackQuery query) {
@@ -201,7 +199,7 @@ public class SupportGroupService {
         } catch (NumberFormatException e) {
             return;
         }
-        SupportTicket ticket = ticketRepository.findById(ticketId).orElse(null);
+        SupportTicket ticket = ticketService.findByIdOrNull(ticketId);
         if (ticket == null || ticket.getStatus() != SupportTicket.Status.OPEN) return;
         close(ticket);
         Message card = TelegramBot.getCallbackMessage(query);
@@ -210,7 +208,7 @@ public class SupportGroupService {
 
     private void close(SupportTicket ticket) {
         if (ticket.getStatus() != SupportTicket.Status.OPEN) return;
-        ticketRepository.save(ticket
+        ticketService.saveTicket(ticket
                 .setStatus(SupportTicket.Status.CLOSED)
                 .setClosedAt(Instant.now())
                 .setAwaitingTextSince(null));
@@ -236,7 +234,7 @@ public class SupportGroupService {
 
     /** Поддержка написала в закрытую заявку — открываем снова: тема, статус, название. */
     private void reopen(SupportTicket ticket, TelegramUser user) {
-        ticketRepository.save(ticket
+        ticketService.saveTicket(ticket
                 .setStatus(SupportTicket.Status.OPEN)
                 .setClosedAt(null));
         execute(ReopenForumTopic.builder().chatId(properties.getChatId()).messageThreadId(ticket.getTopicId()).build());

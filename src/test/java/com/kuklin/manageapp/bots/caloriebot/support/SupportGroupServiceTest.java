@@ -71,8 +71,8 @@ class SupportGroupServiceTest {
 
         service = new SupportGroupService();
         ReflectionTestUtils.setField(service, "properties", properties);
-        ReflectionTestUtils.setField(service, "ticketRepository", ticketRepository);
-        ReflectionTestUtils.setField(service, "messageRepository", messageRepository);
+        ReflectionTestUtils.setField(service, "ticketService",
+                new SupportTicketService(ticketRepository, messageRepository, properties));
         ReflectionTestUtils.setField(service, "cardBuilder", cardBuilder);
         ReflectionTestUtils.setField(service, "telegramUserService", telegramUserService);
         ReflectionTestUtils.setField(service, "texts", texts);

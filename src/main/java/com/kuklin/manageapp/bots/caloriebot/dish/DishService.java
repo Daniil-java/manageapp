@@ -70,6 +70,31 @@ public class DishService {
 
     // --- Public Methods ---
 
+    /** Дни (в таймзоне zone), в которые есть блюда — для серии дней (StreakService). */
+    @Transactional(readOnly = true)
+    public List<LocalDate> findDishDays(Long userId, ZoneId zone) {
+        return dishRepository.findDishEpochDaysByUserId(userId, getSqlZoneName(zone), getSqlOffsetSeconds(zone))
+                .stream()
+                .map(LocalDate::ofEpochDay)
+                .toList();
+    }
+
+    /** Сколько разных дней (в таймзоне zone) есть блюда за [from, to). */
+    @Transactional(readOnly = true)
+    public long countDishDaysBetween(Long userId, ZoneId zone, Instant from, Instant to) {
+        return dishRepository.countDishDaysByUserIdBetween(userId, getSqlZoneName(zone), getSqlOffsetSeconds(zone),
+                from, to);
+    }
+
+    // Фиксированное смещение (+03:00, GMT+3) — числом поверх UTC, зона с переходами — по имени IANA
+    private static String getSqlZoneName(ZoneId zone) {
+        return zone.normalized() instanceof ZoneOffset ? "UTC" : zone.getId();
+    }
+
+    private static int getSqlOffsetSeconds(ZoneId zone) {
+        return zone.normalized() instanceof ZoneOffset offset ? offset.getTotalSeconds() : 0;
+    }
+
     // Методы с вызовом ИИ — без @Transactional: транзакция держала бы соединение с БД, пока ждём ответ (10–30 с).
     // В транзакции только сохранение результата — saveDishes.
 

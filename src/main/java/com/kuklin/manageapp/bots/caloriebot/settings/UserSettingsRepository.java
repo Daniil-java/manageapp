@@ -134,6 +134,36 @@ public interface UserSettingsRepository extends JpaRepository<UserSettings, Long
     @Query("update UserSettings s set s.firstDishFollowUpAt = :now where s.userId = :userId and s.firstDishFollowUpAt is null")
     int claimFirstDishFollowUp(@Param("userId") Long userId, @Param("now") Instant now);
 
+    /**
+     * Отложить приветствие /start до выбора языка. null не затирает уже отложенное: повторный /start
+     * (пробный период уже выдан, калькулятора в нём нет) не теряет то, что пришло в первом.
+     *
+     * @return 1 — сохранено, 0 — настроек нет
+     */
+    @Transactional
+    @Modifying(clearAutomatically = true)
+    @Query(value = """
+            UPDATE user_settings SET
+                pending_start_calculator = COALESCE(CAST(:calculator AS VARCHAR), pending_start_calculator),
+                pending_start_trial_days = COALESCE(CAST(:trialDays AS SMALLINT), pending_start_trial_days),
+                pending_start_bonus_days = COALESCE(CAST(:bonusDays AS SMALLINT), pending_start_bonus_days)
+            WHERE user_id = :userId
+            """, nativeQuery = true)
+    int savePendingStart(@Param("userId") Long userId,
+                         @Param("calculator") String calculator,
+                         @Param("trialDays") Integer trialDays,
+                         @Param("bonusDays") Integer bonusDays);
+
+    /** Приветствие /start показано — отложенное больше не нужно. */
+    @Transactional
+    @Modifying(clearAutomatically = true)
+    @Query("""
+            update UserSettings s set s.pendingStartCalculator = null, s.pendingStartTrialDays = null,
+                s.pendingStartBonusDays = null
+            where s.userId = :userId
+            """)
+    int clearPendingStart(@Param("userId") Long userId);
+
     @Query("""
                 SELECT DISTINCT us FROM UserSettings us
                 JOIN TelegramUser tu 

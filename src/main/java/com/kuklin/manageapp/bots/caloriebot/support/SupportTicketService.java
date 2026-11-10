@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Состояние заявок в поддержку — без Telegram: черновик, ожидание сообщения пользователя, оценка.
@@ -65,6 +66,45 @@ public class SupportTicketService {
 
     public List<SupportTicket> getOpenTickets(Long appUserId) {
         return ticketRepository.findAllByAppUserIdAndStatusOrderByCreatedAtDesc(appUserId, SupportTicket.Status.OPEN);
+    }
+
+    public SupportTicket findByIdOrNull(Long ticketId) {
+        return ticketRepository.findById(ticketId).orElse(null);
+    }
+
+    /** Заявка темы группы поддержки; null — тема не заявки. */
+    public SupportTicket findByTopicIdOrNull(Integer topicId) {
+        return ticketRepository.findByTopicId(topicId).orElse(null);
+    }
+
+    public SupportTicket saveTicket(SupportTicket ticket) {
+        return ticketRepository.save(ticket);
+    }
+
+    public SupportMessage saveMessage(SupportMessage message) {
+        return messageRepository.save(message);
+    }
+
+    /** @see SupportTicketRepository#findUnanswered */
+    public List<SupportTicket> findUnanswered(Instant before) {
+        return ticketRepository.findUnanswered(before);
+    }
+
+    /** До 5 последних прошлых заявок пользователя (без черновиков и без этой) — для карточки. */
+    public List<SupportTicket> findPreviousTickets(SupportTicket ticket) {
+        return ticketRepository.findTop5ByAppUserIdAndStatusNotAndIdNotOrderByCreatedAtDesc(
+                ticket.getAppUserId(), SupportTicket.Status.DRAFT, ticket.getId());
+    }
+
+    /** Сколько заявок пользователь отправил (без черновиков). */
+    public long countSubmittedTickets(Long appUserId) {
+        return ticketRepository.countByAppUserIdAndStatusNot(appUserId, SupportTicket.Status.DRAFT);
+    }
+
+    /** Первое сообщение пользователя в заявке — превью в карточке. */
+    public Optional<SupportMessage> findFirstUserMessage(Long ticketId) {
+        return messageRepository.findFirstByTicketIdAndDirectionOrderByCreatedAtAsc(ticketId,
+                SupportMessage.Direction.USER);
     }
 
     /** Оценка закрытой заявки, один раз. null — заявка чужая, не закрыта или уже оценена. */

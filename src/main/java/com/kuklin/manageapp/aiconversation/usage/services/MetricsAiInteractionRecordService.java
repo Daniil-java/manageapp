@@ -208,5 +208,17 @@ public class MetricsAiInteractionRecordService {
         return sb.toString().trim();
     }
 
+    /** Сколько вызовов ИИ пользователя с from: failed — со сбоем, иначе удачных. */
+    public long countUserInteractionsSince(Long appUserId, Instant from, boolean failed) {
+        return failed
+                ? metricsAiInteractionRecordRepository.countByAppUserIdAndCreatedAfterAndErrorCodeIsNotNull(appUserId, from)
+                : metricsAiInteractionRecordRepository.countByAppUserIdAndCreatedAfterAndErrorCodeIsNull(appUserId, from);
+    }
 
+    /** Последний сбойный вызов ИИ пользователя с from; null — сбоев не было. */
+    public MetricsAiInteractionRecord findLastFailedInteractionOrNull(Long appUserId, Instant from) {
+        return metricsAiInteractionRecordRepository
+                .findFirstByAppUserIdAndCreatedAfterAndErrorCodeIsNotNullOrderByCreatedDesc(appUserId, from)
+                .orElse(null);
+    }
 }

@@ -11,6 +11,7 @@ import com.kuklin.manageapp.bots.caloriebot.web.CalorieSiteLinks;
 import com.kuklin.manageapp.bots.caloriebot.bot.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.bot.CalorieBotUpdateHandler;
 import com.kuklin.manageapp.bots.caloriebot.profile.telegram.CalculatorProfileUpdateHandler;
+import com.kuklin.manageapp.bots.caloriebot.settings.UserSettingsService;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.telegram.TelegramBot;
 import com.kuklin.manageapp.common.telegram.BotIdentifier;
@@ -28,14 +29,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
  * /start. Кто ещё не выбирал язык — сначала вопрос о языке (на всех языках сразу), приветствие и остальное —
- * после выбора (StartLanguageUpdateHandler → continueStart). Кто выбирал — приветствие сразу.
+ * после выбора (StartLanguageUpdateHandler → continueStart). Что показать в приветствии, до выбора лежит
+ * в user_settings.pending_start_*. Кто выбирал — приветствие сразу.
  */
 @Component
 @RequiredArgsConstructor
@@ -48,15 +48,15 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
     private final CalculatorProfileUpdateHandler calculatorProfileUpdateHandler;
     private final CalorieMenuButtons menuButtons;
     private final CalorieTexts texts;
+    private final UserSettingsService userSettingsService;
 
     /**
-     * Что /start должен показать после выбора языка, по appUserId. В памяти: после перезапуска
-     * выбор языка всё равно продолжит /start, только без предложения калькулятора и сообщения о пробном периоде.
+     * Что показать в приветствии /start.
+     *
+     * @param trialDays        дней пробного периода, 0 — не выдавали (уже был)
+     * @param partnerBonusDays дней Premium по партнёрской ссылке (UtmService.processClick), 0 — не было
      */
-    private final Map<Long, PendingStart> pendingStarts = new ConcurrentHashMap<>();
-
-    /** @param partnerBonusDays дней Premium по партнёрской ссылке (UtmService.processClick), 0 — не было */
-    private record PendingStart(CalculatorStartParam.Calculator calculator, UserSubscription trial, int partnerBonusDays) {
+    record PendingStart(CalculatorStartParam.Calculator calculator, int trialDays, int partnerBonusDays) {
     }
 
     @Override
@@ -75,9 +75,9 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
                 : utmService.processClick(param.utmCode(), appUserId, trial != null);
         int partnerBonusDays = referralRewardService.grantPartnerBonusOrZero(appUserId, partnerBonusDaysDue);
 
-        PendingStart start = new PendingStart(param.calculator(), trial, partnerBonusDays);
+        PendingStart start = new PendingStart(param.calculator(), getTrialDays(trial), partnerBonusDays);
         if (!texts.hasChosenLanguage(appUserId)) {
-            pendingStarts.put(appUserId, start);
+            savePendingStart(appUserId, start);
             sendLanguageQuestion(chatId, update.getMessage().getFrom().getLanguageCode());
             return;
         }
@@ -86,8 +86,35 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
 
     /** Язык выбран в ответ на вопрос из /start — показываем то, что /start отложил. */
     public void continueStart(Long chatId, Long appUserId) {
-        PendingStart pending = pendingStarts.remove(appUserId);
-        sendWelcome(chatId, appUserId, pending == null ? new PendingStart(null, null, 0) : pending);
+        sendWelcome(chatId, appUserId, takePendingStart(appUserId));
+    }
+
+    /**
+     * Отложить приветствие до выбора языка — в базу, чтобы деплой между /start и выбором его не потерял.
+     * Пустое (0, нет калькулятора) не затирает отложенное прошлым /start.
+     */
+    private void savePendingStart(Long appUserId, PendingStart start) {
+        userSettingsService.savePendingStart(appUserId,
+                start.calculator() == null ? null : start.calculator().encode(),
+                start.trialDays() > 0 ? start.trialDays() : null,
+                start.partnerBonusDays() > 0 ? start.partnerBonusDays() : null);
+    }
+
+    /** Отложенное /start из базы; в базе оно при этом очищается. */
+    private PendingStart takePendingStart(Long appUserId) {
+        return userSettingsService.takePendingStart(appUserId)
+                .map(settings -> new PendingStart(
+                        settings.getPendingStartCalculator() == null
+                                ? null
+                                : CalculatorStartParam.parse(settings.getPendingStartCalculator()).calculator(),
+                        settings.getPendingStartTrialDays() == null ? 0 : settings.getPendingStartTrialDays(),
+                        settings.getPendingStartBonusDays() == null ? 0 : settings.getPendingStartBonusDays()))
+                .orElse(new PendingStart(null, 0, 0));
+    }
+
+    private static int getTrialDays(UserSubscription trial) {
+        if (trial == null || trial.getStartAt() == null || trial.getEndAt() == null) return 0;
+        return (int) Duration.between(trial.getStartAt(), trial.getEndAt()).plusHours(1).toDays();
     }
 
     /**
@@ -130,10 +157,8 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
     private String buildWelcomeText(AppLanguage language, PendingStart start) {
         List<String> parts = new ArrayList<>();
         parts.add(texts.get(language, BotTextKeys.START_WELCOME));
-        UserSubscription trial = start.trial();
-        if (trial != null && trial.getStartAt() != null && trial.getEndAt() != null) {
-            long trialDays = Duration.between(trial.getStartAt(), trial.getEndAt()).plusHours(1).toDays();
-            parts.add(texts.get(language, BotTextKeys.START_WELCOME_TRIAL, trialDays));
+        if (start.trialDays() > 0) {
+            parts.add(texts.get(language, BotTextKeys.START_WELCOME_TRIAL, (long) start.trialDays()));
         }
         if (start.partnerBonusDays() > 0) {
             parts.add(texts.get(language, BotTextKeys.START_PARTNER_BONUS, start.partnerBonusDays()));

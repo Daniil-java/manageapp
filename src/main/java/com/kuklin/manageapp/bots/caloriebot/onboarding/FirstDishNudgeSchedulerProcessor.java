@@ -4,7 +4,7 @@ import com.kuklin.manageapp.bots.caloriebot.bot.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.settings.UserSettings;
-import com.kuklin.manageapp.bots.caloriebot.settings.UserSettingsRepository;
+import com.kuklin.manageapp.bots.caloriebot.settings.UserSettingsService;
 import com.kuklin.manageapp.common.scheduler.ScheduleProcessor;
 import com.kuklin.manageapp.common.services.TelegramUserService;
 import com.kuklin.manageapp.common.telegram.BotIdentifier;
@@ -39,7 +39,7 @@ public class FirstDishNudgeSchedulerProcessor implements ScheduleProcessor {
     static final int QUIET_FROM = 23;
     static final int QUIET_TO = 9;
 
-    private final UserSettingsRepository userSettingsRepository;
+    private final UserSettingsService userSettingsService;
     private final TelegramUserService telegramUserService;
     private final CalorieTelegramBot calorieTelegramBot;
     private final CalorieTexts texts;
@@ -50,8 +50,8 @@ public class FirstDishNudgeSchedulerProcessor implements ScheduleProcessor {
     }
 
     void processAt(Instant now) {
-        for (UserSettings settings : userSettingsRepository.findFirstDishNudgeCandidates(
-                now.minus(CANDIDATE_WINDOW), MAX_NUDGES, BotIdentifier.CALORIE_BOT.name())) {
+        for (UserSettings settings : userSettingsService.findFirstDishNudgeCandidates(
+                now.minus(CANDIDATE_WINDOW), MAX_NUDGES)) {
             try {
                 processUser(settings, now);
             } catch (Exception e) {
@@ -78,7 +78,7 @@ public class FirstDishNudgeSchedulerProcessor implements ScheduleProcessor {
         }
 
         int newCount = second ? MAX_NUDGES : 1;
-        if (userSettingsRepository.claimFirstDishNudge(settings.getUserId(), sent, newCount) == 0) {
+        if (!userSettingsService.claimFirstDishNudge(settings.getUserId(), sent, newCount)) {
             return;
         }
         String key = second ? BotTextKeys.REMINDER_FIRST_DISH_SECOND : BotTextKeys.REMINDER_FIRST_DISH_FIRST;

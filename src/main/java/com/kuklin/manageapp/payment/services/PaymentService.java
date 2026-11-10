@@ -25,6 +25,7 @@ import org.telegram.telegrambots.meta.api.objects.payments.PreCheckoutQuery;
 import org.telegram.telegrambots.meta.api.objects.payments.SuccessfulPayment;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -419,6 +420,14 @@ public class PaymentService {
      * Платёж звёздами, который можно вернуть (оплачен и ещё не возвращён), или null.
      * Возврат: сначала refundStarPayment в Telegram, и только если он прошёл — refundTelegramPayment.
      */
+    /** До 3 последних платежей пользователя в боте с одним из статусов, новые первыми. */
+    @Transactional(readOnly = true)
+    public List<Payment> findLastPayments(Long appUserId, BotIdentifier botIdentifier,
+                                          List<Payment.PaymentStatus> statuses) {
+        return paymentRepository.findTop3ByAppUserIdAndBotIdentifierAndStatusInOrderByCreatedAtDesc(
+                appUserId, botIdentifier, statuses);
+    }
+
     @Transactional(readOnly = true)
     public Payment getRefundableTelegramPaymentOrNull(String paymentChargeId) {
         return paymentRepository.findByProviderPaymentId(paymentChargeId)

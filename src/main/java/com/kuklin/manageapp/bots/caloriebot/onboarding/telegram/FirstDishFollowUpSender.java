@@ -6,7 +6,7 @@ import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.profile.UserNutritionProfileService;
 import com.kuklin.manageapp.bots.caloriebot.referral.telegram.InvitePromptSender;
-import com.kuklin.manageapp.bots.caloriebot.settings.UserSettingsRepository;
+import com.kuklin.manageapp.bots.caloriebot.settings.UserSettingsService;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.services.TelegramUserService;
 import com.kuklin.manageapp.common.telegram.BotIdentifier;
@@ -38,7 +38,7 @@ import java.util.concurrent.TimeUnit;
 public class FirstDishFollowUpSender {
     static final long DELAY_SECONDS = 3;
 
-    private final UserSettingsRepository userSettingsRepository;
+    private final UserSettingsService userSettingsService;
     private final TelegramUserService telegramUserService;
     private final CalorieTelegramBot calorieTelegramBot;
     private final UserNutritionProfileService userNutritionProfileService;
@@ -52,7 +52,7 @@ public class FirstDishFollowUpSender {
     public void onDishAdded(DishAddedEvent event) {
         Long appUserId = event.appUserId();
         try {
-            if (userSettingsRepository.claimFirstDishFollowUp(appUserId, Instant.now()) == 0) {
+            if (!userSettingsService.claimFirstDishFollowUp(appUserId, Instant.now())) {
                 return;
             }
         } catch (Exception e) {

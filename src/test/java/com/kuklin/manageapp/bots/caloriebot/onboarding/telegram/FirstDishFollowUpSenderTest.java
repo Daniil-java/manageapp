@@ -7,7 +7,6 @@ import com.kuklin.manageapp.bots.caloriebot.i18n.I18nProperties;
 import com.kuklin.manageapp.bots.caloriebot.profile.UserNutritionProfile;
 import com.kuklin.manageapp.bots.caloriebot.profile.UserNutritionProfileService;
 import com.kuklin.manageapp.bots.caloriebot.referral.telegram.InvitePromptSender;
-import com.kuklin.manageapp.bots.caloriebot.settings.UserSettingsRepository;
 import com.kuklin.manageapp.bots.caloriebot.settings.UserSettingsService;
 import com.kuklin.manageapp.common.services.TelegramUserService;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,7 +24,7 @@ class FirstDishFollowUpSenderTest {
     private static final Long APP_USER_ID = 1L;
     private static final Long CHAT_ID = 100L;
 
-    private final UserSettingsRepository repository = mock(UserSettingsRepository.class);
+    private final UserSettingsService settingsService = mock(UserSettingsService.class);
     private final TelegramUserService telegramUserService = mock(TelegramUserService.class);
     private final CalorieTelegramBot bot = mock(CalorieTelegramBot.class);
     private final UserNutritionProfileService profileService = mock(UserNutritionProfileService.class);
@@ -36,7 +35,7 @@ class FirstDishFollowUpSenderTest {
     @BeforeEach
     void setUp() {
         CalorieTexts texts = new CalorieTexts(new I18nProperties(), mock(UserSettingsService.class));
-        sender = new FirstDishFollowUpSender(repository, telegramUserService, bot, profileService, invitePromptSender, texts);
+        sender = new FirstDishFollowUpSender(settingsService, telegramUserService, bot, profileService, invitePromptSender, texts);
         when(profileService.getOrCreateProfile(APP_USER_ID)).thenReturn(profile);
     }
 
@@ -67,7 +66,7 @@ class FirstDishFollowUpSenderTest {
 
     @Test
     void notFirstDishSendsNothing() {
-        when(repository.claimFirstDishFollowUp(eq(APP_USER_ID), any())).thenReturn(0);
+        when(settingsService.claimFirstDishFollowUp(eq(APP_USER_ID), any())).thenReturn(false);
 
         sender.onDishAdded(new DishAddedEvent(APP_USER_ID));
 

@@ -5,7 +5,6 @@ import com.kuklin.manageapp.bots.caloriebot.bot.CalorieTelegramBot;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.i18n.I18nProperties;
 import com.kuklin.manageapp.bots.caloriebot.referral.ReferralRewardService;
-import com.kuklin.manageapp.bots.caloriebot.settings.UserSettingsRepository;
 import com.kuklin.manageapp.bots.caloriebot.settings.UserSettingsService;
 import com.kuklin.manageapp.bots.caloriebot.subscription.telegram.PremiumOfferButtons;
 import com.kuklin.manageapp.bots.caloriebot.subscription.telegram.SubscriptionTexts;
@@ -34,7 +33,6 @@ class PremiumEndingSchedulerProcessorTest {
     /** 13:00 по UTC — день. */
     private static final Instant DAY = Instant.parse("2026-11-09T13:00:00Z");
 
-    private final UserSettingsRepository repository = mock(UserSettingsRepository.class);
     private final UserSettingsService userSettingsService = mock(UserSettingsService.class);
     private final TelegramUserService telegramUserService = mock(TelegramUserService.class);
     private final SubscriptionTexts subscriptionTexts = mock(SubscriptionTexts.class);
@@ -47,17 +45,17 @@ class PremiumEndingSchedulerProcessorTest {
     @BeforeEach
     void setUp() {
         CalorieTexts texts = new CalorieTexts(new I18nProperties(), userSettingsService);
-        processor = new PremiumEndingSchedulerProcessor(repository, userSettingsService, telegramUserService,
+        processor = new PremiumEndingSchedulerProcessor(userSettingsService, telegramUserService,
                 subscriptionTexts, premiumOfferButtons, referralRewardService, new CalorieMenuButtons(texts), bot, texts);
         when(userSettingsService.getZoneId(APP_USER_ID)).thenReturn(ZoneId.of("UTC"));
-        when(repository.findPremiumEndingUserIds(any(), any(), any())).thenReturn(List.of(APP_USER_ID));
+        when(userSettingsService.findPremiumEndingUserIds(any(), any())).thenReturn(List.of(APP_USER_ID));
         when(telegramUserService.findByAppUserIdAndBotIdentifier(eq(APP_USER_ID), any())).thenReturn(Optional.of(telegramUser));
         when(telegramUser.getTelegramId()).thenReturn(TELEGRAM_ID);
         when(subscriptionTexts.formatDateTime(eq(APP_USER_ID), any())).thenReturn("10 ноября в 09:00");
         when(premiumOfferButtons.buildExtendButton(any())).thenReturn(TelegramKeyboard.button("extend", "x"));
         when(premiumOfferButtons.buildInviteButton(any())).thenReturn(TelegramKeyboard.button("invite", "y"));
         when(referralRewardService.getPlanDays(ReferralRewardService.INVITER_PLAN_CODE)).thenReturn(7);
-        when(repository.claimPremiumEndingNotice(eq(APP_USER_ID), any())).thenReturn(1);
+        when(userSettingsService.claimPremiumEndingNotice(eq(APP_USER_ID), any())).thenReturn(true);
     }
 
     @Test
@@ -67,7 +65,7 @@ class PremiumEndingSchedulerProcessorTest {
 
         processor.processAt(DAY);
 
-        verify(repository).claimPremiumEndingNotice(APP_USER_ID, end);
+        verify(userSettingsService).claimPremiumEndingNotice(APP_USER_ID, end);
         verify(bot).sendReturnedMessage(eq(TELEGRAM_ID.longValue()),
                 and(contains("Premium закончится 10 ноября в 09:00"), contains("+7 дней")),
                 any(InlineKeyboardMarkup.class), isNull());
@@ -85,7 +83,7 @@ class PremiumEndingSchedulerProcessorTest {
     @Test
     void alreadyWarnedAboutThisEnd() {
         givenPremiumEnd(DAY.plus(Duration.ofHours(20)));
-        when(repository.claimPremiumEndingNotice(eq(APP_USER_ID), any())).thenReturn(0);
+        when(userSettingsService.claimPremiumEndingNotice(eq(APP_USER_ID), any())).thenReturn(false);
 
         processor.processAt(DAY);
 
@@ -99,7 +97,7 @@ class PremiumEndingSchedulerProcessorTest {
 
         processor.processAt(DAY);
 
-        verify(repository, never()).claimPremiumEndingNotice(any(), any());
+        verify(userSettingsService, never()).claimPremiumEndingNotice(any(), any());
         verifyNoInteractions(bot);
     }
 

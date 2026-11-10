@@ -23,6 +23,12 @@ public class WaterEntryService {
     private final UserSettingsService userSettingsService;
     private final WaterEntryRepository waterEntryRepository;
 
+    /** Дни, когда пользователь записывал воду (серия дней, StreakService). */
+    @Transactional(readOnly = true)
+    public List<LocalDate> findWaterDates(Long userId) {
+        return waterEntryRepository.findWaterDatesByUserId(userId);
+    }
+
     @Transactional
     public WaterEntryDto addWaterDto(Long userId, Integer amountMl) {
         return WaterEntryDto.fromEntity(addWater(userId, amountMl));

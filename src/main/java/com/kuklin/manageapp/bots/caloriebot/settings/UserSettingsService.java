@@ -359,4 +359,64 @@ public class UserSettingsService {
         userSettingsRepository.updateMealLastReminder(userId, Instant.now());
     }
 
+    // --- Разовые отметки: проверка и отметка одним UPDATE, true — занято этим вызовом ---
+
+    /** Новички без блюд, которым ещё можно напомнить (FirstDishNudgeSchedulerProcessor). */
+    public List<UserSettings> findFirstDishNudgeCandidates(Instant joinedAfter, int maxCount) {
+        return userSettingsRepository.findFirstDishNudgeCandidates(joinedAfter, maxCount,
+                BotIdentifier.CALORIE_BOT.name());
+    }
+
+    /** @see UserSettingsRepository#claimFirstDishNudge */
+    public boolean claimFirstDishNudge(Long userId, int sentCount, int newCount) {
+        return userSettingsRepository.claimFirstDishNudge(userId, sentCount, newCount) > 0;
+    }
+
+    /** @see UserSettingsRepository#claimFirstDishFollowUp */
+    public boolean claimFirstDishFollowUp(Long userId, Instant now) {
+        return userSettingsRepository.claimFirstDishFollowUp(userId, now) > 0;
+    }
+
+    /** @see UserSettingsRepository#claimFirstInvitePrompt */
+    public boolean claimFirstInvitePrompt(Long userId, Instant now) {
+        return userSettingsRepository.claimFirstInvitePrompt(userId, now) > 0;
+    }
+
+    /** @see UserSettingsRepository#claimInvitePrompt */
+    public boolean claimInvitePrompt(Long userId, Instant now, Instant joinedBefore, Instant promptedBefore) {
+        return userSettingsRepository.claimInvitePrompt(userId, now, joinedBefore, promptedBefore) > 0;
+    }
+
+    /** Пользователи калорийного бота, у которых Premium заканчивается в (now, until]. */
+    public List<Long> findPremiumEndingUserIds(Instant now, Instant until) {
+        return userSettingsRepository.findPremiumEndingUserIds(BotIdentifier.CALORIE_BOT, now, until);
+    }
+
+    /** @see UserSettingsRepository#claimPremiumEndingNotice */
+    public boolean claimPremiumEndingNotice(Long userId, Instant endAt) {
+        return userSettingsRepository.claimPremiumEndingNotice(userId, endAt) > 0;
+    }
+
+    // --- Отложенное приветствие /start (StartUpdateHandler) ---
+
+    /**
+     * Отложить приветствие /start до выбора языка. null не затирает уже отложенное.
+     *
+     * @see UserSettingsRepository#savePendingStart
+     */
+    public void savePendingStart(Long userId, String calculator, Integer trialDays, Integer bonusDays) {
+        getOrCreate(userId);
+        userSettingsRepository.savePendingStart(userId, calculator, trialDays, bonusDays);
+    }
+
+    /**
+     * Забрать отложенное приветствие: настройки с полями pending_start_* как они были, в базе поля очищены.
+     * Пусто — настроек нет.
+     */
+    public Optional<UserSettings> takePendingStart(Long userId) {
+        Optional<UserSettings> settings = userSettingsRepository.findById(userId);
+        userSettingsRepository.clearPendingStart(userId);
+        return settings;
+    }
+
 }

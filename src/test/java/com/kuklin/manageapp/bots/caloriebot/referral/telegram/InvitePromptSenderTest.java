@@ -1,7 +1,6 @@
 package com.kuklin.manageapp.bots.caloriebot.referral.telegram;
 
 import com.kuklin.manageapp.bots.caloriebot.bot.CalorieTelegramBot;
-import com.kuklin.manageapp.bots.caloriebot.settings.UserSettingsRepository;
 import com.kuklin.manageapp.bots.caloriebot.referral.ReferralRewardService;
 import com.kuklin.manageapp.bots.caloriebot.settings.UserSettingsService;
 import com.kuklin.manageapp.bots.caloriebot.referral.UtmService;
@@ -37,14 +36,13 @@ class InvitePromptSenderTest {
     private static final long CHAT = 1007L;
 
     private final CalorieTelegramBot bot = mock(CalorieTelegramBot.class);
-    private final UserSettingsRepository settingsRepository = mock(UserSettingsRepository.class);
+    private final UserSettingsService settings = mock(UserSettingsService.class);
     private final ReferralRewardService rewardService = mock(ReferralRewardService.class);
     private final UtmService utmService = mock(UtmService.class);
     private InvitePromptSender sender;
 
     @BeforeEach
     void setUp() {
-        UserSettingsService settings = mock(UserSettingsService.class);
         when(settings.findLanguageCode(USER)).thenReturn("ru");
         when(settings.getZoneId(USER)).thenReturn(ZoneOffset.UTC);
         CalorieTexts texts = new CalorieTexts(new I18nProperties(), settings);
@@ -54,7 +52,7 @@ class InvitePromptSenderTest {
         when(rewardService.getPlanDays(ReferralRewardService.INVITER_PLAN_CODE)).thenReturn(7);
         when(rewardService.getPlanDays(ReferralRewardService.FRIEND_PAID_PLAN_CODE)).thenReturn(30);
         InviteLinks links = new InviteLinks(bot, utmService, rewardService, texts);
-        sender = new InvitePromptSender(bot, settingsRepository, settings, rewardService, links, texts);
+        sender = new InvitePromptSender(bot, settings, rewardService, links, texts);
     }
 
     private List<InlineKeyboardButton> sentButtons() {
@@ -65,7 +63,7 @@ class InvitePromptSenderTest {
 
     @Test
     void startFlowInviteIsSentOnce() {
-        when(settingsRepository.claimFirstInvitePrompt(eq(USER), any())).thenReturn(1);
+        when(settings.claimFirstInvitePrompt(eq(USER), any())).thenReturn(true);
 
         sender.sendStartFlowInvite(CHAT, USER);
 
@@ -80,7 +78,7 @@ class InvitePromptSenderTest {
 
     @Test
     void startFlowInviteIsNotRepeated() {
-        when(settingsRepository.claimFirstInvitePrompt(eq(USER), any())).thenReturn(0);
+        when(settings.claimFirstInvitePrompt(eq(USER), any())).thenReturn(false);
 
         sender.sendStartFlowInvite(CHAT, USER);
 
@@ -89,14 +87,14 @@ class InvitePromptSenderTest {
 
     @Test
     void eveningPromptRespectsWeekAndAccountAge() {
-        when(settingsRepository.claimInvitePrompt(eq(USER), any(), any(), any())).thenReturn(1);
+        when(settings.claimInvitePrompt(eq(USER), any(), any(), any())).thenReturn(true);
 
         assertThat(sender.sendAfterDailyReportIfDue(CHAT, USER)).isTrue();
 
         ArgumentCaptor<Instant> now = ArgumentCaptor.forClass(Instant.class);
         ArgumentCaptor<Instant> joinedBefore = ArgumentCaptor.forClass(Instant.class);
         ArgumentCaptor<Instant> promptedBefore = ArgumentCaptor.forClass(Instant.class);
-        verify(settingsRepository).claimInvitePrompt(eq(USER), now.capture(), joinedBefore.capture(), promptedBefore.capture());
+        verify(settings).claimInvitePrompt(eq(USER), now.capture(), joinedBefore.capture(), promptedBefore.capture());
         assertThat(Duration.between(joinedBefore.getValue(), now.getValue())).isEqualTo(InvitePromptSender.MIN_ACCOUNT_AGE);
         assertThat(Duration.between(promptedBefore.getValue(), now.getValue())).isEqualTo(InvitePromptSender.PROMPT_INTERVAL);
         // Две кнопки: карточка за сегодня и «Переслать другу»
@@ -107,7 +105,7 @@ class InvitePromptSenderTest {
 
     @Test
     void eveningPromptSkippedWhenTooEarly() {
-        when(settingsRepository.claimInvitePrompt(eq(USER), any(), any(), any())).thenReturn(0);
+        when(settings.claimInvitePrompt(eq(USER), any(), any(), any())).thenReturn(false);
 
         assertThat(sender.sendAfterDailyReportIfDue(CHAT, USER)).isFalse();
         verify(bot, never()).sendReturnedMessage(anyLong(), anyString(), any(), any());
@@ -115,7 +113,7 @@ class InvitePromptSenderTest {
 
     @Test
     void eveningPromptFailureIsSwallowed() {
-        when(settingsRepository.claimInvitePrompt(eq(USER), any(), any(), any())).thenThrow(new IllegalStateException("db"));
+        when(settings.claimInvitePrompt(eq(USER), any(), any(), any())).thenThrow(new IllegalStateException("db"));
 
         assertThat(sender.sendAfterDailyReportIfDue(CHAT, USER)).isFalse();
     }

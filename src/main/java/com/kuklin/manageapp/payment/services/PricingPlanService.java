@@ -27,6 +27,10 @@ public class PricingPlanService {
         return pricingPlanRepository.findAllByBotIdentifierAndPlanStatus(botIdentifier, PricingPlan.PlanStatus.AVAILABLE);
     }
 
+    public PricingPlan findPricingPlanByIdOrNull(Long id) {
+        return pricingPlanRepository.findById(id).orElse(null);
+    }
+
     public PricingPlan getPricingPlanById(Long id) throws PricingPlanNotFoundException {
         return pricingPlanRepository.findById(id)
                 .orElseThrow(PricingPlanNotFoundException::new);

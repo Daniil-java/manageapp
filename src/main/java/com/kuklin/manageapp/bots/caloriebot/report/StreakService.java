@@ -1,8 +1,8 @@
 package com.kuklin.manageapp.bots.caloriebot.report;
 
 import com.kuklin.manageapp.bots.caloriebot.settings.UserSettingsService;
-import com.kuklin.manageapp.bots.caloriebot.dish.DishRepository;
-import com.kuklin.manageapp.bots.caloriebot.water.WaterEntryRepository;
+import com.kuklin.manageapp.bots.caloriebot.dish.DishService;
+import com.kuklin.manageapp.bots.caloriebot.water.WaterEntryService;
 import com.kuklin.manageapp.bots.caloriebot.report.dto.StreakDto;
 import com.kuklin.manageapp.bots.caloriebot.report.dto.StreakDto.StreakDay;
 import lombok.RequiredArgsConstructor;
@@ -12,7 +12,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -28,8 +27,8 @@ import java.util.TreeSet;
 public class StreakService {
     private static final int LAST_DAYS = 7;
 
-    private final DishRepository dishRepository;
-    private final WaterEntryRepository waterEntryRepository;
+    private final DishService dishService;
+    private final WaterEntryService waterEntryService;
     private final UserSettingsService userSettingsService;
 
     @Transactional(readOnly = true)
@@ -62,25 +61,13 @@ public class StreakService {
     /** Сколько разных дней (в таймзоне пользователя) есть блюда за [from, to). Вода не считается. */
     @Transactional(readOnly = true)
     public long countDishDaysBetween(Long userId, Instant from, Instant to) {
-        ZoneId zone = userSettingsService.getZoneId(userId);
-        return dishRepository.countDishDaysByUserIdBetween(userId, getSqlZoneName(zone), getSqlOffsetSeconds(zone), from, to);
+        return dishService.countDishDaysBetween(userId, userSettingsService.getZoneId(userId), from, to);
     }
 
     private Set<LocalDate> findActiveDays(Long userId, ZoneId zone) {
-        Set<LocalDate> days = new HashSet<>(waterEntryRepository.findWaterDatesByUserId(userId));
-        for (Integer epochDay : dishRepository.findDishEpochDaysByUserId(userId, getSqlZoneName(zone), getSqlOffsetSeconds(zone))) {
-            days.add(LocalDate.ofEpochDay(epochDay));
-        }
+        Set<LocalDate> days = new HashSet<>(waterEntryService.findWaterDates(userId));
+        days.addAll(dishService.findDishDays(userId, zone));
         return days;
-    }
-
-    // Фиксированное смещение (+03:00, GMT+3) — числом поверх UTC, зона с переходами — по имени IANA
-    private static String getSqlZoneName(ZoneId zone) {
-        return zone.normalized() instanceof ZoneOffset ? "UTC" : zone.getId();
-    }
-
-    private static int getSqlOffsetSeconds(ZoneId zone) {
-        return zone.normalized() instanceof ZoneOffset offset ? offset.getTotalSeconds() : 0;
     }
 
     static StreakDto buildStreak(Set<LocalDate> activeDays, LocalDate today) {

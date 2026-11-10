@@ -5,14 +5,14 @@ import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.report.pdf.ReportHtml;
 import com.kuklin.manageapp.aiconversation.usage.entities.MetricsAiInteractionRecord;
-import com.kuklin.manageapp.aiconversation.usage.repositories.MetricsAiInteractionRecordRepository;
+import com.kuklin.manageapp.aiconversation.usage.services.MetricsAiInteractionRecordService;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import com.kuklin.manageapp.payment.entities.Payment;
 import com.kuklin.manageapp.payment.entities.PricingPlan;
 import com.kuklin.manageapp.payment.entities.UserSubscription;
-import com.kuklin.manageapp.payment.repositories.PaymentRepository;
-import com.kuklin.manageapp.payment.repositories.PricingPlanRepository;
+import com.kuklin.manageapp.payment.services.PaymentService;
+import com.kuklin.manageapp.payment.services.PricingPlanService;
 import com.kuklin.manageapp.payment.services.UserSubscriptionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -39,12 +39,11 @@ public class SupportTicketCardBuilder {
     private static final long SUPERGROUP_ID_OFFSET = 1_000_000_000_000L;
 
     private final SupportProperties properties;
-    private final SupportTicketRepository ticketRepository;
-    private final SupportMessageRepository messageRepository;
+    private final SupportTicketService ticketService;
     private final UserSubscriptionService userSubscriptionService;
-    private final PricingPlanRepository pricingPlanRepository;
-    private final PaymentRepository paymentRepository;
-    private final MetricsAiInteractionRecordRepository aiRecordRepository;
+    private final PricingPlanService pricingPlanService;
+    private final PaymentService paymentService;
+    private final MetricsAiInteractionRecordService aiRecordService;
     private final CalorieTexts texts;
 
     /** Название темы: «#12 💳 Имя @username», у закрытой — с ✅ в начале. До 128 символов (лимит Telegram). */
@@ -56,7 +55,7 @@ public class SupportTicketCardBuilder {
 
     public String buildCard(SupportTicket ticket, TelegramUser user) {
         Long appUserId = user.getAppUserId();
-        List<Payment> payments = paymentRepository.findTop3ByAppUserIdAndBotIdentifierAndStatusInOrderByCreatedAtDesc(
+        List<Payment> payments = paymentService.findLastPayments(
                 appUserId, BotIdentifier.CALORIE_BOT,
                 List.of(Payment.PaymentStatus.SUCCESS, Payment.PaymentStatus.REFUNDED, Payment.PaymentStatus.FAILED));
 
@@ -91,9 +90,8 @@ public class SupportTicketCardBuilder {
     private String buildSubscriptionLine(Long appUserId) {
         UserSubscription subscription = userSubscriptionService.getActiveSubscriptionOrNull(appUserId, BotIdentifier.CALORIE_BOT);
         if (subscription == null) return "💎 Без подписки";
-        String plan = pricingPlanRepository.findById(subscription.getPricingPlanId())
-                .map(PricingPlan::getTitle)
-                .orElse("Подписка");
+        PricingPlan pricingPlan = pricingPlanService.findPricingPlanByIdOrNull(subscription.getPricingPlanId());
+        String plan = pricingPlan == null ? "Подписка" : pricingPlan.getTitle();
         long daysLeft = Duration.between(Instant.now(), subscription.getEndAt()).toDays();
         return "💎 " + escape(plan) + " — ещё " + daysLeft + " дн. (до " + formatDate(subscription.getEndAt()) + ")";
     }
@@ -109,24 +107,21 @@ public class SupportTicketCardBuilder {
 
     private String buildAiLine(Long appUserId) {
         Instant from = Instant.now().minus(Duration.ofDays(1));
-        long ok = aiRecordRepository.countByAppUserIdAndCreatedAfterAndErrorCodeIsNull(appUserId, from);
-        long failed = aiRecordRepository.countByAppUserIdAndCreatedAfterAndErrorCodeIsNotNull(appUserId, from);
+        long ok = aiRecordService.countUserInteractionsSince(appUserId, from, false);
+        long failed = aiRecordService.countUserInteractionsSince(appUserId, from, true);
         String line = "🤖 ИИ за сутки: " + ok;
         if (failed == 0) return line;
         line += " · ⚠️ сбоев " + failed;
-        MetricsAiInteractionRecord last = aiRecordRepository
-                .findFirstByAppUserIdAndCreatedAfterAndErrorCodeIsNotNullOrderByCreatedDesc(appUserId, from)
-                .orElse(null);
+        MetricsAiInteractionRecord last = aiRecordService.findLastFailedInteractionOrNull(appUserId, from);
         if (last == null) return line;
         String code = last.getErrorCode() == 0 ? "нет ответа" : "HTTP " + last.getErrorCode();
         return line + " (последний " + last.getCreated().atZone(properties.getZone()).format(TIME) + ", " + code + ")";
     }
 
     private String buildHistoryBlock(SupportTicket ticket) {
-        List<SupportTicket> previous = ticketRepository.findTop5ByAppUserIdAndStatusNotAndIdNotOrderByCreatedAtDesc(
-                ticket.getAppUserId(), SupportTicket.Status.DRAFT, ticket.getId());
+        List<SupportTicket> previous = ticketService.findPreviousTickets(ticket);
         if (previous.isEmpty()) return "🗂 Первое обращение";
-        long total = ticketRepository.countByAppUserIdAndStatusNot(ticket.getAppUserId(), SupportTicket.Status.DRAFT) - 1;
+        long total = ticketService.countSubmittedTickets(ticket.getAppUserId()) - 1;
         StringJoiner block = new StringJoiner("\n");
         block.add("🗂 <b>Прошлые заявки</b> (" + total + ")");
         previous.forEach(old -> block.add(buildHistoryLine(old)));
@@ -139,8 +134,7 @@ public class SupportTicketCardBuilder {
         String number = ticket.getTopicId() == null
                 ? "#" + ticket.getId()
                 : "<a href=\"" + buildTopicLink(ticket.getTopicId()) + "\">#" + ticket.getId() + "</a>";
-        String preview = messageRepository
-                .findFirstByTicketIdAndDirectionOrderByCreatedAtAsc(ticket.getId(), SupportMessage.Direction.USER)
+        String preview = ticketService.findFirstUserMessage(ticket.getId())
                 .map(SupportMessage::getText)
                 .map(text -> " — " + escape(shorten(text)))
                 .orElse("");

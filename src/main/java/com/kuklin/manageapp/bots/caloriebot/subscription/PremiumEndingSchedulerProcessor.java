@@ -6,7 +6,6 @@ import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.referral.ReferralRewardService;
-import com.kuklin.manageapp.bots.caloriebot.settings.UserSettingsRepository;
 import com.kuklin.manageapp.bots.caloriebot.settings.UserSettingsService;
 import com.kuklin.manageapp.bots.caloriebot.subscription.telegram.PremiumOfferButtons;
 import com.kuklin.manageapp.bots.caloriebot.subscription.telegram.SubscriptionTexts;
@@ -40,7 +39,6 @@ public class PremiumEndingSchedulerProcessor implements ScheduleProcessor {
     static final int SEND_FROM = 10;
     static final int SEND_TO = 21;
 
-    private final UserSettingsRepository userSettingsRepository;
     private final UserSettingsService userSettingsService;
     private final TelegramUserService telegramUserService;
     private final SubscriptionTexts subscriptionTexts;
@@ -56,8 +54,8 @@ public class PremiumEndingSchedulerProcessor implements ScheduleProcessor {
     }
 
     void processAt(Instant now) {
-        for (Long appUserId : userSettingsRepository.findPremiumEndingUserIds(
-                BotIdentifier.CALORIE_BOT, now, now.plus(NOTICE_WINDOW))) {
+        for (Long appUserId : userSettingsService.findPremiumEndingUserIds(
+                now, now.plus(NOTICE_WINDOW))) {
             try {
                 processUser(appUserId, now);
             } catch (Exception e) {
@@ -81,7 +79,7 @@ public class PremiumEndingSchedulerProcessor implements ScheduleProcessor {
         if (end == null || !end.isAfter(now) || end.isAfter(now.plus(NOTICE_WINDOW))) {
             return;
         }
-        if (userSettingsRepository.claimPremiumEndingNotice(appUserId, end) == 0) {
+        if (!userSettingsService.claimPremiumEndingNotice(appUserId, end)) {
             return;
         }
         AppLanguage language = texts.languageOf(appUserId);

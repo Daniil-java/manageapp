@@ -3,11 +3,11 @@ package com.kuklin.manageapp.bots.caloriebot.support;
 import com.kuklin.manageapp.bots.caloriebot.settings.UserSettingsService;
 import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.i18n.I18nProperties;
-import com.kuklin.manageapp.aiconversation.usage.repositories.MetricsAiInteractionRecordRepository;
+import com.kuklin.manageapp.aiconversation.usage.services.MetricsAiInteractionRecordService;
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.payment.entities.Payment;
-import com.kuklin.manageapp.payment.repositories.PaymentRepository;
-import com.kuklin.manageapp.payment.repositories.PricingPlanRepository;
+import com.kuklin.manageapp.payment.services.PaymentService;
+import com.kuklin.manageapp.payment.services.PricingPlanService;
 import com.kuklin.manageapp.payment.services.UserSubscriptionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,9 +33,9 @@ class SupportTicketCardBuilderTest {
 
     private final SupportTicketRepository ticketRepository = mock(SupportTicketRepository.class);
     private final SupportMessageRepository messageRepository = mock(SupportMessageRepository.class);
-    private final PaymentRepository paymentRepository = mock(PaymentRepository.class);
+    private final PaymentService paymentService = mock(PaymentService.class);
     private final UserSubscriptionService subscriptionService = mock(UserSubscriptionService.class);
-    private final PricingPlanRepository planRepository = mock(PricingPlanRepository.class);
+    private final PricingPlanService planService = mock(PricingPlanService.class);
     private final TelegramUser user = new TelegramUser();
     private SupportTicketCardBuilder builder;
 
@@ -46,9 +46,10 @@ class SupportTicketCardBuilderTest {
         SupportProperties properties = new SupportProperties();
         properties.setChatId(-1001234567890L);
         properties.setZone(ZoneId.of("UTC"));
-        builder = new SupportTicketCardBuilder(properties, ticketRepository, messageRepository,
-                subscriptionService, planRepository, paymentRepository,
-                mock(MetricsAiInteractionRecordRepository.class), new CalorieTexts(new I18nProperties(), settings));
+        builder = new SupportTicketCardBuilder(properties,
+                new SupportTicketService(ticketRepository, messageRepository, properties),
+                subscriptionService, planService, paymentService,
+                mock(MetricsAiInteractionRecordService.class), new CalorieTexts(new I18nProperties(), settings));
 
         user.setAppUserId(USER);
         user.setTelegramId(555L);
@@ -99,7 +100,7 @@ class SupportTicketCardBuilderTest {
         payment.setStatus(Payment.PaymentStatus.SUCCESS);
         payment.setProviderPaymentId("stxCharge1");
         payment.setPaidAt(Instant.parse("2026-11-01T10:00:00Z"));
-        when(paymentRepository.findTop3ByAppUserIdAndBotIdentifierAndStatusInOrderByCreatedAtDesc(eq(USER), any(), any()))
+        when(paymentService.findLastPayments(eq(USER), any(), any()))
                 .thenReturn(List.of(payment));
 
         String card = builder.buildCard(buildTicket(12, SupportTicket.Category.PAYMENT), user);
@@ -120,7 +121,7 @@ class SupportTicketCardBuilderTest {
         when(subscriptionService.getActiveSubscriptionOrNull(eq(USER), any())).thenReturn(subscription);
         PricingPlan plan = new PricingPlan();
         plan.setTitle("Premium Месяц");
-        when(planRepository.findById(3L)).thenReturn(Optional.of(plan));
+        when(planService.findPricingPlanByIdOrNull(3L)).thenReturn(plan);
 
         String card = builder.buildCard(buildTicket(12, SupportTicket.Category.PAYMENT), user);
 

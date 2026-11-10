@@ -1,7 +1,6 @@
 package com.kuklin.manageapp.bots.caloriebot.referral.telegram;
 
 import com.kuklin.manageapp.bots.caloriebot.bot.CalorieTelegramBot;
-import com.kuklin.manageapp.bots.caloriebot.settings.UserSettingsRepository;
 import com.kuklin.manageapp.bots.caloriebot.referral.ReferralRewardService;
 import com.kuklin.manageapp.bots.caloriebot.settings.UserSettingsService;
 import com.kuklin.manageapp.bots.caloriebot.i18n.BotTextKeys;
@@ -36,7 +35,6 @@ public class InvitePromptSender {
     static final Duration MIN_ACCOUNT_AGE = Duration.ofDays(3);
 
     private final CalorieTelegramBot calorieTelegramBot;
-    private final UserSettingsRepository userSettingsRepository;
     private final UserSettingsService userSettingsService;
     private final ReferralRewardService referralRewardService;
     private final InviteLinks inviteLinks;
@@ -47,7 +45,7 @@ public class InvitePromptSender {
      * чем через неделю.
      */
     public void sendStartFlowInvite(Long chatId, Long appUserId) {
-        if (userSettingsRepository.claimFirstInvitePrompt(appUserId, Instant.now()) == 0) {
+        if (!userSettingsService.claimFirstInvitePrompt(appUserId, Instant.now())) {
             return;
         }
         InlineKeyboardMarkup keyboard = TelegramKeyboard.builder()
@@ -73,9 +71,9 @@ public class InvitePromptSender {
     public boolean sendAfterDailyReportIfDue(Long chatId, Long appUserId) {
         try {
             Instant now = Instant.now();
-            int claimed = userSettingsRepository.claimInvitePrompt(appUserId, now,
+            boolean claimed = userSettingsService.claimInvitePrompt(appUserId, now,
                     now.minus(MIN_ACCOUNT_AGE), now.minus(PROMPT_INTERVAL));
-            if (claimed == 0) {
+            if (!claimed) {
                 return false;
             }
             String text = texts.get(appUserId, BotTextKeys.INVITE_PROMPT,

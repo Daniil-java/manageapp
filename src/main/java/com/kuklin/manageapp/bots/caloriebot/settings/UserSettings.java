@@ -100,6 +100,18 @@ public class UserSettings {
     @Column(name = "premium_ending_notified_end_at", insertable = false, updatable = false)
     private Instant premiumEndingNotifiedEndAt;
 
+    // Отложенное приветствие /start до выбора языка (StartUpdateHandler): калькулятор с лендинга
+    // (CalculatorStartParam.Calculator.encode), дни пробного периода и бонуса партнёра. null — нечего показывать.
+    // Пишутся только запросами UserSettingsRepository.savePendingStart / clearPendingStart
+    @Column(name = "pending_start_calculator", insertable = false, updatable = false)
+    private String pendingStartCalculator;
+
+    @Column(name = "pending_start_trial_days", insertable = false, updatable = false)
+    private Integer pendingStartTrialDays;
+
+    @Column(name = "pending_start_bonus_days", insertable = false, updatable = false)
+    private Integer pendingStartBonusDays;
+
     // --- Служебные поля ---
     @CreationTimestamp
     @Column(name = "created_at", updatable = false, nullable = false)
