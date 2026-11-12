@@ -22,6 +22,7 @@ import com.kuklin.manageapp.payment.services.UserSubscriptionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Update;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
 import java.time.Duration;
@@ -49,6 +50,7 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
     private final CalorieMenuButtons menuButtons;
     private final CalorieTexts texts;
     private final UserSettingsService userSettingsService;
+    private final SampleDishCalorieUpdateHandler sampleDishHandler;
 
     /**
      * Что показать в приветствии /start.
@@ -119,9 +121,10 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
 
     /**
      * «На каком языке будем общаться?» — каждым языком по абзацу и кнопка на каждый язык.
-     * Язык Telegram пользователя — первым: его кнопка ближе, абзац сверху.
+     * Язык Telegram пользователя — первым: его кнопка ближе, абзац сверху. Ещё — напоминанием новичку, который
+     * так и не выбрал язык (FirstDishNudgeSchedulerProcessor): ответ продолжает отложенный /start.
      */
-    private void sendLanguageQuestion(Long chatId, String telegramLanguageCode) {
+    public void sendLanguageQuestion(Long chatId, String telegramLanguageCode) {
         Optional<AppLanguage> telegramLanguage = AppLanguage.fromCode(telegramLanguageCode);
         List<AppLanguage> languages = Arrays.stream(AppLanguage.values())
                 .sorted(Comparator.comparing(language -> telegramLanguage.filter(language::equals).isEmpty()))
@@ -140,18 +143,29 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
     }
 
     /**
-     * Одно сообщение с клавиатурой меню: как записать первое блюдо (фото, текст, голос), пробный период и бонус
-     * партнёра строками, условия. Цель — первое блюдо: канал, приглашения и профиль — после него
-     * (FirstDishFollowUpSender), всё знакомство целиком — /intro. С лендинга с калькулятором — ещё предложение
-     * сохранить профиль.
+     * Два сообщения. Первое — с нижней клавиатурой меню (её нельзя повесить на сообщение с кнопками под текстом):
+     * что умеет бот, пробный период и бонус партнёра строками, условия. Второе, последним, чтобы было внизу
+     * экрана, — призыв записать первое блюдо (фото, текст, голос) с кнопками «Посмотреть пример» и «Что ещё умею»
+     * (/intro новым сообщением). Цель — первое блюдо: канал, приглашения и профиль — после него
+     * (FirstDishFollowUpSender). С лендинга с калькулятором — между ними предложение сохранить профиль.
      */
     private void sendWelcome(Long chatId, Long appUserId, PendingStart start) {
         AppLanguage language = texts.languageOf(appUserId);
         calorieTelegramBot.sendReturnedMessage(chatId, buildWelcomeText(language, start),
-                menuButtons.buildKeyboard(appUserId), null);
+                menuButtons.buildKeyboard(language), null);
         if (start.calculator() != null) {
             calculatorProfileUpdateHandler.offer(chatId, appUserId, start.calculator());
         }
+        calorieTelegramBot.sendReturnedMessage(chatId, texts.get(language, BotTextKeys.START_FIRST_DISH_CALL),
+                buildFirstDishCallKeyboard(language), null);
+    }
+
+    private InlineKeyboardMarkup buildFirstDishCallKeyboard(AppLanguage language) {
+        return TelegramKeyboard.builder()
+                .row(sampleDishHandler.buildSampleButton(language))
+                .row(TelegramKeyboard.button(texts.get(language, BotTextKeys.START_BUTTON_MORE),
+                        IntroCalorieUpdateHandler.NEW_MESSAGE_DATA))
+                .build();
     }
 
     private String buildWelcomeText(AppLanguage language, PendingStart start) {
@@ -163,7 +177,6 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
         if (start.partnerBonusDays() > 0) {
             parts.add(texts.get(language, BotTextKeys.START_PARTNER_BONUS, start.partnerBonusDays()));
         }
-        parts.add(texts.get(language, BotTextKeys.START_HELP_HINT));
         parts.add(texts.get(language, BotTextKeys.START_LEGAL,
                 CalorieSiteLinks.buildPrivacyUrl(language), CalorieSiteLinks.buildTermsUrl(language)));
         return String.join("\n\n", parts);

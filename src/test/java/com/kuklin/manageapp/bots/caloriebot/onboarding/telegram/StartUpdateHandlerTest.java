@@ -24,6 +24,9 @@ import org.telegram.telegrambots.meta.api.objects.Chat;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.User;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.ReplyKeyboard;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -50,9 +53,11 @@ class StartUpdateHandlerTest {
     void setUp() {
         // Язык не выбран: settingsService.findLanguageCode — null
         CalorieTexts texts = new CalorieTexts(new I18nProperties(), settingsService);
+        SampleDishCalorieUpdateHandler sampleDishHandler = mock(SampleDishCalorieUpdateHandler.class);
+        when(sampleDishHandler.buildSampleButton(any())).thenReturn(new InlineKeyboardButton("sample"));
         handler = new StartUpdateHandler(subscriptionService, bot, mock(UtmService.class),
                 mock(ReferralRewardService.class), calculatorHandler, mock(CalorieMenuButtons.class), texts,
-                settingsService);
+                settingsService, sampleDishHandler);
     }
 
     @Test
@@ -84,9 +89,23 @@ class StartUpdateHandlerTest {
         handler.continueStart(CHAT_ID, APP_USER_ID);
 
         ArgumentCaptor<String> text = ArgumentCaptor.forClass(String.class);
-        verify(bot).sendReturnedMessage(eq(CHAT_ID.longValue()), text.capture(), any(), isNull());
-        assertThat(text.getValue()).contains("3");
+        verify(bot, times(2)).sendReturnedMessage(eq(CHAT_ID.longValue()), text.capture(), any(), isNull());
+        assertThat(text.getAllValues().get(0)).contains("3");
         verify(calculatorHandler).offer(CHAT_ID, APP_USER_ID, CALCULATOR);
+    }
+
+    @Test
+    void welcomeEndsWithFirstDishCallAndButtons() {
+        when(settingsService.takePendingStart(APP_USER_ID)).thenReturn(Optional.empty());
+
+        handler.continueStart(CHAT_ID, APP_USER_ID);
+
+        ArgumentCaptor<ReplyKeyboard> keyboards = ArgumentCaptor.forClass(ReplyKeyboard.class);
+        verify(bot, times(2)).sendReturnedMessage(eq(CHAT_ID.longValue()), anyString(), keyboards.capture(), isNull());
+        InlineKeyboardMarkup callKeyboard = (InlineKeyboardMarkup) keyboards.getAllValues().get(1);
+        assertThat(callKeyboard.getKeyboard()).hasSize(2);
+        assertThat(callKeyboard.getKeyboard().get(1).get(0).getCallbackData())
+                .isEqualTo(IntroCalorieUpdateHandler.NEW_MESSAGE_DATA);
     }
 
     @Test
@@ -95,7 +114,7 @@ class StartUpdateHandlerTest {
 
         handler.continueStart(CHAT_ID, APP_USER_ID);
 
-        verify(bot).sendReturnedMessage(eq(CHAT_ID.longValue()), anyString(), any(), isNull());
+        verify(bot, times(2)).sendReturnedMessage(eq(CHAT_ID.longValue()), anyString(), any(), isNull());
         verify(calculatorHandler, never()).offer(anyLong(), any(), any());
     }
 

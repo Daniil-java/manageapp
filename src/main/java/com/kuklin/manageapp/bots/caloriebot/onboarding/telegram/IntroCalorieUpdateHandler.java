@@ -40,6 +40,9 @@ public class IntroCalorieUpdateHandler implements CalorieBotUpdateHandler {
     static final String CHANNEL_URL = "https://t.me/zephyr_ai";
     /** callbackData меню разделов. */
     public static final String HOME_DATA = Command.CALORIE_INTRO.getCommandText() + TelegramBot.DEFAULT_DELIMETER + "home";
+    /** callbackData: меню разделов новым сообщением, а не на месте нажатого (кнопка «Что ещё умею» в /start). */
+    private static final String NEW_MESSAGE_CODE = "new";
+    public static final String NEW_MESSAGE_DATA = Command.CALORIE_INTRO.getCommandText() + TelegramBot.DEFAULT_DELIMETER + NEW_MESSAGE_CODE;
 
     @Getter
     @RequiredArgsConstructor
@@ -83,6 +86,10 @@ public class IntroCalorieUpdateHandler implements CalorieBotUpdateHandler {
 
         MaybeInaccessibleMessage message = update.getCallbackQuery().getMessage();
         String[] parts = update.getCallbackQuery().getData().split(TelegramBot.DEFAULT_DELIMETER);
+        if (parts.length > 1 && NEW_MESSAGE_CODE.equals(parts[1])) {
+            sendIntro(message.getChatId(), appUserId);
+            return;
+        }
         Optional<Section> section = parts.length > 1 ? Section.findByCode(parts[1]) : Optional.empty();
         if (section.isPresent()) {
             calorieTelegramBot.sendEditMessage(message.getChatId(), buildSectionText(appUserId, section.get()),

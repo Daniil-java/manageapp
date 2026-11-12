@@ -95,6 +95,11 @@ public class UserSettings {
     @Column(name = "first_dish_follow_up_at", insertable = false, updatable = false)
     private Instant firstDishFollowUpAt;
 
+    // Когда новичок впервые нажал «Посмотреть пример» (SampleDishCalorieUpdateHandler). Пишется только запросом
+    // UserSettingsRepository.claimFirstDishSample
+    @Column(name = "first_dish_sample_at", insertable = false, updatable = false)
+    private Instant firstDishSampleAt;
+
     // Про какой конец Premium уже предупредили (PremiumEndingSchedulerProcessor). Пишется только запросом
     // UserSettingsRepository.claimPremiumEndingNotice
     @Column(name = "premium_ending_notified_end_at", insertable = false, updatable = false)

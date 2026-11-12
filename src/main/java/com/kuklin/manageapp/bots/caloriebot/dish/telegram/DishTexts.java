@@ -54,6 +54,19 @@ public class DishTexts extends AbstractBotTexts {
         return dishes.stream().map(dish -> buildDishCardText(dish, totals, profile, hasTargets, language)).toList();
     }
 
+    /**
+     * Карточка блюда, которого нет в базе (пример для новичка): как настоящая, со шкалой за день.
+     * Итоги дня — eatenBefore (съедено до этого блюда) плюс само блюдо, нормы — из norms.
+     */
+    public String buildSampleCardText(Dish dish, Dish eatenBefore, UserNutritionProfile norms, AppLanguage language) {
+        DayTotals totals = new DayTotals(
+                nvl(eatenBefore.getCalories()) + nvl(dish.getCalories()),
+                nvl(eatenBefore.getProteins()) + nvl(dish.getProteins()),
+                nvl(eatenBefore.getFats()) + nvl(dish.getFats()),
+                nvl(eatenBefore.getCarbohydrates()) + nvl(dish.getCarbohydrates()));
+        return buildDishCardText(dish, totals, norms, true, language);
+    }
+
     private record DayTotals(int calories, int proteins, int fats, int carbs) {
     }
 

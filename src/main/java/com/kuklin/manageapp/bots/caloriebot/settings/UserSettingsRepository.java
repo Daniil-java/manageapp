@@ -135,6 +135,16 @@ public interface UserSettingsRepository extends JpaRepository<UserSettings, Long
     int claimFirstDishFollowUp(@Param("userId") Long userId, @Param("now") Instant now);
 
     /**
+     * Отметить, что новичок посмотрел пример записи (SampleDishCalorieUpdateHandler): только первый раз.
+     *
+     * @return 1 — отмечено сейчас, 0 — уже смотрел или настроек нет
+     */
+    @Transactional
+    @Modifying
+    @Query("update UserSettings s set s.firstDishSampleAt = :now where s.userId = :userId and s.firstDishSampleAt is null")
+    int claimFirstDishSample(@Param("userId") Long userId, @Param("now") Instant now);
+
+    /**
      * Отложить приветствие /start до выбора языка. null не затирает уже отложенное: повторный /start
      * (пробный период уже выдан, калькулятора в нём нет) не теряет то, что пришло в первом.
      *

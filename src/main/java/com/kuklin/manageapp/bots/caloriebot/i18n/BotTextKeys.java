@@ -73,7 +73,14 @@ public final class BotTextKeys {
     public static final String START_WELCOME = "start.welcome";
     public static final String START_WELCOME_TRIAL = "start.welcome.trial";
     public static final String START_LEGAL = "start.legal";
-    public static final String START_HELP_HINT = "start.help-hint";
+    public static final String START_FIRST_DISH_CALL = "start.first-dish-call";
+    public static final String START_BUTTON_SAMPLE = "start.button.sample";
+    public static final String START_BUTTON_MORE = "start.button.more";
+    public static final String START_SAMPLE_DISH_NAME = "start.sample.dish-name";
+    public static final String START_SAMPLE_AFTER = "start.sample.after";
+    public static final String START_SAMPLE_AFTER_PROFILE_FILLED = "start.sample.after.profile-filled";
+    public static final String START_SAMPLE_HINT_DELETE = "start.sample.hint.delete";
+    public static final String START_SAMPLE_HINT_FAVORITE = "start.sample.hint.favorite";
     public static final String START_CHANNEL = "start.channel";
     public static final String START_FIRST_DISH = "start.first-dish";
     public static final String START_FIRST_DISH_PROFILE = "start.first-dish.profile";

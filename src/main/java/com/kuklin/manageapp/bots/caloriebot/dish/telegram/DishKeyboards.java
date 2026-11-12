@@ -48,38 +48,58 @@ public class DishKeyboards {
      * «Удалить» слева: под большим пальцем правой руки чаще оказывается правая кнопка.
      */
     private InlineKeyboardMarkup buildPortionKeyboard(Dish dish, Long appUserId, boolean inFavorites) {
-        AppLanguage language = texts.languageOf(appUserId);
-        // Базовая часть для всех кнопок изменения порции
+        // Базовая часть для всех кнопок изменения порции: <scale_command>delim<dishId>delim<+-scale>
         String base = Command.CALORIE_SCALE.getCommandText()
                 + TelegramBot.DEFAULT_DELIMETER + dish.getId()
                 + TelegramBot.DEFAULT_DELIMETER;
         int portions = dish.getPortions();
+        String portionsBase = base + PORTION_COUNT_CMD + TelegramBot.DEFAULT_DELIMETER;
+        PortionCallbacks callbacks = new PortionCallbacks(
+                base + "-10",
+                base + "10",
+                portionsBase + (portions - 1),
+                portionsBase + (portions + 1),
+                Command.CALORIE_DELETE.getCommandText() + TelegramBot.DEFAULT_DELIMETER + dish.getId(),
+                inFavorites ? null
+                        : Command.CALORIE_FAVORITE_ADD.getCommandText() + TelegramBot.DEFAULT_DELIMETER + dish.getId());
+        return buildPortionKeyboard(dish, texts.languageOf(appUserId), callbacks);
+    }
 
-        //<scale_command>delim<dishId>delim<+-scale>
+    /**
+     * callbackData кнопок под карточкой. favorite == null — блюдо уже в избранном (неактивная «✅ В избранном»).
+     */
+    public record PortionCallbacks(String weightMinus, String weightPlus, String portionsMinus, String portionsPlus,
+                                   String delete, String favorite) {
+    }
+
+    /**
+     * Та же раскладка с любыми callbackData — для карточки-примера новичку (SampleDishCalorieUpdateHandler):
+     * кнопки выглядят как настоящие, а обрабатывает их пример.
+     */
+    public InlineKeyboardMarkup buildPortionKeyboard(Dish dish, AppLanguage language, PortionCallbacks callbacks) {
+        int portions = dish.getPortions();
         InlineKeyboardButton portionMinus = portions > 1
-                ? TelegramKeyboard.button("➖", base + PORTION_COUNT_CMD + TelegramBot.DEFAULT_DELIMETER + (portions - 1))
+                ? TelegramKeyboard.button("➖", callbacks.portionsMinus())
                 // Пустое место вместо «➖» при одной порции — ряд не сдвинется, когда «➖» появится
                 : TelegramKeyboard.placeholderButton();
 
-        InlineKeyboardButton favorite = inFavorites
+        InlineKeyboardButton favorite = callbacks.favorite() == null
                 ? TelegramKeyboard.noActionButton(texts.get(language, BotTextKeys.DISH_BUTTON_IN_FAVORITES))
-                : TelegramKeyboard.button(texts.get(language, BotTextKeys.DISH_BUTTON_SAVE_FAVORITE),
-                        Command.CALORIE_FAVORITE_ADD.getCommandText() + TelegramBot.DEFAULT_DELIMETER + dish.getId());
+                : TelegramKeyboard.button(texts.get(language, BotTextKeys.DISH_BUTTON_SAVE_FAVORITE), callbacks.favorite());
 
         return TelegramKeyboard.builder()
                 .row(
-                        TelegramKeyboard.button("−10%", base + "-10"),
+                        TelegramKeyboard.button("−10%", callbacks.weightMinus()),
                         TelegramKeyboard.noActionButton(getWeightLabel(dish, language)),
-                        TelegramKeyboard.button("+10%", base + "10")
+                        TelegramKeyboard.button("+10%", callbacks.weightPlus())
                 )
                 .row(
                         portionMinus,
                         TelegramKeyboard.noActionButton(texts.get(language, BotTextKeys.DISH_BUTTON_PORTIONS_VALUE, portions)),
-                        TelegramKeyboard.button("➕", base + PORTION_COUNT_CMD + TelegramBot.DEFAULT_DELIMETER + (portions + 1))
+                        TelegramKeyboard.button("➕", callbacks.portionsPlus())
                 )
                 .row(
-                        TelegramKeyboard.button(texts.get(language, BotTextKeys.DISH_BUTTON_DELETE),
-                                Command.CALORIE_DELETE.getCommandText() + TelegramBot.DEFAULT_DELIMETER + dish.getId(),
+                        TelegramKeyboard.button(texts.get(language, BotTextKeys.DISH_BUTTON_DELETE), callbacks.delete(),
                                 ButtonStyle.DANGER),
                         favorite
                 )

@@ -8,6 +8,7 @@ import com.kuklin.manageapp.bots.caloriebot.subscription.telegram.PaymentPlanLis
 import com.kuklin.manageapp.common.entities.TelegramUser;
 import com.kuklin.manageapp.common.telegram.TelegramBot;
 import com.kuklin.manageapp.common.telegram.BotIdentifier;
+import com.kuklin.manageapp.common.telegram.Command;
 import com.kuklin.manageapp.common.services.AsyncService;
 import com.kuklin.manageapp.common.services.TelegramUserService;
 import lombok.extern.slf4j.Slf4j;
@@ -72,14 +73,29 @@ public class CalorieTelegramBot extends TelegramBot {
     }
 
     private void answerCallbackQuery(CallbackQuery callbackQuery) {
+        answerCallbackQuery(callbackQuery, null);
+    }
+
+    /**
+     * Ответ на нажатие кнопки: убирает «часики», text — всплывающая подсказка (null — без неё).
+     * Обычно отвечает onUpdateReceived сразу; на кнопки с подсказкой (isAnsweredByHandler) — обработчик.
+     */
+    public void answerCallbackQuery(CallbackQuery callbackQuery, String text) {
         AnswerCallbackQuery answer = AnswerCallbackQuery.builder()
                 .callbackQueryId(callbackQuery.getId())
+                .text(text)
                 .build();
         try {
             execute(answer);
         } catch (TelegramApiException e) {
             log.error("Send returned message error!", e);
         }
+    }
+
+    /** Кнопки с подсказкой: на нажатие отвечает сам обработчик (answerCallbackQuery с текстом). */
+    private static boolean isAnsweredByHandler(CallbackQuery callbackQuery) {
+        String data = callbackQuery.getData();
+        return data != null && data.split(DEFAULT_DELIMETER)[0].equals(Command.CALORIE_SAMPLE_DISH.getCommandText());
     }
 
     @Override
@@ -95,7 +111,7 @@ public class CalorieTelegramBot extends TelegramBot {
             return;
         }
 
-        if (update.hasCallbackQuery()) {
+        if (update.hasCallbackQuery() && !isAnsweredByHandler(update.getCallbackQuery())) {
             answerCallbackQuery(update.getCallbackQuery());
         }
         // Группа поддержки: сразу, по порядку и без замка «предыдущее сообщение обрабатывается» —

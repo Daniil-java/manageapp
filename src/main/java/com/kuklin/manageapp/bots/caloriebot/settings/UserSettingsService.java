@@ -377,6 +377,11 @@ public class UserSettingsService {
         return userSettingsRepository.claimFirstDishFollowUp(userId, now) > 0;
     }
 
+    /** @see UserSettingsRepository#claimFirstDishSample */
+    public boolean claimFirstDishSample(Long userId, Instant now) {
+        return userSettingsRepository.claimFirstDishSample(userId, now) > 0;
+    }
+
     /** @see UserSettingsRepository#claimFirstInvitePrompt */
     public boolean claimFirstInvitePrompt(Long userId, Instant now) {
         return userSettingsRepository.claimFirstInvitePrompt(userId, now) > 0;
