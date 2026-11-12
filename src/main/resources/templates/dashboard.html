@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Calorie Bot - Web Panel</title>
+  <style>
+    :root {
+      --primary: #2ed573;
+      --primary-dark: #26af5c;
+      --bg: #f1f2f6;
+      --card-bg: #ffffff;
+      --text: #2f3542;
+      --text-light: #747d8c;
+      --danger: #ff4757;
+    }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; }
+    .navbar { background: var(--card-bg); padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+    .navbar h2 { margin: 0; color: var(--primary); }
+    .container { max-width: 1200px; margin: 30px auto; padding: 0 20px; display: flex; gap: 20px; }
+
+    /* Боковое меню (Табы) */
+    .sidebar { width: 250px; background: var(--card-bg); border-radius: 12px; padding: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); height: fit-content; }
+    .tab-btn { display: block; width: 100%; padding: 12px 15px; margin-bottom: 8px; border: none; background: none; border-radius: 8px; text-align: left; font-size: 16px; cursor: pointer; color: var(--text); font-weight: 500; transition: 0.2s; }
+    .tab-btn:hover { background: #e4e7eb; }
+    .tab-btn.active { background: var(--primary); color: white; }
+
+    /* Контентная зона */
+    .main-content { flex: 1; background: var(--card-bg); border-radius: 12px; padding: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* Элементы интерфейса */
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 25px; }
+    .stat-card { background: var(--bg); padding: 15px; border-radius: 8px; text-align: center; }
+    .stat-card h4 { margin: 0 0 5px 0; color: var(--text-light); }
+    .stat-card p { margin: 0; font-size: 22px; font-weight: bold; }
+
+    form { display: grid; gap: 15px; max-width: 500px; margin-bottom: 25px; }
+    .form-group { display: flex; flex-direction: column; }
+    .form-group label { margin-bottom: 5px; font-weight: 500; font-size: 14px; }
+    .form-group input, .form-group select { padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 15px; }
+
+    button.btn { padding: 10px 20px; background: var(--primary); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 15px; }
+    button.btn:hover { background: var(--primary-dark); }
+    button.btn-danger { background: var(--danger); }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    table th, table td { padding: 12px; text-align: left; border-bottom: 1px solid #e4e7eb; }
+    table th { background: var(--bg); color: var(--text-light); }
+
+    .aspect-banner { background: #fff3cd; border-left: 4px solid #ffc107; color: #856404; padding: 15px; border-radius: 6px; margin-bottom: 20px; display: none; }
+  </style>
+</head>
+<body>
+
+<div class="navbar">
+  <h2>CalorieBot Web Platform</h2>
+  <div>
+    <span id="user-display" style="margin-right: 15px; font-weight: 500;">Загрузка...</span>
+    <button class="btn btn-danger" onclick="logout()" style="padding: 5px 10px; font-size: 13px;">Выйти</button>
+  </div>
+</div>
+
+<div class="container">
+  <div class="sidebar">
+    <button class="tab-btn active" onclick="switchTab('diary')">🍏 Дневник питания</button>
+    <button class="tab-btn" onclick="switchTab('water')">💧 Трекер воды</button>
+    <button class="tab-btn" onclick="switchTab('weight')">⚖️ Контроль веса</button>
+    <button class="tab-btn" onclick="switchTab('profile')">👤 Профиль КБЖУ</button>
+    <button class="tab-btn" onclick="switchTab('reports')">📊 Отчеты и ИИ</button>
+  </div>
+
+  <div class="main-content">
+    <div id="aspect-warning" class="aspect-banner"></div>
+
+    <!-- ТАБ 1: ДНЕВНИК ПИТАНИЯ -->
+    <div id="diary" class="tab-content active">
+      <h3>Дневник питания за сегодня</h3>
+      <div class="grid-3">
+        <div class="stat-card"><h4>Калории</h4><p id="summary-cal">0 / -- ккал</p></div>
+        <div class="stat-card"><h4>Белки</h4><p id="summary-prot">0 г</p></div>
+        <div class="stat-card"><h4>БЖУ (Ж / У)</h4><p id="summary-fat-carb">0 г / 0 г</p></div>
+      </div>
+
+      <h4>Добавить блюдо вручную</h4>
+      <form id="dish-form">
+        <div class="form-group"><label>Название блюда</label><input type="text" id="dish-name" required placeholder="Например: Куриное филе на гриле"></div>
+        <div class="grid-3" style="margin: 0; gap: 10px;">
+          <div class="form-group"><label>Калории (на 100г)</label><input type="number" id="dish-cal" required></div>
+          <div class="form-group"><label>Белки</label><input type="number" id="dish-prot" step="0.1"></div>
+          <div class="form-group"><label>Жиры</label><input type="number" id="dish-fat" step="0.1"></div>
+        </div>
+        <div class="grid-3" style="margin: 0; gap: 10px;">
+          <div class="form-group"><label>Углеводы</label><input type="number" id="dish-carb" step="0.1"></div>
+          <div class="form-group"><label>Вес порции (грамм)</label><input type="number" id="dish-weight" required placeholder="200"></div>
+        </div>
+        <button type="submit" class="btn">Записать блюдо</button>
+      </form>
+
+      <h4>Сегодняшние приёмы пищи</h4>
+      <table id="dishes-table">
+        <thead><tr><th>Время</th><th>Название</th><th>Вес</th><th>Ккал</th><th>БЖУ</th><th>Действие</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <!-- ТАБ 2: ВОДА -->
+    <div id="water" class="tab-content">
+      <h3>💧 Трекер воды</h3>
+      <div class="stat-card" style="max-width: 200px; margin-bottom: 20px;">
+        <h4>Выпито сегодня</h4>
+        <p id="water-count">0 мл</p>
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <button class="btn" onclick="addWater(250)">+ 250 мл (Стакан)</button>
+        <button class="btn" onclick="addWater(500)">+ 500 мл (Бутылка)</button>
+      </div>
+    </div>
+
+    <!-- ТАБ 3: ВЕС -->
+    <div id="weight" class="tab-content">
+      <h3>⚖️ Контроль веса</h3>
+      <form id="weight-form">
+        <div class="form-group">
+          <label>Текущий вес (кг)</label>
+          <input type="number" id="weight-input" step="0.1" required placeholder="75.5">
+        </div>
+        <button type="submit" class="btn">Сохранить вес</button>
+      </form>
+      <h4>История взвешиваний</h4>
+      <table id="weight-table">
+        <thead><tr><th>Дата</th><th>Вес (кг)</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <!-- ТАБ 4: ПРОФИЛЬ -->
+    <div id="profile" class="tab-content">
+      <h3>👤 Настройки профиля и КБЖУ</h3>
+      <form id="profile-form">
+        <div class="form-group"><label>Целевые калории в сутки</label><input type="number" id="prof-target-cal"></div>
+        <div class="form-group"><label>Целевой вес (кг)</label><input type="number" id="prof-target-weight" step="0.1"></div>
+        <div class="form-group">
+          <label>Таймзона</label>
+          <select id="prof-timezone">
+            <option value="Europe/Moscow">Москва (GMT+3)</option>
+            <option value="UTC">UTC</option>
+          </select>
+        </div>
+        <button type="submit" class="btn">Обновить профиль</button>
+      </form>
+    </div>
+
+    <!-- ТАБ 5: ОТЧЕТЫ -->
+    <div id="reports" class="tab-content">
+      <h3>📊 Отчеты и Премиум Фичи</h3>
+      <div style="display: flex; gap: 15px; flex-direction: column; max-width: 400px;">
+        <button class="btn" onclick="downloadReport('weekly')">Скачать недельный PDF-отчет</button>
+        <button class="btn" style="background:#8c7ae6" onclick="downloadReport('premium-analysis')">🚀 Запустить ИИ-анализ меню (Premium)</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const token = localStorage.getItem('token');
+  if (!token) { window.location.href = '/login'; }
+
+  const headers = {
+    'Authorization': `Bearer ${token}`,
+    'Content-Type': 'application/json'
+  };
+
+  function switchTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    document.querySelector(`button[onclick="switchTab('${tabId}')"]`).classList.add('active');
+    clearWarning();
+
+    if(tabId === 'diary') loadDiary();
+    if(tabId === 'water') loadWater();
+    if(tabId === 'weight') loadWeight();
+    if(tabId === 'profile') loadProfile();
+  }
+
+  function handleApiError(response) {
+    if (response.status === 403) {
+      showWarning("⛔ Ошибка Аспекта защиты: У вашего аккаунта нет доступа к этой функции (Требуется Premium).");
+      return true;
+    }
+    return false;
+  }
+
+  function showWarning(msg) {
+    const b = document.getElementById('aspect-warning');
+    b.innerText = msg;
+    b.style.display = 'block';
+  }
+  function clearWarning() {
+    document.getElementById('aspect-warning').style.display = 'none';
+  }
+
+  // === ИСПРАВЛЕННЫЕ API ===
+
+  // 1. ДНЕВНИК
+  async function loadDiary() {
+    const res = await fetch('/calorie/dishes/today', { headers });
+    if (handleApiError(res)) return;
+    if (!res.ok) return;
+    const data = await res.json();
+
+    const tbody = document.querySelector('#dishes-table tbody');
+    tbody.innerHTML = '';
+    (data.dishes || data).forEach(d => {
+      tbody.innerHTML += `<tr>
+        <td>${d.time || '---'}</td>
+        <td>${d.name}</td>
+        <td>${d.weight}г</td>
+        <td>${d.calories}</td>
+        <td>${d.protein || d.proteins}/${d.fat || d.fats}/${d.carbs}</td>
+        <td><button class="btn btn-danger" style="padding:2px 5px; font-size:12px;" onclick="deleteDish(${d.id})">Удалить</button></td>
+      </tr>`;
+    });
+
+    document.getElementById('summary-cal').innerText = `${data.totalCalories || data.caloriesFact || 0} / ${data.targetCalories || '--'} ккал`;
+    document.getElementById('summary-prot').innerText = `${data.totalProtein || data.proteinsFact || 0} г`;
+    document.getElementById('summary-fat-carb').innerText = `${data.totalFat || data.fatsFact || 0} г / ${data.totalCarbs || data.carbsFact || 0} г`;
+  }
+
+  document.getElementById('dish-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const payload = {
+      name: document.getElementById('dish-name').value,
+      calories: +document.getElementById('dish-cal').value,
+      protein: +document.getElementById('dish-prot').value,
+      fat: +document.getElementById('dish-fat').value,
+      carbs: +document.getElementById('dish-carb').value,
+      weight: +document.getElementById('dish-weight').value
+    };
+    const res = await fetch('/calorie/dishes', { method: 'POST', headers, body: JSON.stringify(payload) });
+    if (handleApiError(res)) return;
+    if (res.ok) {
+      document.getElementById('dish-form').reset();
+      loadDiary();
+    }
+  });
+
+  // 2. ВОДА
+  async function loadWater() {
+    const res = await fetch('/calorie/water', { headers });
+    if (res.ok) {
+      const d = await res.json();
+      document.getElementById('water-count').innerText = `${d.amount || d.total || 0} мл`;
+    }
+  }
+
+  async function addWater(ml) {
+    const res = await fetch(`/calorie/water?amountMl=${ml}`, {
+      method: 'POST',
+      headers
+    });
+    if (handleApiError(res)) return;
+    if (res.ok) loadWater();
+  }
+
+  // 3. ВЕС
+  async function loadWeight() {
+    const res = await fetch('/calorie/weight', { headers });
+    if (res.ok) {
+      const data = await res.json();
+      const tbody = document.querySelector('#weight-table tbody');
+      tbody.innerHTML = '';
+      (Array.isArray(data) ? data : []).forEach(w => {
+        tbody.innerHTML += `<tr><td>${w.date}</td><td>${w.value || w.weight} кг</td></tr>`;
+      });
+    }
+  }
+
+  document.getElementById('weight-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const value = parseFloat(document.getElementById('weight-input').value);
+    const res = await fetch('/calorie/weight', {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(value)
+    });
+    if (handleApiError(res)) return;
+    if (res.ok) {
+      loadWeight();
+      document.getElementById('weight-form').reset();
+    }
+  });
+
+  // 4. ПРОФИЛЬ
+  async function loadProfile() {
+    const res = await fetch('/calorie/profile', { headers });
+    if (res.ok) {
+      const p = await res.json();
+      document.getElementById('prof-target-cal').value = p.targetCalories || p.caloriesTarget || '';
+      document.getElementById('prof-target-weight').value = p.targetWeight || '';
+      document.getElementById('prof-timezone').value = p.timezone || 'Europe/Moscow';
+      document.getElementById('user-display').innerText = p.email || 'Пользователь';
+    }
+  }
+
+  // 5. ОТЧЕТЫ
+  async function downloadReport(type) {
+    clearWarning();
+    const url = type === 'weekly'
+            ? '/calorie/reports/weekly'
+            : '/calorie/reports/premium-analysis';
+
+    const res = await fetch(url, { headers });
+
+    if (handleApiError(res)) return;
+
+    if (res.ok) {
+      alert("Успешно! Отчет обрабатывается.");
+    } else {
+      alert("Ошибка при генерации отчета");
+    }
+  }
+
+  function logout() {
+    localStorage.clear();
+    window.location.href = '/login';
+  }
+
+  // Инициализация
+  loadProfile();
+  loadDiary();
+</script>
+</body>
+</html>
