@@ -73,6 +73,7 @@ public final class BotTextKeys {
     public static final String START_WELCOME = "start.welcome";
     public static final String START_WELCOME_TRIAL = "start.welcome.trial";
     public static final String START_LEGAL = "start.legal";
+    public static final String START_LANGUAGE_AUTO = "start.language-auto";
     public static final String START_FIRST_DISH_CALL = "start.first-dish-call";
     public static final String START_BUTTON_SAMPLE = "start.button.sample";
     public static final String START_BUTTON_MORE = "start.button.more";

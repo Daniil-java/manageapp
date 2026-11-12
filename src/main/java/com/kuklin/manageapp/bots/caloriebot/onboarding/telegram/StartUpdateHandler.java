@@ -36,7 +36,8 @@ import java.util.stream.Collectors;
 /**
  * /start. Кто ещё не выбирал язык — сначала вопрос о языке (на всех языках сразу), приветствие и остальное —
  * после выбора (StartLanguageUpdateHandler → continueStart). Что показать в приветствии, до выбора лежит
- * в user_settings.pending_start_*. Кто выбирал — приветствие сразу.
+ * в user_settings.pending_start_*. Кто выбирал — приветствие сразу. Если язык Telegram у нас есть — не спрашиваем:
+ * сохраняем его и сразу приветствие со строкой «сменить: /lang».
  */
 @Component
 @RequiredArgsConstructor
@@ -78,17 +79,25 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
         int partnerBonusDays = referralRewardService.grantPartnerBonusOrZero(appUserId, partnerBonusDaysDue);
 
         PendingStart start = new PendingStart(param.calculator(), getTrialDays(trial), partnerBonusDays);
-        if (!texts.hasChosenLanguage(appUserId)) {
-            savePendingStart(appUserId, start);
-            sendLanguageQuestion(chatId, update.getMessage().getFrom().getLanguageCode());
+        if (texts.hasChosenLanguage(appUserId)) {
+            sendWelcome(chatId, appUserId, start, texts.languageOf(appUserId), false);
             return;
         }
-        sendWelcome(chatId, appUserId, start);
+        String telegramLanguageCode = update.getMessage().getFrom().getLanguageCode();
+        Optional<AppLanguage> telegramLanguage = AppLanguage.fromCode(telegramLanguageCode);
+        if (telegramLanguage.isPresent()) {
+            // Язык Telegram есть среди наших — не спрашиваем, сменить можно в /lang (строка в приветствии)
+            texts.setLanguage(appUserId, telegramLanguage.get());
+            sendWelcome(chatId, appUserId, start, telegramLanguage.get(), true);
+            return;
+        }
+        savePendingStart(appUserId, start);
+        sendLanguageQuestion(chatId, telegramLanguageCode);
     }
 
     /** Язык выбран в ответ на вопрос из /start — показываем то, что /start отложил. */
     public void continueStart(Long chatId, Long appUserId) {
-        sendWelcome(chatId, appUserId, takePendingStart(appUserId));
+        sendWelcome(chatId, appUserId, takePendingStart(appUserId), texts.languageOf(appUserId), false);
     }
 
     /**
@@ -148,10 +157,12 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
      * экрана, — призыв записать первое блюдо (фото, текст, голос) с кнопками «Посмотреть пример» и «Что ещё умею»
      * (/intro новым сообщением). Цель — первое блюдо: канал, приглашения и профиль — после него
      * (FirstDishFollowUpSender). С лендинга с калькулятором — между ними предложение сохранить профиль.
+     *
+     * @param languageAuto язык взят из Telegram без вопроса — в приветствии строка «Язык: … — сменить: /lang»
      */
-    private void sendWelcome(Long chatId, Long appUserId, PendingStart start) {
-        AppLanguage language = texts.languageOf(appUserId);
-        calorieTelegramBot.sendReturnedMessage(chatId, buildWelcomeText(language, start),
+    private void sendWelcome(Long chatId, Long appUserId, PendingStart start, AppLanguage language,
+                             boolean languageAuto) {
+        calorieTelegramBot.sendReturnedMessage(chatId, buildWelcomeText(language, start, languageAuto),
                 menuButtons.buildKeyboard(language), null);
         if (start.calculator() != null) {
             calculatorProfileUpdateHandler.offer(chatId, appUserId, start.calculator());
@@ -168,7 +179,7 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
                 .build();
     }
 
-    private String buildWelcomeText(AppLanguage language, PendingStart start) {
+    private String buildWelcomeText(AppLanguage language, PendingStart start, boolean languageAuto) {
         List<String> parts = new ArrayList<>();
         parts.add(texts.get(language, BotTextKeys.START_WELCOME));
         if (start.trialDays() > 0) {
@@ -176,6 +187,9 @@ public class StartUpdateHandler implements CalorieBotUpdateHandler {
         }
         if (start.partnerBonusDays() > 0) {
             parts.add(texts.get(language, BotTextKeys.START_PARTNER_BONUS, start.partnerBonusDays()));
+        }
+        if (languageAuto) {
+            parts.add(texts.get(language, BotTextKeys.START_LANGUAGE_AUTO, language.getNativeName()));
         }
         parts.add(texts.get(language, BotTextKeys.START_LEGAL,
                 CalorieSiteLinks.buildPrivacyUrl(language), CalorieSiteLinks.buildTermsUrl(language)));

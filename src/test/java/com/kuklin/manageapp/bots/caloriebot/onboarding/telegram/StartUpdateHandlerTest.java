@@ -66,7 +66,7 @@ class StartUpdateHandlerTest {
         when(subscriptionService.createSubscriptionByFreePlanOrNull(APP_USER_ID, BotIdentifier.CALORIE_BOT))
                 .thenReturn(new UserSubscription().setStartAt(now).setEndAt(now.plus(Duration.ofDays(3))));
 
-        handler.handle(buildStartUpdate("/start " + CALCULATOR.encode()), buildTelegramUser());
+        handler.handle(buildStartUpdate("/start " + CALCULATOR.encode(), "es"), buildTelegramUser());
 
         verify(settingsService).savePendingStart(APP_USER_ID, CALCULATOR.encode(), 3, null);
         verify(calculatorHandler, never()).offer(anyLong(), any(), any());
@@ -74,9 +74,52 @@ class StartUpdateHandlerTest {
 
     @Test
     void repeatedStartDoesNotOverwritePending() {
-        handler.handle(buildStartUpdate("/start"), buildTelegramUser());
+        handler.handle(buildStartUpdate("/start", "es"), buildTelegramUser());
 
         verify(settingsService).savePendingStart(APP_USER_ID, null, null, null);
+    }
+
+    @Test
+    void unsupportedTelegramLanguageAsksLanguage() {
+        handler.handle(buildStartUpdate("/start", "es"), buildTelegramUser());
+
+        verify(settingsService, never()).setLanguageCode(anyLong(), any());
+        verify(bot).sendReturnedMessage(eq(CHAT_ID.longValue()), anyString(), any(InlineKeyboardMarkup.class), isNull());
+    }
+
+    @Test
+    void russianTelegramLanguageSkipsQuestion() {
+        handler.handle(buildStartUpdate("/start " + CALCULATOR.encode(), "ru"), buildTelegramUser());
+
+        verify(settingsService).setLanguageCode(APP_USER_ID, "ru");
+        verify(settingsService, never()).savePendingStart(anyLong(), any(), any(), any());
+        ArgumentCaptor<String> text = ArgumentCaptor.forClass(String.class);
+        verify(bot, times(2)).sendReturnedMessage(eq(CHAT_ID.longValue()), text.capture(), any(), isNull());
+        assertThat(text.getAllValues().get(0)).contains("Русский", "сменить: /lang");
+        verify(calculatorHandler).offer(CHAT_ID, APP_USER_ID, CALCULATOR);
+    }
+
+    @Test
+    void englishTelegramLanguageWelcomesInEnglish() {
+        handler.handle(buildStartUpdate("/start", "en-GB"), buildTelegramUser());
+
+        verify(settingsService).setLanguageCode(APP_USER_ID, "en");
+        ArgumentCaptor<String> text = ArgumentCaptor.forClass(String.class);
+        verify(bot, times(2)).sendReturnedMessage(eq(CHAT_ID.longValue()), text.capture(), any(), isNull());
+        assertThat(text.getAllValues().get(0)).contains("Hi!", "English", "change: /lang");
+        assertThat(text.getAllValues().get(1)).contains("Log your first meal");
+    }
+
+    @Test
+    void chosenLanguageWelcomeWithoutLanguageLine() {
+        when(settingsService.findLanguageCode(APP_USER_ID)).thenReturn("ru");
+
+        handler.handle(buildStartUpdate("/start", "en"), buildTelegramUser());
+
+        verify(settingsService, never()).setLanguageCode(anyLong(), any());
+        ArgumentCaptor<String> text = ArgumentCaptor.forClass(String.class);
+        verify(bot, times(2)).sendReturnedMessage(eq(CHAT_ID.longValue()), text.capture(), any(), isNull());
+        assertThat(text.getAllValues().get(0)).contains("Привет").doesNotContain("/lang");
     }
 
     @Test
@@ -118,11 +161,11 @@ class StartUpdateHandlerTest {
         verify(calculatorHandler, never()).offer(anyLong(), any(), any());
     }
 
-    private static Update buildStartUpdate(String text) {
+    private static Update buildStartUpdate(String text, String telegramLanguageCode) {
         Chat chat = new Chat();
         chat.setId(CHAT_ID);
         User from = new User();
-        from.setLanguageCode("ru");
+        from.setLanguageCode(telegramLanguageCode);
         Message message = new Message();
         message.setChat(chat);
         message.setFrom(from);
