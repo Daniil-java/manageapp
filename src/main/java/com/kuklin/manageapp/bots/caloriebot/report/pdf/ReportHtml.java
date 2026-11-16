@@ -46,11 +46,17 @@ public final class ReportHtml {
 
     public static String buildCover(ReportStats stats, ReportAiResponse ai, UserNutritionProfile profile,
                                     PdfTexts texts, String mascotSvg, ZonedDateTime generatedAt) {
+        return buildCover(stats, ai, profile, texts, mascotSvg, generatedAt, stats.kind().getTitleKey());
+    }
+
+    /** Обложка со своим заголовком (titleKey — ключ словаря pdf_*), например «Отчёт за период». */
+    public static String buildCover(ReportStats stats, ReportAiResponse ai, UserNutritionProfile profile,
+                                    PdfTexts texts, String mascotSvg, ZonedDateTime generatedAt, String titleKey) {
         StringBuilder s = new StringBuilder();
         s.append("<table class=\"cover-top\"><tr>")
                 .append("<td class=\"mascot\">").append(mascotSvg).append("</td>")
                 .append("<td><div class=\"brand\">").append(escapeHtml(texts.get(BRAND))).append("</div>")
-                .append("<h1>").append(escapeHtml(texts.get(stats.kind().getTitleKey()))).append("</h1>")
+                .append("<h1>").append(escapeHtml(texts.get(titleKey))).append("</h1>")
                 .append("<div class=\"period\">").append(escapeHtml(texts.get(COVER_PERIOD,
                         texts.formatDate(stats.startDate(), DATE_LONG),
                         texts.formatDate(stats.endDate(), DATE_LONG_YEAR),

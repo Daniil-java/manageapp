@@ -112,6 +112,27 @@ class ReportServicePdfTest {
                 .doesNotContain("{{");
     }
 
+    /** Свой период: 10 дней — раскладка недельного, заголовок «за период», ИИ знает настоящее число дней. */
+    @Test
+    void periodReportCoversChosenDays() throws IOException {
+        ReportService service = buildService("ru", true);
+        givenAiAnswers(AI_ANSWER_RU);
+
+        String text = extractText(service.buildPeriodPdfReportOrNull(
+                LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 10), NOW, USER_ID));
+
+        assertThat(text)
+                .contains("Отчёт за период", "10 дней", "Блюда по дням")
+                .doesNotContain("Отчёт за неделю", "Календарь месяца", "{{");
+        ArgumentCaptor<String> prompt = ArgumentCaptor.forClass(String.class);
+        verify(ai).fetchJsonResponse(anyString(), prompt.capture(), any(), anyString(), any());
+        assertThat(prompt.getValue()).contains("за 10 дней");
+        // Блюда только из выбранных дней: из прошлого периода — для сравнения, после него — не запрашиваются
+        verify(dishService).getAllDishedByUserIdAndPeriod(USER_ID,
+                LocalDate.of(2026, 10, 1).atStartOfDay(ZONE).toInstant(),
+                LocalDate.of(2026, 10, 11).atStartOfDay(ZONE).toInstant().minusMillis(1));
+    }
+
     @Test
     void reportWithoutFoodIsRenderedWithoutAi() throws IOException {
         ReportService service = buildService("ru", true);

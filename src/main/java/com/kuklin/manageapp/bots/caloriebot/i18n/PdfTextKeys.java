@@ -20,6 +20,7 @@ public final class PdfTextKeys {
     public static final String BRAND = "pdf.brand";
     public static final String TITLE_WEEK = "pdf.title.week";
     public static final String TITLE_MONTH = "pdf.title.month";
+    public static final String TITLE_PERIOD = "pdf.title.period";
     public static final String COVER_PERIOD = "pdf.cover.period";
     public static final String COVER_GENERATED = "pdf.cover.generated";
     public static final String TAG_GOAL = "pdf.tag.goal";
@@ -179,6 +180,8 @@ public final class PdfTextKeys {
     public static final String CAPTION_WEEK = "pdf.caption.week";
     public static final String CAPTION_MONTH = "pdf.caption.month";
     public static final String CAPTION_WEIGHT = "pdf.caption.weight";
+    /** {0} — период («9–15 ноября») */
+    public static final String CAPTION_PERIOD = "pdf.caption.period";
     public static final String GENERATING = "pdf.generating";
     public static final String FAILED = "pdf.failed";
 }

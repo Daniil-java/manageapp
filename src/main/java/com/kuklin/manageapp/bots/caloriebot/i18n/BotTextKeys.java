@@ -253,6 +253,14 @@ public final class BotTextKeys {
     public static final String REPORT_BUTTON_WEEK = "report.button.week";
     public static final String REPORT_BUTTON_MONTH = "report.button.month";
     public static final String REPORT_BUTTON_WEIGHT = "report.button.weight";
+    public static final String REPORT_BUTTON_PERIOD = "report.button.period";
+    public static final String REPORT_PERIOD_CHOOSE = "report.period.choose";
+    public static final String REPORT_PERIOD_LAST_WEEK = "report.period.last-week";
+    public static final String REPORT_PERIOD_LAST_MONTH = "report.period.last-month";
+    public static final String REPORT_PERIOD_PICK_DATES = "report.period.pick-dates";
+    public static final String REPORT_PERIOD_PICK_START = "report.period.pick-start";
+    public static final String REPORT_PERIOD_PICK_END = "report.period.pick-end";
+    public static final String REPORT_PERIOD_INVALID = "report.period.invalid";
 
     // ── История веса ───────────────────────────────────────────────
     public static final String WEIGHT_HISTORY_EMPTY = "weight.history.empty";

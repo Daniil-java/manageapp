@@ -44,12 +44,14 @@ import org.springframework.stereotype.Service;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Supplier;
 
 /**
  * Сервис для формирования аналитической отчетности.
@@ -136,6 +138,22 @@ public class ReportService {
     }
 
     /**
+     * PDF-отчёт за выбранные дни from–to, не длиннее недели. Доступ — как у недельного.
+     */
+    @RequiresFeature(value = BotFeature.REPORT_PDF_WEEK, botIdentifier = BotIdentifier.CALORIE_BOT)
+    public AccessResult<byte[]> buildShortPeriodPdfReportOrNull(Long userId, LocalDate from, LocalDate to) {
+        return AccessResult.success(buildPeriodPdfReportOrNull(from, to, Instant.now(), userId));
+    }
+
+    /**
+     * PDF-отчёт за выбранные дни from–to, длиннее недели. Доступ — как у месячного.
+     */
+    @RequiresFeature(value = BotFeature.REPORT_PDF_MONTH, botIdentifier = BotIdentifier.CALORIE_BOT)
+    public AccessResult<byte[]> buildLongPeriodPdfReportOrNull(Long userId, LocalDate from, LocalDate to) {
+        return AccessResult.success(buildPeriodPdfReportOrNull(from, to, Instant.now(), userId));
+    }
+
+    /**
      * Генерирует ИИ-инсайт для страницы Insights (саммари или шаблоны поведения за период).
      * Возвращает JSON-ответ ИИ как есть (структура зависит от типа) или null, если ИИ ответил с ошибкой.
      *
@@ -209,16 +227,30 @@ public class ReportService {
      * ИИ не ответил — отчёт всё равно собирается, без блоков ИИ. null — не получилось отрендерить.
      */
     byte[] buildPdfReportOrNull(ReportKind kind, Instant now, Long userId) {
+        return buildPdfReportOrNull(() -> reportSourceLoader.loadLastDays(kind, now, userId), kind.getTitleKey(),
+                now, userId);
+    }
+
+    /**
+     * Собирает PDF за дни from–to включительно по таймзоне пользователя. До 30 дней — раскладка недельного
+     * (с блюдами по дням), от 30 — месячного (с календарём). Заголовок — «Отчёт за период».
+     */
+    byte[] buildPeriodPdfReportOrNull(LocalDate from, LocalDate to, Instant now, Long userId) {
+        return buildPdfReportOrNull(() -> reportSourceLoader.loadPeriod(from, to, userId), PdfTextKeys.TITLE_PERIOD,
+                now, userId);
+    }
+
+    private byte[] buildPdfReportOrNull(Supplier<ReportSource> sourceLoader, String titleKey, Instant now, Long userId) {
         try (var ignored = AiUsageContext.open(userId, AiOperation.PDF_REPORT)) {
-            ReportSource source = reportSourceLoader.loadLastDays(kind, now, userId);
+            ReportSource source = sourceLoader.get();
             ReportStats stats = ReportStatsCalculator.buildStats(source);
             PdfTexts texts = new PdfTexts(calorieTexts, calorieTexts.languageOf(userId));
             ReportAiResponse ai = stats.hasFood() ? fetchReportAiOrEmpty(stats, source, texts) : ReportAiResponse.empty();
 
-            String html = fillTemplateOrNull(source, stats, ai, texts, now);
+            String html = fillTemplateOrNull(source, stats, ai, texts, titleKey, now);
             return html != null ? HtmlPdfRenderer.renderPdfOrNull(html, getClass().getResource(IMAGES_BASE_URL).toString()) : null;
         } catch (Exception e) {
-            log.error("Failed to build {} PDF report for user {}", kind, userId, e);
+            log.error("Failed to build {} PDF report for user {}", titleKey, userId, e);
             return null;
         }
     }
@@ -232,7 +264,7 @@ public class ReportService {
             var payload = ReportAiPayloadRecord.of(stats, source.profile(), source.dishes(), source.zoneId());
             ReportPrompts prompts = ReportPrompts.of(texts.language());
             String prompt = prompts.persona() + String.format(prompts.report(),
-                    source.kind().getDays(), texts.language().getNativeName(), mapper.writeValueAsString(payload),
+                    stats.days().size(), texts.language().getNativeName(), mapper.writeValueAsString(payload),
                     GoalPromptRules.buildRules(source.profile(), texts.language()));
             String response = openAiProviderProcessor.fetchJsonResponse(
                     components.getAiKey(),
@@ -252,7 +284,8 @@ public class ReportService {
     /**
      * Наполняет HTML-шаблон: сначала тексты словаря {{pdf.…}}, потом данные — {{pdf.…}} в ответе ИИ подставляться не должны.
      */
-    private String fillTemplateOrNull(ReportSource source, ReportStats stats, ReportAiResponse ai, PdfTexts texts, Instant now) {
+    private String fillTemplateOrNull(ReportSource source, ReportStats stats, ReportAiResponse ai, PdfTexts texts,
+                                      String titleKey, Instant now) {
         String template = getCachedResourceOrNull(REPORT_TEMPLATE_PATH);
         String mascot = getCachedResourceOrNull(MASCOT_PATH);
         if (template == null || mascot == null) return null;
@@ -263,11 +296,11 @@ public class ReportService {
 
         // U+FE0F (вариант эмодзи после ⚖️, 🗓️) — у монохромного шрифта нет такого символа, остался бы пустой квадрат
         return texts.localizeTemplate(template)
-                .replace(VAR_TITLE, ReportHtml.escapeHtml(texts.get(source.kind().getTitleKey())))
+                .replace(VAR_TITLE, ReportHtml.escapeHtml(texts.get(titleKey)))
                 .replace(VAR_MASCOT, sizeSvg(mascot, 14, 13))
                 .replace(VAR_FOOTER_TEXT, ReportHtml.escapeHtml(footer))
                 .replace(VAR_COVER, ReportHtml.buildCover(stats, ai, source.profile(), texts, sizeSvg(mascot, 66, 62),
-                        ZonedDateTime.ofInstant(now, source.zoneId())))
+                        ZonedDateTime.ofInstant(now, source.zoneId()), titleKey))
                 .replace(VAR_EMPTY, ReportHtml.buildEmpty(stats, texts))
                 .replace(VAR_CALENDAR, month ? ReportHtml.buildCalendar(stats, texts) : "")
                 .replace(VAR_CALORIES, ReportHtml.buildCaloriesSection(stats, texts))
