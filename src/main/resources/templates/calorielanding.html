@@ -313,21 +313,33 @@
         .demo { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; align-items: stretch; }
         .demo-pick h3, .calc-form h3 { margin: 0 0 6px; font-size: 22px; font-weight: 900; }
         .demo-pick > p { margin: 0 0 20px; }
-        .dishes { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        /* grid-auto-rows: 1fr — все карточки высотой с самую высокую, даже если название в две строки */
+        .dishes { display: grid; grid-template-columns: repeat(2, 1fr); grid-auto-rows: 1fr; gap: 10px; }
         .dish-btn {
             display: flex; align-items: center; gap: 10px; text-align: left;
             padding: 12px 14px; border-radius: var(--radius); border: 2px solid transparent;
             background: var(--surface-2); font-weight: 800; font-size: 15px;
             transition: transform .15s, border-color .2s, background .2s;
         }
+        .dish-btn { cursor: pointer; border-color: var(--border); box-shadow: var(--shadow-soft); }
         .dish-btn:hover { transform: translateY(-2px); border-color: var(--accent-soft-2); }
+        /* Пока ничего не выбрано — первое блюдо мягко пульсирует: видно, что это кнопка */
+        .dishes:not(.picked) .dish-btn:first-child { animation: nudge 1.8s ease-in-out infinite; }
+        @keyframes nudge {
+            0%, 100% { box-shadow: var(--shadow-soft), 0 0 0 0 color-mix(in srgb, var(--accent) 45%, transparent); }
+            50% { box-shadow: var(--shadow-soft), 0 0 0 7px color-mix(in srgb, var(--accent) 0%, transparent); border-color: var(--accent); }
+        }
+        .hint-narrow { display: none; }
+        @media (max-width: 860px) { .hint-wide { display: none; } .hint-narrow { display: block; } }
+        .demo-try { margin-top: 16px; }
         .dish-btn.on { border-color: var(--accent); background: var(--accent-tint); }
         .dish-btn .emo { font-size: 26px; }
         .dish-btn small { display: block; color: var(--text-muted); font-weight: 600; font-size: 12px; }
         .demo-note { margin-top: 18px; font-size: 14px; color: var(--text-muted); display: flex; gap: 8px; align-items: flex-start; }
 
         .demo-panel { display: flex; flex-direction: column; gap: 14px; }
-        .result { min-height: 290px; position: relative; }
+        /* Карточка результата забирает остаток высоты колонки — правая часть вровень с левой; содержимое по центру */
+        .result { min-height: 290px; position: relative; flex: 1; display: flex; flex-direction: column; justify-content: center; }
         .placeholder, .analyzing { display: grid; place-items: center; text-align: center; min-height: 256px; gap: 8px; }
         .mascot-box { width: 92px; height: 92px; border-radius: 28px; background: var(--accent-tint); display: grid; place-items: center; margin: 0 auto 6px; }
         .mascot-box svg { width: 72px; height: 72px; }
@@ -364,6 +376,10 @@
         .mini-ring .prog { stroke: var(--accent); transition: stroke-dashoffset .9s cubic-bezier(.4, 0, .2, 1), stroke .3s; }
         .mini-ring .prog.over { stroke: var(--danger); }
         .mini-day b { font-size: 22px; font-weight: 900; }
+        #miniTitle b { font-size: inherit; color: var(--accent); }
+        /* Норма поменялась из калькулятора — цифра коротко подсвечивается */
+        #miniTitle.flash b { animation: target-flash .9s ease-out; }
+        @keyframes target-flash { 0% { background: var(--accent-soft-2); } 100% { background: transparent; } }
         .mini-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
         .mini-list span { background: var(--surface-2); border-radius: 99px; padding: 3px 9px; font-size: 13px; font-weight: 700; animation: rise .3s ease-out both; }
         @media (max-width: 860px) { .demo { grid-template-columns: 1fr; } }
@@ -395,6 +411,8 @@
         .calc-water svg { width: 18px; height: 18px; flex: none; }
         .calc-note { font-size: 13px; color: var(--text-muted); margin: 0; }
         @media (max-width: 860px) { .calc { grid-template-columns: 1fr; } }
+        /* Колонки сетки не шире экрана: без этого слайдеры и кнопки распирают карточки за край на мобиле */
+        .calc > *, .demo > * { min-width: 0; }
 
         /* ---------- Возможности: бенто ---------- */
         .bento { display: grid; grid-template-columns: repeat(6, 1fr); gap: 18px; }
@@ -544,12 +562,14 @@
         .tg-kb { display: grid; gap: 4px; max-width: 88%; opacity: 0; transition: opacity .4s; }
         .tg-kb.show { opacity: 1; }
         .tg-kb .row { display: grid; gap: 4px; }
-        .tg-kb .row.r3 { grid-template-columns: 1.2fr 1fr 1fr; }
+        .tg-kb .row.r3 { grid-template-columns: 1fr 1.3fr 1fr; }
         .tg-kb .row.r2 { grid-template-columns: 1fr 1fr; }
         .tg-kb button { border: 0; border-radius: 10px; padding: 9px 6px; background: var(--tg-button); color: #fff; font-weight: 700; font-size: 13.5px; backdrop-filter: blur(4px); transition: filter .15s, transform .1s; }
         .tg-kb button:hover { filter: brightness(1.1); }
         .tg-kb button:active { transform: scale(.97); }
         .tg-kb button.lbl { cursor: default; background: rgba(84, 110, 64, .32); }
+        /* ButtonStyle.DANGER в боте — красная кнопка */
+        .tg-kb button.danger { background: rgba(217, 83, 79, .85); }
         .typing-dots { display: inline-flex; gap: 4px; padding: 12px 14px; }
         .typing-dots i { width: 7px; height: 7px; border-radius: 50%; background: #9aa892; animation: dots 1s infinite; }
         .typing-dots i:nth-child(2) { animation-delay: .15s; }
@@ -580,6 +600,13 @@
         th { font-size: 14px; color: var(--text-muted); font-weight: 800; background: var(--surface-2); }
         td:first-child { font-weight: 700; }
         .col-premium { color: var(--accent); font-weight: 900; }
+        /* На телефоне три колонки помещаются без горизонтальной прокрутки */
+        @media (max-width: 560px) {
+            table { min-width: 0; }
+            th, td { padding: 12px 10px; font-size: 14px; }
+            th:first-child, td:first-child { padding-left: 16px; }
+            th:not(:first-child), td:not(:first-child) { text-align: center; white-space: nowrap; }
+        }
         .pay-note { margin: 18px 0 0; text-align: center; color: var(--text-muted); font-size: 15px; }
 
         /* ---------- FAQ ---------- */
@@ -768,7 +795,9 @@
                             <div>
                                 <div class="mascot-box"><svg><use href="#zef"/></svg></div>
                                 <b th:text="${t['demo.waiting']}">Zefir ждёт твоё блюдо</b>
-                                <div class="muted" th:text="${t['demo.waiting-hint']}">Выбери что-нибудь слева 👈</div>
+                                <div class="muted hint-wide" th:text="${t['demo.waiting-hint']}">Нажми на любое блюдо слева 👈</div>
+                                <div class="muted hint-narrow" th:text="${t['demo.waiting-hint-mobile']}">Нажми на любое блюдо выше 👆</div>
+                                <button type="button" class="btn btn-primary demo-try" data-demo-try th:text="${t['demo.try-example']}">Показать на примере</button>
                             </div>
                         </div>
                     </div>
@@ -778,7 +807,7 @@
                             <circle class="prog" id="miniProg" cx="50" cy="50" r="42" fill="none" stroke-width="10" stroke-linecap="round"/>
                         </svg>
                         <div style="min-width:0">
-                            <div class="muted" style="font-weight:700;font-size:14px" th:text="${t['demo.day-title']}">Дневник демо-дня · норма 1900 ккал</div>
+                            <div class="muted" id="miniTitle" style="font-weight:700;font-size:14px" th:text="${t['demo.day-title']}">Дневник демо-дня · норма 1900 ккал</div>
                             <b id="miniTxt" th:text="${t['demo.day-empty']}">Пока пусто</b>
                             <div class="mini-list" id="miniList"></div>
                         </div>
@@ -1240,9 +1269,19 @@
     dishesEl.addEventListener("click", function (e) {
         var btn = e.target.closest(".dish-btn");
         if (!btn) return;
+        pickDish(btn);
+    });
+
+    // «Показать на примере» в пустой карточке — то же, что нажать первое блюдо
+    resultEl.addEventListener("click", function (e) {
+        if (e.target.closest("[data-demo-try]")) pickDish(dishesEl.querySelector(".dish-btn"));
+    });
+
+    function pickDish(btn) {
+        dishesEl.classList.add("picked");
         dishesEl.querySelectorAll(".dish-btn").forEach(function (b) { b.classList.toggle("on", b === btn); });
         analyze(DEMO_DISHES[+btn.dataset.i]);
-    });
+    }
 
     function analyze(dish) {
         clearTimeout(demoTimer);
@@ -1278,6 +1317,7 @@
         if (!b || !current) return;
         if (b.id === "addDay") { addToDay(); return; }
         var a = b.dataset.a;
+        if (!a) return;
         if (a === "minus") scale = Math.max(.3, +(scale - .1).toFixed(2));
         if (a === "plus") scale = Math.min(3, +(scale + .1).toFixed(2));
         if (a === "portion") portions = portions >= 4 ? 1 : portions + 1;
@@ -1296,6 +1336,18 @@
 
     function addToDay() {
         dayItems.push({ emo: current.emo, kcal: Math.round(current.kcal * k()) });
+        renderDay();
+        document.getElementById("miniList").innerHTML = dayItems.map(function (it) {
+            return "<span>" + it.emo + " " + it.kcal + "</span>";
+        }).join("");
+        var btn = document.getElementById("addDay");
+        btn.textContent = T["added"];
+        btn.disabled = true;
+    }
+
+    // Кольцо и «осталось» дневника демо-дня — от нормы DEMO_TARGET (её задаёт калькулятор ниже)
+    function renderDay() {
+        if (!dayItems.length) return;
         var eaten = dayItems.reduce(function (s, it) { return s + it.kcal; }, 0);
         miniProg.style.strokeDashoffset = MC * (1 - Math.min(1, eaten / DEMO_TARGET));
         miniProg.classList.toggle("over", eaten > DEMO_TARGET);
@@ -1303,12 +1355,22 @@
         document.getElementById("miniTxt").textContent = left >= 0
             ? fill(T["left"], fmt(left))
             : fill(T["over"], fmt(-left));
-        document.getElementById("miniList").innerHTML = dayItems.map(function (it) {
-            return "<span>" + it.emo + " " + it.kcal + "</span>";
-        }).join("");
-        var btn = document.getElementById("addDay");
-        btn.textContent = T["added"];
-        btn.disabled = true;
+    }
+
+    // Норма дневника = результат калькулятора. Пока калькулятор не трогали — «Дневник демо-дня · норма …»,
+    // после — «Твой дневник · норма …»: демо выше калькулятора, вернувшись к нему, видно, что норма своя
+    var calcTouched = false;
+    function setDemoTarget(kcal) {
+        var changed = kcal !== DEMO_TARGET;
+        DEMO_TARGET = kcal;
+        var title = document.getElementById("miniTitle");
+        title.innerHTML = fill(T[calcTouched ? "day-title-yours" : "day-title"], "<b>" + fmt(kcal) + "</b>");
+        if (changed && calcTouched) {
+            title.classList.remove("flash");
+            void title.offsetWidth; // перезапуск анимации
+            title.classList.add("flash");
+        }
+        renderDay();
     }
 
     // ---------- Калькулятор нормы (как UserNutritionProfileService.recalcTargets) ----------
@@ -1326,12 +1388,14 @@
             if (!b) return;
             seg.querySelectorAll("button").forEach(function (x) { x.classList.toggle("on", x === b); });
             calc[seg.dataset.name] = b.dataset.v;
+            calcTouched = true;
             recalc();
         });
     });
     ["age", "height", "weight"].forEach(function (id) {
         document.getElementById(id).addEventListener("input", function (e) {
             document.getElementById(id + "Out").textContent = e.target.value;
+            calcTouched = true;
             recalc();
         });
     });
@@ -1361,6 +1425,7 @@
             macro(T["carbs"], c, "c", c * 4 / total * 100);
         document.getElementById("calcWater").textContent = fmt(water);
         updateCalcStart(age, height, weight);
+        setDemoTarget(kcal);
     }
 
     // Кнопка «Вести дневник с этой нормой»: данные калькулятора в /start → бот заполнит профиль
@@ -1510,7 +1575,7 @@
             '<b>' + T["fat-short"] + ':</b> ' + (TG_DAY.f + f) + '/' + TG_NORM.f + T["g"] + ' (<b>+' + f + '</b>) | ' +
             '<b>' + T["carbs-short"] + ':</b> ' + (TG_DAY.c + c) + '/' + TG_NORM.c + T["g"] + ' (<b>+' + c + '</b>)<br>' +
             '<b>' + T["tg-portion-weight"] + '</b> ' + Math.round(tgDish.w * tgScale) + ' ' + T["g"] + '<br><b>' + T["tg-portion-count"] + '</b> ' + tgDish.portions + '<br><br>' +
-            eaten + '/' + TG_NORM.kcal + ' <b>+' + kcal + ' ' + T["kcal"] + '</b> (+' + add + '%)<br>' +
+            eaten + '/' + TG_NORM.kcal + ' <b>+' + kcal + ' ' + T["kcal"] + '</b> (<b>+' + add + '%</b>)<br>' +
             '<span class="sq">' + sq + '</span>' + (pct > 100 ? "🔥 " : "") + '<b>' + pct + '%</b></div>' +
             '<span class="time">12:47</span>';
     }
@@ -1537,17 +1602,42 @@
             reply.id = "tgReply";
             reply.innerHTML = tgDishHtml();
             tgBody.appendChild(reply);
-            var kb = document.createElement("div");
-            kb.className = "tg-kb";
-            kb.innerHTML =
-                '<div class="row r3"><button type="button" class="lbl">' + T["tg-portion-weight"] + '</button><button type="button" data-a="-">-10%</button><button type="button" data-a="+">+10%</button></div>' +
-                '<div class="row r2"><button type="button" class="lbl">' + T["portions"] + '</button><button type="button" data-a="p">➕</button></div>' +
-                '<div class="row"><button type="button" data-a="fav">' + T["tg-save"] + '</button></div>' +
-                '<div class="row"><button type="button" data-a="del">' + T["tg-delete"] + '</button></div>';
-            tgBody.appendChild(kb);
-            requestAnimationFrame(function () { reply.classList.add("show"); kb.classList.add("show"); });
-            kb.addEventListener("click", onTgButton);
+            tgKb = document.createElement("div");
+            tgKb.className = "tg-kb";
+            renderTgKb();
+            tgBody.appendChild(tgKb);
+            requestAnimationFrame(function () { reply.classList.add("show"); tgKb.classList.add("show"); });
+            tgKb.addEventListener("click", onTgButton);
         }, reduceMotion ? 0 : 2000);
+    }
+
+    // Раскладка как в боте (DishKeyboards.buildPortionKeyboard):
+    // [ −10% ] [ 138 г ] [ +10% ] / [ ➖ ] [ 1 порция ] [ ➕ ] / [ 🗑 Удалить ] [ ⭐ В избранное ]
+    var tgKb = null, tgFavorite = false, tgDeleted = false;
+    var tgPlural = window.Intl && Intl.PluralRules ? new Intl.PluralRules(LOCALE) : null;
+
+    function tgPortionsLabel(n) {
+        var form = tgPlural ? tgPlural.select(n) : (n === 1 ? "one" : "other");
+        return fill(T["tg-portions-" + form] || T["tg-portions-other"], n);
+    }
+
+    function renderTgKb() {
+        if (tgDeleted) {
+            tgKb.innerHTML = '<div class="row"><button type="button" class="lbl">' + T["tg-not-counted"] + '</button></div>';
+            return;
+        }
+        var w = Math.round(tgDish.w * tgScale);
+        tgKb.innerHTML =
+            '<div class="row r3"><button type="button" data-a="-">−10%</button><button type="button" class="lbl">' + w + ' ' + T["g"] + '</button><button type="button" data-a="+">+10%</button></div>' +
+            '<div class="row r3">' + (tgDish.portions > 1
+                ? '<button type="button" data-a="pm">➖</button>'
+                // При одной порции на месте «➖» — пустая кнопка, ряд не сдвигается
+                : '<button type="button" class="lbl">·</button>') +
+            '<button type="button" class="lbl">' + tgPortionsLabel(tgDish.portions) + '</button><button type="button" data-a="pp">➕</button></div>' +
+            '<div class="row r2"><button type="button" class="danger" data-a="del">' + T["tg-delete"] + '</button>' +
+            (tgFavorite
+                ? '<button type="button" class="lbl">' + T["tg-in-favorites"] + '</button>'
+                : '<button type="button" data-a="fav">' + T["tg-save"] + '</button>') + '</div>';
     }
 
     function onTgButton(e) {
@@ -1556,7 +1646,15 @@
         var a = b.dataset.a;
         if (a === "-") tgScale = Math.max(.3, +(tgScale - .1).toFixed(2));
         if (a === "+") tgScale = Math.min(3, +(tgScale + .1).toFixed(2));
-        if (a === "p") tgDish.portions = tgDish.portions >= 4 ? 1 : tgDish.portions + 1;
+        if (a === "pm") tgDish.portions = Math.max(1, tgDish.portions - 1);
+        if (a === "pp") tgDish.portions = Math.min(9, tgDish.portions + 1);
+        if (a === "fav") tgFavorite = true;
+        if (a === "del") {
+            tgDeleted = true;
+            // В боте удалённое блюдо остаётся с «НЕ УЧИТЫВАЕТСЯ»; здесь клавиатура возвращается, чтобы демо можно было крутить дальше
+            setTimeout(function () { tgDeleted = false; renderTgKb(); }, 2600);
+        }
+        renderTgKb();
         if (a === "fav" || a === "del") {
             var note = document.createElement("div");
             note.className = "msg";
