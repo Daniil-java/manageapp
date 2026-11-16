@@ -1,0 +1,270 @@
+/* =====================================================================
+   Общий стиль личных страниц kuklin.dev (freelance, позже — personal, resume).
+   Кремовый фон, один фиолетовый акцент, крупные заголовки Montserrat,
+   подписи капсом в JetBrains Mono, тонкие линии вместо теней.
+   Подключение шрифтов — в <head> страницы (Montserrat + JetBrains Mono).
+   ===================================================================== */
+
+/* ========= ТОКЕНЫ ========= */
+:root{
+  --header-h:60px;
+  --container-w:min(1240px, calc(100vw - 32px));
+
+  --bg:#fafaf7;          /* кремовый фон страницы */
+  --bg-alt:#f4f3ee;      /* чередующиеся секции */
+  --surface:#ffffff;     /* карточки */
+  --ink:#0c0c0e;         /* основной текст, чёрные кнопки */
+  --ink-2:#2f2f33;       /* вторичный текст */
+  --muted:#6f6f76;
+  --faint:#9a9a9f;
+  --line:rgba(12,12,14,.09);
+  --line-strong:rgba(12,12,14,.18);
+
+  --accent:#7E4DF7;
+  --accent-soft:#ece5ff;
+  --on-ink:#fafaf7;      /* текст на чёрном */
+
+  --invert-bg:#0c0c0e;   /* тёмные блоки (финальный CTA, верхняя полоса) */
+  --invert-surface:#141414;
+  --invert-line:rgba(255,255,255,.1);
+  --invert-muted:#9a9a9f;
+
+  --radius:4px;
+  --font-display:"Montserrat", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  --font-mono:"JetBrains Mono", Consolas, "Courier New", monospace;
+}
+html[data-theme="dark"]{
+  --bg:#0c0c0e;
+  --bg-alt:#111113;
+  --surface:#141416;
+  --ink:#f4f3ee;
+  --ink-2:#d4d4d8;
+  --muted:#9a9a9f;
+  --faint:#6f6f76;
+  --line:rgba(255,255,255,.09);
+  --line-strong:rgba(255,255,255,.2);
+  --accent:#9b78ff;
+  --accent-soft:rgba(155,120,255,.14);
+  --on-ink:#0c0c0e;
+  --invert-bg:#050506;
+  --invert-surface:#111113;
+}
+
+/* ========= БАЗОВОЕ ========= */
+*{box-sizing:border-box}
+html{scroll-behavior:smooth; scroll-padding-top:calc(var(--header-h) + 8px)}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:var(--font-display); font-size:16px; line-height:1.6;
+  -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+}
+a{color:inherit; text-decoration:none}
+:focus-visible{outline:2px solid var(--accent); outline-offset:3px; border-radius:2px}
+img,svg{max-width:100%; height:auto; display:block}
+p{margin:0 0 .8em}
+.container{width:var(--container-w); margin:0 auto}
+.muted{color:var(--muted)}
+
+/* ========= ТИПОГРАФИКА ========= */
+.display{
+  margin:0; font-weight:900; letter-spacing:-.035em; line-height:.98;
+  font-size:clamp(38px,6.4vw,84px); text-wrap:balance;
+}
+.h2{
+  margin:0 0 .5em; font-weight:900; letter-spacing:-.03em; line-height:1.02;
+  font-size:clamp(30px,4.4vw,56px); text-wrap:balance;
+}
+.h3{margin:0 0 .35em; font-weight:800; letter-spacing:-.015em; line-height:1.2; font-size:clamp(18px,1.6vw,21px)}
+/* фиолетовая точка в конце заголовка */
+.dot{color:var(--accent)}
+.lead{font-size:clamp(17px,1.5vw,21px); line-height:1.5; color:var(--ink-2); max-width:38ch}
+
+/* мелкая моно-подпись капсом над заголовками и в карточках */
+.eyebrow{
+  display:inline-block; margin:0 0 18px;
+  font:500 11px/1.4 var(--font-mono); letter-spacing:.18em; text-transform:uppercase;
+  color:var(--accent);
+}
+.mono{font-family:var(--font-mono)}
+.label{font:500 10.5px/1.4 var(--font-mono); letter-spacing:.16em; text-transform:uppercase; color:var(--faint)}
+
+/* ========= ВЕРХНЯЯ ПОЛОСА ========= */
+.topbar{background:var(--invert-bg); color:#fafaf7; font:500 10.5px/1 var(--font-mono); letter-spacing:.16em; text-transform:uppercase}
+.topbar .container{display:flex; align-items:center; justify-content:space-between; gap:16px; min-height:32px}
+.topbar a{color:#fafaf7; opacity:.85; transition:opacity .15s}
+.topbar a:hover{opacity:1; color:#b9a0ff}
+.topbar .status{display:inline-flex; align-items:center; gap:8px}
+.topbar .status::before{content:""; width:6px; height:6px; border-radius:50%; background:#3ddc84; box-shadow:0 0 0 3px rgba(61,220,132,.2)}
+
+/* ========= ШАПКА ========= */
+header.site-header{
+  position:sticky; top:0; z-index:1000; height:var(--header-h);
+  background:color-mix(in oklab, var(--bg) 88%, transparent);
+  backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);
+}
+.nav-row{height:100%; display:flex; align-items:center; justify-content:space-between; gap:16px}
+.logo{display:inline-flex; flex-direction:column; line-height:1}
+.logo b{font-weight:900; font-size:20px; letter-spacing:-.02em}
+.logo b i{font-style:normal; color:var(--accent); animation:blink 1s steps(1,end) infinite}
+.logo small{margin-top:4px; font:500 9px/1 var(--font-mono); letter-spacing:.2em; text-transform:uppercase; color:var(--faint)}
+@keyframes blink{50%{opacity:0}}
+
+nav.main-nav ul{display:flex; gap:clamp(4px,2vw,28px); list-style:none; padding:0; margin:0}
+nav.main-nav a{
+  display:block; padding:6px 2px; font-size:14px; font-weight:500; color:var(--ink-2);
+  border-bottom:1.5px solid transparent; transition:color .15s, border-color .15s;
+}
+nav.main-nav a:hover{color:var(--accent)}
+nav.main-nav a.active{color:var(--ink); border-bottom-color:var(--accent)}
+.actions{display:flex; align-items:center; gap:8px}
+
+.icon-btn{
+  width:36px; height:36px; display:grid; place-items:center; padding:0; cursor:pointer;
+  border:1px solid var(--line-strong); border-radius:var(--radius); background:transparent; color:var(--ink);
+  transition:border-color .15s, color .15s;
+}
+.icon-btn:hover{border-color:var(--ink)}
+.icon-btn svg{width:18px; height:18px}
+.menu-btn{display:none}
+
+/* ========= КНОПКИ ========= */
+.btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:10px;
+  min-height:46px; padding:0 22px; border-radius:var(--radius); border:1px solid var(--line-strong);
+  font:600 11.5px/1 var(--font-mono); letter-spacing:.14em; text-transform:uppercase;
+  background:transparent; color:var(--ink); cursor:pointer; white-space:nowrap;
+  transition:background .15s, color .15s, border-color .15s;
+}
+.btn:hover{border-color:var(--ink)}
+.btn .arr{transition:transform .15s}
+.btn:hover .arr{transform:translateX(3px)}
+.btn-primary{background:var(--ink); color:var(--on-ink); border-color:var(--ink)}
+.btn-primary:hover{background:var(--accent); border-color:var(--accent); color:#fff}
+.btn-row{display:flex; flex-wrap:wrap; gap:12px}
+
+/* ========= СЕКЦИИ ========= */
+.section{padding:clamp(64px,10vw,128px) 0; border-top:1px solid var(--line)}
+.section--alt{background:var(--bg-alt)}
+.section-head{display:grid; grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr); gap:24px 48px; align-items:end; margin-bottom:clamp(32px,5vw,56px)}
+.section-head .h2{margin:0}
+.section-head--top{align-items:start}
+.section-head p{margin:0; color:var(--muted); max-width:44ch}
+
+/* Сетка ячеек с тонкими линиями между ними (как таблица без рамок) */
+.cells{
+  display:grid; gap:1px; background:var(--line); border:1px solid var(--line);
+  grid-template-columns:repeat(var(--cols,3), minmax(0,1fr));
+}
+.cell{background:var(--surface); padding:clamp(20px,2.4vw,32px); display:flex; flex-direction:column; min-width:0}
+.cell .label{margin-bottom:14px}
+.cell p{color:var(--muted); font-size:15px}
+.cell-foot{
+  margin-top:auto; padding-top:16px; border-top:1px solid var(--line);
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  font:500 11px/1.4 var(--font-mono); letter-spacing:.14em; text-transform:uppercase; color:var(--muted);
+}
+a.cell{transition:background .15s}
+a.cell:hover{background:color-mix(in oklab, var(--accent) 4%, var(--surface))}
+a.cell:hover .cell-foot{color:var(--accent)}
+a.cell .arr{transition:transform .15s}
+a.cell:hover .arr{transform:translateX(3px)}
+
+/* ========= ТЁМНЫЙ БЛОК ========= */
+.invert{
+  background:var(--invert-bg); color:#fafaf7; border-top:0;
+  --line:var(--invert-line); --muted:var(--invert-muted); --surface:var(--invert-surface);
+  --ink:#fafaf7; --ink-2:#d4d4d8; --on-ink:#0c0c0e; --line-strong:rgba(255,255,255,.22);
+}
+.invert .dot, .invert .eyebrow{color:#9b78ff}
+
+/* ========= HERO: общие кусочки ========= */
+.hero{padding:clamp(48px,9vw,112px) 0}
+.hero .lead{margin:24px 0 32px}
+.hero-facts{display:flex; flex-wrap:wrap; gap:8px 24px; margin:28px 0 0; padding:0; list-style:none}
+.hero-facts li{display:flex; align-items:center; gap:8px; font:500 11px/1.4 var(--font-mono); letter-spacing:.14em; text-transform:uppercase; color:var(--muted)}
+.hero-facts li::before{content:""; width:5px; height:5px; background:var(--accent)}
+/* фото + подпись над заголовком */
+.byline{display:flex; align-items:center; gap:14px; margin-bottom:22px}
+.byline img{width:56px; height:56px; border-radius:50%; object-fit:cover; border:1px solid var(--line)}
+.byline .eyebrow{margin:0}
+
+/* ========= ПРИМЕРЫ РАБОТ (карточки с аватарками ботов из /assets/works.svg) ========= */
+.work{padding:0}
+.work .thumb{
+  aspect-ratio:4/3; overflow:hidden; border-bottom:1px solid var(--line); color:var(--ink);
+  background-color:var(--bg-alt);
+  background-image:radial-gradient(color-mix(in oklab, var(--ink) 14%, transparent) 1px, transparent 1.2px);
+  background-size:18px 18px;
+}
+.work .thumb svg{width:100%; height:100%; transition:transform .3s ease}
+a.work:hover .thumb svg{transform:scale(1.04)}
+.work .body{padding:clamp(20px,2.4vw,28px); display:flex; flex-direction:column; flex:1}
+.work .body p{display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden}
+.cell--cta{background:var(--ink); color:var(--on-ink)}
+.cell--cta .h3{color:var(--on-ink)}
+.cell--cta .label{color:color-mix(in oklab, var(--on-ink) 55%, transparent)}
+.cell--cta p{color:color-mix(in oklab, var(--on-ink) 70%, transparent)}
+.cell--cta .cell-foot{border-top-color:color-mix(in oklab, var(--on-ink) 18%, transparent); color:var(--on-ink)}
+a.cell--cta:hover{background:var(--accent)}
+a.cell--cta:hover .cell-foot{color:#fff}
+
+/* ========= СТРОКИ-СПИСКИ (образование, стек, контакты) ========= */
+.rows{list-style:none; margin:0; padding:0; border-top:1px solid var(--line)}
+.row{display:grid; grid-template-columns:minmax(0,220px) minmax(0,1fr); gap:12px 32px; padding:24px 0; border-bottom:1px solid var(--line)}
+.row > .label{padding-top:4px; color:var(--muted)}
+.row .h3{margin:0 0 .2em}
+.row p{margin:0; color:var(--muted)}
+.chips{display:flex; flex-wrap:wrap; gap:8px; list-style:none; margin:0; padding:0}
+.chips li{padding:6px 10px; border:1px solid var(--line-strong); border-radius:var(--radius); font:500 12px/1.3 var(--font-mono); color:var(--ink-2)}
+
+/* ========= КОНТАКТЫ (тёмный финальный блок) ========= */
+.contacts-inner{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:clamp(32px,5vw,72px); align-items:start}
+.contacts-inner .lead{color:#d4d4d8}
+.ct-row{display:grid; grid-template-columns:110px minmax(0,1fr) auto; align-items:center; gap:16px; padding:18px 0; border-bottom:1px solid var(--line)}
+.ct-row .label{color:var(--muted)}
+.ct-row a.val{font-size:clamp(16px,1.6vw,20px); font-weight:700; letter-spacing:-.01em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.ct-row a.val:hover{color:#b9a0ff}
+.ct-copy.copied{color:#3ddc84; border-color:#3ddc84}
+
+/* ========= ФУТЕР ========= */
+footer.site-footer{background:var(--invert-bg); color:var(--invert-muted); border-top:1px solid var(--invert-line); padding:28px 0 36px}
+.foot{display:flex; flex-wrap:wrap; gap:16px; align-items:center; justify-content:space-between; font:500 11px/1.4 var(--font-mono); letter-spacing:.14em; text-transform:uppercase}
+.foot nav{display:flex; flex-wrap:wrap; gap:20px}
+.foot a{color:#d4d4d8} .foot a:hover{color:#b9a0ff}
+
+/* ========= МОБИЛЬНОЕ МЕНЮ ========= */
+.drawer{position:fixed; inset:0; z-index:9999}
+.drawer[hidden]{display:none}
+.drawer-backdrop{position:absolute; inset:0; background:rgba(12,12,14,.35); opacity:0; transition:opacity .22s ease}
+.drawer-panel{
+  position:absolute; top:0; right:0; height:100%; width:min(86vw,360px);
+  background:var(--bg); border-left:1px solid var(--line);
+  transform:translateX(100%); transition:transform .22s ease; padding:24px 20px; overflow:auto;
+}
+.drawer.open .drawer-backdrop{opacity:1}
+.drawer.open .drawer-panel{transform:translateX(0)}
+.drawer-panel ul{display:flex; flex-direction:column; padding:0; margin:16px 0 0; list-style:none; border-top:1px solid var(--line)}
+.drawer-panel a{display:flex; justify-content:space-between; padding:16px 0; border-bottom:1px solid var(--line); font-size:22px; font-weight:800; letter-spacing:-.02em}
+.drawer-panel a:hover{color:var(--accent)}
+body.no-scroll{overflow:hidden}
+
+/* ========= АДАПТИВ ========= */
+@media (max-width:900px){
+  .section-head, .contacts-inner{grid-template-columns:1fr}
+  .cells{--cols:2 !important}
+}
+@media (max-width:640px){
+  .row{grid-template-columns:1fr; gap:6px}
+  .ct-row{grid-template-columns:minmax(0,1fr) auto; gap:4px 12px}
+  .ct-row .label{grid-column:1 / -1}
+  nav.main-nav{display:none}
+  .menu-btn{display:grid}
+  .cells{--cols:1 !important}
+  .topbar .hide-sm{display:none}
+  .btn-row .btn{flex:1 1 auto}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important}
+  html{scroll-behavior:auto}
+}
