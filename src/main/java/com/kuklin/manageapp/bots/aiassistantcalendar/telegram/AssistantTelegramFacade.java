@@ -1,11 +1,11 @@
 package com.kuklin.manageapp.bots.aiassistantcalendar.telegram;
 
 import com.kuklin.manageapp.common.entities.TelegramUser;
-import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
-import com.kuklin.manageapp.common.library.tgmodels.TelegramFacade;
-import com.kuklin.manageapp.common.library.tgmodels.UpdateHandler;
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
-import com.kuklin.manageapp.common.library.tgutils.Command;
+import com.kuklin.manageapp.common.telegram.TelegramBot;
+import com.kuklin.manageapp.common.telegram.TelegramFacade;
+import com.kuklin.manageapp.common.telegram.UpdateHandler;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
+import com.kuklin.manageapp.common.telegram.Command;
 import com.kuklin.manageapp.common.services.TelegramUserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +39,14 @@ public class AssistantTelegramFacade extends TelegramFacade {
             return getUpdateHandlerMap().get(Command.ASSISTANT_VOICE.getCommandText());
         } else {
             request = update.getMessage().getText().split(TelegramBot.DEFAULT_DELIMETER)[0];
+        }
+
+        if (request.startsWith(Command.ASSISTANT_CHOOSE_CALENDAR.getCommandText())) {
+            return getUpdateHandlerMap().get(Command.ASSISTANT_CHOOSE_CALENDAR.getCommandText());
+        }
+
+        if (request.startsWith(Command.ASSISTANT_AUTH_STATUS.getCommandText())) {
+            return getUpdateHandlerMap().get(Command.ASSISTANT_AUTH_STATUS.getCommandText());
         }
 
         UpdateHandler updateHandler = getUpdateHandlerMap().get(request);
