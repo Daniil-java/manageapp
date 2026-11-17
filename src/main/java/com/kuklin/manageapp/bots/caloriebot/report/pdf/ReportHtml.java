@@ -1,8 +1,12 @@
 package com.kuklin.manageapp.bots.caloriebot.report.pdf;
 
 import com.kuklin.manageapp.bots.caloriebot.dish.Dish;
+import com.kuklin.manageapp.bots.caloriebot.dish.Micronutrient;
 import com.kuklin.manageapp.bots.caloriebot.profile.UserNutritionProfile;
 import com.kuklin.manageapp.bots.caloriebot.report.ai.ReportAiResponse;
+import com.kuklin.manageapp.bots.caloriebot.report.dto.NutrientStats;
+import com.kuklin.manageapp.bots.caloriebot.report.dto.NutrientStats.FiberStat;
+import com.kuklin.manageapp.bots.caloriebot.report.dto.NutrientStats.MicronutrientStat;
 import com.kuklin.manageapp.bots.caloriebot.report.dto.ReportKind;
 import com.kuklin.manageapp.bots.caloriebot.report.dto.ReportStats;
 import com.kuklin.manageapp.bots.caloriebot.report.dto.ReportStats.*;
@@ -383,6 +387,90 @@ public final class ReportHtml {
                 + "<td class=\"mb\">" + buildTrack(Math.min(percent, 100), color) + "</td>"
                 + "<td class=\"mv\"><b>" + fact + "</b> / " + target + " " + escapeHtml(unit) + "</td>"
                 + "<td class=\"mp " + tone + "\">" + percent + "%</td></tr>";
+    }
+
+    // ── Клетчатка и микронутриенты ─────────────────────────────────
+
+    /** Первая группа строк — жиры и сахар, остальное — витамины и минералы */
+    private static final Set<Micronutrient> FAT_AND_SUGAR = EnumSet.of(
+            Micronutrient.SATURATED_FAT, Micronutrient.ADDED_SUGAR, Micronutrient.OMEGA_3, Micronutrient.PUFA);
+
+    /**
+     * Средние в день против нормы с выводом «мало / норма / перебор». Цифры — оценка ИИ по фото и описаниям,
+     * поэтому в заголовке «примерная оценка». Микронутриенты есть только у блюд, записанных с Premium.
+     */
+    public static String buildNutrientsSection(NutrientStats n, ReportAiResponse ai, PdfTexts texts) {
+        if (n == null) return "";
+        StringBuilder rows = new StringBuilder("<table class=\"nutrients\">");
+        if (n.fiber() != null) {
+            FiberStat f = n.fiber();
+            rows.append(buildNutrientRow(texts.get(NUTRIENTS_FIBER), String.valueOf(f.avgGrams()),
+                    String.valueOf(f.targetGrams()), texts.get(UNIT_G),
+                    f.targetGrams() > 0 ? f.avgGrams() * 100.0 / f.targetGrams() : 0, f.status(), texts));
+        }
+        boolean fatsGroup = false;
+        boolean vitaminsGroup = false;
+        for (MicronutrientStat m : n.micronutrients()) {
+            boolean fats = FAT_AND_SUGAR.contains(m.nutrient());
+            if (fats && !fatsGroup) {
+                rows.append(buildGroupRow(texts.get(NUTRIENTS_GROUP_FATS)));
+                fatsGroup = true;
+            } else if (!fats && !vitaminsGroup) {
+                rows.append(buildGroupRow(texts.get(NUTRIENTS_GROUP_VITAMINS)));
+                vitaminsGroup = true;
+            }
+            rows.append(buildNutrientRow(texts.get(m.nutrient().getTextKey()), formatNutrient(m.avg(), m.nutrient(), texts),
+                    formatNutrient(m.norm(), m.nutrient(), texts), texts.get(m.nutrient().getUnit().getTextKey()),
+                    m.getPercent(), m.status(), texts));
+        }
+        rows.append("</table>");
+
+        if (!n.micronutrients().isEmpty() && n.micronutrientDays() < n.loggedDays()) {
+            rows.append("<div class=\"callout\">").append(escapeHtml(texts.get(NUTRIENTS_PARTIAL, n.micronutrientDays(), n.loggedDays())))
+                    .append("</div>");
+        }
+        if (ai.nutrientsTip() != null && !ai.nutrientsTip().isBlank()) {
+            rows.append("<div class=\"callout\">✨ ").append(escapeHtml(cut(ai.nutrientsTip(), AI_TEXT_MAX))).append("</div>");
+        }
+        String title = texts.get(n.micronutrients().isEmpty() ? NUTRIENTS_TITLE_FIBER : NUTRIENTS_TITLE);
+        return "<div class=\"block\">" + buildSectionHeader("🌿", title, texts.get(NUTRIENTS_NOTE))
+                + "<div class=\"card\">" + rows + "</div></div>";
+    }
+
+    private static String buildGroupRow(String title) {
+        return "<tr class=\"group\"><td colspan=\"4\">" + escapeHtml(title) + "</td></tr>";
+    }
+
+    private static String buildNutrientRow(String name, String fact, String norm, String unit, double percent,
+                                           NutrientStats.Status status, PdfTexts texts) {
+        String tone = switch (status) {
+            case LOW -> "warn";
+            case OK -> "good";
+            case HIGH -> "bad";
+        };
+        String color = switch (status) {
+            case LOW -> CARBS;
+            case OK -> SUCCESS;
+            case HIGH -> WARN_INK;
+        };
+        String label = texts.get(switch (status) {
+            case LOW -> NUTRIENTS_STATUS_LOW;
+            case OK -> NUTRIENTS_STATUS_OK;
+            case HIGH -> NUTRIENTS_STATUS_HIGH;
+        });
+        return "<tr><td class=\"mn\">" + escapeHtml(name) + "</td>"
+                + "<td class=\"mb\">" + buildTrack(Math.min(percent, 100), color) + "</td>"
+                + "<td class=\"mv\"><b>" + escapeHtml(fact) + "</b> / " + escapeHtml(norm) + " " + escapeHtml(unit) + "</td>"
+                + "<td class=\"ms " + tone + "\">" + escapeHtml(label) + "</td></tr>";
+    }
+
+    /** Миллиграммы — целыми, микрограммы — с десятыми, граммы — с десятыми до 10 г */
+    private static String formatNutrient(double value, Micronutrient nutrient, PdfTexts texts) {
+        return switch (nutrient.getUnit()) {
+            case MG -> texts.formatInt(Math.round(value));
+            case MCG -> texts.formatDecimal(value, 1);
+            case G -> value < 10 ? texts.formatDecimal(value, 1) : texts.formatInt(Math.round(value));
+        };
     }
 
     // ── Ритм питания ────────────────────────────────────────────────

@@ -4,6 +4,7 @@ import com.kuklin.manageapp.bots.caloriebot.dish.Dish;
 import com.kuklin.manageapp.bots.caloriebot.profile.UserNutritionProfile;
 import com.kuklin.manageapp.bots.caloriebot.profile.UserNutritionProfile.Goal;
 import com.kuklin.manageapp.bots.caloriebot.i18n.AppLanguage;
+import com.kuklin.manageapp.bots.caloriebot.report.NutrientStatsCalculator;
 
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -44,7 +45,7 @@ public final class DayReportPrompt {
                  DateTimeFormatter userTimeFormat,
                  String sex, String age, String height, String weight, String activity, String goal, String diet,
                  String centimeter, String kilogram, String profileEmpty,
-                 String calories, String proteins, String fats, String carbs, String kcal, String gram,
+                 String calories, String proteins, String fats, String carbs, String fiber, String kcal, String gram,
                  String of, String left, String over, String noTarget,
                  String nothingEaten,
                  String dishMacrosFormat) {
@@ -93,7 +94,7 @@ public final class DayReportPrompt {
             DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy, HH:mm", Locale.forLanguageTag("ru")),
             "пол", "возраст", "рост", "вес", "активность", "цель", "питание",
             "см", "кг", "не заполнен",
-            "калории", "белки", "жиры", "углеводы", "ккал", "г",
+            "калории", "белки", "жиры", "углеводы", "клетчатка", "ккал", "г",
             "из", "осталось", "перебор", "норма не задана",
             "ничего",
             "%d ккал, Б %d / Ж %d / У %d"
@@ -142,7 +143,7 @@ public final class DayReportPrompt {
             DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy, HH:mm", Locale.ENGLISH),
             "sex", "age", "height", "weight", "activity", "goal", "diet",
             "cm", "kg", "not filled in",
-            "calories", "protein", "fat", "carbs", "kcal", "g",
+            "calories", "protein", "fat", "carbs", "fiber", "kcal", "g",
             "of", "left", "over by", "no target set",
             "nothing",
             "%d kcal, P %d / F %d / C %d"
@@ -210,11 +211,18 @@ public final class DayReportPrompt {
 
     static String buildTotalsText(UserNutritionProfile profile, List<Dish> dishes, AppLanguage language) {
         Texts texts = getTexts(language);
-        return String.join("; ",
+        String totals = String.join("; ",
                 buildTotalText(texts, texts.calories(), texts.kcal(), sum(dishes, Dish::getCalories), profile.getCaloriesNormPerDay()),
                 buildTotalText(texts, texts.proteins(), texts.gram(), sum(dishes, Dish::getProteins), profile.getProteinsNormGramsPerDay()),
                 buildTotalText(texts, texts.fats(), texts.gram(), sum(dishes, Dish::getFats), profile.getFatsNormGramsPerDay()),
                 buildTotalText(texts, texts.carbs(), texts.gram(), sum(dishes, Dish::getCarbohydrates), profile.getCarbsNormGramsPerDay()));
+        // Клетчатка — только если ИИ оценил её у сегодняшних блюд (старые и ручные записи без неё).
+        // Без «осталось / перебор»: больше нормы клетчатки — не перебор
+        if (dishes != null && dishes.stream().anyMatch(dish -> dish.getFiber() != null)) {
+            totals += "; " + texts.fiber() + " " + sum(dishes, Dish::getFiber) + " " + texts.of() + " "
+                    + NutrientStatsCalculator.getFiberTarget(profile.getSex()) + " " + texts.gram();
+        }
+        return totals;
     }
 
     /** «калории 1840 из 2100 ккал, осталось 260» / «… перебор 150» / «… норма не задана». */

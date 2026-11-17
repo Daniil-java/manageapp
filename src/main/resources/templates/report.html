@@ -206,6 +206,15 @@
         .macros .mv { width: 92px; text-align: right; font-size: 8.5pt; color: #8A7A70; }
         .macros .mv b { color: #3E2723; font-size: 10pt; }
         .macros .mp { width: 44px; text-align: right; font-weight: 900; font-size: 9pt; }
+        /* Клетчатка и микронутриенты: названия длиннее, чем у БЖУ, справа — вывод «мало / норма / перебор» */
+        .nutrients { width: 100%; }
+        .nutrients td { padding: 4px 0; vertical-align: middle; }
+        .nutrients .mn { width: 132px; font-weight: 800; font-size: 9pt; }
+        .nutrients .mb { padding-right: 10px; }
+        .nutrients .mv { width: 104px; text-align: right; font-size: 8.5pt; color: #8A7A70; }
+        .nutrients .mv b { color: #3E2723; font-size: 9.5pt; }
+        .nutrients .ms { width: 70px; text-align: right; font-weight: 900; font-size: 8.5pt; }
+        .nutrients .group td { padding-top: 9px; font-size: 8pt; font-weight: 800; color: #8A7A70; text-transform: uppercase; }
         .good { color: #4F7F4E; }
         .warn { color: #C96A3A; }
         .bad { color: #B8442A; }
@@ -281,6 +290,7 @@
 {{WEIGHT}}
 {{ENERGY}}
 {{MACROS}}
+{{NUTRIENTS}}
 {{RHYTHM}}
 {{TOP}}
 {{PATTERNS}}

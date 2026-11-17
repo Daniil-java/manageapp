@@ -122,4 +122,17 @@ class DishTextsTest {
                 "🥩 P: <b>17</b> / 100 g");
         assertThat(diary).doesNotContainPattern("[А-Яа-яЁё]");
     }
+
+    /** Клетчатка в итогах — если ИИ оценил её хотя бы у одного блюда; блюда без неё считаются нулём. */
+    @Test
+    void todayDiaryShowsFiberWhenEstimated() {
+        dish.setFiber(6);
+        profile.setSex(UserNutritionProfile.Sex.FEMALE);
+
+        assertThat(dishTexts.buildTodayDiaryText(RU_USER, "12 ОКТЯБРЯ 2026")).endsWith("""
+                🍞 У: <b>70</b> / 250 г
+                🌿 Клетчатка: <b>6</b> / 25 г
+                """);
+        assertThat(dishTexts.buildTodayDiaryText(EN_USER, "12 OCTOBER 2026")).endsWith("🌿 Fiber: <b>6</b> / 25 g\n");
+    }
 }

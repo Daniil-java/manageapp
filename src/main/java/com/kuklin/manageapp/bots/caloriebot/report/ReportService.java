@@ -24,6 +24,7 @@ import com.kuklin.manageapp.bots.caloriebot.i18n.CalorieTexts;
 import com.kuklin.manageapp.bots.caloriebot.i18n.PdfTextKeys;
 import com.kuklin.manageapp.bots.caloriebot.report.ai.ReportAiPayloadRecord;
 import com.kuklin.manageapp.bots.caloriebot.report.ai.ReportAiResponse;
+import com.kuklin.manageapp.bots.caloriebot.report.dto.NutrientStats;
 import com.kuklin.manageapp.bots.caloriebot.report.dto.ReportKind;
 import com.kuklin.manageapp.bots.caloriebot.report.dto.ReportSource;
 import com.kuklin.manageapp.bots.caloriebot.report.dto.ReportStats;
@@ -78,6 +79,7 @@ public class ReportService {
     private static final String VAR_WEIGHT = "{{WEIGHT}}";
     private static final String VAR_ENERGY = "{{ENERGY}}";
     private static final String VAR_MACROS = "{{MACROS}}";
+    private static final String VAR_NUTRIENTS = "{{NUTRIENTS}}";
     private static final String VAR_RHYTHM = "{{RHYTHM}}";
     private static final String VAR_TOP = "{{TOP}}";
     private static final String VAR_PATTERNS = "{{PATTERNS}}";
@@ -244,10 +246,11 @@ public class ReportService {
         try (var ignored = AiUsageContext.open(userId, AiOperation.PDF_REPORT)) {
             ReportSource source = sourceLoader.get();
             ReportStats stats = ReportStatsCalculator.buildStats(source);
+            NutrientStats nutrients = NutrientStatsCalculator.buildOrNull(source);
             PdfTexts texts = new PdfTexts(calorieTexts, calorieTexts.languageOf(userId));
-            ReportAiResponse ai = stats.hasFood() ? fetchReportAiOrEmpty(stats, source, texts) : ReportAiResponse.empty();
+            ReportAiResponse ai = stats.hasFood() ? fetchReportAiOrEmpty(stats, nutrients, source, texts) : ReportAiResponse.empty();
 
-            String html = fillTemplateOrNull(source, stats, ai, texts, titleKey, now);
+            String html = fillTemplateOrNull(source, stats, nutrients, ai, texts, titleKey, now);
             return html != null ? HtmlPdfRenderer.renderPdfOrNull(html, getClass().getResource(IMAGES_BASE_URL).toString()) : null;
         } catch (Exception e) {
             log.error("Failed to build {} PDF report for user {}", titleKey, userId, e);
@@ -259,9 +262,10 @@ public class ReportService {
      * Просит ИИ объяснить посчитанные метрики: главная фраза, шаблоны поведения, замены.
      * Ошибка ИИ не ломает отчёт — блоки ИИ просто не показываются.
      */
-    private ReportAiResponse fetchReportAiOrEmpty(ReportStats stats, ReportSource source, PdfTexts texts) {
+    private ReportAiResponse fetchReportAiOrEmpty(ReportStats stats, NutrientStats nutrients, ReportSource source,
+                                                  PdfTexts texts) {
         try {
-            var payload = ReportAiPayloadRecord.of(stats, source.profile(), source.dishes(), source.zoneId());
+            var payload = ReportAiPayloadRecord.of(stats, source.profile(), source.dishes(), source.zoneId(), nutrients);
             ReportPrompts prompts = ReportPrompts.of(texts.language());
             String prompt = prompts.persona() + String.format(prompts.report(),
                     stats.days().size(), texts.language().getNativeName(), mapper.writeValueAsString(payload),
@@ -284,8 +288,8 @@ public class ReportService {
     /**
      * Наполняет HTML-шаблон: сначала тексты словаря {{pdf.…}}, потом данные — {{pdf.…}} в ответе ИИ подставляться не должны.
      */
-    private String fillTemplateOrNull(ReportSource source, ReportStats stats, ReportAiResponse ai, PdfTexts texts,
-                                      String titleKey, Instant now) {
+    private String fillTemplateOrNull(ReportSource source, ReportStats stats, NutrientStats nutrients, ReportAiResponse ai,
+                                      PdfTexts texts, String titleKey, Instant now) {
         String template = getCachedResourceOrNull(REPORT_TEMPLATE_PATH);
         String mascot = getCachedResourceOrNull(MASCOT_PATH);
         if (template == null || mascot == null) return null;
@@ -307,6 +311,7 @@ public class ReportService {
                 .replace(VAR_WEIGHT, ReportHtml.buildWeightSection(stats, texts))
                 .replace(VAR_ENERGY, ReportHtml.buildEnergySection(stats, source.profile(), texts))
                 .replace(VAR_MACROS, ReportHtml.buildMacrosSection(stats, texts))
+                .replace(VAR_NUTRIENTS, ReportHtml.buildNutrientsSection(nutrients, ai, texts))
                 .replace(VAR_RHYTHM, ReportHtml.buildRhythmSection(stats, texts))
                 .replace(VAR_TOP, ReportHtml.buildTopSection(stats, texts))
                 .replace(VAR_PATTERNS, ReportHtml.buildPatternsSection(ai, texts))

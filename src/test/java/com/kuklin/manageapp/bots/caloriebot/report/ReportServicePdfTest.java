@@ -32,6 +32,7 @@ import java.nio.file.Path;
 import java.time.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -109,7 +110,35 @@ class ReportServicePdfTest {
         assertThat(text)
                 .contains("Отчёт за неделю", "Блюда по дням", "Итого за день", "Овсянка с бананом")
                 .doesNotContain("Календарь месяца")
+                // У блюд нет клетчатки и микронутриентов (записаны до их учёта) — блока нет
+                .doesNotContain("Клетчатка")
                 .doesNotContain("{{");
+    }
+
+    /** Клетчатка и микронутриенты: блок с выводами «мало / перебор», ИИ получает их и даёт совет. */
+    @Test
+    void nutrientsSectionShowsStatusesAndAiTip() throws IOException {
+        ReportService service = buildService("ru", true);
+        List<Dish> dishes = buildDishes(true);
+        dishes.forEach(d -> d.setFiber(3).setMicronutrients(Map.of("ironMg", 1.0, "sodiumMg", 900.0, "vitaminCMg", 40.0)));
+        when(dishService.getAllDishedByUserIdAndPeriod(eq(USER_ID), any(), any())).thenAnswer(inv -> {
+            Instant from = inv.getArgument(1), to = inv.getArgument(2);
+            return dishes.stream().filter(d -> !d.getCreated().isBefore(from) && !d.getCreated().isAfter(to)).toList();
+        });
+        givenAiAnswers(AI_ANSWER_RU.replace("\"swaps\":[",
+                "\"nutrientsTip\":\"Железа маловато — добавь гречку и говядину.\",\"swaps\":["));
+
+        byte[] pdf = service.buildPdfReportOrNull(ReportKind.WEEK, NOW, USER_ID);
+        savePreviewIfAsked(pdf, "nutrients-ru");
+        String text = extractText(pdf);
+
+        // Подзаголовки групп — заглавными (text-transform в шаблоне)
+        assertThat(text).contains("Клетчатка, витамины и минералы", "примерная оценка", "ЖИРЫ И САХАР",
+                "Железо", "Натрий (соль)", "мало", "перебор", "Железа маловато");
+        ArgumentCaptor<String> prompt = ArgumentCaptor.forClass(String.class);
+        verify(ai).fetchJsonResponse(anyString(), prompt.capture(), any(), anyString(), any());
+        assertThat(prompt.getValue()).contains("\"nutrients\":{\"avgFiberG\":", "\"fiberTargetG\":30",
+                "\"name\":\"ironMg\"", "\"status\":\"HIGH\"");
     }
 
     /** Свой период: 10 дней — раскладка недельного, заголовок «за период», ИИ знает настоящее число дней. */
@@ -297,6 +326,21 @@ class ReportServicePdfTest {
 
     private void givenAiAnswers(String response) {
         when(ai.fetchJsonResponse(anyString(), anyString(), any(), anyString(), any())).thenReturn(response);
+    }
+
+    /** С -Dreport.preview.dir кладёт PDF и PNG страниц туда — посмотреть отчёт глазами. */
+    private static void savePreviewIfAsked(byte[] pdf, String name) throws IOException {
+        String dir = System.getProperty("report.preview.dir");
+        if (dir == null) return;
+        Files.createDirectories(Path.of(dir));
+        Files.write(Path.of(dir, name + ".pdf"), pdf);
+        try (PDDocument doc = PDDocument.load(pdf)) {
+            PDFRenderer renderer = new PDFRenderer(doc);
+            for (int i = 0; i < doc.getNumberOfPages(); i++) {
+                ImageIO.write(renderer.renderImageWithDPI(i, Integer.getInteger("report.preview.dpi", 90)), "png",
+                        new File(dir, name + "-" + (i + 1) + ".png"));
+            }
+        }
     }
 
     private static String extractText(byte[] pdf) throws IOException {

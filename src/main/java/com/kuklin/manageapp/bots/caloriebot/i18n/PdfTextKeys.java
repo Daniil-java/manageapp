@@ -118,6 +118,19 @@ public final class PdfTextKeys {
     public static final String MACROS_PROTEIN_KG = "pdf.macros.protein-kg";
     public static final String MACROS_PROTEIN_WEEKEND = "pdf.macros.protein-weekend";
 
+    // ── Клетчатка и микронутриенты (названия веществ — Micronutrient.getTextKey(), единицы — Unit.getTextKey()) ──
+    public static final String NUTRIENTS_TITLE = "pdf.nutrients.title";
+    public static final String NUTRIENTS_TITLE_FIBER = "pdf.nutrients.title-fiber";
+    public static final String NUTRIENTS_NOTE = "pdf.nutrients.note";
+    public static final String NUTRIENTS_FIBER = "pdf.nutrients.fiber";
+    public static final String NUTRIENTS_GROUP_FATS = "pdf.nutrients.group-fats";
+    public static final String NUTRIENTS_GROUP_VITAMINS = "pdf.nutrients.group-vitamins";
+    public static final String NUTRIENTS_STATUS_LOW = "pdf.nutrients.status-low";
+    public static final String NUTRIENTS_STATUS_OK = "pdf.nutrients.status-ok";
+    public static final String NUTRIENTS_STATUS_HIGH = "pdf.nutrients.status-high";
+    /** {0} — дней с оценкой микронутриентов, {1} — дней с записями */
+    public static final String NUTRIENTS_PARTIAL = "pdf.nutrients.partial";
+
     // ── Ритм питания ────────────────────────────────────────────────
     public static final String RHYTHM_TITLE = "pdf.rhythm.title";
     public static final String RHYTHM_NOTE = "pdf.rhythm.note";

@@ -39,7 +39,22 @@ class DayReportPromptTest {
         assertThat(DayReportPrompt.buildTotalsText(PROFILE, DISHES, AppLanguage.RU))
                 .contains("калории 1950 из 1800 ккал, перебор 150")
                 .contains("белки 62 из 100 г, осталось 38")
-                .contains("жиры 0 г, норма не задана");
+                .contains("жиры 0 г, норма не задана")
+                // У блюд нет клетчатки (старые записи) — в итогах её нет
+                .doesNotContain("клетчатка");
+    }
+
+    /** Клетчатка — если ИИ оценил её хотя бы у одного блюда; без «перебор», норма по полу. */
+    @Test
+    void fiberIsAddedWhenEstimated() {
+        List<Dish> dishes = List.of(
+                new Dish().setName("Гречка").setCalories(300).setFiber(6),
+                new Dish().setName("Салат").setCalories(100).setFiber(4),
+                new Dish().setName("Кофе").setCalories(20));
+        UserNutritionProfile woman = new UserNutritionProfile().setSex(UserNutritionProfile.Sex.FEMALE);
+
+        assertThat(DayReportPrompt.buildTotalsText(woman, dishes, AppLanguage.RU)).endsWith("; клетчатка 10 из 25 г");
+        assertThat(DayReportPrompt.buildTotalsText(woman, dishes, AppLanguage.EN)).endsWith("; fiber 10 of 25 g");
     }
 
     @Test

@@ -6,9 +6,12 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
+import java.util.Map;
 
 @Entity
 @Table(name = "user_favorite_dishes")
@@ -28,6 +31,11 @@ public class UserFavoriteDish {
     private Integer proteins;
     private Integer fats;
     private Integer carbohydrates;
+    /** Клетчатка и микронутриенты — как у блюда, из которого сохранено ({@link Dish#getFiber()}, {@link Dish#getMicronutrients()}) */
+    private Integer fiber;
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    private Map<String, Double> micronutrients;
 
     // --- Количество ---
     private Integer weightGrams;       // фактический вес блюда
@@ -67,6 +75,8 @@ public class UserFavoriteDish {
         dish.setProteins(fav.getProteins());
         dish.setFats(fav.getFats());
         dish.setCarbohydrates(fav.getCarbohydrates());
+        dish.setFiber(fav.getFiber());
+        dish.setMicronutrients(fav.getMicronutrients());
 
         dish.setWeight(fav.getWeightGrams());
         dish.setPortions(fav.getPortions());
@@ -100,6 +110,8 @@ public class UserFavoriteDish {
         fav.setProteins(dish.getProteins());
         fav.setFats(dish.getFats());
         fav.setCarbohydrates(dish.getCarbohydrates());
+        fav.setFiber(dish.getFiber());
+        fav.setMicronutrients(dish.getMicronutrients());
 
         // --- Количество ---
         fav.setWeightGrams(dish.getWeight());

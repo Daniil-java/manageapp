@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.bots.caloriebot.dish;
 
+import com.kuklin.manageapp.payment.services.UserSubscriptionService;
 import com.kuklin.manageapp.bots.caloriebot.settings.UserSettingsService;
 import com.kuklin.manageapp.bots.caloriebot.dish.ai.AiDishResponse;
 import com.kuklin.manageapp.bots.caloriebot.dish.ai.AiInputValidator;
@@ -70,7 +71,7 @@ class DishServiceAiResponseTest {
                 mock(UserSettingsService.class), mock(CalorieAccessService.class),
                 mock(TelegramUserService.class), selfProvider, mock(AiInputValidator.class),
                 mock(AiRateLimiter.class), mock(DishLimitsProperties.class), texts,
-                mock(ApplicationEventPublisher.class));
+                mock(ApplicationEventPublisher.class), mock(UserSubscriptionService.class));
     }
 
     private void aiAnswers(String json) {

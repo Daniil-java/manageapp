@@ -11,6 +11,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kuklin.manageapp.aiconversation.models.AiUsageContext;
 import com.kuklin.manageapp.aiconversation.models.enums.AiOperation;
 import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcessor;
+import com.kuklin.manageapp.aiconversation.models.openai.OpenAiChatCompletionRequest;
+import com.kuklin.manageapp.payment.services.UserSubscriptionService;
 import com.kuklin.manageapp.bots.caloriebot.access.RequiresFeature;
 import com.kuklin.manageapp.bots.caloriebot.bot.TelegramCaloriesBotKeyComponents;
 import com.kuklin.manageapp.bots.caloriebot.favorite.UserFavoriteDish;
@@ -43,6 +45,8 @@ import java.util.*;
 import static com.kuklin.manageapp.bots.caloriebot.dish.Dish.scale;
 import static com.kuklin.manageapp.bots.caloriebot.dish.ai.DishCalorieBotPrompts.AI_VOICE_TRANSCRIPTION_PROMPT;
 import static com.kuklin.manageapp.bots.caloriebot.dish.ai.DishCalorieBotPrompts.PHOTO_INSTRUCTIONS;
+import static com.kuklin.manageapp.bots.caloriebot.dish.ai.DishCalorieBotPrompts.PHOTO_INSTRUCTIONS_PREMIUM;
+import static com.kuklin.manageapp.bots.caloriebot.dish.ai.DishCalorieBotPrompts.TEXT_INSTRUCTIONS_PREMIUM;
 import static com.kuklin.manageapp.bots.caloriebot.dish.ai.DishCalorieBotPrompts.PHOTO_NAME_LANGUAGE_FROM_CAPTION;
 import static com.kuklin.manageapp.bots.caloriebot.dish.ai.DishCalorieBotPrompts.PHOTO_NAME_LANGUAGE_NO_CAPTION;
 import static com.kuklin.manageapp.bots.caloriebot.dish.ai.DishCalorieBotPrompts.PHOTO_NO_CAPTION;
@@ -67,6 +71,7 @@ public class DishService {
     private final DishLimitsProperties dishLimits;
     private final CalorieTexts calorieTexts;
     private final ApplicationEventPublisher eventPublisher;
+    private final UserSubscriptionService userSubscriptionService;
 
     // --- Public Methods ---
 
@@ -130,14 +135,15 @@ public class DishService {
         String nameLanguageRule = String.format(
                 hasCaption ? PHOTO_NAME_LANGUAGE_FROM_CAPTION : PHOTO_NAME_LANGUAGE_NO_CAPTION, aiLanguageOf(userId));
         String userMessage = String.format(PHOTO_USER_MESSAGE, getQuotedCaption(message), nameLanguageRule);
+        boolean premium = hasPremium(userId);
         String aiResponse;
         try (var ignored = AiUsageContext.open(userId, AiOperation.DISH_PHOTO)) {
             aiResponse = openAiIntegrationService.fetchStructuredResponse(
                     telegramCaloriesBotKeyComponents.getAiKey(),
-                    PHOTO_INSTRUCTIONS,
+                    premium ? PHOTO_INSTRUCTIONS_PREMIUM : PHOTO_INSTRUCTIONS,
                     userMessage,
                     photoBase64,
-                    AiDishResponse.RESPONSE_FORMAT,
+                    getResponseFormat(premium),
                     BotIdentifier.CALORIE_BOT,
                     AiMessageType.PHOTO
             );
@@ -185,20 +191,33 @@ public class DishService {
     }
 
     public List<Dish> getDishByDescriptionOrNull(Long userId, String text) {
+        boolean premium = hasPremium(userId);
         String aiResponse;
         // Из голосового — уже открыт DISH_VOICE, он и запишется
         try (var ignored = AiUsageContext.open(userId, AiOperation.DISH_TEXT)) {
             aiResponse = openAiIntegrationService.fetchStructuredResponse(
                     telegramCaloriesBotKeyComponents.getAiKey(),
-                    TEXT_INSTRUCTIONS,
+                    premium ? TEXT_INSTRUCTIONS_PREMIUM : TEXT_INSTRUCTIONS,
                     String.format(TEXT_USER_MESSAGE, text, aiLanguageOf(userId)),
                     null,
-                    AiDishResponse.RESPONSE_FORMAT,
+                    getResponseFormat(premium),
                     CalorieTelegramBot.BOT_IDENTIFIER,
                     AiMessageType.TEXT
             );
         }
         return getDishListByAiResponseOrNull(userId, aiResponse);
+    }
+
+    /**
+     * Витамины и минералы ИИ оценивает только для Premium (пробный период тоже Premium) — остальным они не нужны,
+     * а ответ с ними длиннее и дороже. Клетчатка — всем.
+     */
+    private boolean hasPremium(Long userId) {
+        return userSubscriptionService.hasActiveSubscription(userId, BotIdentifier.CALORIE_BOT);
+    }
+
+    private static OpenAiChatCompletionRequest.ResponseFormat getResponseFormat(boolean premium) {
+        return premium ? AiDishResponse.RESPONSE_FORMAT_PREMIUM : AiDishResponse.RESPONSE_FORMAT;
     }
 
     /** Язык пользователя для промпта: на нём ИИ называет блюда, если по описанию язык не понять (или описания нет). */
@@ -405,6 +424,7 @@ public class DishService {
         dish.setProteins(scale(dish.getProteins(), multiplier));
         dish.setFats(scale(dish.getFats(), multiplier));
         dish.setCarbohydrates(scale(dish.getCarbohydrates(), multiplier));
+        dish.scaleFiberAndMicronutrients(multiplier);
 
         return dishRepository.save(dish);
     }

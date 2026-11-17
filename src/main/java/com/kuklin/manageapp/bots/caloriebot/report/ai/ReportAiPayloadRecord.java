@@ -2,6 +2,7 @@ package com.kuklin.manageapp.bots.caloriebot.report.ai;
 
 import com.kuklin.manageapp.bots.caloriebot.dish.Dish;
 import com.kuklin.manageapp.bots.caloriebot.profile.UserNutritionProfile;
+import com.kuklin.manageapp.bots.caloriebot.report.dto.NutrientStats;
 import com.kuklin.manageapp.bots.caloriebot.report.dto.ReportStats;
 
 import java.time.LocalTime;
@@ -17,12 +18,19 @@ public record ReportAiPayloadRecord(InsightPayloadRecord.InsightProfile profile,
                                     List<TopDish> topByCount,
                                     List<TopDish> topByCalories,
                                     List<String> lateDishes,
-                                    Map<String, Integer> categoryPercents) {
+                                    Map<String, Integer> categoryPercents,
+                                    Nutrients nutrients) {
 
     /** Сколько поздних блюд показать ИИ */
     private static final int LATE_DISHES_LIMIT = 5;
 
     public static ReportAiPayloadRecord of(ReportStats stats, UserNutritionProfile profile, List<Dish> dishes, ZoneId zoneId) {
+        return of(stats, profile, dishes, zoneId, null);
+    }
+
+    /** nutrients == null — клетчатки и микронутриентов у блюд нет, ИИ эту тему не трогает. */
+    public static ReportAiPayloadRecord of(ReportStats stats, UserNutritionProfile profile, List<Dish> dishes, ZoneId zoneId,
+                                           NutrientStats nutrients) {
         Map<String, Integer> categories = new LinkedHashMap<>();
         stats.categories().forEach(c -> categories.put(c.category().name(), (int) Math.round(c.share() * 100)));
 
@@ -32,8 +40,45 @@ public record ReportAiPayloadRecord(InsightPayloadRecord.InsightProfile profile,
                 stats.topByCount().stream().map(TopDish::of).toList(),
                 stats.topByCalories().stream().map(TopDish::of).toList(),
                 findLateDishes(dishes, zoneId),
-                categories
+                categories,
+                Nutrients.ofOrNull(nutrients)
         );
+    }
+
+    /**
+     * Клетчатка и микронутриенты: средние в день, норма и вывод. Оценки примерные — ИИ говорит о выводах, а не о точных цифрах.
+     *
+     * @param fiberStatus LOW / OK; null вместе с avgFiberG — клетчатка не оценивалась
+     */
+    public record Nutrients(Integer avgFiberG,
+                            Integer fiberTargetG,
+                            String fiberStatus,
+                            int daysWithMicronutrients,
+                            List<Item> micronutrients) {
+
+        static Nutrients ofOrNull(NutrientStats stats) {
+            if (stats == null) return null;
+            var fiber = stats.fiber();
+            return new Nutrients(
+                    fiber != null ? fiber.avgGrams() : null,
+                    fiber != null ? fiber.targetGrams() : null,
+                    fiber != null ? fiber.status().name() : null,
+                    stats.micronutrientDays(),
+                    stats.micronutrients().stream().map(Item::of).toList()
+            );
+        }
+
+        /**
+         * @param name   ключ с единицей: ironMg, vitaminDMcg…
+         * @param limit  MIN — норму стоит набрать, MAX — верхний предел
+         * @param status LOW (мало), OK, HIGH (перебор)
+         */
+        public record Item(String name, double avgPerDay, double norm, String limit, String status) {
+            static Item of(NutrientStats.MicronutrientStat s) {
+                return new Item(s.nutrient().getKey(), Summary.round1(s.avg()), Summary.round1(s.norm()),
+                        s.nutrient().getLimit().name(), s.status().name());
+            }
+        }
     }
 
     /** Самые частые блюда с 21:00 до 05:00 */

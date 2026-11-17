@@ -6,8 +6,11 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
+import java.util.Map;
 
 @Entity
 @Table(name = "dishes")
@@ -28,6 +31,15 @@ public class Dish {
     private Integer proteins;
     private Integer fats;
     private Integer carbohydrates;
+    /** Клетчатка на всю порцию, г. null — блюдо записано до учёта клетчатки или вручную */
+    private Integer fiber;
+    /**
+     * Витамины, минералы, подробности по жирам и сахару на всю порцию: ключ — {@link Micronutrient#getKey()}.
+     * null — не оценивались: блюдо записано без Premium, вручную или до их учёта.
+     */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    private Map<String, Double> micronutrients;
 
     // --- Количество ---
     @Column(name = "weight")
@@ -77,6 +89,8 @@ public class Dish {
                 .setProteins(dto.getProteins())
                 .setFats(dto.getFats())
                 .setCarbohydrates(dto.getCarbohydrates())
+                .setFiber(dto.getFiber())
+                .setMicronutrients(dto.getMicronutrients())
                 .setWeight(dto.getWeight())
                 .setPortions(dto.getPortions())
                 .setPortionWeight(dto.getPortionWeight())
@@ -99,7 +113,15 @@ public class Dish {
         this.proteins      = scale(this.proteins, multiplier);
         this.fats          = scale(this.fats, multiplier);
         this.carbohydrates = scale(this.carbohydrates, multiplier);
+        scaleFiberAndMicronutrients(multiplier);
 
+        return this;
+    }
+
+    /** Клетчатка и микронутриенты вслед за порцией — так же, как КБЖУ. */
+    public Dish scaleFiberAndMicronutrients(double multiplier) {
+        this.fiber = scale(this.fiber, Math.max(0, multiplier));
+        this.micronutrients = Micronutrient.scaleOrNull(this.micronutrients, multiplier);
         return this;
     }
 
@@ -126,6 +148,7 @@ public class Dish {
         this.proteins      = scale(this.proteins, multiplier);
         this.fats          = scale(this.fats, multiplier);
         this.carbohydrates = scale(this.carbohydrates, multiplier);
+        scaleFiberAndMicronutrients(multiplier);
 
         return this;
     }
@@ -155,6 +178,7 @@ public class Dish {
         sb.append(", p=").append(proteins);
         sb.append(", f=").append(fats);
         sb.append(", c=").append(carbohydrates);
+        sb.append(", fiber=").append(fiber);
         sb.append(", weight=").append(weight);
         sb.append(", cat=").append(category);
         sb.append(", conf=").append(aiConfidence);

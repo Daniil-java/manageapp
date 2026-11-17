@@ -9,6 +9,7 @@ import lombok.Data;
 import lombok.experimental.Accessors;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Data
@@ -29,6 +30,10 @@ public class DishDto {
     private Integer fats;
     @PositiveOrZero(message = "Углеводы не могут быть отрицательными")
     private Integer carbohydrates;
+    /** Клетчатка на порцию, г; null — не оценивалась. Меняется только вслед за весом (PATCH её не задаёт) */
+    private Integer fiber;
+    /** Витамины и минералы на порцию (ключи — Micronutrient.getKey()); null — не оценивались (не Premium) */
+    private Map<String, Double> micronutrients;
 
     // --- Количество ---
     // Промпт ИИ называет поле weightGrams — без алиаса вес от ИИ терялся и подставлялась 1
@@ -93,6 +98,10 @@ public class DishDto {
         if (fats != null) dish.setFats(fats);
         if (carbohydrates != null) dish.setCarbohydrates(carbohydrates);
 
+        // Вес изменился — клетчатка и микронутриенты за ним (КБЖУ мини-апп пересчитывает и присылает сам)
+        if (weight != null && dish.getWeight() != null && dish.getWeight() > 0 && !weight.equals(dish.getWeight())) {
+            dish.scaleFiberAndMicronutrients(weight / (double) dish.getWeight());
+        }
         if (weight != null) dish.setWeight(weight);
         if (portions != null) dish.setPortions(portions);
         if (portionWeight != null) dish.setPortionWeight(portionWeight);
@@ -123,6 +132,8 @@ public class DishDto {
                 .setProteins(dto.getProteins())
                 .setFats(dto.getFats())
                 .setCarbohydrates(dto.getCarbohydrates())
+                .setFiber(dto.getFiber())
+                .setMicronutrients(dto.getMicronutrients())
                 .setWeight(dto.getWeight())
                 .setPortions(dto.getPortions())
                 .setPortionWeight(dto.getPortionWeight())
@@ -157,6 +168,8 @@ public class DishDto {
                 .setProteins(entity.getProteins())
                 .setFats(entity.getFats())
                 .setCarbohydrates(entity.getCarbohydrates())
+                .setFiber(entity.getFiber())
+                .setMicronutrients(entity.getMicronutrients())
                 .setWeight(entity.getWeight())
                 .setPortions(entity.getPortions())
                 .setPortionWeight(entity.getPortionWeight())

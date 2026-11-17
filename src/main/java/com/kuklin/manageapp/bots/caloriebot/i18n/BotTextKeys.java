@@ -216,6 +216,7 @@ public final class BotTextKeys {
     public static final String MACRO_LABEL_PROTEINS = "macro.label.proteins";
     public static final String MACRO_LABEL_FATS = "macro.label.fats";
     public static final String MACRO_LABEL_CARBS = "macro.label.carbs";
+    public static final String MACRO_LABEL_FIBER = "macro.label.fiber";
     public static final String MACRO_LABEL_WATER = "macro.label.water";
 
     // ── «Сегодня» ──────────────────────────────────────────────────

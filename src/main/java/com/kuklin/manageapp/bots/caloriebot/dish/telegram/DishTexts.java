@@ -2,6 +2,7 @@ package com.kuklin.manageapp.bots.caloriebot.dish.telegram;
 
 import com.kuklin.manageapp.bots.caloriebot.i18n.AbstractBotTexts;
 import com.kuklin.manageapp.bots.caloriebot.dish.DishService;
+import com.kuklin.manageapp.bots.caloriebot.report.NutrientStatsCalculator;
 import com.kuklin.manageapp.bots.caloriebot.profile.UserNutritionProfileService;
 import com.kuklin.manageapp.bots.caloriebot.dish.Dish;
 import com.kuklin.manageapp.bots.caloriebot.profile.UserNutritionProfile;
@@ -159,6 +160,12 @@ public class DishTexts extends AbstractBotTexts {
         appendTotal(sb, texts.get(language, BotTextKeys.MACRO_LABEL_PROTEINS), proteins, profile.getProteinsNormGramsPerDay(), gram);
         appendTotal(sb, texts.get(language, BotTextKeys.MACRO_LABEL_FATS), fats, profile.getFatsNormGramsPerDay(), gram);
         appendTotal(sb, texts.get(language, BotTextKeys.MACRO_LABEL_CARBS), carbs, profile.getCarbsNormGramsPerDay(), gram);
+        // Клетчатка — только если ИИ оценил её хотя бы у одного блюда дня (старые и ручные записи без неё)
+        if (dishes.stream().anyMatch(dish -> dish.getFiber() != null)) {
+            int fiber = dishes.stream().mapToInt(dish -> nvl(dish.getFiber())).sum();
+            appendTotal(sb, texts.get(language, BotTextKeys.MACRO_LABEL_FIBER), fiber,
+                    NutrientStatsCalculator.getFiberTarget(profile.getSex()), gram);
+        }
 
         return sb.toString();
     }

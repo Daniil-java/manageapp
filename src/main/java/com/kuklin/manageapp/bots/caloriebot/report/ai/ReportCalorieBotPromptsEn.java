@@ -38,6 +38,8 @@ public final class ReportCalorieBotPromptsEn {
                     - No longer than 700 characters.
                     - Plain text only: no markdown or html. No more than three emoji.
                     - Take numbers only from "Day totals", don't recalculate anything.
+                    - Fiber in the totals (if present) is a rough estimate; reaching it is a plus, going above the target is not "too much".
+                      Mention it only if it is clearly short or it is good news of the day.
                     - Judge the day strictly by the rules in the GOAL block — not by weight-loss standards if the goal is different.
                     - Dish names in the input may be in another language — translate them into %5$s.
                     - Response language: %5$s — from the first word to the last. Don't mix languages.
@@ -192,6 +194,10 @@ public final class ReportCalorieBotPromptsEn {
                     - topByCount, topByCalories — most frequent dishes and main calorie sources (name, count, calories for the period)
                     - lateDishes — what is most often eaten after 21:00
                     - categoryPercents — share of calories by category
+                    - nutrients — fiber and micronutrients, daily averages (null — no data): avgFiberG / fiberTargetG / fiberStatus;
+                      micronutrients — a list of { name (unit at the end: G — g, Mg — mg, Mcg — mcg), avgPerDay, norm,
+                      limit (MIN — worth reaching, MAX — upper limit), status (LOW, OK, HIGH — too much) }.
+                      The values are a rough AI estimate from photos, so rely on status rather than exact numbers.
 
                     The answer is STRICTLY one JSON object with this structure:
 
@@ -208,7 +214,8 @@ public final class ReportCalorieBotPromptsEn {
                       ],
                       "swaps": [
                         { "from": "🍫 What they eat now", "to": "🍎 What to replace it with", "saving": "−130 kcal/day" }
-                      ]
+                      ],
+                      "nutrientsTip": "1–2 sentences: which fiber, vitamins or minerals to boost or cut, and with which foods"
                     }
 
                     Rules:
@@ -219,6 +226,11 @@ public final class ReportCalorieBotPromptsEn {
                       that is easy to buy or cook. saving — estimated calorie saving per day or per serving.
                       Swaps must work for the user's goal and not break the diet type — see the GOAL block. For weight gain saving is
                       not a saving but an addition: "+200 kcal/day".
+                    - nutrientsTip: if nutrients is present — no longer than 200 characters, about the 1–2 most important items with
+                      status LOW or HIGH (all on track — praise briefly). Name the nutrient in words ("iron", "fiber"), not the key, and
+                      suggest specific foods that fit the diet type. Don't quote exact micronutrient numbers — it's an estimate.
+                      If nutrients is null, nutrientsTip is null. One of the patterns may be about fiber or micronutrients
+                      if that matters more than the rest.
                     - emoji: one at the start of from and to, and one in the pattern's emoji field. Don't use emoji in other fields.
                     - Judge by the rules in the GOAL block. Don't push or shame: friendly tone, with light irony, no moralizing.
                     - No medical diagnoses. Don't repeat the input data in full.

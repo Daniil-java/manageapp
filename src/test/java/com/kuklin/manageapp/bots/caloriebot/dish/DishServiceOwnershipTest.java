@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.bots.caloriebot.dish;
 
+import com.kuklin.manageapp.payment.services.UserSubscriptionService;
 import com.kuklin.manageapp.bots.caloriebot.settings.UserSettingsService;
 import com.kuklin.manageapp.bots.caloriebot.dish.ai.AiInputValidator;
 import com.kuklin.manageapp.bots.caloriebot.access.CalorieAccessService;
@@ -50,7 +51,7 @@ class DishServiceOwnershipTest {
                 mock(UserSettingsService.class), mock(CalorieAccessService.class),
                 mock(TelegramUserService.class), mock(ObjectProvider.class), mock(AiInputValidator.class),
                 mock(AiRateLimiter.class), mock(DishLimitsProperties.class), mock(CalorieTexts.class),
-                mock(ApplicationEventPublisher.class));
+                mock(ApplicationEventPublisher.class), mock(UserSubscriptionService.class));
 
         Dish dish = new Dish().setId(DISH_ID).setUserId(OWNER).setName("Омлет")
                 .setCalories(250).setProteins(15).setFats(18).setCarbohydrates(2)
