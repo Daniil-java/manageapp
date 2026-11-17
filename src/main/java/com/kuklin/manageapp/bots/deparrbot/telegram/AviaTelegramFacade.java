@@ -1,12 +1,11 @@
 package com.kuklin.manageapp.bots.deparrbot.telegram;
 
-import com.kuklin.manageapp.bots.deparrbot.configurations.TelegramAviaBotKeyComponent;
 import com.kuklin.manageapp.common.entities.TelegramUser;
-import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
-import com.kuklin.manageapp.common.library.tgmodels.TelegramFacade;
-import com.kuklin.manageapp.common.library.tgmodels.UpdateHandler;
-import com.kuklin.manageapp.common.library.tgutils.BotIdentifier;
-import com.kuklin.manageapp.common.library.tgutils.Command;
+import com.kuklin.manageapp.common.telegram.TelegramBot;
+import com.kuklin.manageapp.common.telegram.TelegramFacade;
+import com.kuklin.manageapp.common.telegram.UpdateHandler;
+import com.kuklin.manageapp.common.telegram.BotIdentifier;
+import com.kuklin.manageapp.common.telegram.Command;
 import com.kuklin.manageapp.common.services.TelegramUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -25,7 +24,7 @@ public class AviaTelegramFacade extends TelegramFacade {
                 update.getCallbackQuery().getFrom();
 
         TelegramUser telegramUser = telegramUserService
-                .createOrGetUserByTelegram(BotIdentifier.KWORK, user);
+                .createOrGetUserByTelegram(BotIdentifier.AVIA_BOT, user);
 
         processInputUpdate(update).handle(update, telegramUser);
     }

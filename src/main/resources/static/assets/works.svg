@@ -1,0 +1,80 @@
+<svg xmlns="http://www.w3.org/2000/svg">
+  <!--
+    Аватарки ботов для блока «Примеры работ» (freelance, personal).
+    Подключение: <svg viewBox="0 0 400 300"><use href="/assets/works.svg#slot"/></svg>
+    Цвета берутся из CSS-переменных страницы (accent, surface, line-strong) и currentColor,
+    поэтому картинки сами перекрашиваются в тёмной теме. Зефир — фирменные цвета, не меняются.
+  -->
+
+  <!-- Зефир: актуальный логотип (static/calorie/landing/zefirka.svg) на персиковом круге -->
+  <symbol id="zefir" viewBox="0 0 400 300">
+    <circle cx="200" cy="150" r="96" fill="#FBE7D9"/>
+    <g transform="translate(200 154) scale(.92) translate(-100 -105)">
+      <rect x="30" y="40" width="140" height="130" rx="40" fill="#FFFFFF" stroke="#EAE0D3" stroke-width="6"/>
+      <path d="M 45 60 Q 100 75 155 60" fill="none" stroke="#EAE0D3" stroke-width="6" stroke-linecap="round"/>
+      <circle cx="75" cy="115" r="12" fill="#D3A76C"/>
+      <circle cx="125" cy="115" r="12" fill="#D3A76C"/>
+      <circle cx="50" cy="130" r="9" fill="#F3D1D1"/>
+      <circle cx="150" cy="130" r="9" fill="#F3D1D1"/>
+      <path d="M 85 136 Q 100 152 115 136" fill="none" stroke="#C8A4A9" stroke-width="5" stroke-linecap="round"/>
+    </g>
+  </symbol>
+
+  <!-- Бронирование ресурсов: календарь с забронированным слотом -->
+  <symbol id="slot" viewBox="0 0 400 300">
+    <circle cx="200" cy="150" r="96" style="fill:var(--surface,#fff);stroke:var(--line-strong,rgba(0,0,0,.18))" stroke-width="2"/>
+    <rect x="138" y="102" width="124" height="108" rx="10" fill="none" stroke="currentColor" stroke-width="6"/>
+    <path d="M138 112a10 10 0 0 1 10-10h104a10 10 0 0 1 10 10v20H138Z" fill="currentColor"/>
+    <rect x="164" y="88" width="9" height="24" rx="4.5" fill="currentColor"/>
+    <rect x="227" y="88" width="9" height="24" rx="4.5" fill="currentColor"/>
+    <g fill="currentColor" opacity=".14">
+      <rect x="151" y="144" width="28" height="24" rx="4"/>
+      <rect x="186" y="144" width="28" height="24" rx="4"/>
+      <rect x="221" y="144" width="28" height="24" rx="4"/>
+      <rect x="151" y="175" width="28" height="24" rx="4"/>
+      <rect x="221" y="175" width="28" height="24" rx="4"/>
+    </g>
+    <rect x="186" y="175" width="28" height="24" rx="4" style="fill:var(--accent,#7E4DF7)"/>
+    <path d="M193 187l5 5 9-10" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
+
+  <!-- ИИ-ассистент с Google Calendar: лист календаря, микрофон и «искра» AI -->
+  <symbol id="calen" viewBox="0 0 400 300">
+    <circle cx="200" cy="150" r="96" style="fill:var(--surface,#fff);stroke:var(--line-strong,rgba(0,0,0,.18))" stroke-width="2"/>
+    <rect x="132" y="106" width="110" height="100" rx="10" fill="none" stroke="currentColor" stroke-width="6"/>
+    <path d="M132 116a10 10 0 0 1 10-10h90a10 10 0 0 1 10 10v16H132Z" fill="currentColor"/>
+    <g stroke="currentColor" stroke-width="6" stroke-linecap="round" opacity=".22">
+      <path d="M148 152h62"/><path d="M148 170h44"/><path d="M148 188h30"/>
+    </g>
+    <circle cx="252" cy="190" r="34" style="fill:var(--accent,#7E4DF7)"/>
+    <rect x="244" y="171" width="16" height="26" rx="8" fill="#fff"/>
+    <path d="M236 189a16 16 0 0 0 32 0" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+    <path d="M252 205v8" stroke="#fff" stroke-width="4" stroke-linecap="round"/>
+    <path d="M262 84l5 11 11 5-11 5-5 11-5-11-11-5 11-5Z" style="fill:var(--accent,#7E4DF7)"/>
+  </symbol>
+
+  <!-- Помидоро-таймер: кольцо прогресса с плодоножкой -->
+  <symbol id="pomodoro" viewBox="0 0 400 300">
+    <circle cx="200" cy="150" r="96" style="fill:var(--surface,#fff);stroke:var(--line-strong,rgba(0,0,0,.18))" stroke-width="2"/>
+    <circle cx="200" cy="158" r="56" fill="none" stroke="currentColor" stroke-width="14" opacity=".12"/>
+    <circle cx="200" cy="158" r="56" fill="none" style="stroke:var(--accent,#7E4DF7)" stroke-width="14"
+            stroke-linecap="round" stroke-dasharray="246 400" transform="rotate(-90 200 158)"/>
+    <path d="M200 102c-4-10-12-16-24-16 4 10 12 14 24 16Zm0 0c4-12 13-18 26-18-5 11-14 16-26 18Z" fill="currentColor"/>
+    <path d="M200 104v-14" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
+    <path d="M200 158v-30" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>
+    <path d="M200 158l20 12" stroke="currentColor" stroke-width="6" stroke-linecap="round"/>
+    <circle cx="200" cy="158" r="7" fill="currentColor"/>
+  </symbol>
+
+  <!-- Трекер авиарейсов: самолёт на пунктирном маршруте -->
+  <symbol id="deparr" viewBox="0 0 400 300">
+    <circle cx="200" cy="150" r="96" style="fill:var(--surface,#fff);stroke:var(--line-strong,rgba(0,0,0,.18))" stroke-width="2"/>
+    <path d="M132 192Q200 76 272 170" fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="round" stroke-dasharray="2 12" opacity=".55"/>
+    <circle cx="132" cy="192" r="9" fill="currentColor"/>
+    <circle cx="272" cy="170" r="12" style="fill:var(--accent,#7E4DF7)"/>
+    <circle cx="272" cy="170" r="4.5" fill="#fff"/>
+    <g transform="translate(201 128) rotate(-12)">
+      <path d="M26 0c0-3-3-5-7-5H6L-8-26h-9L-6-5h-14l-6-8h-7l4 13-4 13h7l6-8h14L-17 26h9L6 5h13c4 0 7-2 7-5Z" fill="currentColor"/>
+    </g>
+  </symbol>
+</svg>

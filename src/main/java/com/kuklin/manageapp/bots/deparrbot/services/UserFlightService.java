@@ -1,8 +1,8 @@
 package com.kuklin.manageapp.bots.deparrbot.services;
 
 
-import com.kuklin.manageapp.bots.deparrbot.entities.UserFlight;
 import com.kuklin.manageapp.bots.deparrbot.repositories.UserFlightRepository;
+import com.kuklin.manageapp.bots.deparrbot.entities.UserFlight;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
