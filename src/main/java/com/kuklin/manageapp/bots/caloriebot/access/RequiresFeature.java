@@ -21,7 +21,7 @@ import java.lang.annotation.Target;
  * </ul>
  * * <p><b>Требования к сигнатуре метода:</b></p>
  * <ol>
- * <li>Метод обязан принимать аргумент типа {@code Long} (идентификатор пользователя в Telegram).</li>
+ * <li>Метод обязан принимать параметр типа {@code Long} с именем {@link #userIdParam()} (по умолчанию {@code userId}).</li>
  * <li>Метод обязан возвращать {@link AccessResult} (для корректного управления списанием лимитов).</li>
  * </ol>
  * * @see BotFeature
@@ -48,4 +48,10 @@ public @interface RequiresFeature {
      * Технические ошибки должны вылетать исключением — тогда попытка возвращается всегда.
      */
     boolean forgiveEmptyOncePerDay() default false;
+
+    /**
+     * Имя параметра метода с идентификатором пользователя (тип {@code Long}). Ищем по имени, а не
+     * «первый Long»: иначе после рефакторинга (первым встал dishId) квота спишется с чужого пользователя.
+     */
+    String userIdParam() default "userId";
 }

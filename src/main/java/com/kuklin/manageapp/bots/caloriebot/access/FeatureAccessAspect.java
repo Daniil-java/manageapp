@@ -10,9 +10,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.stereotype.Component;
-
-import java.util.Arrays;
 
 /**
  * Аспект для автоматического контроля доступа к функциям бота.
@@ -35,7 +34,7 @@ public class FeatureAccessAspect {
 
     /**
      * Основная логика перехвата.
-     * Ожидается, что первым или одним из аргументов метода является Long userId (appUserId)
+     * userId (appUserId) берётся из параметра с именем {@link RequiresFeature#userIdParam()}
      *
      * @return результат метода; AccessResult.denied — если лимит исчерпан (метод не вызывался);
      *         для фото без еды — AccessResult с emptyResultCharge FORGIVEN / CHARGED, чтобы вызывающий код
@@ -46,13 +45,8 @@ public class FeatureAccessAspect {
         BotFeature feature = requiresFeature.value();
         BotIdentifier botIdentifier = requiresFeature.botIdentifier();
 
-        // 1. Поиск идентификатора пользователя
-        // Ожидается, что первым или одним из аргументов метода является Long userId
-        Long userId = Arrays.stream(joinPoint.getArgs())
-                .filter(arg -> arg instanceof Long)
-                .map(arg -> (Long) arg)
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("Method marked @RequiresFeature must have a Long userId argument!"));
+        // 1. Идентификатор пользователя — параметр с именем из аннотации (по умолчанию userId)
+        Long userId = findUserId(joinPoint, requiresFeature.userIdParam());
 
         // 2. Проверка доступа и списание попытки — до вызова, одной атомарной командой в БД
         // (лимит проверяется условием used_count < limit в самом UPDATE).
@@ -105,6 +99,23 @@ public class FeatureAccessAspect {
         // Иначе мусорными фото можно было бы обходить квоту бесконечно.
         log.info("Empty result charged for user {} on feature {}", userId, feature);
         return ar.withEmptyResultCharge(EmptyResultCharge.CHARGED);
+    }
+
+    /**
+     * Значение параметра с именем paramName. Имена параметров есть в рантайме благодаря флагу -parameters (pom.xml).
+     * Нет такого параметра, он не Long или null — ошибка разработчика, падаем до списания квоты.
+     */
+    static Long findUserId(ProceedingJoinPoint joinPoint, String paramName) {
+        MethodSignature signature = (MethodSignature) joinPoint.getSignature();
+        String[] names = signature.getParameterNames();
+        Object[] args = joinPoint.getArgs();
+        for (int i = 0; i < names.length; i++) {
+            if (paramName.equals(names[i]) && args[i] instanceof Long userId) {
+                return userId;
+            }
+        }
+        throw new IllegalStateException("Method " + signature.toShortString()
+                + " marked @RequiresFeature must have a non-null Long parameter '" + paramName + "'");
     }
 
     /**

@@ -93,10 +93,13 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
+        // Любой origin, но без credentials: вход только заголовками (x-tg-init-data, Authorization),
+        // браузер сам их не подставляет — чужой сайт не сможет вызвать API от имени пользователя.
+        // С allowCredentials(true) и "*" браузер слал бы куки на любой origin.
         configuration.setAllowedOriginPatterns(List.of("*"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("x-tg-init-data", "X-TG-INIT-DATA", "Content-Type", "Authorization"));
-        configuration.setAllowCredentials(true);
+        configuration.setAllowCredentials(false);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

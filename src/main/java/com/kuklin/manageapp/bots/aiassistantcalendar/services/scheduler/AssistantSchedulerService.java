@@ -24,7 +24,9 @@ public class AssistantSchedulerService {
         eventNotificationSchedulerProcessor.process();
     }
 
-    @Scheduled(cron = "0 0 */30 * * *")
+    // Раз в сутки в 00:00: чистит отметки старше 72 ч — чаще не нужно.
+    // Было "0 0 */30 * * *" — выглядит как «каждые 30 минут», а значит то же самое (час 0, шаг 30 в 0–23)
+    @Scheduled(cron = "0 0 0 * * *")
     public void eventNotificationNoteCleanTableScheduleProcess() {
         getInfo(eventNotificationNoteCleanTableScheduleProcessor.getSchedulerName());
         eventNotificationNoteCleanTableScheduleProcessor.process();

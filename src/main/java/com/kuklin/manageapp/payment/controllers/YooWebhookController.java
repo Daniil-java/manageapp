@@ -3,6 +3,7 @@ package com.kuklin.manageapp.payment.controllers;
 
 import com.kuklin.manageapp.payment.models.YooWebhook;
 import com.kuklin.manageapp.payment.services.AsyncAgentWebhookService;
+import com.kuklin.manageapp.payment.services.YooWebhookService;
 import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -29,13 +30,16 @@ import org.springframework.web.bind.annotation.RestController;
 @Hidden
 public class YooWebhookController {
     private final AsyncAgentWebhookService asyncAgentWebhookService;
+    private final YooWebhookService yooWebhookService;
 
     @PostMapping
     public ResponseEntity<Void> handle(@RequestBody YooWebhook payload, HttpServletRequest req) {
-        // 1) сразу 200 — ЮKassa этого ждёт
-        // 2) обработку делегируем в сервис (он сам разрулит идемпотентность/ошибки)
+        // 1) сохраняем событие в БД до ответа: рестарт после 200 его не потеряет.
+        //    Если БД недоступна — исключение даст 5xx, и ЮKassa пришлёт вебхук повторно.
+        // 2) сразу 200 — ЮKassa этого ждёт; обработку делегируем в асинхронный сервис
         log.info("YooKassa webhook request!");
-        asyncAgentWebhookService.handleAsync(payload, req.getRemoteAddr());
+        Long eventId = yooWebhookService.saveIncoming(payload, req.getRemoteAddr());
+        asyncAgentWebhookService.handleAsync(eventId);
         return ResponseEntity.ok().build();
     }
 }

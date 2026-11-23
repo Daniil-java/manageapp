@@ -2,6 +2,7 @@ package com.kuklin.manageapp.payment.services.scheduler;
 
 import com.kuklin.manageapp.payment.services.scheduler.processors.StarRefundScheduleProcessor;
 import com.kuklin.manageapp.payment.services.scheduler.processors.SubscriptionScheduleProcessor;
+import com.kuklin.manageapp.payment.services.scheduler.processors.YooWebhookRetryScheduleProcessor;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Component;
 public class SubscriptionSchedulerService {
     private final SubscriptionScheduleProcessor subscriptionScheduleProcessor;
     private final StarRefundScheduleProcessor starRefundScheduleProcessor;
+    private final YooWebhookRetryScheduleProcessor yooWebhookRetryScheduleProcessor;
 
     @Scheduled(cron = "0 0/1 * * * *")
     private void subscriptionScheduleProcessor() {
@@ -24,6 +26,11 @@ public class SubscriptionSchedulerService {
     private void starRefundScheduleProcessor() {
         getInfo(starRefundScheduleProcessor.getSchedulerName());
         starRefundScheduleProcessor.process();
+    }
+
+    @Scheduled(cron = "0 */5 * * * *")
+    private void yooWebhookRetryScheduleProcessor() {
+        yooWebhookRetryScheduleProcessor.process();
     }
 
     private void getInfo(String name) {

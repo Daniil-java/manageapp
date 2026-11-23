@@ -12,6 +12,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.util.List;
+
 /**
  * Сервис обработки вебхуков YooKassa.
  *
@@ -33,38 +37,68 @@ public class YooWebhookService {
     private final PricingPlanService pricingPlanService;
 
     /**
-     * Обработка входящего вебхука от YooKassa.
-     *
-     * В случае ошибок помечаем webhook_event как ошибочный и логируем.
+     * Сохраняет входящий вебхук в webhook_event до ответа ЮKassa.
+     * Если приложение перезапустится до обработки, событие останется в таблице
+     * и его подберёт планировщик через {@link #findStuckEventIds}.
      *
      * @param hook       тело вебхука от YooKassa
      * @param remoteAddr IP-адрес источника запроса (для аудита)
+     * @return id сохранённого события
      */
     @Transactional
-    public void handle(YooWebhook hook, String remoteAddr) {
-        log.info("YooWebhookService handle update!");
-        // 0) Готовим данные и логируем событие (для идемпотентности и аудита)
+    public Long saveIncoming(YooWebhook hook, String remoteAddr) {
         String objectId = hook.getObject() != null ? hook.getObject().getId() : null;
-
-        WebhookEvent.WebhookEventType eventType = mapYooEvent(hook.getEvent());
-
-        log.info("WebhookEvent saving...");
-        //Сохраняем событие в таблицу webhook_event
         WebhookEvent saved = webhookEventRepository.save(
                 WebhookEvent.incoming(
-                        WebhookEvent.WebhookProvider.YOOKASSA,   // было "YOOKASSA"
-                        eventType,                                // было hook.getEvent()
+                        WebhookEvent.WebhookProvider.YOOKASSA,
+                        mapYooEvent(hook.getEvent()),
                         objectId,
                         remoteAddr,
                         hook
                 )
         );
-        log.info("WebhookEvent saved!");
+        log.info("WebhookEvent saved! id={}", saved.getId());
+        return saved.getId();
+    }
+
+    /**
+     * События, которые сохранили, но так и не обработали (нет ни processed, ни error):
+     * приложение перезапустилось между ответом 200 и асинхронной обработкой.
+     * Старше minAge — чтобы не схватить то, что обрабатывается прямо сейчас;
+     * моложе maxAge — чтобы не крутить вечно событие, которое падает с откатом транзакции.
+     */
+    public List<Long> findStuckEventIds(Duration minAge, Duration maxAge) {
+        Instant now = Instant.now();
+        return webhookEventRepository.findUnhandledIds(
+                WebhookEvent.WebhookProvider.YOOKASSA, now.minus(maxAge), now.minus(minAge));
+    }
+
+    /**
+     * Обработка сохранённого вебхука от YooKassa.
+     *
+     * В случае ошибок помечаем webhook_event как ошибочный и логируем.
+     *
+     * @param eventId id записи webhook_event из {@link #saveIncoming}
+     */
+    @Transactional
+    public void handle(Long eventId) {
+        log.info("YooWebhookService handle event {}", eventId);
+        WebhookEvent saved = webhookEventRepository.findById(eventId).orElse(null);
+        if (saved == null) {
+            log.warn("WebhookEvent {} not found", eventId);
+            return;
+        }
+        if (saved.isProcessed()) {
+            log.info("WebhookEvent {} already processed", eventId);
+            return;
+        }
+        String objectId = saved.getObjectId();
+        WebhookEvent.WebhookEventType eventType = saved.getEvent();
 
         try {
 
             if (objectId == null) {
-                log.warn("YooKassa webhook without object.id: {}", hook);
+                log.warn("YooKassa webhook without object.id, event {}", eventId);
                 saved.markError("NO_OBJECT_ID");
                 webhookEventRepository.save(saved);
                 return;
@@ -72,7 +106,7 @@ public class YooWebhookService {
 
             YookassaPaymentResponse response = getPaymentFromYooKassaOrNull(objectId);
             if (response == null) {
-                log.warn("YooKassa payment not found by API request: {}", hook);
+                log.warn("YooKassa payment not found by API request: {}", objectId);
                 saved.markError("NO_PAYMENT_IN_PROVIDER");
                 webhookEventRepository.save(saved);
                 return;

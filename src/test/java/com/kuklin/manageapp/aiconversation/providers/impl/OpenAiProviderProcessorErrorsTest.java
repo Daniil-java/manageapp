@@ -50,7 +50,8 @@ class OpenAiProviderProcessorErrorsTest {
         client = mock(OpenAiFeignClient.class);
         eventPublisher = mock(ApplicationEventPublisher.class);
         metrics = mock(MetricsAiInteractionRecordService.class);
-        processor = new OpenAiProviderProcessor(client, mock(MetricsAiLogService.class), metrics, eventPublisher);
+        processor = new OpenAiProviderProcessor(client, mock(MetricsAiLogService.class), metrics, eventPublisher,
+                new OpenAiCircuitBreaker());
     }
 
     @Test

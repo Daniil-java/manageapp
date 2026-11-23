@@ -53,13 +53,19 @@ metrics:
     repo-url: https://github.com/Daniil-java/manageapp
     commit: ${RAILWAY_GIT_COMMIT_SHA:}
 
-feign:
-  client:
-    config:
-      default:
-        connectTimeout: 15000
-        readTimeout: 120000
-        loggerLevel: basic
+# Swagger UI и /v3/api-docs — карта всего API. На проде выключены; локально — SWAGGER_ENABLED=true
+springdoc:
+  api-docs:
+    enabled: ${SWAGGER_ENABLED:false}
+  swagger-ui:
+    enabled: ${SWAGGER_ENABLED:false}
+
+# Таймауты всех Feign-клиентов (OpenAI, Claude, ЮKassa, ...). Префикс feign.client.* в OpenFeign 4 не читается —
+# раньше здесь стояло 120 с, а фактически работали дефолты Feign (10 с / 60 с): их и фиксируем явно.
+# Если OpenAI лежит, потоки не ждут таймаут на каждый запрос — см. OpenAiCircuitBreaker.
+spring.cloud.openfeign.client.config.default:
+  connectTimeout: 10000
+  readTimeout: 60000
 
 integrations:
   connect-timeout: 20000

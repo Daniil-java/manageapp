@@ -6,18 +6,32 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 
+import java.time.Duration;
+
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class GoogleOAuthHttpClient {
+    // Без таймаутов поток ждёт вечно, если Google завис
+    private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(5);
+    private static final Duration READ_TIMEOUT = Duration.ofSeconds(15);
+
     private final GoogleOAuthProperties props;
-    private final RestClient rest = RestClient.create();
+    private final RestClient rest = buildRestClient();
+
+    private static RestClient buildRestClient() {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(CONNECT_TIMEOUT);
+        factory.setReadTimeout(READ_TIMEOUT);
+        return RestClient.builder().requestFactory(factory).build();
+    }
 
     public TokenResponse exchangeCode(String code, String codeVerifier) {
         var form = new LinkedMultiValueMap<String, String>();

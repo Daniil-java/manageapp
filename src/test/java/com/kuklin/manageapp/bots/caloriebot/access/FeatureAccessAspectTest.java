@@ -6,6 +6,7 @@ import com.kuklin.manageapp.bots.caloriebot.access.model.EmptyResultCharge;
 import com.kuklin.manageapp.bots.caloriebot.access.model.QuotaCharge;
 import com.kuklin.manageapp.common.telegram.BotIdentifier;
 import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.reflect.MethodSignature;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -35,8 +36,15 @@ class FeatureAccessAspectTest {
         accessService = mock(CalorieAccessService.class);
         usageService = mock(UserFeatureUsageService.class);
         joinPoint = mock(ProceedingJoinPoint.class);
-        when(joinPoint.getArgs()).thenReturn(new Object[]{USER_ID, "photo"});
+        mockCall(new String[]{"userId", "photoBase64"}, new Object[]{USER_ID, "photo"});
         aspect = new FeatureAccessAspect(accessService, usageService);
+    }
+
+    private void mockCall(String[] parameterNames, Object[] args) {
+        MethodSignature signature = mock(MethodSignature.class);
+        when(signature.getParameterNames()).thenReturn(parameterNames);
+        when(joinPoint.getSignature()).thenReturn(signature);
+        when(joinPoint.getArgs()).thenReturn(args);
     }
 
     // --- Методы-образцы: из них берём настоящие экземпляры аннотации ---
@@ -51,6 +59,26 @@ class FeatureAccessAspectTest {
 
     private static RequiresFeature annotation(String method) throws NoSuchMethodException {
         return FeatureAccessAspectTest.class.getDeclaredMethod(method).getAnnotation(RequiresFeature.class);
+    }
+
+    @Test
+    void userIdIsTakenByNameNotByPosition() throws Throwable {
+        // первым стоит dishId — квота должна списаться с userId, а не с dishId
+        mockCall(new String[]{"dishId", "userId"}, new Object[]{7L, USER_ID});
+        when(accessService.tryConsume(USER_ID, BOT, BotFeature.DISH_AI_VISION)).thenReturn(QuotaCharge.DENIED);
+
+        aspect.checkAccess(joinPoint, annotation("photoSample"));
+
+        verify(accessService).tryConsume(USER_ID, BOT, BotFeature.DISH_AI_VISION);
+    }
+
+    @Test
+    void missingUserIdParamFailsBeforeCharging() {
+        mockCall(new String[]{"dishId"}, new Object[]{7L});
+
+        assertThatThrownBy(() -> aspect.checkAccess(joinPoint, annotation("photoSample")))
+                .isInstanceOf(IllegalStateException.class);
+        verify(accessService, never()).tryConsume(any(), any(), any());
     }
 
     @Test

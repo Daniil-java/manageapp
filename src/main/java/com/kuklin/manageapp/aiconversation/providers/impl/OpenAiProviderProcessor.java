@@ -46,6 +46,7 @@ public class OpenAiProviderProcessor implements ProviderProcessor, AiTextClient 
     private final MetricsAiLogService metricsAiLogService;
     private final MetricsAiInteractionRecordService metricsAiInteractionRecordService;
     private final ApplicationEventPublisher eventPublisher;
+    private final OpenAiCircuitBreaker circuitBreaker;
 
     @Override
     public AiResponse fetchResponsePhotoOrNull(
@@ -243,13 +244,17 @@ public class OpenAiProviderProcessor implements ProviderProcessor, AiTextClient 
                 content
         );
 
+        // Предохранитель открыт — падаем сразу, без вызова и без записи в метрики
+        circuitBreaker.checkAllowed();
         increaseMetricsLog();
         TranscriptionResponse response;
         try {
             response = prompt == null || prompt.isBlank()
                     ? openAiFeignClient.transcribeAudio("Bearer " + aiKey, multipartFile, TRANSCRIPTION_MODEL)
                     : openAiFeignClient.transcribeAudioWithPrompt("Bearer " + aiKey, multipartFile, TRANSCRIPTION_MODEL, prompt);
+            circuitBreaker.recordSuccess();
         } catch (FeignException e) {
+            circuitBreaker.recordFailure(e.status());
             throw saveFailedCall(buildUnavailable("transcription", e),
                     botIdentifier, TRANSCRIPTION_MODEL, VOICE_REQUEST, AiMessageType.VOICE);
         }
@@ -329,6 +334,8 @@ public class OpenAiProviderProcessor implements ProviderProcessor, AiTextClient 
             String requestText,
             AiMessageType messageType
     ) {
+        // Предохранитель открыт — падаем сразу, без вызова и без записи в метрики
+        circuitBreaker.checkAllowed();
         try {
             return callChatOrThrow(aiKey, request);
         } catch (AiUnavailableException e) {
@@ -340,7 +347,9 @@ public class OpenAiProviderProcessor implements ProviderProcessor, AiTextClient 
         OpenAiChatCompletionResponse response;
         try {
             response = openAiFeignClient.generate("Bearer " + aiKey, request);
+            circuitBreaker.recordSuccess();
         } catch (FeignException e) {
+            circuitBreaker.recordFailure(e.status());
             throw buildUnavailable("chat " + request.getModel(), e);
         }
         if (response == null || response.getChoices() == null || response.getChoices().isEmpty()

@@ -1,6 +1,5 @@
 package com.kuklin.manageapp.payment.services;
 
-import com.kuklin.manageapp.payment.models.YooWebhook;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -18,9 +17,9 @@ public class AsyncAgentWebhookService {
 
     private final YooWebhookService yooWebhookService;
 
+    // Событие уже сохранено в webhook_event — здесь только обработка в отдельном потоке
     @Async
-    public void handleAsync(YooWebhook hook, String remoteAddr) {
-        // просто запустить обработку в отдельном потоке
-        yooWebhookService.handle(hook, remoteAddr);
+    public void handleAsync(Long webhookEventId) {
+        yooWebhookService.handle(webhookEventId);
     }
 }
