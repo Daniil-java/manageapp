@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.common.telegram;
 
+import com.kuklin.manageapp.common.logging.LogContext;
 import com.kuklin.manageapp.common.services.AsyncService;
 import com.kuklin.manageapp.common.telegram.payment.CreateInvoiceLinkWithTelegramSubscription;
 import com.kuklin.manageapp.common.telegram.payment.RefundedPaymentCapture;
@@ -403,7 +404,7 @@ public abstract class TelegramBot extends TelegramLongPollingBot implements Tele
             notifyAsyncDone(update);
             if (isPaymentUpdate(update)) {
                 log.warn("Bot {} update executor is full, handling payment update synchronously", getBotIdentifier());
-                runnable.accept(update);
+                LogContext.runWithUpdate(getBotIdentifier(), update, () -> runnable.accept(update));
                 return;
             }
             log.warn("Bot {} update executor is full, update rejected for chat {}", getBotIdentifier(), getChatId(update));

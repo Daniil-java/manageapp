@@ -39,6 +39,9 @@ public class AppUser {
     @Column(name = "created_at")
     private Instant created;
 
+    // EAGER намеренно: роли нужны при каждой загрузке пользователя (TelegramAuthFilter, JWT, AuthResponse),
+    // и читают их вне транзакции (OSIV выключен) — LAZY дал бы LazyInitializationException.
+    // Списками AppUser не грузится, так что N+1 нет. Будут списки — LAZY + @EntityGraph на нужных запросах
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "app_user_roles",

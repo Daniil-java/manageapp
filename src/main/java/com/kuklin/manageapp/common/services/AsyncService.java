@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.common.services;
 
+import com.kuklin.manageapp.common.logging.LogContext;
 import com.kuklin.manageapp.common.telegram.config.BotUpdateExecutorConfig;
 import com.kuklin.manageapp.common.telegram.TelegramBot;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +20,8 @@ public class AsyncService {
     @Async(BotUpdateExecutorConfig.BOT_UPDATE_EXECUTOR)
     public void executeAsyncCustom(TelegramBot telegramBot, Update update, Consumer<Update> runnable) {
         try {
-            runnable.accept(update);
+            // Все строки лога этой обработки — с «[бот tg=… upd=…]»
+            LogContext.runWithUpdate(telegramBot.getBotIdentifier(), update, () -> runnable.accept(update));
         } finally {
             telegramBot.notifyAsyncDone(update);
         }

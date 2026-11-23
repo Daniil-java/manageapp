@@ -9,6 +9,14 @@ spring:
     password: password
     username: postgres
     url: jdbc:postgresql://localhost:5453/manageapp
+    # Пул соединений с БД. Дефолт Hikari — 10 соединений и 30 с ожидания, а к БД ходят 16 потоков апдейтов,
+    # 4 шедулера, @Async и HTTP. Ждать соединение 30 с — пользователь видит «бот завис» без ошибки в логе.
+    hikari:
+      maximum-pool-size: ${DB_POOL_SIZE:20}
+      # Свободного соединения нет за 10 с — ошибка сразу, а не тихое ожидание
+      connection-timeout: 10000
+      # Соединение держат дольше 30 с — в лог стектрейс того, кто держит (долгая транзакция, забытый вызов внутри)
+      leak-detection-threshold: 30000
   jpa:
     database: postgresql
     # Open Session in View выключен: иначе HTTP-запрос держит соединение с БД с первого обращения
@@ -52,6 +60,25 @@ metrics:
   errors:
     repo-url: https://github.com/Daniil-java/manageapp
     commit: ${RAILWAY_GIT_COMMIT_SHA:}
+
+# После уровня лога — контекст запроса из MDC (LogContext): «INFO [CALORIE_BOT tg=123 upd=456] …».
+# Вне обработки апдейта (шедулеры, старт) — пусто
+logging:
+  pattern:
+    level: "%5p %X{ctx:-}"
+
+# Actuator. /actuator/health — healthcheck Railway при деплое (Settings → Deploy → Healthcheck Path):
+# новая версия получает трафик, только когда ответила UP (в т.ч. БД доступна). Наружу — только статус,
+# детали и /actuator/metrics (пул БД: hikaricp.connections.active / .pending) — для ADMIN
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when-authorized
+      roles: ADMIN
 
 # Swagger UI и /v3/api-docs — карта всего API. На проде выключены; локально — SWAGGER_ENABLED=true
 springdoc:

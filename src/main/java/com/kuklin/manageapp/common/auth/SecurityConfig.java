@@ -60,6 +60,10 @@ public class SecurityConfig {
                                 "/assets/**", "/images/**").permitAll()
                         // API бота курения — личный инструмент без логинов, авторизации нет намеренно
                         .requestMatchers("/nicotine/**").permitAll()
+                        // Healthcheck Railway и внешнего мониторинга — только UP/DOWN, без деталей.
+                        // Остальной Actuator (метрики пула БД, потоков) — карта внутренностей, только ADMIN
+                        .requestMatchers(DomainUrlFilter.HEALTH_PATH).permitAll()
+                        .requestMatchers("/actuator/**").hasRole("ADMIN")
                         // Тестовые html-страницы (static/auth/* и Thymeleaf-шаблоны из WebController) —
                         // временно оставлены в коде, но доступны только ROLE_ADMIN.
                         .requestMatchers(

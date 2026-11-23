@@ -141,6 +141,28 @@ class DomainUrlFilterTest {
         assertThat(response.getStatus()).isEqualTo(404);
     }
 
+    // Healthcheck Railway приходит с чужим Host — без исключения был бы 404 и деплой не переключился бы
+    @Test
+    void healthcheckPassesOnUnknownHost() throws Exception {
+        AtomicBoolean passed = new AtomicBoolean();
+
+        filter.doFilter(request("GET", "healthcheck.railway.app", "/actuator/health"),
+                new MockHttpServletResponse(), chain(passed));
+
+        assertThat(passed).isTrue();
+    }
+
+    @Test
+    void otherActuatorPathsOnUnknownHostAreNotFound() throws Exception {
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        AtomicBoolean passed = new AtomicBoolean();
+
+        filter.doFilter(request("GET", "healthcheck.railway.app", "/actuator/metrics"), response, chain(passed));
+
+        assertThat(passed).isFalse();
+        assertThat(response.getStatus()).isEqualTo(404);
+    }
+
     private static MockHttpServletRequest request(String method, String host, String path) {
         MockHttpServletRequest request = new MockHttpServletRequest(method, path);
         request.setServerName(host);

@@ -1,6 +1,7 @@
 package com.kuklin.manageapp.payment.controllers;
 
 
+import com.kuklin.manageapp.common.auth.security.ClientIpResolver;
 import com.kuklin.manageapp.payment.models.YooWebhook;
 import com.kuklin.manageapp.payment.services.AsyncAgentWebhookService;
 import com.kuklin.manageapp.payment.services.YooWebhookService;
@@ -38,7 +39,8 @@ public class YooWebhookController {
         //    Если БД недоступна — исключение даст 5xx, и ЮKassa пришлёт вебхук повторно.
         // 2) сразу 200 — ЮKassa этого ждёт; обработку делегируем в асинхронный сервис
         log.info("YooKassa webhook request!");
-        Long eventId = yooWebhookService.saveIncoming(payload, req.getRemoteAddr());
+        // За прокси Railway getRemoteAddr() — адрес прокси (100.x), настоящий IP ЮKassa — в заголовках
+        Long eventId = yooWebhookService.saveIncoming(payload, ClientIpResolver.resolve(req));
         asyncAgentWebhookService.handleAsync(eventId);
         return ResponseEntity.ok().build();
     }

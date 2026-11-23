@@ -25,6 +25,8 @@ public class DomainUrlFilter extends OncePerRequestFilter {
     // Лендинг живёт в корне zefir.fit (WebController пересылает "/" на /calorie). Прямой /calorie — дубль адреса
     private static final List<String> LANDING_PATHS = List.of("/calorie", "/calorie/");
 
+    public static final String HEALTH_PATH = "/actuator/health";
+
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
 
     private final Map<String, DomainRules> rulesByDomain = Map.of(
@@ -61,6 +63,13 @@ public class DomainUrlFilter extends OncePerRequestFilter {
 
         String host = normalizeHost(request.getServerName());
         String path = request.getRequestURI();
+
+        // Healthcheck Railway приходит с Host healthcheck.railway.app — для него правил нет,
+        // без исключения он получал бы 404 и деплой не переключался бы на новую версию
+        if (HEALTH_PATH.equals(path)) {
+            filterChain.doFilter(request, response);
+            return;
+        }
 
         // Один адрес у лендинга: zefir.fit/calorie → zefir.fit. 301 — поисковики склеят адреса
         if ("GET".equals(request.getMethod()) && isCalorieLandingDuplicate(host, path)) {

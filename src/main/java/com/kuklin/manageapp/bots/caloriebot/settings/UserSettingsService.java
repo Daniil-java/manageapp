@@ -1,5 +1,7 @@
 package com.kuklin.manageapp.bots.caloriebot.settings;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import com.kuklin.manageapp.common.web.error.ErrorParams;
 import com.kuklin.manageapp.common.web.error.ErrorResponseException;
 import com.kuklin.manageapp.bots.caloriebot.web.error.ErrorStatus;
@@ -17,9 +19,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.*;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Сервис для пользовательских настроек
@@ -32,11 +32,20 @@ public class UserSettingsService {
     static final int MEAL_REMINDER_INTERVAL_MIN = 60;
     static final int MEAL_REMINDER_INTERVAL_MAX = 24 * 60;
 
+    // Кеш языка: не больше стольких пользователей, лишние вытесняются (редко пишущие — первыми)
+    static final int LANGUAGE_CACHE_MAX_SIZE = 10_000;
+    // Кто не писал сутки — выпадает: при следующем сообщении язык просто перечитается из БД
+    static final Duration LANGUAGE_CACHE_EXPIRE_AFTER_ACCESS = Duration.ofDays(1);
+
     private final UserSettingsRepository userSettingsRepository;
     private final PlatformTransactionManager transactionManager;
     // Язык читается на каждый текст (CalorieTexts.get) — 3–10 раз за апдейт. Пишется только в setLanguageCode,
-    // там и сбрасываем. Optional.empty() — язык не выбран. Запись — пара десятков байт на пользователя.
-    private final Map<Long, Optional<String>> languageCache = new ConcurrentHashMap<>();
+    // там и сбрасываем. Optional.empty() — язык не выбран. Раньше был ConcurrentHashMap без лимита:
+    // запись на каждого, кто хоть раз писал боту, до перезапуска
+    private final Cache<Long, Optional<String>> languageCache = Caffeine.newBuilder()
+            .maximumSize(LANGUAGE_CACHE_MAX_SIZE)
+            .expireAfterAccess(LANGUAGE_CACHE_EXPIRE_AFTER_ACCESS)
+            .build();
 
     // Для альтернативного варианта getOrCreate через самовызов — см. комментарий под методом.
     // Ссылка на собственный прокси — для вызова @Transactional-метода изнутри класса
@@ -81,7 +90,7 @@ public class UserSettingsService {
 
     /** Код языка из настроек или null, если пользователь язык не выбирал. Настройки не создаёт. */
     public String findLanguageCode(Long userId) {
-        return languageCache.computeIfAbsent(userId, id -> userSettingsRepository.findById(id)
+        return languageCache.get(userId, id -> userSettingsRepository.findById(id)
                         .map(UserSettings::getLanguage))
                 .orElse(null);
     }
@@ -98,12 +107,12 @@ public class UserSettingsService {
 
     // Сбрасываем и сейчас, и после транзакции: чтение до коммита положило бы в кэш ещё старый язык
     private void evictLanguageAfterCommit(Long userId) {
-        languageCache.remove(userId);
+        languageCache.invalidate(userId);
         if (!TransactionSynchronizationManager.isSynchronizationActive()) return;
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override
             public void afterCompletion(int status) {
-                languageCache.remove(userId);
+                languageCache.invalidate(userId);
             }
         });
     }

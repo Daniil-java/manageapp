@@ -3,6 +3,7 @@ package com.kuklin.manageapp.common.telegram.config;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.task.TaskDecorator;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 /**
@@ -21,8 +22,11 @@ public class BotUpdateExecutorConfig {
     @Bean(name = BOT_UPDATE_EXECUTOR)
     public ThreadPoolTaskExecutor botUpdateExecutor(
             @Value("${bots.update-executor.threads:16}") int threads,
-            @Value("${bots.update-executor.queue:200}") int queueCapacity) {
+            @Value("${bots.update-executor.queue:200}") int queueCapacity,
+            TaskDecorator taskDecorator) {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        // Контекст логов (MDC) потока, поставившего задачу, — в поток пула (MdcTaskDecorator)
+        executor.setTaskDecorator(taskDecorator);
         executor.setCorePoolSize(threads);
         executor.setMaxPoolSize(threads);
         executor.setQueueCapacity(queueCapacity);

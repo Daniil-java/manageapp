@@ -50,6 +50,18 @@
 			<artifactId>spring-boot-starter-aop</artifactId>
 		</dependency>
 
+		<!-- /actuator/health для healthcheck Railway, метрики пула БД и потоков (закрыты ролью ADMIN) -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+
+		<!-- Кеши в памяти с лимитом размера и временем жизни (кеш языка пользователя) -->
+		<dependency>
+			<groupId>com.github.ben-manes.caffeine</groupId>
+			<artifactId>caffeine</artifactId>
+		</dependency>
+
 		<!-- Тесты native SQL на настоящем Postgres в Docker (PostgresRepositoryTest); без Docker — пропускаются -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
