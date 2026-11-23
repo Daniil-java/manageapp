@@ -232,14 +232,6 @@ public class UserSettingsService {
         return !isSameLocalDay(nowLocal, lastLocal);
     }
 
-
-    @Transactional
-    public void markDailySummarySent(UserSettings settings, Instant sentAtUtc) {
-        settings.setDailyLastReminder(sentAtUtc);
-        settings.setUpdatedAt(Instant.now());
-        userSettingsRepository.save(settings);
-    }
-
     // ---------- MEAL REMINDER ----------
 
     @Transactional
@@ -296,13 +288,6 @@ public class UserSettingsService {
         long sinceLastReminder = Duration.between(lastReminder, nowUtc).toMinutes();
         // не шлём чаще, чем раз в interval минут
         return sinceLastReminder >= interval;
-    }
-
-    @Transactional
-    public void markMealReminderSent(UserSettings settings, Instant sentAtUtc) {
-        settings.setMealLastReminderUtc(sentAtUtc);
-        settings.setUpdatedAt(Instant.now());
-        userSettingsRepository.save(settings);
     }
 
     // ---------- COMMON ----------

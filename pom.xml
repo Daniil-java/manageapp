@@ -44,6 +44,12 @@
 			<scope>test</scope>
 		</dependency>
 
+		<!-- AspectJ для @Aspect (квоты FeatureAccessAspect, BotSchedulerAspect) — явно, а не транзитивно через data-jpa -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-aop</artifactId>
+		</dependency>
+
 		<!-- Тесты native SQL на настоящем Postgres в Docker (PostgresRepositoryTest); без Docker — пропускаются -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

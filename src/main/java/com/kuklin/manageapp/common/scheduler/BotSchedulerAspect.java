@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 /**
@@ -14,6 +15,8 @@ import org.springframework.stereotype.Component;
  */
 @Aspect
 @Component
+// Снаружи @Transactional: выключенный бот пропускаем до открытия транзакции и взятия соединения из пула
+@Order(0)
 @RequiredArgsConstructor
 @Slf4j
 public class BotSchedulerAspect {

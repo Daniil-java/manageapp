@@ -11,6 +11,7 @@ import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 /**
@@ -25,9 +26,14 @@ import org.springframework.stereotype.Component;
  */
 @Aspect
 @Component
+// Снаружи @Transactional (у его перехватчика порядок LOWEST_PRECEDENCE): квота списывается до открытия
+// транзакции метода, а ошибка коммита этой транзакции долетает до аспекта — и попытка возвращается.
+// Без @Order у обоих одинаковый приоритет, и кто снаружи — не определено.
+@Order(FeatureAccessAspect.ORDER)
 @RequiredArgsConstructor
 @Slf4j
 public class FeatureAccessAspect {
+    public static final int ORDER = 0;
 
     private final CalorieAccessService accessService;
     private final UserFeatureUsageService userFeatureUsageService;

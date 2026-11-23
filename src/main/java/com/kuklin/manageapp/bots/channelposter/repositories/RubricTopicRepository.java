@@ -19,8 +19,10 @@ public interface RubricTopicRepository extends JpaRepository<RubricTopic, Long> 
 
     long countByCategoryIdAndStatus(Long categoryId, RubricTopic.Status status);
 
-    // темы, использованные давно, снова в ходу — когда новые кончились
-    @Modifying
+    // темы, использованные давно, снова в ходу — когда новые кончились.
+    // findNext сразу перечитывает темы в той же транзакции: clear — чтобы не вернуть из кеша сессии
+    // копии со старым статусом USED, flush — чтобы clear не потерял несохранённые изменения
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("""
             UPDATE RubricTopic t SET t.status = :fresh
             WHERE t.categoryId = :categoryId AND t.status = :used AND t.usedAt < :before
