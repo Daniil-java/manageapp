@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.bots.channelposter.services.source;
 
+import com.kuklin.manageapp.common.TestJson;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
@@ -10,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class SourceItemFilterServiceTest {
 
     private final SourceItemFilterService service =
-            new SourceItemFilterService(null, null, null, null, null, null);
+            new SourceItemFilterService(null, null, null, null, null, null, TestJson.MAPPER);
 
     @Test
     void parsesItemsObject() throws Exception {

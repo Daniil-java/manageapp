@@ -1,5 +1,7 @@
 package com.kuklin.manageapp.bots.caloriebot.report;
 
+import com.kuklin.manageapp.common.TestJson;
+
 import com.kuklin.manageapp.bots.caloriebot.settings.UserSettingsService;
 import com.kuklin.manageapp.bots.caloriebot.weight.WeightEntryService;
 import com.kuklin.manageapp.bots.caloriebot.profile.UserNutritionProfileService;
@@ -250,7 +252,7 @@ class ReportServicePdfTest {
 
         ReportSourceLoader loader = new ReportSourceLoader(dishService, profileService, entryService, settingsService, weightService, waterService);
         return new ReportService(dishService, profileService, settingsService, weightService, loader,
-                ai, components, new AiInputLimitsProperties(), new CalorieTexts(new I18nProperties(), settingsService));
+                ai, components, new AiInputLimitsProperties(), new CalorieTexts(new I18nProperties(), settingsService), TestJson.MAPPER);
     }
 
     /** Месяц с прошлым периодом: будни около нормы, выходные с перебором, три пропуска. */

@@ -36,7 +36,8 @@ public class PubMedSourceFetcher implements SourceFetcher {
     private static final int ABSTRACT_SUMMARY_CHARS = 600;
 
     private final SourceHttpClient http;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    // Бин Spring: общие настройки Jackson (java.time, неизвестные поля не роняют разбор)
+    private final ObjectMapper objectMapper;
 
     @Override
     public List<FetchedItem> fetch(ContentSource source) throws Exception {

@@ -71,7 +71,8 @@ public class SourceItemFilterService {
     private final ContentSourceService sourceService;
     private final PostQueueService postQueueService;
     private final ChannelPosterProperties properties;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    // Бин Spring: общие настройки Jackson (java.time, неизвестные поля не роняют разбор)
+    private final ObjectMapper objectMapper;
 
     public record Verdict(int score, String reason) {
     }

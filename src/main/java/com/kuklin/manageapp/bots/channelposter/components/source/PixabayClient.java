@@ -31,7 +31,8 @@ public class PixabayClient {
 
     private final SourceHttpClient http;
     private final ChannelPosterBotKeyComponent keys;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    // Бин Spring: общие настройки Jackson (java.time, неизвестные поля не роняют разбор)
+    private final ObjectMapper objectMapper;
 
     /**
      * @param imageUrl картинка до 1280 px — для Telegram и распознавания

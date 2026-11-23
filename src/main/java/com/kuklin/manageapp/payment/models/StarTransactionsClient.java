@@ -21,9 +21,13 @@ public class StarTransactionsClient {
 
     private final String botToken;
     private final HttpClient http = HttpClient.newHttpClient();
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
 
-    public StarTransactionsClient(String botToken) { this.botToken = botToken; }
+    // objectMapper — бин Spring из StarRefundScheduleProcessor, а не свой на каждый запуск
+    public StarTransactionsClient(String botToken, ObjectMapper objectMapper) {
+        this.botToken = botToken;
+        this.objectMapper = objectMapper;
+    }
 
     /**
      * charge_id платежей, по которым звёзды ушли обратно. У возврата id транзакции совпадает с id исходной,

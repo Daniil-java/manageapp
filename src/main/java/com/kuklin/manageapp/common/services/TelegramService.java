@@ -26,10 +26,11 @@ public class TelegramService {
 
     private final TelegramFeignClient telegramFeignClient;
     private final OpenAiProviderProcessor openAiProviderProcessor;
+    private final ObjectMapper objectMapper;
 
     public TelegramBotFile getFileOrNull(TelegramBotClient telegramBot, String fileId) {
         try {
-            return new ObjectMapper().readValue(
+            return objectMapper.readValue(
                     telegramFeignClient.getFileRaw(
                             telegramBot.getToken(), fileId),
                     TelegramBotFile.class);

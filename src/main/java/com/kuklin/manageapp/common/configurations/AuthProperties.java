@@ -2,6 +2,10 @@ package com.kuklin.manageapp.common.configurations;
 
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.validation.annotation.Validated;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.Valid;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
@@ -14,9 +18,13 @@ import java.time.Duration;
 @Data
 @Component
 @ConfigurationProperties(prefix = "auth")
+// Проверка при старте: значение вне диапазона или пропало из application.yaml — приложение не запустится
+@Validated
 public class AuthProperties {
 
+    @Valid @NotNull
     private EmailPassword emailPassword = new EmailPassword();
+    @Valid @NotNull
     private RateLimit rateLimit = new RateLimit();
 
     @Data
@@ -32,19 +40,25 @@ public class AuthProperties {
     @Data
     public static class RateLimit {
         /** Регистраций с одного IP. */
+        @Valid @NotNull
         private Limit register = new Limit();
         /** Попыток входа по паролю с одного IP (и удачных, и нет). */
+        @Valid @NotNull
         private Limit login = new Limit();
         /** Входов через Telegram с одного IP. */
+        @Valid @NotNull
         private Limit telegram = new Limit();
         /** Неверных паролей для одного email — защита от перебора с разных IP. */
+        @Valid @NotNull
         private Limit failedPasswordPerEmail = new Limit();
     }
 
     /** Не больше max за последние window. */
     @Data
     public static class Limit {
+        @Positive
         private int max;
+        @NotNull
         private Duration window;
     }
 }

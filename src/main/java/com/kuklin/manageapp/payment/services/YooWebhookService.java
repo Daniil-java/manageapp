@@ -1,5 +1,7 @@
 package com.kuklin.manageapp.payment.services;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kuklin.manageapp.payment.entities.Payment;
 import com.kuklin.manageapp.payment.entities.PricingPlan;
 import com.kuklin.manageapp.payment.entities.WebhookEvent;
@@ -35,6 +37,7 @@ public class YooWebhookService {
     private final WebhookEventRepository webhookEventRepository;
     private final PaymentService paymentService;
     private final PricingPlanService pricingPlanService;
+    private final ObjectMapper objectMapper;
 
     /**
      * Сохраняет входящий вебхук в webhook_event до ответа ЮKassa.
@@ -54,11 +57,20 @@ public class YooWebhookService {
                         mapYooEvent(hook.getEvent()),
                         objectId,
                         remoteAddr,
-                        hook
+                        buildPayloadJson(hook)
                 )
         );
         log.info("WebhookEvent saved! id={}", saved.getId());
         return saved.getId();
+    }
+
+    // Сырое тело вебхука для аудита. Не сериализовалось — сохраняем событие всё равно, с текстом ошибки
+    private String buildPayloadJson(YooWebhook hook) {
+        try {
+            return objectMapper.writeValueAsString(hook);
+        } catch (JsonProcessingException e) {
+            return objectMapper.createObjectNode().put("marshal_error", e.getMessage()).toString();
+        }
     }
 
     /**

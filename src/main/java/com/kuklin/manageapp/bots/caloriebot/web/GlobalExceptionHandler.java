@@ -14,7 +14,9 @@ import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.lang.Nullable;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -45,6 +47,20 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(AiUnavailableException.class)
     public ResponseEntity<ErrorResponse> handleAiUnavailable(AiUnavailableException e, WebRequest request) {
         return catchAErrorResponseException(new ErrorResponseException(ErrorStatus.AI_UNAVAILABLE), request);
+    }
+
+    /**
+     * Всё непредусмотренное (NPE, ошибка БД, баг) — 500 UNEXPECTED_ERROR в нашем формате ErrorResponse,
+     * а не стандартная страница ошибки Spring со своим форматом и деталями. Стектрейс — только в лог.
+     * Ошибки доступа Spring Security пробрасываем: их превращает в 401/403 ExceptionTranslationFilter.
+     */
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorResponse> handleUnexpected(Exception e, WebRequest request) throws Exception {
+        if (e instanceof AccessDeniedException || e instanceof AuthenticationException) {
+            throw e;
+        }
+        log.error("Unexpected error on {}", request.getDescription(false), e);
+        return catchAErrorResponseException(new ErrorResponseException(ErrorStatus.UNEXPECTED_ERROR), request);
     }
 
     @Nullable

@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.bots.caloriebot.report;
 
+import com.kuklin.manageapp.common.TestJson;
 import com.kuklin.manageapp.aiconversation.models.enums.AiMessageType;
 import com.kuklin.manageapp.bots.caloriebot.settings.UserSettingsService;
 import com.kuklin.manageapp.bots.caloriebot.weight.WeightEntryService;
@@ -82,7 +83,7 @@ class ReportServiceAiInsightTest {
         CalorieTexts texts = new CalorieTexts(new I18nProperties(), settingsService);
 
         service = new ReportService(dishService, profileService, settingsService, weightService,
-                mock(ReportSourceLoader.class), ai, components, aiInputLimits, texts);
+                mock(ReportSourceLoader.class), ai, components, aiInputLimits, texts, TestJson.MAPPER);
     }
 
     @Test

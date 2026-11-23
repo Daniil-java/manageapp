@@ -34,7 +34,7 @@ class StarTransactionsClientTest {
                  {"id":"withdrawal-1","amount":1000,"date":4,"receiver":{"type":"fragment"}}]
                 """);
 
-        StarTransactionsClient client = new StarTransactionsClient("token") {
+        StarTransactionsClient client = new StarTransactionsClient("token", MAPPER) {
             @Override
             JsonNode getTransactions(int offset) {
                 offsets.add(offset);

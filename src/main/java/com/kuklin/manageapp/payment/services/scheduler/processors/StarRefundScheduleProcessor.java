@@ -8,6 +8,7 @@ import com.kuklin.manageapp.payment.models.StarTransactionsClient;
 import com.kuklin.manageapp.payment.models.common.Currency;
 import com.kuklin.manageapp.payment.repositories.PaymentRepository;
 import com.kuklin.manageapp.payment.services.PaymentService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -25,6 +26,7 @@ public class StarRefundScheduleProcessor implements ScheduleProcessor {
     private final PaymentRepository paymentRepository;
     private final PaymentService paymentService;
     private final TelegramBotRegistry telegramBotRegistry;
+    private final ObjectMapper objectMapper;
 
     @Override
     public void process() {
@@ -50,7 +52,7 @@ public class StarRefundScheduleProcessor implements ScheduleProcessor {
     }
 
     StarTransactionsClient buildClient(String botToken) {
-        return new StarTransactionsClient(botToken);
+        return new StarTransactionsClient(botToken, objectMapper);
     }
 
     @Override

@@ -4,6 +4,7 @@ import com.kuklin.manageapp.bots.aiassistantcalendar.configurations.auth.GoogleO
 import com.kuklin.manageapp.bots.aiassistantcalendar.models.TokenRefreshException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
@@ -24,6 +25,7 @@ public class GoogleOAuthHttpClient {
     private static final Duration READ_TIMEOUT = Duration.ofSeconds(15);
 
     private final GoogleOAuthProperties props;
+    private final ObjectMapper objectMapper;
     private final RestClient rest = buildRestClient();
 
     private static RestClient buildRestClient() {
@@ -106,7 +108,7 @@ public class GoogleOAuthHttpClient {
     private boolean isInvalidGrant(String body) {
         if (body == null || body.isBlank()) return false;
         try {
-            com.fasterxml.jackson.databind.JsonNode node = new com.fasterxml.jackson.databind.ObjectMapper().readTree(body);
+            com.fasterxml.jackson.databind.JsonNode node = objectMapper.readTree(body);
             if (node.has("error") && "invalid_grant".equals(node.get("error").asText())) return true;
             // иногда Google даёт описание в error_description
         } catch (Exception ignored) {}

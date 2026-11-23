@@ -26,7 +26,8 @@ public class HhVacancyService {
     private final HhSkillService hhSkillService;
     private final OpenAiProviderProcessor openAiProviderProcessor;
     private final TelegramHhParserBotKeyComponents components;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    // Бин Spring: общие настройки Jackson (java.time, неизвестные поля не роняют разбор)
+    private final ObjectMapper objectMapper;
     private static final String AI_REQUEST =
             """
                     Я отправляю тебе описание вакансии. 

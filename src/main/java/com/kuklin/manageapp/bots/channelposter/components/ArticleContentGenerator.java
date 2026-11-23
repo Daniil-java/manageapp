@@ -25,7 +25,8 @@ public class ArticleContentGenerator implements ContentGenerator {
     private final OpenAiProviderProcessor openAiProviderProcessor;
     private final PostImageService postImageService;
     private final ChannelPosterBotKeyComponent component;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    // Бин Spring: общие настройки Jackson (java.time, неизвестные поля не роняют разбор)
+    private final ObjectMapper objectMapper;
 
     private static final String TEXT_PROMPT =
             """

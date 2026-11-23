@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.bots.channelposter.components.source;
 
+import com.kuklin.manageapp.common.TestJson;
 import com.kuklin.manageapp.bots.channelposter.model.source.FetchedItem;
 import org.junit.jupiter.api.Test;
 
@@ -9,7 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class RedditSourceFetcherTest {
 
-    private final RedditSourceFetcher fetcher = new RedditSourceFetcher(null, null);
+    private final RedditSourceFetcher fetcher = new RedditSourceFetcher(null, null, TestJson.MAPPER);
 
     private static final String LONG_TEXT = "I tracked my protein for 12 weeks. ".repeat(10);
 

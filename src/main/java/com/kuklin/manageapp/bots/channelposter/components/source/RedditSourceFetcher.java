@@ -36,7 +36,8 @@ public class RedditSourceFetcher implements SourceFetcher {
 
     private final SourceHttpClient http;
     private final ChannelPosterBotKeyComponent keys;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    // Бин Spring: общие настройки Jackson (java.time, неизвестные поля не роняют разбор)
+    private final ObjectMapper objectMapper;
 
     private String accessToken;
     private Instant accessTokenExpiresAt = Instant.EPOCH;

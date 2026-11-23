@@ -2,9 +2,9 @@ package com.kuklin.manageapp.bots.kworkparser.parser;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.kuklin.manageapp.bots.kworkparser.models.KworkDto;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -15,8 +15,12 @@ import java.util.List;
 
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class KworkParser {
     private static final String ARR_NOT_FOUND = "Не удалось найти массив \"wants\" в файле ";
+    // Бин Spring: неизвестные поля в JSON Kwork и так не роняют разбор (FAIL_ON_UNKNOWN_PROPERTIES выключен)
+    private final ObjectMapper objectMapper;
+
     public List<KworkDto> getKworksOrNull(String url) {
 
         Document doc = null;
@@ -48,11 +52,9 @@ public class KworkParser {
         }
 
         // 2) Парсинг в DTO
-        ObjectMapper om = new ObjectMapper()
-                .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         List<KworkDto> kworks = null;
         try {
-            kworks = om.readValue(wantsJson, new TypeReference<List<KworkDto>>() {
+            kworks = objectMapper.readValue(wantsJson, new TypeReference<List<KworkDto>>() {
             });
         } catch (JsonProcessingException e) {
             log.error("Не удалось прочитать сущности");

@@ -72,26 +72,21 @@ public class WebhookEvent {
     /**
      * Фабричный метод для создания записи о входящем вебхуке.
      *
-     * Сериализует rawBodyJson в JSON-строку и выставляет базовые поля:
-     * provider, event, objectId, remoteAddr, payload, receivedAt, processed=false.
+     * Выставляет базовые поля: provider, event, objectId, remoteAddr, payload, receivedAt, processed=false.
+     * payloadJson — тело вебхука строкой: сериализует вызывающий сервис бином ObjectMapper
+     * (в сущность бин не внедрить, а свой маппер на каждый вебхук — лишний и без настроек Spring).
      */
     public static WebhookEvent incoming(WebhookProvider provider,
                                         WebhookEventType event,
                                         String objectId,
                                         String remoteAddr,
-                                        Object rawBodyJson) {
-        String json;
-        try {
-            json = new com.fasterxml.jackson.databind.ObjectMapper().writeValueAsString(rawBodyJson);
-        } catch (com.fasterxml.jackson.core.JsonProcessingException e) {
-            json = "{\"marshal_error\":\"" + e.getMessage() + "\"}";
-        }
+                                        String payloadJson) {
         return new WebhookEvent()
                 .setProvider(provider)
                 .setEvent(event)
                 .setObjectId(objectId)
                 .setRemoteAddr(remoteAddr)
-                .setPayload(json)
+                .setPayload(payloadJson)
                 .setReceivedAt(Instant.now())
                 .setProcessed(false);
     }

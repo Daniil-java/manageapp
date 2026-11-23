@@ -9,8 +9,6 @@ import com.kuklin.manageapp.bots.caloriebot.profile.UserNutritionProfile;
 import com.kuklin.manageapp.bots.caloriebot.dish.DishService;
 import com.kuklin.manageapp.bots.caloriebot.dish.Dish;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.kuklin.manageapp.aiconversation.models.AiUsageContext;
 import com.kuklin.manageapp.aiconversation.models.enums.AiOperation;
 import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcessor;
@@ -106,10 +104,8 @@ public class ReportService {
     private final CalorieTexts calorieTexts;
     // Шаблон и маскот не меняются, пока приложение работает: читаем с диска один раз, а не на каждый PDF
     private final Map<String, String> resources = new ConcurrentHashMap<>();
-    // Маппер с поддержкой Java 8 Time API (даты блюд в JSON для ИИ)
-    private final ObjectMapper mapper = new ObjectMapper()
-            .registerModule(new JavaTimeModule())
-            .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+    // Бин Spring: в нём уже есть java.time и даты строкой ISO (даты блюд в JSON для ИИ)
+    private final ObjectMapper mapper;
 
 
     /**

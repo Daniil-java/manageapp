@@ -32,7 +32,8 @@ public class RedditPostFilterPosterScheduler implements ScheduleProcessor {
     private final RedditPostService redditPostService;
     private final ChannelPosterBotKeyComponent botKeyComponent;
     private final OpenAiProviderProcessor openAiProviderProcessor;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    // Бин Spring: общие настройки Jackson (java.time, неизвестные поля не роняют разбор)
+    private final ObjectMapper objectMapper;
 
     private static final String PROMPT =
             """

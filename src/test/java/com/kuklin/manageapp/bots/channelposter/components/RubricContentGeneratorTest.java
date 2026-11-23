@@ -1,5 +1,6 @@
 package com.kuklin.manageapp.bots.channelposter.components;
 
+import com.kuklin.manageapp.common.TestJson;
 import com.kuklin.manageapp.aiconversation.providers.impl.OpenAiProviderProcessor;
 import com.kuklin.manageapp.bots.channelposter.entities.RubricTopic;
 import com.kuklin.manageapp.bots.channelposter.entities.TopicCategory;
@@ -50,7 +51,7 @@ class RubricContentGeneratorTest {
         OpenAiProviderProcessor ai = mock(OpenAiProviderProcessor.class);
         when(ai.fetchJsonResponse(any(), any(), any(), any(), any())).thenReturn("""
                 {"topics": [{"section": "сон", "text": "Недосып усиливает голод", "why": "лишнее поле"}]}""");
-        RubricContentGenerator generator = new RubricContentGenerator(ai, mock(ChannelPosterBotKeyComponent.class));
+        RubricContentGenerator generator = new RubricContentGenerator(ai, mock(ChannelPosterBotKeyComponent.class), TestJson.MAPPER);
 
         assertThat(generator.generateTopics(TopicCategory.TopicType.FACT, List.of()))
                 .containsExactly(new RubricContentGenerator.TopicIdea("сон", "Недосып усиливает голод"));
@@ -60,7 +61,7 @@ class RubricContentGeneratorTest {
     void brokenTopicsJsonGivesNothing() {
         OpenAiProviderProcessor ai = mock(OpenAiProviderProcessor.class);
         when(ai.fetchJsonResponse(any(), any(), any(), any(), any())).thenReturn("не json");
-        RubricContentGenerator generator = new RubricContentGenerator(ai, mock(ChannelPosterBotKeyComponent.class));
+        RubricContentGenerator generator = new RubricContentGenerator(ai, mock(ChannelPosterBotKeyComponent.class), TestJson.MAPPER);
 
         assertThat(generator.generateTopics(TopicCategory.TopicType.FACT, List.of())).isEmpty();
     }
@@ -95,7 +96,7 @@ class RubricContentGeneratorTest {
         // правильный вариант вне списка — Telegram не примет
         when(ai.fetchCreativeJsonResponse(any(), any(), any(), any(), any())).thenReturn("""
                 {"question": "Q?", "options": ["a", "b"], "correct_option_id": 5, "explanation": "e"}""");
-        RubricContentGenerator generator = new RubricContentGenerator(ai, mock(ChannelPosterBotKeyComponent.class));
+        RubricContentGenerator generator = new RubricContentGenerator(ai, mock(ChannelPosterBotKeyComponent.class), TestJson.MAPPER);
 
         assertThat(generator.generatePoll(TopicCategory.TopicType.QUIZ,
                 new RubricTopic().setSection("сон").setText("t"))).isNull();

@@ -1,5 +1,7 @@
 package com.kuklin.manageapp.bots.channelposter.components.source;
 
+import com.kuklin.manageapp.common.TestJson;
+
 import com.kuklin.manageapp.bots.channelposter.telegram.ChannelPosterBotKeyComponent;
 import org.jsoup.HttpStatusException;
 import org.junit.jupiter.api.Test;
@@ -16,7 +18,7 @@ class PixabayClientTest {
 
     private final SourceHttpClient http = mock(SourceHttpClient.class);
     private final ChannelPosterBotKeyComponent keys = mock(ChannelPosterBotKeyComponent.class);
-    private final PixabayClient client = new PixabayClient(http, keys);
+    private final PixabayClient client = new PixabayClient(http, keys, TestJson.MAPPER);
 
     @Test
     void searchesFoodPhotosInRussianAndParsesHits() throws IOException {
