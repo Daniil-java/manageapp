@@ -90,7 +90,7 @@ public class FeatureLimitNotifier {
         };
     }
 
-    /** «💎 Premium — от 299 ⭐» и «🎁 Бесплатно — позвать друга». */
+    /** «💎 Premium — от 150 ⭐» и «🎁 Бесплатно — позвать друга». */
     private InlineKeyboardMarkup getSubscriptionKeyboard(AppLanguage language) {
         return TelegramKeyboard.builder()
                 .row(premiumOfferButtons.buildPremiumButton(language))

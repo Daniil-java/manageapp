@@ -79,7 +79,7 @@ public class PaymentPlanListCalorieUpdateHandler implements CalorieBotUpdateHand
                 buildOfferKeyboard(language), null);
     }
 
-    /** «💎 Premium — от 299 ⭐», «🎁 Бесплатно — позвать друга», «Закрыть». */
+    /** «💎 Premium — от 150 ⭐», «🎁 Бесплатно — позвать друга», «Закрыть». */
     InlineKeyboardMarkup buildOfferKeyboard(AppLanguage language) {
         return TelegramKeyboard.builder()
                 .row(premiumOfferButtons.buildPremiumButton(language))

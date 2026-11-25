@@ -21,7 +21,7 @@ import java.util.List;
 
 /**
  * Кнопки предложения Premium — одни и те же в тарифах, «Premium закончился», «скоро закончится» и лимитах:
- * тарифы с ценой и выгодой на кнопке, «💎 Premium — от 299 ⭐» (открывает тарифы) и «🎁 Бесплатно — позвать
+ * тарифы с ценой и выгодой на кнопке, «💎 Premium — от 150 ⭐» (открывает тарифы) и «🎁 Бесплатно — позвать
  * друга» (экран приглашений).
  */
 @Component
@@ -39,7 +39,7 @@ public class PremiumOfferButtons {
                 .toList();
     }
 
-    /** «1 месяц — 299 ⭐», «3 месяца — 699 ⭐ · −22%»: выгода — к самому короткому тарифу в той же валюте. */
+    /** «1 месяц — 150 ⭐», «3 месяца — 350 ⭐ · −22%»: выгода — к самому короткому тарифу в той же валюте. */
     public List<InlineKeyboardButton> buildPlanButtons(AppLanguage language) {
         List<PricingPlan> plans = findPlansForSale();
         return plans.stream()
@@ -58,12 +58,12 @@ public class PremiumOfferButtons {
                 : texts.get(language, BotTextKeys.PAYMENT_PLAN_BUTTON_SAVING, duration, price, saving);
     }
 
-    /** «💎 Premium — от 299 ⭐» → тарифы; без тарифов в продаже — «💎 Тарифы». */
+    /** «💎 Premium — от 150 ⭐» → тарифы; без тарифов в продаже — «💎 Тарифы». */
     public InlineKeyboardButton buildPremiumButton(AppLanguage language) {
         return buildPlansButton(language, BotTextKeys.PAYMENT_BUTTON_PREMIUM_FROM);
     }
 
-    /** «💎 Продлить — от 299 ⭐» → тарифы: Premium ещё действует. */
+    /** «💎 Продлить — от 150 ⭐» → тарифы: Premium ещё действует. */
     public InlineKeyboardButton buildExtendButton(AppLanguage language) {
         return buildPlansButton(language, BotTextKeys.PAYMENT_BUTTON_EXTEND_FROM);
     }
