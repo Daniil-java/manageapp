@@ -51,6 +51,12 @@ public class FlightSubNotificationScheduleProcessor implements ScheduleProcessor
         if (info == null) {
             return;
         }
+        // Подписка создаёт рейс только с номером. Первое заполнение сохраняем молча:
+        // иначе подписчик получал «изменения» вида "— -> KUL" через несколько минут после подписки
+        if (flight.isNotFilledYet()) {
+            flightService.updateFlight(flight, info);
+            return;
+        }
         flight.fillMissingGateAndTerminal(info);
         //Если существенных изменений нет - ничего не сохраняем, чтобы мелкие сдвиги времени накапливались
         if (!flight.hasSignificantChanges(info)) {

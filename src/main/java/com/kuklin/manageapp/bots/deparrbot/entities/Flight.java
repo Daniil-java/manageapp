@@ -95,6 +95,14 @@ public class Flight {
                 isExpectedDepartureShifted(dto);
     }
 
+    /**
+     * Запись создана подпиской (только номер рейса) и ещё ни разу не заполнялась.
+     * Первое заполнение — не «изменение», уведомлять о нём не нужно.
+     */
+    public boolean isNotFilledYet() {
+        return status == null && scheduledDeparture == null && departureAirport == null;
+    }
+
     public boolean isGateChanged(FlightDto dto) {
         return !equalsIgnoreCase(this.terminal, dto.getTerminal())
                 || !equalsIgnoreCase(this.gate, dto.getGate());
@@ -126,7 +134,8 @@ public class Flight {
     public String getDifference(FlightDto dto) {
         String flight = getDifferenceString(flightCode + number, dto.getFlight() + dto.getNumber());
         StringBuilder sb = new StringBuilder();
-        sb.append(airline).append(" (" + flight + ")").append("\n");
+        sb.append(FlightDto.getValueOrDash(dto.getAirline() != null ? dto.getAirline() : airline))
+                .append(" (" + flight + ")").append("\n");
 
         sb.append(getDifferenceString(departureAirport, dto.getDepartureAirport()))
                 .append(" -> ")

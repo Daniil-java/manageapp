@@ -46,7 +46,7 @@ public class AviaWidgetService {
 
         userFlightService.subscribeUserToFlight(telegramId, code.carrier(), code.number());
         Flight flight = flightService.findFlightOrNull(code.carrier(), code.number());
-        if (flight != null && flight.getStatus() == null) {
+        if (flight != null && flight.isNotFilledYet()) {
             flightService.updateFlight(flight, dto);
         }
         return AviaFlightResponse.fromDto(dto);

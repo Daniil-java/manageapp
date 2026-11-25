@@ -55,6 +55,13 @@ class FlightChangesTest {
     }
 
     @Test
+    void freshSubscriptionRowIsNotFilledYet() {
+        Flight justSubscribed = new Flight().setFlightCode("AK").setNumber("552");
+        assertTrue(justSubscribed.isNotFilledYet());
+        assertFalse(buildStored().isNotFilledYet());
+    }
+
+    @Test
     void oldRowWithoutExpectedDepartureUsesScheduled() {
         Flight stored = buildStored().setExpectedDeparture(null);
         assertFalse(stored.hasSignificantChanges(buildDto().setExpectedDeparture("25.11 08:08")));
