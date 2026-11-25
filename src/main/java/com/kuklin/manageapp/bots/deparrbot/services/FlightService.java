@@ -1,8 +1,8 @@
 package com.kuklin.manageapp.bots.deparrbot.services;
 
-import com.kuklin.manageapp.bots.deparrbot.entities.Flight;
 import com.kuklin.manageapp.bots.deparrbot.models.FlightDto;
 import com.kuklin.manageapp.bots.deparrbot.repositories.FlightRepository;
+import com.kuklin.manageapp.bots.deparrbot.entities.Flight;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -28,6 +28,14 @@ public class FlightService {
         return flightRepository.getFlightByFlightCodeAndNumber(flightCode, number)
                 .map(Flight::getId)
                 .orElse(null);
+    }
+
+    public Flight findFlightOrNull(String flightCode, String number) {
+        return flightRepository.getFlightByFlightCodeAndNumber(flightCode, number).orElse(null);
+    }
+
+    public List<Flight> getFlightsByIds(List<Long> ids) {
+        return flightRepository.findAllById(ids);
     }
 
     public void removeByFlightId(Long flightId) {

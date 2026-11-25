@@ -5,8 +5,8 @@ import com.kuklin.manageapp.bots.kworkparser.models.KworkDto;
 import com.kuklin.manageapp.bots.kworkparser.parser.KworkParser;
 import com.kuklin.manageapp.bots.kworkparser.services.KworkService;
 import com.kuklin.manageapp.bots.kworkparser.services.UrlService;
-import com.kuklin.manageapp.common.library.ScheduleProcessor;
-import com.kuklin.manageapp.common.library.tgutils.ThreadUtil;
+import com.kuklin.manageapp.common.scheduler.ScheduleProcessor;
+import com.kuklin.manageapp.common.util.ThreadUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -32,6 +32,7 @@ public class KworkScheduleProcessor implements ScheduleProcessor {
         for (Url url: urls) {
             //Получение распаршенных данных
             List<KworkDto> kworkDtos = kworkParser.getKworksOrNull(url.getUrl());
+            if (kworkDtos == null) continue;
             for (KworkDto dto: kworkDtos) {
                 //Сохранение данных, с учетом существования дубликатов
                 kworkService.saveOrNull(dto, url.getId());

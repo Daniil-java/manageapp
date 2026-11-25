@@ -1,8 +1,9 @@
 package com.kuklin.manageapp.bots.deparrbot.services;
 
 
-import com.kuklin.manageapp.bots.deparrbot.entities.UserFlight;
 import com.kuklin.manageapp.bots.deparrbot.repositories.UserFlightRepository;
+import com.kuklin.manageapp.bots.deparrbot.entities.Flight;
+import com.kuklin.manageapp.bots.deparrbot.entities.UserFlight;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -24,6 +25,14 @@ public class UserFlightService {
 
     public List<UserFlight> getFlightsByUser(Long telegramId) {
         return userFlightRepository.findByTelegramId(telegramId);
+    }
+
+    public List<Flight> getSubscribedFlights(Long telegramId) {
+        List<Long> flightIds = userFlightRepository.findByTelegramId(telegramId).stream()
+                .map(UserFlight::getFlightId)
+                .distinct()
+                .toList();
+        return flightService.getFlightsByIds(flightIds);
     }
 
     public List<UserFlight> getUsersFlightByFlightId(Long flightId) {

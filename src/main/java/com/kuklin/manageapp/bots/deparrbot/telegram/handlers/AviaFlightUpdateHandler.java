@@ -1,12 +1,13 @@
 package com.kuklin.manageapp.bots.deparrbot.telegram.handlers;
 
+import com.kuklin.manageapp.bots.deparrbot.models.FlightCode;
 import com.kuklin.manageapp.bots.deparrbot.models.FlightDto;
-import com.kuklin.manageapp.bots.deparrbot.providers.FlightInfoProvider;
+import com.kuklin.manageapp.bots.deparrbot.services.FlightInfoService;
 import com.kuklin.manageapp.bots.deparrbot.services.UserFlightService;
 import com.kuklin.manageapp.bots.deparrbot.telegram.AviaTelegramBot;
 import com.kuklin.manageapp.common.entities.TelegramUser;
-import com.kuklin.manageapp.common.library.tgmodels.TelegramBot;
-import com.kuklin.manageapp.common.library.tgutils.Command;
+import com.kuklin.manageapp.common.telegram.TelegramBot;
+import com.kuklin.manageapp.common.telegram.Command;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.telegram.telegrambots.meta.api.objects.Update;
@@ -18,26 +19,27 @@ import java.util.Collections;
 @Component
 @RequiredArgsConstructor
 public class AviaFlightUpdateHandler implements AviaUpdateHandler{
-    private final FlightInfoProvider flightInfoProvider;
+    private final FlightInfoService flightInfoService;
     private final UserFlightService userFlightService;
     private final AviaTelegramBot aviaTelegramBot;
-    private static final String ERROR_FLIGHT_MSG = "Не удалось получить информацию";
-    private static final String ERROR_MSG = "Не верный формат сообщения!";
+    private static final String ERROR_FLIGHT_MSG = "Не удалось найти рейс ни на flightstats, ни на flightaware";
+    private static final String ERROR_MSG = "Неверный формат. Пример: /flight AK 880 или /flight AK880";
     @Override
     public void handle(Update update, TelegramUser telegramUser) {
-        //Ожидается команда, типа "/start SU 123"
+        //Ожидается команда, типа "/flight AK 880" или "/flight AK880"
         long chatId = update.getMessage().getChatId();
-        String messageText = update.getMessage().getText();
+        String messageText = update.getMessage().getText().trim();
 
-        String[] flightNumber = messageText.trim().split(TelegramBot.DEFAULT_DELIMETER);
-        if (flightNumber.length < 3) {
-            aviaTelegramBot.sendReturnedMessage(chatId, ERROR_FLIGHT_MSG);
+        int commandEnd = messageText.indexOf(TelegramBot.DEFAULT_DELIMETER);
+        FlightCode code = commandEnd < 0 ? null : FlightCode.parseOrNull(messageText.substring(commandEnd + 1));
+        if (code == null) {
+            aviaTelegramBot.sendReturnedMessage(chatId, ERROR_MSG);
             return;
         }
-        String flight = flightNumber[1].toUpperCase();
-        String number = flightNumber[2].toUpperCase();
+        String flight = code.carrier();
+        String number = code.number();
 
-        FlightDto flightDto = flightInfoProvider.getFlightInfoOrNull(flight, number);
+        FlightDto flightDto = flightInfoService.findFlightOrNull(code);
         if (flightDto == null) {
             aviaTelegramBot.sendReturnedMessage(chatId, ERROR_FLIGHT_MSG);
             return;
