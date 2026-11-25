@@ -1,8 +1,8 @@
 package com.kuklin.manageapp.bots.deparrbot.services;
 
-import com.kuklin.manageapp.bots.deparrbot.entities.Flight;
 import com.kuklin.manageapp.bots.deparrbot.models.FlightDto;
 import com.kuklin.manageapp.bots.deparrbot.repositories.FlightRepository;
+import com.kuklin.manageapp.bots.deparrbot.entities.Flight;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

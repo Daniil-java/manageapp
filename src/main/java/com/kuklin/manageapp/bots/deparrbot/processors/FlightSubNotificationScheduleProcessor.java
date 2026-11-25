@@ -1,16 +1,16 @@
 package com.kuklin.manageapp.bots.deparrbot.processors;
 
+import com.kuklin.manageapp.bots.deparrbot.models.FlightDto;
 import com.kuklin.manageapp.bots.deparrbot.entities.Flight;
 import com.kuklin.manageapp.bots.deparrbot.entities.UserFlight;
-import com.kuklin.manageapp.bots.deparrbot.models.FlightDto;
 import com.kuklin.manageapp.bots.deparrbot.providers.FlightStatsComFlightInfoProvider;
 import com.kuklin.manageapp.bots.deparrbot.services.FlightService;
 import com.kuklin.manageapp.bots.deparrbot.services.UserFlightService;
 import com.kuklin.manageapp.bots.deparrbot.telegram.AviaTelegramBot;
 import com.kuklin.manageapp.bots.deparrbot.telegram.handlers.AviaFlightUpdateHandler;
-import com.kuklin.manageapp.common.library.ScheduleProcessor;
-import com.kuklin.manageapp.common.library.tgutils.Command;
-import com.kuklin.manageapp.common.library.tgutils.ThreadUtil;
+import com.kuklin.manageapp.common.scheduler.ScheduleProcessor;
+import com.kuklin.manageapp.common.telegram.Command;
+import com.kuklin.manageapp.common.util.ThreadUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
