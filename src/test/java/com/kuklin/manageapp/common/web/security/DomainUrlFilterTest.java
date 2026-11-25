@@ -163,6 +163,17 @@ class DomainUrlFilterTest {
         assertThat(response.getStatus()).isEqualTo(404);
     }
 
+    // API авиабота для Android-виджета ходит на Railway-домен
+    @Test
+    void aviaApiOnRailwayPasses() throws Exception {
+        AtomicBoolean passed = new AtomicBoolean();
+
+        filter.doFilter(request("GET", "manageapp-production.up.railway.app", "/avia/subscriptions"),
+                new MockHttpServletResponse(), chain(passed));
+
+        assertThat(passed).isTrue();
+    }
+
     private static MockHttpServletRequest request(String method, String host, String path) {
         MockHttpServletRequest request = new MockHttpServletRequest(method, path);
         request.setServerName(host);

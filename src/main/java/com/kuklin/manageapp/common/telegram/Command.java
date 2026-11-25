@@ -112,6 +112,7 @@ public enum Command {
     AVIA_BOARD("/board", BotIdentifier.AVIA_BOT),
     AVIA_SUBSCRIBE("subscribe", BotIdentifier.AVIA_BOT),
     AVIA_UNSUBSCRIBE("unsubscribe", BotIdentifier.AVIA_BOT),
+    AVIA_TOKEN("/token", BotIdentifier.AVIA_BOT),
     AVIA_ERROR("error", BotIdentifier.AVIA_BOT),
 
     //==========================POSTER============================

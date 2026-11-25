@@ -30,6 +30,14 @@ public class FlightService {
                 .orElse(null);
     }
 
+    public Flight findFlightOrNull(String flightCode, String number) {
+        return flightRepository.getFlightByFlightCodeAndNumber(flightCode, number).orElse(null);
+    }
+
+    public List<Flight> getFlightsByIds(List<Long> ids) {
+        return flightRepository.findAllById(ids);
+    }
+
     public void removeByFlightId(Long flightId) {
         flightRepository.deleteById(flightId);
     }

@@ -13,7 +13,7 @@ public class AviaStartUpdateHandler implements AviaUpdateHandler {
 
     private static final String START_MESSAGE =
             """
-                    /flight SU 123 - напиши в таком формате, чтобы получить информацию по рейсу.
+                    /flight AK 880 (или /flight AK880) - чтобы получить информацию по рейсу.
                     /board Москва -> Хошимин, ГГГГ-ММ-ДД - чтобы получить расписание
                     """;
     private final AviaTelegramBot aviaTelegramBot;

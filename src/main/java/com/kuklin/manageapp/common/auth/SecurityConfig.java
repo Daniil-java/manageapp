@@ -60,6 +60,8 @@ public class SecurityConfig {
                                 "/assets/**", "/images/**").permitAll()
                         // API бота курения — личный инструмент без логинов, авторизации нет намеренно
                         .requestMatchers("/nicotine/**").permitAll()
+                        // API авиабота для виджета: авторизация личным токеном X-Avia-Token в самом контроллере
+                        .requestMatchers("/avia/**").permitAll()
                         // Healthcheck Railway и внешнего мониторинга — только UP/DOWN, без деталей.
                         // Остальной Actuator (метрики пула БД, потоков) — карта внутренностей, только ADMIN
                         .requestMatchers(DomainUrlFilter.HEALTH_PATH).permitAll()

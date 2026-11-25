@@ -43,7 +43,7 @@ public class DomainUrlFilter extends OncePerRequestFilter {
             List.of("/calorie/**"),
             "https://zefir.fit"),
         "manageapp-production.up.railway.app", new DomainRules(
-            List.of("/nicotine/**"),
+            List.of("/nicotine/**", "/avia/**"),
             List.of(),
             null)
     );
